@@ -149,7 +149,7 @@ class BibleWordMap extends HTMLElement {
             this.data3d = res3d;
         } catch (e) {
             console.error("Failed to load map data:", e);
-            this.loadingDiv.innerHTML = \`<span style="color:red;">Error loading data. Run 'make serve' from root to fix paths.</span>\`;
+            this.loadingDiv.innerHTML = `<span style="color:red;">Error loading data. Run 'make serve' from root to fix paths.</span>`;
         }
     }
 
