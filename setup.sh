@@ -18,7 +18,10 @@ fi
 cd ../../
 
 echo "Setting up Python environment..."
-python3 -m venv pipeline/venv
+python3 -m venv --without-pip pipeline/venv
+wget -q https://bootstrap.pypa.io/get-pip.py
+pipeline/venv/bin/python get-pip.py
+rm get-pip.py
 pipeline/venv/bin/pip install -r pipeline/requirements.txt
 
 echo "Setup complete!"
