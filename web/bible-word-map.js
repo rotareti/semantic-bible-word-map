@@ -236,7 +236,7 @@ class BibleWordMap extends HTMLElement {
             trace.type = 'scatter3d';
             trace.z = data.map(d => d.z);
         } else {
-            trace.type = 'scattergl';
+            trace.type = 'scatter';
         }
 
         const layout = {
