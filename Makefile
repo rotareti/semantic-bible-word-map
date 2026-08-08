@@ -13,4 +13,7 @@ train:
 map:
 	pipeline/venv/bin/python pipeline/generate_map.py
 
+serve:
+	cd web && python3 -m http.server 8000
+
 all: parse train map
