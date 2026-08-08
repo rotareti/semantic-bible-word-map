@@ -264,7 +264,13 @@ class BibleWordMap extends HTMLElement {
             yaxis: { showgrid: false, zeroline: false, visible: false }
         };
 
-        window.Plotly.newPlot(this.plotDiv, [trace], layout, {responsive: true, displayModeBar: true, displaylogo: false});
+        window.Plotly.newPlot(this.plotDiv, [trace], layout, {
+            responsive: true, 
+            displayModeBar: true, 
+            displaylogo: false, 
+            scrollZoom: true,
+            modeBarButtonsToRemove: ['lasso2d', 'select2d'] // Keep it clean for panning/zooming
+        });
     }
 }
 
