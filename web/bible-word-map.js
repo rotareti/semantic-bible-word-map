@@ -1,14 +1,13 @@
 class BibleWordMap extends HTMLElement {
     constructor() {
         super();
-        this.attachShadow({ mode: 'open' });
         this.data2d = null;
         this.data3d = null;
         this.is3D = false;
         
-        this.shadowRoot.innerHTML = `
+        this.innerHTML = `
             <style>
-                :host {
+                bible-word-map {
                     display: block;
                     width: 100%;
                     height: 80vh;
@@ -115,13 +114,13 @@ class BibleWordMap extends HTMLElement {
     }
 
     async connectedCallback() {
-        this.plotDiv = this.shadowRoot.getElementById('plot');
-        this.loadingDiv = this.shadowRoot.getElementById('loading');
-        this.btn2d = this.shadowRoot.getElementById('btn-2d');
-        this.btn3d = this.shadowRoot.getElementById('btn-3d');
-        this.searchInput = this.shadowRoot.getElementById('search-input');
-        this.searchBtn = this.shadowRoot.getElementById('search-btn');
-        this.searchError = this.shadowRoot.getElementById('search-error');
+        this.plotDiv = this.querySelector('#plot');
+        this.loadingDiv = this.querySelector('#loading');
+        this.btn2d = this.querySelector('#btn-2d');
+        this.btn3d = this.querySelector('#btn-3d');
+        this.searchInput = this.querySelector('#search-input');
+        this.searchBtn = this.querySelector('#search-btn');
+        this.searchError = this.querySelector('#search-error');
 
         this.btn2d.addEventListener('click', () => this.switchView(false));
         this.btn3d.addEventListener('click', () => this.switchView(true));
@@ -199,7 +198,18 @@ class BibleWordMap extends HTMLElement {
         } else {
             const update = {
                 'xaxis.range': [point.x - span, point.x + span],
-                'yaxis.range': [point.y - span, point.y + span]
+                'yaxis.range': [point.y - span, point.y + span],
+                'annotations': [{
+                    x: point.x,
+                    y: point.y,
+                    text: query.toUpperCase(),
+                    showarrow: true,
+                    arrowhead: 2,
+                    arrowcolor: '#d32f2f',
+                    font: { size: 16, color: '#d32f2f' },
+                    ax: 0,
+                    ay: -40
+                }]
             };
             window.Plotly.relayout(this.plotDiv, update);
         }
@@ -219,7 +229,8 @@ class BibleWordMap extends HTMLElement {
             y: data.map(d => d.y),
             text: words,
             mode: 'markers',
-            hoverinfo: 'text',
+            hovertemplate: '<b>%{text}</b><extra></extra>',
+            hoverlabel: { font: { size: 16 } },
             marker: {
                 size: sizes,
                 color: sizes,
