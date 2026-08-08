@@ -8,36 +8,28 @@ class BibleWordMap extends HTMLElement {
         this.innerHTML = `
             <style>
                 bible-word-map {
-                    display: block;
+                    display: flex;
+                    flex-direction: column;
                     width: 100%;
                     height: 80vh;
-                    position: relative;
                     font-family: system-ui, -apple-system, sans-serif;
                 }
                 .container {
+                    flex: 1;
                     width: 100%;
-                    height: 100%;
                     border: 1px solid #ddd;
                     border-radius: 8px;
                     overflow: hidden;
                     background: #f8f9fa;
+                    position: relative;
                 }
                 .top-bar {
-                    position: absolute;
-                    top: 15px;
-                    left: 15px;
-                    right: 15px;
-                    z-index: 10;
                     display: flex;
                     justify-content: space-between;
-                    pointer-events: none;
+                    align-items: center;
+                    padding-bottom: 12px;
                 }
-                .search-box {
-                    pointer-events: auto;
-                    background: rgba(255, 255, 255, 0.95);
-                    padding: 8px;
-                    border-radius: 6px;
-                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                .search-box, .controls {
                     display: flex;
                     gap: 8px;
                 }
@@ -51,15 +43,6 @@ class BibleWordMap extends HTMLElement {
                 }
                 input[type="text"]:focus {
                     border-color: #2563eb;
-                }
-                .controls {
-                    pointer-events: auto;
-                    background: rgba(255, 255, 255, 0.95);
-                    padding: 8px;
-                    border-radius: 6px;
-                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                    display: flex;
-                    gap: 5px;
                 }
                 button {
                     cursor: pointer;
