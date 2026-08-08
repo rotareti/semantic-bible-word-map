@@ -1,0 +1,9 @@
+data/
+!data/.gitkeep
+parser/target/
+pipeline/venv/
+pipeline/__pycache__/
+*.json
+!package.json
+!package-lock.json
+.DS_Store
