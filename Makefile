@@ -14,6 +14,7 @@ map:
 	pipeline/venv/bin/python pipeline/generate_map.py
 
 serve:
+	ln -sfn ../data web/data
 	cd web && python3 -m http.server 8000
 
 all: parse train map

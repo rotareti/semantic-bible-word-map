@@ -23,12 +23,39 @@ class BibleWordMap extends HTMLElement {
                     overflow: hidden;
                     background: #f8f9fa;
                 }
-                .controls {
+                .top-bar {
                     position: absolute;
                     top: 15px;
+                    left: 15px;
                     right: 15px;
                     z-index: 10;
-                    background: rgba(255, 255, 255, 0.9);
+                    display: flex;
+                    justify-content: space-between;
+                    pointer-events: none;
+                }
+                .search-box {
+                    pointer-events: auto;
+                    background: rgba(255, 255, 255, 0.95);
+                    padding: 8px;
+                    border-radius: 6px;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    display: flex;
+                    gap: 8px;
+                }
+                input[type="text"] {
+                    padding: 8px 12px;
+                    border: 1px solid #ccc;
+                    border-radius: 4px;
+                    outline: none;
+                    font-size: 1rem;
+                    width: 200px;
+                }
+                input[type="text"]:focus {
+                    border-color: #2563eb;
+                }
+                .controls {
+                    pointer-events: auto;
+                    background: rgba(255, 255, 255, 0.95);
                     padding: 8px;
                     border-radius: 6px;
                     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -62,10 +89,23 @@ class BibleWordMap extends HTMLElement {
                     font-size: 1.2rem;
                     color: #666;
                 }
+                .error-msg {
+                    color: #d32f2f;
+                    font-size: 0.9rem;
+                    display: none;
+                    align-items: center;
+                }
             </style>
-            <div class="controls">
-                <button id="btn-2d" class="active">2D View</button>
-                <button id="btn-3d">3D View (Beta)</button>
+            <div class="top-bar">
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="Search for a word..." />
+                    <button id="search-btn">Find</button>
+                    <span id="search-error" class="error-msg">Word not found</span>
+                </div>
+                <div class="controls">
+                    <button id="btn-2d" class="active">2D View</button>
+                    <button id="btn-3d">3D View</button>
+                </div>
             </div>
             <div class="container">
                 <div id="loading" class="loading">Loading Map Data...</div>
@@ -79,9 +119,16 @@ class BibleWordMap extends HTMLElement {
         this.loadingDiv = this.shadowRoot.getElementById('loading');
         this.btn2d = this.shadowRoot.getElementById('btn-2d');
         this.btn3d = this.shadowRoot.getElementById('btn-3d');
+        this.searchInput = this.shadowRoot.getElementById('search-input');
+        this.searchBtn = this.shadowRoot.getElementById('search-btn');
+        this.searchError = this.shadowRoot.getElementById('search-error');
 
         this.btn2d.addEventListener('click', () => this.switchView(false));
         this.btn3d.addEventListener('click', () => this.switchView(true));
+        this.searchBtn.addEventListener('click', () => this.searchWord());
+        this.searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.searchWord();
+        });
 
         await this.loadData();
         this.loadingDiv.style.display = 'none';
@@ -102,7 +149,7 @@ class BibleWordMap extends HTMLElement {
             this.data3d = res3d;
         } catch (e) {
             console.error("Failed to load map data:", e);
-            this.loadingDiv.innerHTML = `<span style="color:red;">Error loading data. Make sure to serve via a local web server and run the pipeline.</span>`;
+            this.loadingDiv.innerHTML = \`<span style="color:red;">Error loading data. Run 'make serve' from root to fix paths.</span>\`;
         }
     }
 
@@ -118,6 +165,44 @@ class BibleWordMap extends HTMLElement {
             this.btn3d.classList.remove('active');
         }
         this.renderPlot();
+        
+        // Re-apply search zoom if a word is currently searched
+        if (this.searchInput.value) {
+            this.searchWord();
+        }
+    }
+
+    searchWord() {
+        const query = this.searchInput.value.trim().toLowerCase();
+        this.searchError.style.display = 'none';
+        if (!query) return;
+
+        const data = this.is3D ? this.data3d : this.data2d;
+        const pointIndex = data.findIndex(d => d.w === query);
+
+        if (pointIndex === -1) {
+            this.searchError.style.display = 'flex';
+            return;
+        }
+
+        const point = data[pointIndex];
+        const span = 2.0; // zoom level window size
+
+        if (this.is3D) {
+            const update = {
+                'scene.camera': {
+                    center: { x: point.x, y: point.y, z: point.z },
+                    eye: { x: point.x + 1, y: point.y + 1, z: point.z + 1 }
+                }
+            };
+            window.Plotly.relayout(this.plotDiv, update);
+        } else {
+            const update = {
+                'xaxis.range': [point.x - span, point.x + span],
+                'yaxis.range': [point.y - span, point.y + span]
+            };
+            window.Plotly.relayout(this.plotDiv, update);
+        }
     }
 
     renderPlot() {
@@ -127,7 +212,6 @@ class BibleWordMap extends HTMLElement {
         
         const words = data.map(d => d.w);
         const freqs = data.map(d => d.f);
-        // Scale sizes for better visibility based on frequency
         const sizes = freqs.map(f => Math.max(5, Math.min(25, Math.log(f) * 2)));
         
         const trace = {
@@ -152,7 +236,7 @@ class BibleWordMap extends HTMLElement {
             trace.type = 'scatter3d';
             trace.z = data.map(d => d.z);
         } else {
-            trace.type = 'scattergl'; // webgl is much faster for many points
+            trace.type = 'scattergl';
         }
 
         const layout = {
@@ -169,7 +253,6 @@ class BibleWordMap extends HTMLElement {
             yaxis: { showgrid: false, zeroline: false, visible: false }
         };
 
-        // Plotly handles Custom Elements fine, but needs window context
         window.Plotly.newPlot(this.plotDiv, [trace], layout, {responsive: true, displayModeBar: true, displaylogo: false});
     }
 }
