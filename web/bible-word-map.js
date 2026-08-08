@@ -172,44 +172,84 @@ class BibleWordMap extends HTMLElement {
     }
 
     searchWord() {
-        const query = this.searchInput.value.trim().toLowerCase();
+        const rawQueries = this.searchInput.value.toLowerCase().split(/[\s,]+/).filter(w => w);
         this.searchError.style.display = 'none';
-        if (!query) return;
+        if (rawQueries.length === 0) return;
 
         const data = this.is3D ? this.data3d : this.data2d;
-        const pointIndex = data.findIndex(d => d.w === query);
+        
+        let foundPoints = [];
+        let notFound = [];
 
-        if (pointIndex === -1) {
+        rawQueries.forEach(q => {
+            const pointIndex = data.findIndex(d => d.w === q);
+            if (pointIndex !== -1) {
+                foundPoints.push(data[pointIndex]);
+            } else {
+                notFound.push(q);
+            }
+        });
+
+        if (foundPoints.length === 0) {
+            this.searchError.textContent = "Word(s) not found";
             this.searchError.style.display = 'flex';
             return;
         }
 
-        const point = data[pointIndex];
-        const span = 2.0; // zoom level window size
+        if (notFound.length > 0) {
+            this.searchError.textContent = `Not found: ${notFound.join(', ')}`;
+            this.searchError.style.display = 'flex';
+        }
+
+        const annotations = foundPoints.map(point => ({
+            x: point.x,
+            y: point.y,
+            text: point.w.toUpperCase(),
+            showarrow: true,
+            arrowhead: 2,
+            arrowcolor: '#d32f2f',
+            font: { size: 16, color: '#d32f2f', weight: 'bold' },
+            ax: 0,
+            ay: -40
+        }));
 
         if (this.is3D) {
+            const cx = foundPoints.reduce((sum, p) => sum + p.x, 0) / foundPoints.length;
+            const cy = foundPoints.reduce((sum, p) => sum + p.y, 0) / foundPoints.length;
+            const cz = foundPoints.reduce((sum, p) => sum + p.z, 0) / foundPoints.length;
+            
+            let maxDist = 2.0;
+            foundPoints.forEach(p => {
+                const dist = Math.sqrt((p.x - cx)**2 + (p.y - cy)**2 + (p.z - cz)**2);
+                if (dist > maxDist) maxDist = dist;
+            });
+            const offset = Math.max(1, maxDist * 1.5);
+
             const update = {
                 'scene.camera': {
-                    center: { x: point.x, y: point.y, z: point.z },
-                    eye: { x: point.x + 1, y: point.y + 1, z: point.z + 1 }
+                    center: { x: cx, y: cy, z: cz },
+                    eye: { x: cx + offset, y: cy + offset, z: cz + offset }
                 }
             };
             window.Plotly.relayout(this.plotDiv, update);
         } else {
+            const xs = foundPoints.map(p => p.x);
+            const ys = foundPoints.map(p => p.y);
+            const minX = Math.min(...xs);
+            const maxX = Math.max(...xs);
+            const minY = Math.min(...ys);
+            const maxY = Math.max(...ys);
+
+            const spanX = Math.max(2.0, (maxX - minX) * 0.6 + 1.0);
+            const spanY = Math.max(2.0, (maxY - minY) * 0.6 + 1.0);
+            
+            const cx = (minX + maxX) / 2;
+            const cy = (minY + maxY) / 2;
+
             const update = {
-                'xaxis.range': [point.x - span, point.x + span],
-                'yaxis.range': [point.y - span, point.y + span],
-                'annotations': [{
-                    x: point.x,
-                    y: point.y,
-                    text: query.toUpperCase(),
-                    showarrow: true,
-                    arrowhead: 2,
-                    arrowcolor: '#d32f2f',
-                    font: { size: 16, color: '#d32f2f' },
-                    ax: 0,
-                    ay: -40
-                }]
+                'xaxis.range': [cx - spanX, cx + spanX],
+                'yaxis.range': [cy - spanY, cy + spanY],
+                'annotations': annotations
             };
             window.Plotly.relayout(this.plotDiv, update);
         }
