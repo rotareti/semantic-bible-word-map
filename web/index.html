@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semantic Bible Word Map</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Load Plotly for WebGL scatter plots (handles 10k+ points beautifully) -->
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Semantic Bible Word Map</h1>
+        <p>Explore the semantic proximity of words in the Berean Standard Bible</p>
+    </header>
+    <main>
+        <bible-word-map src-2d="../data/output/wordmap_2d.json" src-3d="../data/output/wordmap_3d.json"></bible-word-map>
+    </main>
+    <script src="bible-word-map.js" type="module"></script>
+</body>
+</html>
