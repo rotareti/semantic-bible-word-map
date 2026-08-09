@@ -1,4 +1,6 @@
 data/
+!data/output/
+!data/output/*.json
 !data/.gitkeep
 parser/target/
 pipeline/venv/
@@ -6,5 +8,6 @@ pipeline/__pycache__/
 *.json
 !package.json
 !package-lock.json
+!data/output/*.json
 .DS_Store
 web/data
