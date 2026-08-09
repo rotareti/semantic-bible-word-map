@@ -288,15 +288,12 @@ class BibleWordMap extends HTMLElement {
         if (!this.data2d || !this.data3d) return;
 
         if (this.is3D && !this.hasWebGL()) {
-            this.plotDiv.innerHTML = `
-                <div style="display:flex; height:100%; align-items:center; justify-content:center; flex-direction:column; color:#666;">
-                    <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-bottom: 16px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                    <h3 style="margin:0 0 8px 0; color:#333;">3D View Unavailable</h3>
-                    <p style="margin:0; text-align:center; max-width:400px;">Your browser's hardware acceleration (WebGL) is currently disabled or exhausted. Please use the 2D View, or restart your browser to restore graphics resources.</p>
-                </div>
-            `;
+            this.showWebGLFallback();
             return;
         }
+
+        // Clear any stale fallback UI from a previous failed 3D render
+        this.plotDiv.innerHTML = '';
 
         let data = this.is3D ? this.data3d : this.data2d;
         
