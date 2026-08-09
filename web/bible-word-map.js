@@ -192,6 +192,10 @@ class BibleWordMap extends HTMLElement {
             arrowhead: 2,
             arrowcolor: '#d32f2f',
             font: { size: 16, color: '#d32f2f', weight: 'bold' },
+            bgcolor: 'rgba(255, 255, 255, 0.9)',
+            bordercolor: '#d32f2f',
+            borderwidth: 1,
+            borderpad: 4,
             ax: 0,
             ay: -40
         }));
