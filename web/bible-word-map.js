@@ -217,7 +217,7 @@ class BibleWordMap extends HTMLElement {
             this.searchError.style.display = 'flex';
         }
 
-        const annotations = foundPoints.map(point => ({
+        let annotations = foundPoints.map(point => ({
             x: point.x,
             y: point.y,
             text: point.w.toUpperCase(),
@@ -232,6 +232,53 @@ class BibleWordMap extends HTMLElement {
             ax: 0,
             ay: -40
         }));
+
+        // True 100D Semantic Highlighting
+        if (foundPoints.length > 0 && foundPoints[0].v) {
+            const primaryPoint = foundPoints[0];
+            let similarities = data.map(d => ({
+                point: d,
+                sim: this.cosineSimilarity(primaryPoint.v, d.v)
+            }));
+            
+            // Exclude the searched word itself and get the top 5
+            similarities = similarities.filter(s => s.point.w !== primaryPoint.w);
+            similarities.sort((a, b) => b.sim - a.sim);
+            const top5 = similarities.slice(0, 5);
+            
+            top5.forEach(s => {
+                let anno = {
+                    x: s.point.x,
+                    y: s.point.y,
+                    text: s.point.w + " (" + (s.sim * 100).toFixed(0) + "%)",
+                    font: { size: 12, color: '#2563eb', weight: 'bold' },
+                    bgcolor: 'rgba(255, 255, 255, 0.95)',
+                    bordercolor: 'rgba(37, 99, 235, 0.5)',
+                    borderwidth: 1,
+                    borderpad: 4
+                };
+                
+                // Draw connecting lines in 2D using data coordinates
+                if (!this.is3D) {
+                    anno.ax = primaryPoint.x;
+                    anno.ay = primaryPoint.y;
+                    anno.axref = 'x';
+                    anno.ayref = 'y';
+                    anno.showarrow = true;
+                    anno.arrowhead = 0; // line only
+                    anno.arrowcolor = 'rgba(37, 99, 235, 0.3)';
+                    anno.arrowwidth = 2;
+                } else {
+                    // 3D doesn't support data-coordinate arrows easily, so just label them
+                    anno.showarrow = true;
+                    anno.arrowhead = 1;
+                    anno.arrowcolor = 'rgba(37, 99, 235, 0.5)';
+                    anno.ax = 0;
+                    anno.ay = -25;
+                }
+                annotations.push(anno);
+            });
+        }
 
         if (this.is3D) {
             const cx = foundPoints.reduce((sum, p) => sum + p.x, 0) / foundPoints.length;
@@ -273,6 +320,18 @@ class BibleWordMap extends HTMLElement {
             };
             window.Plotly.relayout(this.plotDiv, update);
         }
+    }
+
+    cosineSimilarity(vecA, vecB) {
+        if (!vecA || !vecB) return 0;
+        let dotProduct = 0, normA = 0, normB = 0;
+        for (let i = 0; i < vecA.length; i++) {
+            dotProduct += vecA[i] * vecB[i];
+            normA += vecA[i] * vecA[i];
+            normB += vecB[i] * vecB[i];
+        }
+        if (normA === 0 || normB === 0) return 0;
+        return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
     }
 
     hasWebGL() {

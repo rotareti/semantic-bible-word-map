@@ -64,12 +64,14 @@ if __name__ == '__main__':
     out_2d = []
     out_3d = []
     for i in range(len(words)):
+        v_rounded = [round(float(val), 3) for val in vectors[i]]
         out_2d.append({
             "w": words[i],
             "f": freqs[i],
             "t": testaments[i],
             "x": round(float(coords_2d[i][0]), 3),
-            "y": round(float(coords_2d[i][1]), 3)
+            "y": round(float(coords_2d[i][1]), 3),
+            "v": v_rounded
         })
         out_3d.append({
             "w": words[i],
@@ -77,7 +79,8 @@ if __name__ == '__main__':
             "t": testaments[i],
             "x": round(float(coords_3d[i][0]), 3),
             "y": round(float(coords_3d[i][1]), 3),
-            "z": round(float(coords_3d[i][2]), 3)
+            "z": round(float(coords_3d[i][2]), 3),
+            "v": v_rounded
         })
     print("Saving maps to data/output/...")
     with open('data/output/wordmap_2d.json', 'w') as f:
