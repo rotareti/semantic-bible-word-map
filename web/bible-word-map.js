@@ -4,6 +4,7 @@ class BibleWordMap extends HTMLElement {
         this.data2d = null;
         this.data3d = null;
         this.is3D = false;
+        this.testamentFilter = 'All'; // 'All', 'OT', 'NT'
         
         this.innerHTML = `
             <style>
@@ -85,8 +86,12 @@ class BibleWordMap extends HTMLElement {
                     <span id="search-error" class="error-msg">Word not found</span>
                 </div>
                 <div class="controls">
-                    <button id="btn-2d" class="active">2D View</button>
-                    <button id="btn-3d">3D View</button>
+                    <button id="btn-all" class="active">All</button>
+                    <button id="btn-ot">OT</button>
+                    <button id="btn-nt">NT</button>
+                    <span style="border-left: 1px solid #ccc; margin: 0 4px;"></span>
+                    <button id="btn-2d" class="active">2D</button>
+                    <button id="btn-3d">3D</button>
                 </div>
             </div>
             <div class="container">
@@ -101,12 +106,20 @@ class BibleWordMap extends HTMLElement {
         this.loadingDiv = this.querySelector('#loading');
         this.btn2d = this.querySelector('#btn-2d');
         this.btn3d = this.querySelector('#btn-3d');
+        this.btnAll = this.querySelector('#btn-all');
+        this.btnOt = this.querySelector('#btn-ot');
+        this.btnNt = this.querySelector('#btn-nt');
         this.searchInput = this.querySelector('#search-input');
         this.searchBtn = this.querySelector('#search-btn');
         this.searchError = this.querySelector('#search-error');
 
         this.btn2d.addEventListener('click', () => this.switchView(false));
         this.btn3d.addEventListener('click', () => this.switchView(true));
+        
+        this.btnAll.addEventListener('click', () => this.setFilter('All'));
+        this.btnOt.addEventListener('click', () => this.setFilter('OT'));
+        this.btnNt.addEventListener('click', () => this.setFilter('NT'));
+
         this.searchBtn.addEventListener('click', () => this.searchWord());
         this.searchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.searchWord();
@@ -148,7 +161,22 @@ class BibleWordMap extends HTMLElement {
         }
         this.renderPlot();
         
-        // Re-apply search zoom if a word is currently searched
+        if (this.searchInput.value) {
+            this.searchWord();
+        }
+    }
+
+    setFilter(filter) {
+        if (this.testamentFilter === filter) return;
+        this.testamentFilter = filter;
+        
+        [this.btnAll, this.btnOt, this.btnNt].forEach(btn => btn.classList.remove('active'));
+        if (filter === 'All') this.btnAll.classList.add('active');
+        if (filter === 'OT') this.btnOt.classList.add('active');
+        if (filter === 'NT') this.btnNt.classList.add('active');
+        
+        this.renderPlot();
+        
         if (this.searchInput.value) {
             this.searchWord();
         }
@@ -159,7 +187,12 @@ class BibleWordMap extends HTMLElement {
         this.searchError.style.display = 'none';
         if (rawQueries.length === 0) return;
 
-        const data = this.is3D ? this.data3d : this.data2d;
+        let data = this.is3D ? this.data3d : this.data2d;
+        if (this.testamentFilter === 'OT') {
+            data = data.filter(d => d.t === 'OT' || d.t === 'Both');
+        } else if (this.testamentFilter === 'NT') {
+            data = data.filter(d => d.t === 'NT' || d.t === 'Both');
+        }
         
         let foundPoints = [];
         let notFound = [];
@@ -245,7 +278,13 @@ class BibleWordMap extends HTMLElement {
     renderPlot() {
         if (!this.data2d || !this.data3d) return;
 
-        const data = this.is3D ? this.data3d : this.data2d;
+        let data = this.is3D ? this.data3d : this.data2d;
+        
+        if (this.testamentFilter === 'OT') {
+            data = data.filter(d => d.t === 'OT' || d.t === 'Both');
+        } else if (this.testamentFilter === 'NT') {
+            data = data.filter(d => d.t === 'NT' || d.t === 'Both');
+        }
         
         const words = data.map(d => d.w);
         const freqs = data.map(d => d.f);

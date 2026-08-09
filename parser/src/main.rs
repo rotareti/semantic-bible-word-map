@@ -20,10 +20,21 @@ fn main() -> io::Result<()> {
     }
 
     let out_path = processed_dir.join("text.txt");
+    let ot_path = processed_dir.join("ot_text.txt");
+    let nt_path = processed_dir.join("nt_text.txt");
+    
     let mut out_file = fs::File::create(out_path)?;
+    let mut ot_file = fs::File::create(ot_path)?;
+    let mut nt_file = fs::File::create(nt_path)?;
 
     // Regex to keep only alphabetic characters and spaces
     let re = Regex::new(r"[^a-zA-Z\s]").unwrap();
+
+    let nt_books = vec![
+        "MAT", "MRK", "LUK", "JHN", "ACT", "ROM", "1CO", "2CO", "GAL", "EPH", 
+        "PHP", "COL", "1TH", "2TH", "1TI", "2TI", "TIT", "PHM", "HEB", "JAS", 
+        "1PE", "2PE", "1JN", "2JN", "3JN", "JUD", "REV"
+    ];
 
     let mut paths: Vec<_> = fs::read_dir(raw_dir)?
         .filter_map(|entry| entry.ok())
@@ -33,6 +44,9 @@ fn main() -> io::Result<()> {
     paths.sort(); // Consistent order
 
     for path in paths {
+        let file_stem = path.file_stem().unwrap().to_str().unwrap().to_uppercase();
+        let is_nt = nt_books.contains(&file_stem.as_str());
+
         let content = fs::read_to_string(&path)?;
         let json: Value = serde_json::from_str(&content).expect("Invalid JSON");
         
@@ -46,6 +60,11 @@ fn main() -> io::Result<()> {
 
         if !final_text.is_empty() {
             writeln!(out_file, "{}", final_text)?;
+            if is_nt {
+                writeln!(nt_file, "{}", final_text)?;
+            } else {
+                writeln!(ot_file, "{}", final_text)?;
+            }
         }
     }
 

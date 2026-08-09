@@ -14,17 +14,39 @@ if __name__ == '__main__':
     model = Word2Vec.load(model_path)
     
     # Extract words, their frequencies, and their vectors
+    # Load OT and NT words to tag testaments
+    ot_words = set()
+    with open('data/processed/ot_text.txt', 'r') as f:
+        for line in f:
+            ot_words.update(line.split())
+            
+    nt_words = set()
+    with open('data/processed/nt_text.txt', 'r') as f:
+        for line in f:
+            nt_words.update(line.split())
+
     words = []
     vectors = []
     freqs = []
-    
-    # We only include words that appear at least min_count times (handled by Word2Vec naturally, but we can filter more if we want)
+    testaments = []
+
+    # We only include words that appear at least min_count times
     for word, vocab_obj in model.wv.key_to_index.items():
         count = model.wv.get_vecattr(word, "count")
-        if count >= 3: # Lowered to 3 to include words like 'propitiation'
+        if count >= 3:
             words.append(word)
             vectors.append(model.wv[word])
             freqs.append(int(count))
+            
+            # Determine testament presence
+            in_ot = word in ot_words
+            in_nt = word in nt_words
+            if in_ot and in_nt:
+                testaments.append("Both")
+            elif in_ot:
+                testaments.append("OT")
+            else:
+                testaments.append("NT")
             
     vectors = np.array(vectors)
     print(f"Generating map for {len(words)} words...")
@@ -45,17 +67,18 @@ if __name__ == '__main__':
         out_2d.append({
             "w": words[i],
             "f": freqs[i],
+            "t": testaments[i],
             "x": round(float(coords_2d[i][0]), 3),
             "y": round(float(coords_2d[i][1]), 3)
         })
         out_3d.append({
             "w": words[i],
             "f": freqs[i],
+            "t": testaments[i],
             "x": round(float(coords_3d[i][0]), 3),
             "y": round(float(coords_3d[i][1]), 3),
             "z": round(float(coords_3d[i][2]), 3)
         })
-        
     print("Saving maps to data/output/...")
     with open('data/output/wordmap_2d.json', 'w') as f:
         json.dump(out_2d, f, separators=(',', ':')) # Minified JSON
