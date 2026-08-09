@@ -223,12 +223,12 @@ class BibleWordMap extends HTMLElement {
             text: point.w.toUpperCase(),
             showarrow: true,
             arrowhead: 2,
-            arrowcolor: '#d32f2f',
-            font: { size: 16, color: '#d32f2f', weight: 'bold' },
-            bgcolor: 'rgba(255, 255, 255, 0.9)',
-            bordercolor: '#d32f2f',
+            arrowcolor: '#333333',
+            font: { size: 15, color: '#000000', weight: 'bold' },
+            bgcolor: 'rgba(255, 255, 255, 0.95)',
+            bordercolor: '#cccccc',
             borderwidth: 1,
-            borderpad: 4,
+            borderpad: 6,
             ax: 0,
             ay: -40
         }));
