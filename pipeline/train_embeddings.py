@@ -20,7 +20,7 @@ class MySentences:
                     yield words[i:i + chunk_size]
 
 if __name__ == '__main__':
-    data_path = '../data/processed/text.txt'
+    data_path = 'data/processed/text.txt'
     if not os.path.exists(data_path):
         print(f"Error: {data_path} not found.")
         exit(1)
@@ -28,8 +28,8 @@ if __name__ == '__main__':
     print("Training Word2Vec model...")
     sentences = MySentences(data_path)
     
-    # Train a Skip-gram model
-    model = Word2Vec(sentences=sentences, vector_size=100, window=5, min_count=5, workers=4, sg=1, epochs=10)
+    # Train a Skip-gram model (lower min_count to capture rare theological words)
+    model = Word2Vec(sentences=sentences, vector_size=100, window=5, min_count=2, workers=4, sg=1, epochs=10)
     
-    model.save('../data/processed/word2vec.model')
-    print("Model saved to ../data/processed/word2vec.model")
+    model.save('data/processed/word2vec.model')
+    print("Model saved to data/processed/word2vec.model")

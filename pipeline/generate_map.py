@@ -6,7 +6,7 @@ import os
 
 if __name__ == '__main__':
     print("Loading Word2Vec model...")
-    model_path = '../data/processed/word2vec.model'
+    model_path = 'data/processed/word2vec.model'
     if not os.path.exists(model_path):
         print("Model not found. Run train_embeddings.py first.")
         exit(1)
@@ -21,7 +21,7 @@ if __name__ == '__main__':
     # We only include words that appear at least min_count times (handled by Word2Vec naturally, but we can filter more if we want)
     for word, vocab_obj in model.wv.key_to_index.items():
         count = model.wv.get_vecattr(word, "count")
-        if count >= 10: # Only include words that appear at least 10 times to keep map clean
+        if count >= 3: # Lowered to 3 to include words like 'propitiation'
             words.append(word)
             vectors.append(model.wv[word])
             freqs.append(int(count))
@@ -57,10 +57,10 @@ if __name__ == '__main__':
         })
         
     print("Saving maps to data/output/...")
-    with open('../data/output/wordmap_2d.json', 'w') as f:
+    with open('data/output/wordmap_2d.json', 'w') as f:
         json.dump(out_2d, f, separators=(',', ':')) # Minified JSON
         
-    with open('../data/output/wordmap_3d.json', 'w') as f:
+    with open('data/output/wordmap_3d.json', 'w') as f:
         json.dump(out_3d, f, separators=(',', ':'))
         
     print("Maps saved successfully.")
