@@ -148,7 +148,7 @@ class BibleWordMap extends HTMLElement {
         }
     }
 
-    switchView(is3D) {
+    async switchView(is3D) {
         if (this.is3D === is3D) return;
         this.is3D = is3D;
         
@@ -159,14 +159,14 @@ class BibleWordMap extends HTMLElement {
             this.btn2d.classList.add('active');
             this.btn3d.classList.remove('active');
         }
-        this.renderPlot();
+        await this.renderPlot();
         
         if (this.searchInput.value) {
             this.searchWord();
         }
     }
 
-    setFilter(filter) {
+    async setFilter(filter) {
         if (this.testamentFilter === filter) return;
         this.testamentFilter = filter;
         
@@ -175,7 +175,7 @@ class BibleWordMap extends HTMLElement {
         if (filter === 'OT') this.btnOt.classList.add('active');
         if (filter === 'NT') this.btnNt.classList.add('active');
         
-        this.renderPlot();
+        await this.renderPlot();
         
         if (this.searchInput.value) {
             this.searchWord();
@@ -284,7 +284,7 @@ class BibleWordMap extends HTMLElement {
         }
     }
 
-    renderPlot() {
+    async renderPlot() {
         if (!this.data2d || !this.data3d) return;
 
         if (this.is3D && !this.hasWebGL()) {
@@ -292,7 +292,8 @@ class BibleWordMap extends HTMLElement {
             return;
         }
 
-        // Clear any stale fallback UI from a previous failed 3D render
+        // Clean up Plotly's internal state safely, then clear our DOM
+        try { window.Plotly.purge(this.plotDiv); } catch(e) {}
         this.plotDiv.innerHTML = '';
 
         let data = this.is3D ? this.data3d : this.data2d;
@@ -347,7 +348,7 @@ class BibleWordMap extends HTMLElement {
             yaxis: { showgrid: false, zeroline: false, visible: false }
         };
 
-        window.Plotly.newPlot(this.plotDiv, [trace], layout, {
+        return window.Plotly.newPlot(this.plotDiv, [trace], layout, {
             responsive: true, 
             displayModeBar: true, 
             displaylogo: false, 
@@ -371,6 +372,7 @@ class BibleWordMap extends HTMLElement {
     }
 
     showWebGLFallback() {
+        try { window.Plotly.purge(this.plotDiv); } catch(e) {}
         this.plotDiv.innerHTML = `
             <div style="display:flex; height:100%; align-items:center; justify-content:center; flex-direction:column; color:#666;">
                 <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-bottom: 16px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
