@@ -293,7 +293,7 @@ class BibleWordMap extends HTMLElement {
             return;
         }
 
-        let words = query.toLowerCase().split(/[\\s,]+/).filter(w => w);
+        let words = query.toLowerCase().split(/[\s,]+/).filter(w => w);
         let foundPoints = [];
         this.searchedWords = [];
         
@@ -496,7 +496,7 @@ class BibleWordMap extends HTMLElement {
         this.ctx.scale(this.transform.k, this.transform.k);
         
         this.links.forEach(l => {
-            if (!l.source.x || !l.target.x) return;
+            if (l.source.x === undefined || l.target.x === undefined) return;
             this.ctx.beginPath();
             this.ctx.moveTo(l.source.x, l.source.y);
             this.ctx.lineTo(l.target.x, l.target.y);
@@ -507,30 +507,44 @@ class BibleWordMap extends HTMLElement {
         
         this.nodes.forEach(n => {
             this.ctx.beginPath();
-            let r = n.isKw ? 12 : (this.isSearchMode ? 5 : Math.max(1, Math.min(6, Math.log(n.f || 3))));
-            let scaledR = r / Math.pow(this.transform.k, 0.4); 
             
-            this.ctx.arc(n.x, n.y, scaledR, 0, 2 * Math.PI);
-            this.ctx.fillStyle = n.isKw ? this.colors.nodeKw : this.colors.nodeDef;
+            // Calculate a fixed screen pixel radius, then scale it into canvas coordinates
+            let pixelR = 3;
+            if (n.isKw) pixelR = 12;
+            else if (this.isSearchMode) pixelR = Math.max(3, n.sim * 10);
+            else pixelR = Math.max(1.5, Math.min(8, Math.log(n.f || 3) * 1.2));
+            
+            let canvasR = pixelR / this.transform.k;
+            this.ctx.arc(n.x, n.y, canvasR, 0, 2 * Math.PI);
+            
+            let fill = this.colors.nodeDef;
+            if (n.isKw) {
+                fill = this.colors.nodeKw;
+            } else if (this.isSearchMode) {
+                fill = d3.interpolateViridis(n.sim);
+            } else {
+                fill = d3.interpolateViridis(Math.min(1, Math.max(0, Math.log(n.f || 1) / 10)));
+            }
+            this.ctx.fillStyle = fill;
             
             if (this.hoveredNode === n) {
                 this.ctx.fillStyle = this.colors.nodeHover;
-                this.ctx.shadowBlur = 10;
+                this.ctx.shadowBlur = 10 / this.transform.k;
                 this.ctx.shadowColor = this.colors.nodeHover;
             } else {
                 this.ctx.shadowBlur = 0;
             }
             this.ctx.fill();
             
-            let showLabel = n.isKw || this.hoveredNode === n || (this.transform.k > 3 && !this.isSearchMode) || (this.isSearchMode && this.transform.k > 1.5);
+            let showLabel = n.isKw || this.hoveredNode === n || this.isSearchMode || (this.transform.k > 4);
             if (showLabel) {
                 this.ctx.shadowBlur = 0;
-                let fontSize = Math.max(10, 14 / this.transform.k);
+                let fontSize = (n.isKw ? 14 : 11) / this.transform.k;
                 this.ctx.font = `${fontSize}px ${this.colors.font}`;
                 this.ctx.fillStyle = this.colors.text;
                 this.ctx.textAlign = "center";
                 this.ctx.textBaseline = "top";
-                this.ctx.fillText(n.w, n.x, n.y + scaledR + (2 / this.transform.k));
+                this.ctx.fillText(n.w, n.x, n.y + canvasR + (2 / this.transform.k));
             }
         });
         
@@ -578,7 +592,7 @@ class BibleWordMap extends HTMLElement {
         if (this.hoveredNode) {
             let currentSearch = this.searchInput.value.trim();
             if (currentSearch) {
-                let words = currentSearch.split(/[\\s,]+/).filter(w => w);
+                let words = currentSearch.split(/[\s,]+/).filter(w => w);
                 if (!words.includes(this.hoveredNode.w)) {
                     this.searchInput.value = currentSearch + " " + this.hoveredNode.w;
                 }
