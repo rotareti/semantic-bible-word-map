@@ -583,22 +583,32 @@ class BibleWordMap extends HTMLElement {
                 this.draw();
             });
             
-        // Iterate and add nodes over time
-        let batchSize = 3;
-        let index = 0;
+        this.pendingNodes = [];
+        this.enqueueNodes(otherNodes);
+    }
+    
+    enqueueNodes(nodesToSpawn) {
+        if (!this.pendingNodes) this.pendingNodes = [];
+        this.pendingNodes.push(...nodesToSpawn);
+        this.pendingNodes.sort((a, b) => b.sim - a.sim);
         
+        if (this.spawnInterval) return; // already running
+        
+        let batchSize = 3;
         this.spawnInterval = setInterval(() => {
-            if (index >= otherNodes.length) {
+            if (this.pendingNodes.length === 0) {
                 clearInterval(this.spawnInterval);
+                this.spawnInterval = null;
                 return;
             }
             
-            let batch = otherNodes.slice(index, index + batchSize);
-            index += batchSize;
+            let batch = this.pendingNodes.splice(0, batchSize);
             
             batch.forEach(n => {
-                n.x = (Math.random() - 0.5) * 10;
-                n.y = (Math.random() - 0.5) * 10;
+                let cw = this.logicalWidth || 800;
+                let ch = this.logicalHeight || 600;
+                n.x = this.transform.invertX(cw/2) + (Math.random() - 0.5) * 10;
+                n.y = this.transform.invertY(ch/2) + (Math.random() - 0.5) * 10;
                 this.nodes.push(n);
                 
                 let nodeLinks = this.allSearchLinks.filter(l => l.source === n.id);
@@ -610,6 +620,112 @@ class BibleWordMap extends HTMLElement {
             this.simulation.alpha(0.3).restart();
             
         }, 50); 
+    }
+
+    async addKeyword(newWord) {
+        if (!this.isSearchMode) {
+            this.searchInput.value = newWord;
+            this.searchWord();
+            return;
+        }
+        
+        if (this.searchedWords.includes(newWord)) return; // already added
+        
+        let p = this.data2d.find(d => d.w === newWord);
+        if (!p) return;
+        
+        this.searchedWords.push(newWord);
+        this.searchInput.value = this.searchedWords.join(" ");
+        
+        // Find similarities for this new keyword
+        let similarities = this.data2d.map(d => ({
+            point: d,
+            sim: this.cosineSimilarity(p.v, d.v)
+        }));
+        similarities.sort((a, b) => b.sim - a.sim);
+        const topWords = similarities.slice(0, 100);
+        
+        let queuedNeighbors = [];
+        
+        // 1. Convert new keyword to a node and add directly to this.nodes
+        let kwNode = this.nodes.find(n => n.id === newWord);
+        if (!kwNode) {
+            let cw = this.logicalWidth || 800;
+            let ch = this.logicalHeight || 600;
+            kwNode = {
+                id: p.w, w: p.w, f: p.f, sim: 1, sourceKw: p.w, isKw: true,
+                x: this.transform.invertX(cw/2) + (Math.random()-0.5)*10, 
+                y: this.transform.invertY(ch/2) + (Math.random()-0.5)*10,
+                v: p.v, normSim: 1
+            };
+            this.nodes.push(kwNode);
+            this.allSearchNodes.push(kwNode);
+        } else {
+            kwNode.isKw = true;
+            kwNode.sim = 1;
+            kwNode.normSim = 1;
+            
+            // If it was in pendingNodes, remove it so it's not spawned twice
+            this.pendingNodes = this.pendingNodes.filter(n => n.id !== newWord);
+        }
+        
+        // 2. Link this new KW to all existing KWs
+        let existingKws = this.nodes.filter(n => n.isKw && n.id !== newWord);
+        existingKws.forEach(ek => {
+            let sim = this.cosineSimilarity(kwNode.v, ek.v);
+            let link = { source: kwNode.id, target: ek.id, type: 'kw-kw', sim: sim };
+            this.allSearchLinks.push(link);
+            this.links.push(link);
+        });
+        
+        // 3. Process new neighbors
+        topWords.forEach(s => {
+            let existingAllNode = this.allSearchNodes.find(n => n.id === s.point.w);
+            if (!existingAllNode) {
+                let neighborNode = {
+                    id: s.point.w, w: s.point.w, f: s.point.f, sim: s.sim, 
+                    sourceKw: p.w, isKw: false, x: 0, y: 0, v: s.point.v,
+                    normSim: s.sim
+                };
+                this.allSearchNodes.push(neighborNode);
+                queuedNeighbors.push(neighborNode);
+            } else {
+                if (s.sim > existingAllNode.sim) {
+                    existingAllNode.sim = s.sim;
+                    existingAllNode.sourceKw = p.w;
+                }
+            }
+            
+            let myVerses = this.wordToVerses ? (this.wordToVerses[s.point.w] || []) : [];
+            let swVerses = this.wordToVerses ? (this.wordToVerses[p.w] || []) : [];
+            let intersection = myVerses.filter(vId => swVerses.includes(vId));
+            
+            let linkType = intersection.length > 0 ? 'direct' : 'indirect';
+            this.allSearchLinks.push({
+                source: s.point.w, target: p.w, type: linkType, intersection: intersection, sim: s.sim
+            });
+            
+            // If neighbor is ALREADY active, we must push the new link to the simulation links
+            let activeNode = this.nodes.find(n => n.id === s.point.w);
+            if (activeNode) {
+                let newLinks = this.allSearchLinks.filter(l => l.source === s.point.w && l.target === p.w);
+                this.links.push(...newLinks);
+            }
+        });
+        
+        // Re-normalize all similarities
+        let minSim = d3.min(this.allSearchNodes.filter(n => !n.isKw), n => n.sim) || 0;
+        let maxSim = d3.max(this.allSearchNodes.filter(n => !n.isKw), n => n.sim) || 1;
+        this.allSearchNodes.forEach(n => {
+            if (!n.isKw) n.normSim = (n.sim - minSim) / (maxSim - minSim || 1);
+        });
+        
+        // 4. Restart simulation to accept the new links and KW node
+        this.simulation.nodes(this.nodes);
+        this.simulation.force("link").links(this.links);
+        this.simulation.alpha(0.5).restart();
+        
+        this.enqueueNodes(queuedNeighbors);
     }
 
     updateDynamicZoom() {
@@ -830,16 +946,7 @@ class BibleWordMap extends HTMLElement {
         }
 
         if (this.hoveredNode) {
-            let currentSearch = this.searchInput.value.trim();
-            if (currentSearch) {
-                let words = currentSearch.split(/[\s,]+/).filter(w => w);
-                if (!words.includes(this.hoveredNode.w)) {
-                    this.searchInput.value = currentSearch + " " + this.hoveredNode.w;
-                }
-            } else {
-                this.searchInput.value = this.hoveredNode.w;
-            }
-            this.searchWord();
+            this.addKeyword(this.hoveredNode.w);
         }
     }
 
