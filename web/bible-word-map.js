@@ -544,7 +544,7 @@ class BibleWordMap extends HTMLElement {
             }
             this.ctx.fill();
             
-            let showLabel = n.isKw || this.hoveredNode === n || this.isSearchMode || (this.transform.k > 4);
+            let showLabel = this.isSearchMode || this.hoveredNode === n;
             if (showLabel) {
                 this.ctx.shadowBlur = 0;
                 let fontSize = (n.isKw ? 14 : 11) / this.transform.k;
