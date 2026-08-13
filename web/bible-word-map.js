@@ -287,7 +287,7 @@ class BibleWordMap extends HTMLElement {
         new ResizeObserver(() => this.resize()).observe(this.canvas.parentElement);
         
         this.zoom = d3.zoom()
-            .scaleExtent([0.05, 500])
+            .scaleExtent([0.05, 100000])
             .on("zoom", (e) => {
                 this.transform = e.transform;
                 this.draw();
@@ -629,7 +629,7 @@ class BibleWordMap extends HTMLElement {
                 visibleNodesCount++;
             }
         });
-        let autoShowLabels = visibleNodesCount < 150;
+        let autoShowLabels = visibleNodesCount < 250;
         
         
         this.ctx.save();
