@@ -2,8 +2,6 @@ class BibleWordMap extends HTMLElement {
     constructor() {
         super();
         this.data2d = null;
-        this.data3d = null;
-        this.is3D = false;
         this.testamentFilter = 'All'; // 'All', 'OT', 'NT'
         
         this.innerHTML = `
@@ -40,7 +38,7 @@ class BibleWordMap extends HTMLElement {
                     border-radius: 4px;
                     outline: none;
                     font-size: 1rem;
-                    width: 200px;
+                    width: 300px;
                 }
                 input[type="text"]:focus {
                     border-color: #2563eb;
@@ -71,6 +69,11 @@ class BibleWordMap extends HTMLElement {
                     transform: translate(-50%, -50%);
                     font-size: 1.2rem;
                     color: #666;
+                    background: rgba(255, 255, 255, 0.9);
+                    padding: 20px;
+                    border-radius: 8px;
+                    border: 1px solid #ccc;
+                    z-index: 10;
                 }
                 .error-msg {
                     color: #d32f2f;
@@ -81,7 +84,7 @@ class BibleWordMap extends HTMLElement {
             </style>
             <div class="top-bar">
                 <div class="search-box">
-                    <input type="text" id="search-input" placeholder="Search for a word..." />
+                    <input type="text" id="search-input" placeholder="Search for words (e.g. God Son Spirit)..." />
                     <button id="search-btn">Find</button>
                     <span id="search-error" class="error-msg">Word not found</span>
                 </div>
@@ -89,9 +92,6 @@ class BibleWordMap extends HTMLElement {
                     <button id="btn-all" class="active">All</button>
                     <button id="btn-ot">OT</button>
                     <button id="btn-nt">NT</button>
-                    <span style="border-left: 1px solid #ccc; margin: 0 4px;"></span>
-                    <button id="btn-2d" class="active">2D</button>
-                    <button id="btn-3d">3D</button>
                 </div>
             </div>
             <div class="container">
@@ -104,8 +104,6 @@ class BibleWordMap extends HTMLElement {
     async connectedCallback() {
         this.plotDiv = this.querySelector('#plot');
         this.loadingDiv = this.querySelector('#loading');
-        this.btn2d = this.querySelector('#btn-2d');
-        this.btn3d = this.querySelector('#btn-3d');
         this.btnAll = this.querySelector('#btn-all');
         this.btnOt = this.querySelector('#btn-ot');
         this.btnNt = this.querySelector('#btn-nt');
@@ -113,9 +111,6 @@ class BibleWordMap extends HTMLElement {
         this.searchBtn = this.querySelector('#search-btn');
         this.searchError = this.querySelector('#search-error');
 
-        this.btn2d.addEventListener('click', () => this.switchView(false));
-        this.btn3d.addEventListener('click', () => this.switchView(true));
-        
         this.btnAll.addEventListener('click', () => this.setFilter('All'));
         this.btnOt.addEventListener('click', () => this.setFilter('OT'));
         this.btnNt.addEventListener('click', () => this.setFilter('NT'));
@@ -133,36 +128,11 @@ class BibleWordMap extends HTMLElement {
     async loadData() {
         try {
             const src2d = this.getAttribute('src-2d');
-            const src3d = this.getAttribute('src-3d');
-            
-            const [res2d, res3d] = await Promise.all([
-                fetch(src2d).then(r => r.json()),
-                fetch(src3d).then(r => r.json())
-            ]);
-            
+            const res2d = await fetch(src2d).then(r => r.json());
             this.data2d = res2d;
-            this.data3d = res3d;
         } catch (e) {
             console.error("Failed to load map data:", e);
             this.loadingDiv.innerHTML = `<span style="color:red;">Error loading data. Run 'make serve' from root to fix paths.</span>`;
-        }
-    }
-
-    async switchView(is3D) {
-        if (this.is3D === is3D) return;
-        this.is3D = is3D;
-        
-        if (this.is3D) {
-            this.btn3d.classList.add('active');
-            this.btn2d.classList.remove('active');
-        } else {
-            this.btn2d.classList.add('active');
-            this.btn3d.classList.remove('active');
-        }
-        await this.renderPlot();
-        
-        if (this.searchInput.value) {
-            this.searchWord();
         }
     }
 
@@ -175,10 +145,10 @@ class BibleWordMap extends HTMLElement {
         if (filter === 'OT') this.btnOt.classList.add('active');
         if (filter === 'NT') this.btnNt.classList.add('active');
         
-        await this.renderPlot();
-        
-        if (this.searchInput.value) {
+        if (this.isSearchMode) {
             this.searchWord();
+        } else {
+            await this.renderPlot();
         }
     }
 
@@ -188,65 +158,93 @@ class BibleWordMap extends HTMLElement {
         
         if (rawQueries.length === 0) {
             this.isSearchMode = false;
+            this.searchedWords = [];
             this.renderPlot();
             return;
         }
 
-        let data = this.is3D ? this.data3d : this.data2d;
+        let data = this.data2d;
         if (this.testamentFilter === 'OT') {
             data = data.filter(d => d.t === 'OT' || d.t === 'Both');
         } else if (this.testamentFilter === 'NT') {
             data = data.filter(d => d.t === 'NT' || d.t === 'Both');
         }
         
-        let pointIndex = data.findIndex(d => d.w === rawQueries[0]);
-        if (pointIndex === -1) {
-            this.searchError.textContent = "Word not found";
+        let foundPoints = [];
+        let notFound = [];
+
+        rawQueries.forEach(q => {
+            const pointIndex = data.findIndex(d => d.w === q);
+            if (pointIndex !== -1) {
+                foundPoints.push(data[pointIndex]);
+            } else {
+                notFound.push(q);
+            }
+        });
+
+        if (foundPoints.length === 0) {
+            this.searchError.textContent = "Word(s) not found";
             this.searchError.style.display = 'flex';
             return;
         }
 
-        const primaryPoint = data[pointIndex];
+        if (notFound.length > 0) {
+            this.searchError.textContent = `Not found: ${notFound.join(', ')}`;
+            this.searchError.style.display = 'flex';
+        }
+
+        this.searchedWords = foundPoints.map(p => p.w);
         
-        // Show loading state for local projection
         this.loadingDiv.textContent = "Generating semantic neighborhood...";
         this.loadingDiv.style.display = 'block';
         this.plotDiv.style.opacity = '0.5';
 
-        // Use setTimeout to allow UI to update loading state before blocking CPU
         setTimeout(async () => {
-            let similarities = data.map(d => ({
-                point: d,
-                sim: this.cosineSimilarity(primaryPoint.v, d.v)
-            }));
-            
-            similarities.sort((a, b) => b.sim - a.sim);
-            // Get top 150 closest words for a localized semantic map
-            const topWords = similarities.slice(0, 150);
-            const vectors = topWords.map(s => s.point.v);
+            let topWordsSet = new Map();
+
+            foundPoints.forEach(primaryPoint => {
+                let similarities = data.map(d => ({
+                    point: d,
+                    sim: this.cosineSimilarity(primaryPoint.v, d.v)
+                }));
+                
+                similarities.sort((a, b) => b.sim - a.sim);
+                
+                const topWords = similarities.slice(0, 100);
+                topWords.forEach(s => {
+                    if (!topWordsSet.has(s.point.w)) {
+                        topWordsSet.set(s.point.w, { point: s.point, maxSim: s.sim });
+                    } else {
+                        let existing = topWordsSet.get(s.point.w);
+                        if (s.sim > existing.maxSim) {
+                            existing.maxSim = s.sim;
+                        }
+                    }
+                });
+            });
+
+            const finalTopWords = Array.from(topWordsSet.values());
+            const vectors = finalTopWords.map(s => s.point.v);
 
             try {
-                // Run UMAP directly in the browser for just these 150 words
                 const umap = new window.UMAP({
                     nNeighbors: 15,
                     minDist: 0.1,
-                    nComponents: this.is3D ? 3 : 2,
+                    nComponents: 2,
                     nEpochs: 200
                 });
 
                 const embedding = umap.fit(vectors);
 
-                this.localSearchData = topWords.map((s, i) => {
+                this.localSearchData = finalTopWords.map((s, i) => {
                     let newPoint = {...s.point};
                     newPoint.x = embedding[i][0];
                     newPoint.y = embedding[i][1];
-                    if (this.is3D) newPoint.z = embedding[i][2];
-                    newPoint.sim = s.sim; // save similarity for visual scaling
+                    newPoint.sim = s.maxSim;
                     return newPoint;
                 });
 
                 this.isSearchMode = true;
-                this.searchedWord = primaryPoint.w;
                 
             } catch (err) {
                 console.error("UMAP error:", err);
@@ -272,24 +270,9 @@ class BibleWordMap extends HTMLElement {
         return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
     }
 
-    hasWebGL() {
-        try {
-            const canvas = document.createElement('canvas');
-            return !!(window.WebGLRenderingContext && (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
-        } catch (e) {
-            return false;
-        }
-    }
-
     async renderPlot() {
-        if (!this.data2d || !this.data3d) return;
+        if (!this.data2d) return;
 
-        if (this.is3D && !this.hasWebGL()) {
-            this.showWebGLFallback();
-            return;
-        }
-
-        // Clean up Plotly's internal state safely, then clear our DOM
         try { window.Plotly.purge(this.plotDiv); } catch(e) {}
         this.plotDiv.innerHTML = '';
 
@@ -297,7 +280,7 @@ class BibleWordMap extends HTMLElement {
         if (this.isSearchMode && this.localSearchData) {
             data = this.localSearchData;
         } else {
-            data = this.is3D ? this.data3d : this.data2d;
+            data = this.data2d;
             if (this.testamentFilter === 'OT') {
                 data = data.filter(d => d.t === 'OT' || d.t === 'Both');
             } else if (this.testamentFilter === 'NT') {
@@ -312,11 +295,11 @@ class BibleWordMap extends HTMLElement {
         let textFonts = { size: [], color: [] };
 
         if (this.isSearchMode) {
-            sizes = data.map(d => d.w === this.searchedWord ? 25 : Math.max(8, d.sim * 18));
-            colors = data.map(d => d.w === this.searchedWord ? '#d32f2f' : d.sim);
+            sizes = data.map(d => this.searchedWords.includes(d.w) ? 25 : Math.max(8, d.sim * 18));
+            colors = data.map(d => this.searchedWords.includes(d.w) ? '#d32f2f' : d.sim);
             
             data.forEach(d => {
-                if (d.w === this.searchedWord) {
+                if (this.searchedWords.includes(d.w)) {
                     textFonts.size.push(16);
                     textFonts.color.push('#d32f2f');
                 } else {
@@ -333,7 +316,7 @@ class BibleWordMap extends HTMLElement {
             x: data.map(d => d.x),
             y: data.map(d => d.y),
             text: words,
-            mode: (this.isSearchMode && !this.is3D) ? 'markers+text' : 'markers',
+            mode: this.isSearchMode ? 'markers+text' : 'markers',
             textposition: 'top center',
             hovertemplate: '<b>%{text}</b><extra></extra>',
             hoverlabel: { font: { size: 16 } },
@@ -349,15 +332,8 @@ class BibleWordMap extends HTMLElement {
             }
         };
 
-        if (this.isSearchMode && !this.is3D) {
+        if (this.isSearchMode) {
             trace.textfont = textFonts;
-        }
-
-        if (this.is3D) {
-            trace.type = 'scatter3d';
-            trace.z = data.map(d => d.z);
-        } else {
-            trace.type = 'scatter';
         }
 
         const layout = {
@@ -365,11 +341,6 @@ class BibleWordMap extends HTMLElement {
             hovermode: 'closest',
             paper_bgcolor: 'rgba(0,0,0,0)',
             plot_bgcolor: 'rgba(0,0,0,0)',
-            scene: {
-                xaxis: { showticklabels: false, title: '' },
-                yaxis: { showticklabels: false, title: '' },
-                zaxis: { showticklabels: false, title: '' }
-            },
             xaxis: { showgrid: false, zeroline: false, visible: false },
             yaxis: { showgrid: false, zeroline: false, visible: false }
         };
@@ -380,32 +351,9 @@ class BibleWordMap extends HTMLElement {
             displaylogo: false, 
             scrollZoom: true,
             modeBarButtonsToRemove: ['lasso2d', 'select2d']
-        }).then(() => {
-            if (this.is3D) {
-                // Plotly might swallow WebGL errors and log warnings without throwing. 
-                // We can check if it actually created the webgl canvas.
-                const glCanvas = this.plotDiv.querySelector('.gl-canvas');
-                if (!glCanvas) {
-                    this.showWebGLFallback();
-                }
-            }
         }).catch(err => {
             console.error("Plotly rendering error:", err);
-            if (this.is3D) {
-                this.showWebGLFallback();
-            }
         });
-    }
-
-    showWebGLFallback() {
-        try { window.Plotly.purge(this.plotDiv); } catch(e) {}
-        this.plotDiv.innerHTML = `
-            <div style="display:flex; height:100%; align-items:center; justify-content:center; flex-direction:column; color:#666;">
-                <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-bottom: 16px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                <h3 style="margin:0 0 8px 0; color:#333;">3D View Unavailable</h3>
-                <p style="margin:0; text-align:center; max-width:400px;">Your browser's hardware acceleration (WebGL) is currently disabled or exhausted. Please use the 2D View, or restart your browser to restore graphics resources.</p>
-            </div>
-        `;
     }
 }
 

@@ -56,13 +56,7 @@ if __name__ == '__main__':
     reducer_2d = umap.UMAP(n_components=2, random_state=42, n_neighbors=15, min_dist=0.1)
     coords_2d = reducer_2d.fit_transform(vectors)
     
-    # Generate 3D map
-    print("Running UMAP (3D)...")
-    reducer_3d = umap.UMAP(n_components=3, random_state=42, n_neighbors=15, min_dist=0.1)
-    coords_3d = reducer_3d.fit_transform(vectors)
-    
     out_2d = []
-    out_3d = []
     for i in range(len(words)):
         v_rounded = [round(float(val), 3) for val in vectors[i]]
         out_2d.append({
@@ -73,20 +67,8 @@ if __name__ == '__main__':
             "y": round(float(coords_2d[i][1]), 3),
             "v": v_rounded
         })
-        out_3d.append({
-            "w": words[i],
-            "f": freqs[i],
-            "t": testaments[i],
-            "x": round(float(coords_3d[i][0]), 3),
-            "y": round(float(coords_3d[i][1]), 3),
-            "z": round(float(coords_3d[i][2]), 3),
-            "v": v_rounded
-        })
-    print("Saving maps to data/output/...")
+    print("Saving map to data/output/...")
     with open('data/output/wordmap_2d.json', 'w') as f:
         json.dump(out_2d, f, separators=(',', ':')) # Minified JSON
         
-    with open('data/output/wordmap_3d.json', 'w') as f:
-        json.dump(out_3d, f, separators=(',', ':'))
-        
-    print("Maps saved successfully.")
+    print("Map saved successfully.")
