@@ -336,21 +336,28 @@ class BibleWordMap extends HTMLElement {
                     
                     if (this.wordToVerses && this.verses) {
                         let myVerses = this.wordToVerses[d.w] || [];
-                        let linkedVerseIds = new Set();
+                        let tooltipContent = "";
+                        let hasAnyLinks = false;
+                        
                         this.searchedWords.forEach(sw => {
                             let swVerses = this.wordToVerses[sw] || [];
-                            myVerses.forEach(vId => {
-                                if (swVerses.includes(vId)) linkedVerseIds.add(vId);
-                            });
+                            let intersection = myVerses.filter(vId => swVerses.includes(vId));
+                            if (intersection.length > 0) {
+                                hasAnyLinks = true;
+                                let linkedVerses = intersection.map(id => this.verses[id]);
+                                tooltipContent += `<b>Links to '${sw}':</b><br>`;
+                                if (linkedVerses.length > 3) {
+                                    tooltipContent += linkedVerses.slice(0, 3).join("<br>") + `<br><i>...and ${linkedVerses.length - 3} more</i><br><br>`;
+                                } else {
+                                    tooltipContent += linkedVerses.join("<br>") + "<br><br>";
+                                }
+                            }
                         });
                         
-                        let linkedVerses = Array.from(linkedVerseIds).map(id => this.verses[id]);
-                        if (linkedVerses.length === 0) {
-                            customdata.push("No direct verses linking these words");
-                        } else if (linkedVerses.length > 5) {
-                            customdata.push(linkedVerses.slice(0, 5).join("<br>") + `<br><i>...and ${linkedVerses.length - 5} more</i>`);
+                        if (!hasAnyLinks) {
+                            customdata.push("<i>No direct verse links</i>");
                         } else {
-                            customdata.push(linkedVerses.join("<br>"));
+                            customdata.push(tooltipContent.trim());
                         }
                     } else {
                         customdata.push("");
@@ -390,6 +397,43 @@ class BibleWordMap extends HTMLElement {
             trace.textfont = textFonts;
         }
 
+        let lineX = [];
+        let lineY = [];
+        
+        if (this.isSearchMode && this.wordToVerses) {
+            data.forEach(d => {
+                if (this.searchedWords.includes(d.w)) return;
+                
+                let myVerses = this.wordToVerses[d.w] || [];
+                if (myVerses.length === 0) return;
+                
+                this.searchedWords.forEach(sw => {
+                    let swData = data.find(p => p.w === sw);
+                    if (!swData) return;
+                    
+                    let swVerses = this.wordToVerses[sw] || [];
+                    let hasIntersection = myVerses.some(vId => swVerses.includes(vId));
+                    
+                    if (hasIntersection) {
+                        lineX.push(d.x, swData.x, null);
+                        lineY.push(d.y, swData.y, null);
+                    }
+                });
+            });
+        }
+        
+        const lineTrace = {
+            x: lineX,
+            y: lineY,
+            mode: 'lines',
+            line: {
+                color: 'rgba(150, 150, 150, 0.2)',
+                width: 1
+            },
+            hoverinfo: 'none',
+            showlegend: false
+        };
+
         const layout = {
             margin: { t: 0, r: 0, b: 0, l: 0 },
             hovermode: 'closest',
@@ -398,10 +442,11 @@ class BibleWordMap extends HTMLElement {
             plot_bgcolor: 'rgba(0,0,0,0)',
             font: { color: '#333333' },
             xaxis: { showgrid: false, zeroline: false, visible: false },
-            yaxis: { showgrid: false, zeroline: false, visible: false }
+            yaxis: { showgrid: false, zeroline: false, visible: false },
+            showlegend: false
         };
 
-        return window.Plotly.newPlot(this.plotDiv, [trace], layout, {
+        return window.Plotly.newPlot(this.plotDiv, [lineTrace, trace], layout, {
             responsive: true, 
             displayModeBar: true, 
             displaylogo: false, 
