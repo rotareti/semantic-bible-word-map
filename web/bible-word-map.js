@@ -108,7 +108,6 @@ class BibleWordMap extends HTMLElement {
                     <button id="btn-all" class="active">All</button>
                     <button id="btn-ot">OT</button>
                     <button id="btn-nt">NT</button>
-                    <button id="theme-btn" aria-label="Toggle Theme" style="font-size: 1.2rem; padding: 4px 12px;">🌓</button>
                 </div>
             </div>
             <div class="container">
@@ -124,7 +123,6 @@ class BibleWordMap extends HTMLElement {
         this.btnAll = this.querySelector('#btn-all');
         this.btnOt = this.querySelector('#btn-ot');
         this.btnNt = this.querySelector('#btn-nt');
-        this.themeBtn = this.querySelector('#theme-btn');
         this.searchInput = this.querySelector('#search-input');
         this.searchBtn = this.querySelector('#search-btn');
         this.searchError = this.querySelector('#search-error');
@@ -136,26 +134,6 @@ class BibleWordMap extends HTMLElement {
         this.searchBtn.addEventListener('click', () => this.searchWord());
         this.searchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.searchWord();
-        });
-        
-        const setTheme = (theme) => {
-            document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('theme', theme);
-            if (this.data2d) this.renderPlot();
-        };
-
-        // Initialize theme
-        const savedTheme = localStorage.getItem('theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (savedTheme) {
-            setTheme(savedTheme);
-        } else if (prefersDark) {
-            setTheme('dark');
-        }
-
-        this.themeBtn.addEventListener('click', () => {
-            const current = document.documentElement.getAttribute('data-theme');
-            setTheme(current === 'dark' ? 'light' : 'dark');
         });
 
         await this.loadData();
@@ -354,8 +332,7 @@ class BibleWordMap extends HTMLElement {
                     customdata.push("Key Search Word");
                 } else {
                     textFonts.size.push(Math.max(9, Math.floor(d.sim * 14)));
-                    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-                    textFonts.color.push(isDark ? '#aaaaaa' : '#666666');
+                    textFonts.color.push('#666666');
                     
                     if (this.wordToVerses && this.verses) {
                         let myVerses = this.wordToVerses[d.w] || [];
@@ -386,8 +363,6 @@ class BibleWordMap extends HTMLElement {
             customdata = words.map(() => "");
         }
         
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-
         const trace = {
             x: data.map(d => d.x),
             y: data.map(d => d.y),
@@ -398,14 +373,14 @@ class BibleWordMap extends HTMLElement {
             hovertemplate: this.isSearchMode 
                 ? '<b>%{text}</b><br><br>%{customdata}<extra></extra>' 
                 : '<b>%{text}</b><extra></extra>',
-            hoverlabel: { font: { size: 14, color: isDark ? '#ffffff' : '#000000' }, bgcolor: isDark ? '#1e1e1e' : '#ffffff', bordercolor: isDark ? '#444444' : '#dddddd' },
+            hoverlabel: { font: { size: 14 }, bgcolor: '#ffffff' },
             marker: {
                 size: sizes,
                 color: colors,
-                colorscale: isDark ? 'Plasma' : 'Viridis',
+                colorscale: 'Viridis',
                 opacity: 0.7,
                 line: {
-                    color: 'rgba(255, 255, 255, 0.2)',
+                    color: 'rgba(255, 255, 255, 0.5)',
                     width: 0.5
                 }
             }
@@ -421,7 +396,7 @@ class BibleWordMap extends HTMLElement {
             dragmode: 'pan', // Better for mobile touch
             paper_bgcolor: 'rgba(0,0,0,0)',
             plot_bgcolor: 'rgba(0,0,0,0)',
-            font: { color: isDark ? '#e0e0e0' : '#333333' },
+            font: { color: '#333333' },
             xaxis: { showgrid: false, zeroline: false, visible: false },
             yaxis: { showgrid: false, zeroline: false, visible: false }
         };
