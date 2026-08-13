@@ -680,18 +680,27 @@ class BibleWordMap extends HTMLElement {
             let showLabel = (this.isSearchMode || n.isKw || autoShowLabels) && this.hoveredNode !== n;
             if (showLabel) {
                 this.ctx.shadowBlur = 0;
-                let fontSize = (n.isKw ? 14 : 11) / this.transform.k;
+                
+                this.ctx.save();
+                this.ctx.translate(n.x, n.y);
+                this.ctx.scale(1 / this.transform.k, 1 / this.transform.k);
+                
+                let fontSize = n.isKw ? 14 : 11;
                 this.ctx.font = `${fontSize}px ${this.colors.font}`;
                 this.ctx.textAlign = "center";
                 this.ctx.textBaseline = "top";
                 
+                let yOffset = (canvasR * this.transform.k) + 2;
+                
                 // Draw a solid halo background for the text to improve readability over layered lines/dots
-                this.ctx.lineWidth = 3 / this.transform.k;
+                this.ctx.lineWidth = 3;
                 this.ctx.strokeStyle = this.colors.bg;
-                this.ctx.strokeText(n.w, n.x, n.y + canvasR + (2 / this.transform.k));
+                this.ctx.strokeText(n.w, 0, yOffset);
                 
                 this.ctx.fillStyle = this.colors.text;
-                this.ctx.fillText(n.w, n.x, n.y + canvasR + (2 / this.transform.k));
+                this.ctx.fillText(n.w, 0, yOffset);
+                
+                this.ctx.restore();
             }
         });
         

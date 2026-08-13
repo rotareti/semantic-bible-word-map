@@ -1,5 +1,9 @@
 # Changelog
 
+## [4.0.26] - 2026-08-13
+### Fixed
+- Fixed text rendering issues at extreme zoom scales by temporarily reverting the canvas context transform to draw standard-sized fonts at screen coordinates.
+
 ## [4.0.24] - 2026-08-13
 ### Added
 - Auto-show labels when zoomed deep into the global map (when < 150 words are visible on screen).
