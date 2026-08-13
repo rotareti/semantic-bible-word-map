@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.1.0] - 2026-08-13
+### Added
+- **True Physics Iterative Engine:** Rebuilt the visualization engine to compute graph topology dynamically. Node placement is now dictated directly by genuine 100D cosine similarities between words, creating a highly realistic mapping of semantic space.
+- **Dynamic Organic Spawning:** Word clusters are now iterated and injected smoothly over time, allowing users to watch the semantic galaxy build itself as related words lock into their gravitational orbits.
+- **Dynamic Camera Tracking:** The view automatically zooms and pans to keep growing clusters perfectly centered and scaled within the window.
+- **Additive Interactive Search:** Clicking nodes in the active canvas now preserves the physics simulation and additively pulls in new sets of neighbors and links without resetting the state, allowing infinite map "walking".
+
 ## [4.0.26] - 2026-08-13
 ### Fixed
 - Fixed text rendering issues at extreme zoom scales by temporarily reverting the canvas context transform to draw standard-sized fonts at screen coordinates.
