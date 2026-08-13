@@ -330,11 +330,27 @@ class BibleWordMap extends HTMLElement {
     resize() {
         let rect = this.canvas.parentElement.getBoundingClientRect();
         let dpr = window.devicePixelRatio || 1;
+        
+        let oldW = this.logicalWidth || rect.width;
+        let oldH = this.logicalHeight || rect.height;
+        
         this.canvas.width = rect.width * dpr;
         this.canvas.height = rect.height * dpr;
         this.ctx.scale(dpr, dpr);
+        
         this.logicalWidth = rect.width;
         this.logicalHeight = rect.height;
+        
+        // Re-center the transform by the delta change in the canvas size
+        if (this.transform && (oldW !== rect.width || oldH !== rect.height)) {
+            let dx = (rect.width - oldW) / 2;
+            let dy = (rect.height - oldH) / 2;
+            
+            // translate() operates in scaled coordinates, so we divide by k
+            this.transform = this.transform.translate(dx / this.transform.k, dy / this.transform.k);
+            d3.select(this.canvas).call(this.zoom.transform, this.transform);
+        }
+        
         this.draw();
     }
 
