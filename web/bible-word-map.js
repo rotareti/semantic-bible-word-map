@@ -54,7 +54,7 @@ class BibleWordMap extends HTMLElement {
                     padding-bottom: 12px;
                     flex-wrap: wrap;
                 }
-                .bwm-search-controls, .bwm-filters {
+                .bwm-search-controls {
                     display: flex;
                     gap: 8px;
                     flex-wrap: wrap;
@@ -151,11 +151,6 @@ class BibleWordMap extends HTMLElement {
                         <button class="bwm-btn" id="bwm-btn-search">Search</button>
                         <span id="bwm-error" class="bwm-error">Word not found</span>
                     </div>
-                    <div class="bwm-filters">
-                        <button class="bwm-btn active" id="bwm-btn-all" data-filter="All">All</button>
-                        <button class="bwm-btn" id="bwm-btn-ot" data-filter="OT">OT</button>
-                        <button class="bwm-btn" id="bwm-btn-nt" data-filter="NT">NT</button>
-                    </div>
                 </div>
                 <div class="bwm-canvas-container">
                     <canvas></canvas>
@@ -178,8 +173,6 @@ class BibleWordMap extends HTMLElement {
         this.searchInput = this.querySelector('#bwm-search');
         this.searchBtn = this.querySelector('#bwm-btn-search');
         this.errorSpan = this.querySelector('#bwm-error');
-        
-        this.filterBtns = this.querySelectorAll('.bwm-filters .bwm-btn');
         
         this.setupEvents();
         this.loadData();
@@ -206,16 +199,6 @@ class BibleWordMap extends HTMLElement {
             if (e.key === 'Enter') this.searchWord();
         });
 
-        // Filters
-        this.filterBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                this.filterBtns.forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                this.testamentFilter = e.target.getAttribute('data-filter');
-                if (!this.isSearchMode) this.buildAllWordsGraph();
-            });
-        });
-        
         // Canvas interactivity
         new ResizeObserver(() => this.resize()).observe(this.canvas.parentElement);
         
@@ -454,11 +437,6 @@ class BibleWordMap extends HTMLElement {
         if (this.simulation) this.simulation.stop();
         
         let filteredData = this.data2d;
-        if (this.testamentFilter === 'OT') {
-            filteredData = filteredData.filter(d => d.t === 'OT' || d.t === 'Both');
-        } else if (this.testamentFilter === 'NT') {
-            filteredData = filteredData.filter(d => d.t === 'NT' || d.t === 'Both');
-        }
         
         let minX = d3.min(filteredData, d => d.x);
         let maxX = d3.max(filteredData, d => d.x);
