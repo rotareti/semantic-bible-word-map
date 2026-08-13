@@ -2,506 +2,654 @@ class BibleWordMap extends HTMLElement {
     constructor() {
         super();
         this.data2d = null;
-        this.testamentFilter = 'All'; // 'All', 'OT', 'NT'
+        this.verses = null;
+        this.wordToVerses = null;
+        this.testamentFilter = 'All';
+        this.isSearchMode = false;
+        this.searchedWords = [];
+        this.nodes = [];
+        this.links = [];
+        this.transform = d3.zoomIdentity;
+        this.hoveredNode = null;
+        this.tooltipTimeout = null;
+        this.simulation = null;
         
         this.innerHTML = `
             <style>
-                bible-word-map {
+                :host {
+                    --bwm-bg: #ffffff;
+                    --bwm-text: #333333;
+                    --bwm-border: #e5e7eb;
+                    --bwm-node-default: #888888;
+                    --bwm-node-kw: #d32f2f;
+                    --bwm-node-hover: #2563eb;
+                    --bwm-link-direct: rgba(40, 167, 69, 0.6);
+                    --bwm-link-indirect: rgba(150, 150, 150, 0.2);
+                    --bwm-tooltip-bg: rgba(255, 255, 255, 0.95);
+                    --bwm-tooltip-text: #111111;
+                    --bwm-font: system-ui, -apple-system, sans-serif;
+                }
+                @media (prefers-color-scheme: dark) {
+                    :host {
+                        --bwm-bg: #121212;
+                        --bwm-text: #e0e0e0;
+                        --bwm-border: #333333;
+                        --bwm-node-default: #999999;
+                        --bwm-tooltip-bg: rgba(30, 30, 30, 0.95);
+                        --bwm-tooltip-text: #ffffff;
+                    }
+                }
+                .bwm-container {
                     display: flex;
                     flex-direction: column;
                     width: 100%;
                     height: 80vh;
-                    font-family: system-ui, -apple-system, sans-serif;
+                    font-family: var(--bwm-font);
+                    color: var(--bwm-text);
                 }
-                .container {
-                    flex: 1;
-                    width: 100%;
-                    border: 1px solid var(--border-color);
-                    border-radius: 8px;
-                    overflow: hidden;
-                    background: var(--bg-color);
-                    position: relative;
-                }
-                .top-bar {
+                .bwm-top-bar {
                     display: flex;
                     justify-content: space-between;
-                    align-items: center;
+                    gap: 10px;
                     padding-bottom: 12px;
                     flex-wrap: wrap;
-                    gap: 10px;
                 }
-                .search-box, .controls {
+                .bwm-search-controls, .bwm-filters {
                     display: flex;
                     gap: 8px;
                     flex-wrap: wrap;
                 }
-                .search-box {
+                .bwm-search-controls input {
                     flex: 1;
-                    min-width: 250px;
-                }
-                input[type="text"] {
-                    flex: 1;
+                    min-width: 200px;
                     padding: 8px 12px;
-                    border: 1px solid var(--border-color);
+                    border: 1px solid var(--bwm-border);
                     border-radius: 4px;
+                    background: var(--bwm-bg);
+                    color: var(--bwm-text);
                     outline: none;
-                    font-size: 1rem;
-                    background: var(--input-bg);
-                    color: var(--text-color);
+                    font-family: var(--bwm-font);
                 }
-                input[type="text"]:focus {
-                    border-color: #2563eb;
+                .bwm-search-controls input:focus {
+                    border-color: var(--bwm-node-hover);
                 }
-                button {
-                    cursor: pointer;
+                .bwm-btn {
                     padding: 8px 16px;
-                    border: 1px solid var(--border-color);
-                    background: var(--btn-bg);
-                    color: var(--text-color);
+                    border: 1px solid var(--bwm-border);
                     border-radius: 4px;
+                    background: var(--bwm-bg);
+                    color: var(--bwm-text);
+                    cursor: pointer;
                     font-weight: 600;
                     transition: all 0.2s;
+                    font-family: var(--bwm-font);
                 }
-                button:hover { background: var(--btn-hover); }
-                button.active {
-                    background: #2563eb;
+                .bwm-btn:hover {
+                    background: var(--bwm-border);
+                }
+                .bwm-btn.active {
+                    background: var(--bwm-node-hover);
                     color: white;
-                    border-color: #1d4ed8;
+                    border-color: var(--bwm-node-hover);
                 }
-                #plot {
-                    width: 100%;
-                    height: 100%;
-                }
-                .loading {
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    font-size: 1.2rem;
-                    color: var(--text-muted);
-                    background: var(--card-bg);
-                    padding: 20px;
-                    border-radius: 8px;
-                    border: 1px solid var(--border-color);
-                    z-index: 10;
-                    box-shadow: var(--shadow);
-                }
-                .error-msg {
+                .bwm-error {
                     color: #d32f2f;
                     font-size: 0.9rem;
                     display: none;
                     align-items: center;
-                    width: 100%;
                 }
-                @media (max-width: 600px) {
-                    .top-bar { flex-direction: column; align-items: stretch; }
-                    .controls { justify-content: center; }
+                .bwm-canvas-container {
+                    flex: 1;
+                    position: relative;
+                    border: 1px solid var(--bwm-border);
+                    border-radius: 8px;
+                    overflow: hidden;
+                    background: var(--bwm-bg);
+                }
+                canvas {
+                    width: 100%;
+                    height: 100%;
+                    display: block;
+                    cursor: grab;
+                }
+                canvas:active {
+                    cursor: grabbing;
+                }
+                .bwm-tooltip {
+                    position: absolute;
+                    background: var(--bwm-tooltip-bg);
+                    color: var(--bwm-tooltip-text);
+                    padding: 12px;
+                    border-radius: 6px;
+                    border: 1px solid var(--bwm-border);
+                    pointer-events: none;
+                    opacity: 0;
+                    transition: opacity 0.2s;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    font-size: 0.9em;
+                    max-width: 300px;
+                    z-index: 100;
+                }
+                .bwm-loading {
+                    position: absolute;
+                    top: 50%; left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: var(--bwm-tooltip-bg);
+                    color: var(--bwm-tooltip-text);
+                    padding: 15px 25px;
+                    border-radius: 8px;
+                    border: 1px solid var(--bwm-border);
+                    font-weight: bold;
+                    display: none;
                 }
             </style>
-            <div class="top-bar">
-                <div class="search-box">
-                    <input type="text" id="search-input" placeholder="Search for words (e.g. Father Son Spirit)..." />
-                    <button id="search-btn">Search</button>
-                    <span id="search-error" class="error-msg">Word not found</span>
+            <div class="bwm-container">
+                <div class="bwm-top-bar">
+                    <div class="bwm-search-controls">
+                        <input type="text" id="bwm-search" placeholder="Search for words (e.g. Father Son Spirit)">
+                        <button class="bwm-btn" id="bwm-btn-search">Search</button>
+                        <span id="bwm-error" class="bwm-error">Word not found</span>
+                    </div>
+                    <div class="bwm-filters">
+                        <button class="bwm-btn active" id="bwm-btn-all" data-filter="All">All</button>
+                        <button class="bwm-btn" id="bwm-btn-ot" data-filter="OT">OT</button>
+                        <button class="bwm-btn" id="bwm-btn-nt" data-filter="NT">NT</button>
+                    </div>
                 </div>
-                <div class="controls">
-                    <button id="btn-all" class="active">All</button>
-                    <button id="btn-ot">OT</button>
-                    <button id="btn-nt">NT</button>
+                <div class="bwm-canvas-container">
+                    <canvas></canvas>
+                    <div class="bwm-tooltip"></div>
+                    <div class="bwm-loading">Loading Data...</div>
                 </div>
-            </div>
-            <div class="container">
-                <div id="loading" class="loading">Loading Map Data...</div>
-                <div id="plot"></div>
             </div>
         `;
     }
 
-    async connectedCallback() {
-        this.plotDiv = this.querySelector('#plot');
-        this.loadingDiv = this.querySelector('#loading');
-        this.btnAll = this.querySelector('#btn-all');
-        this.btnOt = this.querySelector('#btn-ot');
-        this.btnNt = this.querySelector('#btn-nt');
-        this.searchInput = this.querySelector('#search-input');
-        this.searchBtn = this.querySelector('#search-btn');
-        this.searchError = this.querySelector('#search-error');
+    connectedCallback() {
+        this.src2d = this.getAttribute('src-2d');
+        this.srcVerses = this.getAttribute('src-verses');
+        
+        this.canvas = this.querySelector('canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.tooltip = this.querySelector('.bwm-tooltip');
+        this.loading = this.querySelector('.bwm-loading');
+        
+        this.searchInput = this.querySelector('#bwm-search');
+        this.searchBtn = this.querySelector('#bwm-btn-search');
+        this.errorSpan = this.querySelector('#bwm-error');
+        
+        this.filterBtns = this.querySelectorAll('.bwm-filters .bwm-btn');
+        
+        this.setupEvents();
+        this.loadData();
+    }
+    
+    updateColors() {
+        const styles = getComputedStyle(this);
+        this.colors = {
+            bg: styles.getPropertyValue('--bwm-bg').trim() || '#ffffff',
+            text: styles.getPropertyValue('--bwm-text').trim() || '#333333',
+            nodeDef: styles.getPropertyValue('--bwm-node-default').trim() || '#888888',
+            nodeKw: styles.getPropertyValue('--bwm-node-kw').trim() || '#d32f2f',
+            nodeHover: styles.getPropertyValue('--bwm-node-hover').trim() || '#2563eb',
+            linkDir: styles.getPropertyValue('--bwm-link-direct').trim() || 'rgba(40, 167, 69, 0.6)',
+            linkIndir: styles.getPropertyValue('--bwm-link-indirect').trim() || 'rgba(150, 150, 150, 0.2)',
+            font: styles.getPropertyValue('--bwm-font').trim() || 'sans-serif'
+        };
+    }
 
-        this.btnAll.addEventListener('click', () => this.setFilter('All'));
-        this.btnOt.addEventListener('click', () => this.setFilter('OT'));
-        this.btnNt.addEventListener('click', () => this.setFilter('NT'));
-
+    setupEvents() {
+        // Search
         this.searchBtn.addEventListener('click', () => this.searchWord());
         this.searchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.searchWord();
         });
 
-        await this.loadData();
-        this.loadingDiv.style.display = 'none';
-        this.renderPlot();
+        // Filters
+        this.filterBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.filterBtns.forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                this.testamentFilter = e.target.getAttribute('data-filter');
+                if (!this.isSearchMode) this.buildAllWordsGraph();
+            });
+        });
+        
+        // Canvas interactivity
+        new ResizeObserver(() => this.resize()).observe(this.canvas.parentElement);
+        
+        this.zoom = d3.zoom()
+            .scaleExtent([0.1, 10])
+            .on("zoom", (e) => {
+                this.transform = e.transform;
+                this.draw();
+            });
+            
+        d3.select(this.canvas).call(this.zoom);
+        
+        // Tooltip handlers
+        d3.select(this.canvas).on("mousemove", (e) => this.handleMouseMove(e));
+        d3.select(this.canvas).on("click", (e) => this.handleClick(e));
+        
+        this.canvas.addEventListener('mouseleave', () => this.hideTooltip());
+        this.tooltip.addEventListener('mouseenter', () => clearTimeout(this.tooltipTimeout));
+        this.tooltip.addEventListener('mouseleave', () => {
+            this.tooltip.style.opacity = '0';
+            this.tooltip.style.pointerEvents = 'none';
+            this.hoveredNode = null;
+            this.draw();
+        });
+    }
+
+    resize() {
+        let rect = this.canvas.parentElement.getBoundingClientRect();
+        let dpr = window.devicePixelRatio || 1;
+        this.canvas.width = rect.width * dpr;
+        this.canvas.height = rect.height * dpr;
+        this.ctx.scale(dpr, dpr);
+        this.logicalWidth = rect.width;
+        this.logicalHeight = rect.height;
+        this.draw();
     }
 
     async loadData() {
+        if (!this.src2d) return;
+        this.loading.style.display = 'block';
         try {
-            const src2d = this.getAttribute('src-2d');
-            const srcVerses = this.getAttribute('src-verses');
+            const res2d = await fetch(this.src2d);
+            this.data2d = await res2d.json();
             
-            const [res2d, resVerses] = await Promise.all([
-                fetch(src2d).then(r => r.json()),
-                srcVerses ? fetch(srcVerses).then(r => r.json()) : Promise.resolve(null)
-            ]);
-            
-            this.data2d = res2d;
-            if (resVerses) {
-                this.verses = resVerses.verses;
-                this.wordToVerses = resVerses.words;
+            if (this.srcVerses) {
+                const resV = await fetch(this.srcVerses);
+                const vData = await resV.json();
+                this.verses = vData.verses;
+                this.wordToVerses = vData.words;
             }
+            
+            this.buildAllWordsGraph();
         } catch (e) {
-            console.error("Failed to load map data:", e);
-            this.loadingDiv.innerHTML = `<span style="color:red;">Error loading data. Run 'make serve' from root to fix paths.</span>`;
+            console.error("Error loading Bible Word Map data", e);
+        } finally {
+            this.loading.style.display = 'none';
         }
     }
 
-    async setFilter(filter) {
-        if (this.testamentFilter === filter) return;
-        this.testamentFilter = filter;
-        
-        [this.btnAll, this.btnOt, this.btnNt].forEach(btn => btn.classList.remove('active'));
-        if (filter === 'All') this.btnAll.classList.add('active');
-        if (filter === 'OT') this.btnOt.classList.add('active');
-        if (filter === 'NT') this.btnNt.classList.add('active');
-        
-        if (this.isSearchMode) {
-            this.searchWord();
-        } else {
-            await this.renderPlot();
-        }
-    }
-
-    searchWord() {
-        const rawQueries = this.searchInput.value.toLowerCase().split(/[\s,]+/).filter(w => w);
-        this.searchError.style.display = 'none';
-        
-        if (rawQueries.length === 0) {
-            this.isSearchMode = false;
-            this.searchedWords = [];
-            this.renderPlot();
-            return;
-        }
-
-        let data = this.data2d;
-        if (this.testamentFilter === 'OT') {
-            data = data.filter(d => d.t === 'OT' || d.t === 'Both');
-        } else if (this.testamentFilter === 'NT') {
-            data = data.filter(d => d.t === 'NT' || d.t === 'Both');
-        }
-        
-        let foundPoints = [];
-        let notFound = [];
-
-        rawQueries.forEach(q => {
-            const pointIndex = data.findIndex(d => d.w === q);
-            if (pointIndex !== -1) {
-                foundPoints.push(data[pointIndex]);
-            } else {
-                notFound.push(q);
-            }
-        });
-
-        if (foundPoints.length === 0) {
-            this.searchError.textContent = "Word(s) not found";
-            this.searchError.style.display = 'flex';
-            return;
-        }
-
-        if (notFound.length > 0) {
-            this.searchError.textContent = `Not found: ${notFound.join(', ')}`;
-            this.searchError.style.display = 'flex';
-        }
-
-        this.searchedWords = foundPoints.map(p => p.w);
-        
-        this.loadingDiv.textContent = "Generating semantic neighborhood...";
-        this.loadingDiv.style.display = 'block';
-        this.plotDiv.style.opacity = '0.5';
-
-        setTimeout(async () => {
-            let topWordsSet = new Map();
-
-            foundPoints.forEach(primaryPoint => {
-                let similarities = data.map(d => ({
-                    point: d,
-                    sim: this.cosineSimilarity(primaryPoint.v, d.v)
-                }));
-                
-                similarities.sort((a, b) => b.sim - a.sim);
-                
-                const topWords = similarities.slice(0, 100);
-                topWords.forEach(s => {
-                    if (!topWordsSet.has(s.point.w)) {
-                        topWordsSet.set(s.point.w, { point: s.point, maxSim: s.sim, sourceKw: primaryPoint.w });
-                    } else {
-                        let existing = topWordsSet.get(s.point.w);
-                        if (s.sim > existing.maxSim) {
-                            existing.maxSim = s.sim;
-                            existing.sourceKw = primaryPoint.w;
-                        }
-                    }
-                });
-            });
-
-            const finalTopWords = Array.from(topWordsSet.values());
-            const vectors = finalTopWords.map(s => s.point.v);
-
-            try {
-                const umap = new window.UMAP({
-                    nNeighbors: 15,
-                    minDist: 0.1,
-                    nComponents: 2,
-                    nEpochs: 200
-                });
-
-                const embedding = umap.fit(vectors);
-
-                this.localSearchData = finalTopWords.map((s, i) => {
-                    let newPoint = {...s.point};
-                    newPoint.x = embedding[i][0];
-                    newPoint.y = embedding[i][1];
-                    newPoint.sim = s.maxSim;
-                    newPoint.sourceKw = s.sourceKw;
-                    return newPoint;
-                });
-
-                this.isSearchMode = true;
-                
-            } catch (err) {
-                console.error("UMAP error:", err);
-                this.searchError.textContent = "Error generating neighborhood";
-                this.searchError.style.display = 'flex';
-            }
-
-            this.loadingDiv.style.display = 'none';
-            this.plotDiv.style.opacity = '1.0';
-            await this.renderPlot();
-        }, 50);
-    }
-
-    cosineSimilarity(vecA, vecB) {
-        if (!vecA || !vecB) return 0;
-        let dotProduct = 0, normA = 0, normB = 0;
-        for (let i = 0; i < vecA.length; i++) {
-            dotProduct += vecA[i] * vecB[i];
-            normA += vecA[i] * vecA[i];
-            normB += vecB[i] * vecB[i];
+    cosineSimilarity(a, b) {
+        let dot = 0, normA = 0, normB = 0;
+        for (let i = 0; i < a.length; i++) {
+            dot += a[i] * b[i];
+            normA += a[i] * a[i];
+            normB += b[i] * b[i];
         }
         if (normA === 0 || normB === 0) return 0;
-        return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+        return dot / (Math.sqrt(normA) * Math.sqrt(normB));
     }
 
-    async renderPlot() {
-        if (!this.data2d) return;
+    async searchWord() {
+        let query = this.searchInput.value.trim();
+        if (!query) {
+            this.isSearchMode = false;
+            this.buildAllWordsGraph();
+            return;
+        }
 
-        try { window.Plotly.purge(this.plotDiv); } catch(e) {}
-        this.plotDiv.innerHTML = '';
-
-        let data = [];
-        if (this.isSearchMode && this.localSearchData) {
-            data = this.localSearchData;
-        } else {
-            data = this.data2d;
-            if (this.testamentFilter === 'OT') {
-                data = data.filter(d => d.t === 'OT' || d.t === 'Both');
-            } else if (this.testamentFilter === 'NT') {
-                data = data.filter(d => d.t === 'NT' || d.t === 'Both');
+        let words = query.toLowerCase().split(/[\\s,]+/).filter(w => w);
+        let foundPoints = [];
+        this.searchedWords = [];
+        
+        for (let w of words) {
+            let p = this.data2d.find(d => d.w === w);
+            if (p) {
+                foundPoints.push(p);
+                this.searchedWords.push(w);
             }
         }
         
-        const words = data.map(d => d.w);
-        const freqs = data.map(d => d.f);
-        
-        let sizes, colors;
-        let textFonts = { size: [], color: [] };
-        let customdata = [];
-
-        if (this.isSearchMode) {
-            sizes = data.map(d => this.searchedWords.includes(d.w) ? 25 : Math.max(8, d.sim * 18));
-            colors = data.map(d => this.searchedWords.includes(d.w) ? '#d32f2f' : d.sim);
-            
-            data.forEach(d => {
-                if (this.searchedWords.includes(d.w)) {
-                    textFonts.size.push(16);
-                    textFonts.color.push('#d32f2f');
-                    customdata.push("Key Search Word");
-                } else {
-                    textFonts.size.push(Math.max(9, Math.floor(d.sim * 14)));
-                    textFonts.color.push('#666666');
-                    
-                    if (this.wordToVerses && this.verses) {
-                        let myVerses = this.wordToVerses[d.w] || [];
-                        let tooltipContent = "";
-                        let hasAnyLinks = false;
-                        
-                        this.searchedWords.forEach(sw => {
-                            let swVerses = this.wordToVerses[sw] || [];
-                            let intersection = myVerses.filter(vId => swVerses.includes(vId));
-                            if (intersection.length > 0) {
-                                hasAnyLinks = true;
-                                let linkedVerses = intersection.map(id => {
-                                    let verseData = this.verses[id];
-                                    if (!verseData) return "";
-                                    return verseData.split('|')[0];
-                                });
-                                
-                                tooltipContent += `<b style="font-size: 1.1em;">Links to '${sw}':</b><br>`;
-                                if (linkedVerses.length > 3) {
-                                    tooltipContent += linkedVerses.slice(0, 3).join("<br>") + `<br><i style="color: #666;">...and ${linkedVerses.length - 3} more</i><br><br>`;
-                                } else {
-                                    tooltipContent += linkedVerses.join("<br>") + "<br><br>";
-                                }
-                            }
-                        });
-                        
-                        if (!hasAnyLinks) {
-                            customdata.push("<i>No direct verse links</i>");
-                        } else {
-                            customdata.push(tooltipContent.trim());
-                        }
-                    } else {
-                        customdata.push("");
-                    }
-                }
-            });
-        } else {
-            sizes = freqs.map(f => Math.max(5, Math.min(25, Math.log(f) * 2)));
-            colors = sizes;
-            customdata = words.map(() => "");
+        if (foundPoints.length === 0) {
+            this.errorSpan.style.display = 'flex';
+            this.errorSpan.textContent = 'None of the words were found.';
+            setTimeout(() => this.errorSpan.style.display = 'none', 3000);
+            return;
         }
-        
-        const trace = {
-            x: data.map(d => d.x),
-            y: data.map(d => d.y),
-            text: words,
-            customdata: customdata,
-            mode: this.isSearchMode ? 'markers+text' : 'markers',
-            textposition: 'top center',
-            hovertemplate: this.isSearchMode 
-                ? '<b>%{text}</b><br><br>%{customdata}<extra></extra>' 
-                : '<b>%{text}</b><extra></extra>',
-            hoverlabel: { font: { size: 14 }, bgcolor: '#ffffff' },
-            marker: {
-                size: sizes,
-                color: colors,
-                colorscale: 'Viridis',
-                opacity: 0.7,
-                line: {
-                    color: 'rgba(255, 255, 255, 0.5)',
-                    width: 0.5
-                }
+
+        let topWordsSet = new Map();
+
+        foundPoints.forEach((p) => {
+            if (!topWordsSet.has(p.w)) {
+                topWordsSet.set(p.w, { point: p, maxSim: 1, sourceKw: p.w });
             }
-        };
-
-        if (this.isSearchMode) {
-            trace.textfont = textFonts;
-        }
-
-        let lineXLinked = [];
-        let lineYLinked = [];
-        let lineXUnlinked = [];
-        let lineYUnlinked = [];
-        
-        if (this.isSearchMode && this.localSearchData) {
-            data.forEach(d => {
-                if (this.searchedWords.includes(d.w) || !d.sourceKw) return;
-                
-                let myVerses = this.wordToVerses ? (this.wordToVerses[d.w] || []) : [];
-                let linkedToSourceKw = false;
-                
-                // Draw green lines to all searched words that share verses
-                this.searchedWords.forEach(sw => {
-                    let swData = data.find(p => p.w === sw);
-                    if (!swData) return;
-                    
-                    let swVerses = this.wordToVerses ? (this.wordToVerses[sw] || []) : [];
-                    let hasIntersection = myVerses.some(vId => swVerses.includes(vId));
-                    
-                    if (hasIntersection) {
-                        lineXLinked.push(d.x, swData.x, null);
-                        lineYLinked.push(d.y, swData.y, null);
-                        if (sw === d.sourceKw) {
-                            linkedToSourceKw = true;
-                        }
-                    }
-                });
-                
-                // If it doesn't share verses with its semantic parent, draw a grey line to the parent
-                if (!linkedToSourceKw) {
-                    let sourceKwData = data.find(p => p.w === d.sourceKw);
-                    if (sourceKwData) {
-                        lineXUnlinked.push(d.x, sourceKwData.x, null);
-                        lineYUnlinked.push(d.y, sourceKwData.y, null);
-                    }
-                }
-            });
-        }
-        
-        const lineTraceLinked = {
-            x: lineXLinked,
-            y: lineYLinked,
-            mode: 'lines',
-            line: {
-                color: 'rgba(40, 167, 69, 0.2)', // Lightened green
-                width: 1
-            },
-            hoverinfo: 'none',
-            showlegend: false
-        };
-        
-        const lineTraceUnlinked = {
-            x: lineXUnlinked,
-            y: lineYUnlinked,
-            mode: 'lines',
-            line: {
-                color: 'rgba(150, 150, 150, 0.15)', // Faint grey for semantic-only links
-                width: 1
-            },
-            hoverinfo: 'none',
-            showlegend: false
-        };
-
-        const layout = {
-            margin: { t: 0, r: 0, b: 0, l: 0 },
-            hovermode: 'closest',
-            dragmode: 'pan', // Better for mobile touch
-            paper_bgcolor: 'rgba(0,0,0,0)',
-            plot_bgcolor: 'rgba(0,0,0,0)',
-            font: { color: '#333333' },
-            xaxis: { showgrid: false, zeroline: false, visible: false },
-            yaxis: { showgrid: false, zeroline: false, visible: false },
-            showlegend: false
-        };
-
-        return window.Plotly.newPlot(this.plotDiv, [lineTraceUnlinked, lineTraceLinked, trace], layout, {
-            responsive: true, 
-            displayModeBar: true, 
-            displaylogo: false, 
-            scrollZoom: true,
-            modeBarButtonsToRemove: ['lasso2d', 'select2d']
-        }).then((plot) => {
-            plot.on('plotly_click', (clickData) => {
-                if (clickData.points && clickData.points.length > 0) {
-                    const clickedWord = clickData.points[0].text;
-                    let currentVal = this.searchInput.value.trim();
-                    let words = currentVal.toLowerCase().split(/[\s,]+/).filter(w => w);
-                    
-                    if (!words.includes(clickedWord.toLowerCase())) {
-                        this.searchInput.value = (currentVal ? currentVal + ' ' : '') + clickedWord;
-                        this.searchWord();
-                    }
-                }
-            });
-        }).catch(err => {
-            console.error("Plotly rendering error:", err);
         });
+
+        foundPoints.forEach(primaryPoint => {
+            let similarities = this.data2d.map(d => ({
+                point: d,
+                sim: this.cosineSimilarity(primaryPoint.v, d.v)
+            }));
+            
+            similarities.sort((a, b) => b.sim - a.sim);
+            
+            const topWords = similarities.slice(0, 100);
+            topWords.forEach(s => {
+                if (!topWordsSet.has(s.point.w)) {
+                    topWordsSet.set(s.point.w, { point: s.point, maxSim: s.sim, sourceKw: primaryPoint.w });
+                } else {
+                    let existing = topWordsSet.get(s.point.w);
+                    if (s.sim > existing.maxSim) {
+                        existing.maxSim = s.sim;
+                        existing.sourceKw = primaryPoint.w;
+                    }
+                }
+            });
+        });
+
+        let finalTopWords = Array.from(topWordsSet.values());
+        
+        this.nodes = finalTopWords.map(s => ({
+            id: s.point.w,
+            w: s.point.w,
+            f: s.point.f,
+            sim: s.maxSim,
+            sourceKw: s.sourceKw,
+            isKw: this.searchedWords.includes(s.point.w),
+            x: 0,
+            y: 0
+        }));
+
+        this.links = [];
+        this.nodes.forEach(n => {
+            if (n.isKw || !n.sourceKw) return;
+            
+            let myVerses = this.wordToVerses ? (this.wordToVerses[n.w] || []) : [];
+            let linkedToSourceKw = false;
+            
+            this.searchedWords.forEach(sw => {
+                let swVerses = this.wordToVerses ? (this.wordToVerses[sw] || []) : [];
+                let intersection = myVerses.filter(vId => swVerses.includes(vId));
+                if (intersection.length > 0) {
+                    this.links.push({
+                        source: n.id,
+                        target: sw,
+                        type: 'direct',
+                        intersection: intersection
+                    });
+                    if (sw === n.sourceKw) linkedToSourceKw = true;
+                }
+            });
+            
+            if (!linkedToSourceKw) {
+                this.links.push({
+                    source: n.id,
+                    target: n.sourceKw,
+                    type: 'indirect'
+                });
+            }
+        });
+
+        this.isSearchMode = true;
+        this.runSimulation();
+    }
+
+    runSimulation() {
+        if (this.simulation) this.simulation.stop();
+        
+        let kwNodes = this.nodes.filter(n => n.isKw);
+        
+        if (kwNodes.length === 1) {
+            kwNodes[0].fx = 0;
+            kwNodes[0].fy = 0;
+        } else if (kwNodes.length === 2) {
+            let sim = this.cosineSimilarity(
+                this.data2d.find(d=>d.w===kwNodes[0].w).v,
+                this.data2d.find(d=>d.w===kwNodes[1].w).v
+            );
+            let dist = (1 - sim) * 600;
+            kwNodes[0].fx = -dist/2; kwNodes[0].fy = 0;
+            kwNodes[1].fx = dist/2; kwNodes[1].fy = 0;
+        } else if (kwNodes.length > 2) {
+            let avgSim = 0, count = 0;
+            for(let i=0; i<kwNodes.length; i++) {
+                for(let j=i+1; j<kwNodes.length; j++) {
+                    avgSim += this.cosineSimilarity(
+                        this.data2d.find(d=>d.w===kwNodes[i].w).v,
+                        this.data2d.find(d=>d.w===kwNodes[j].w).v
+                    );
+                    count++;
+                }
+            }
+            let dist = (1 - (avgSim/count)) * 600;
+            kwNodes.forEach((n, i) => {
+                let angle = (i / kwNodes.length) * Math.PI * 2;
+                n.fx = Math.cos(angle) * dist;
+                n.fy = Math.sin(angle) * dist;
+            });
+        }
+        
+        let cw = this.logicalWidth || 800;
+        let ch = this.logicalHeight || 600;
+        this.transform = d3.zoomIdentity.translate(cw/2, ch/2).scale(0.8);
+        d3.select(this.canvas).call(this.zoom.transform, this.transform);
+
+        const LCG = d3.randomLcg(42); 
+        
+        this.simulation = d3.forceSimulation(this.nodes)
+            .randomSource(LCG)
+            .force("link", d3.forceLink(this.links).id(d => d.id).distance(d => d.type === 'direct' ? 40 : 120).strength(0.5))
+            .force("charge", d3.forceManyBody().strength(-150))
+            .force("collide", d3.forceCollide().radius(d => d.isKw ? 25 : 12))
+            .on("tick", () => this.draw());
+            
+        this.draw();
+    }
+
+    buildAllWordsGraph() {
+        if (this.simulation) this.simulation.stop();
+        
+        let filteredData = this.data2d;
+        if (this.testamentFilter === 'OT') {
+            filteredData = filteredData.filter(d => d.t === 'OT' || d.t === 'Both');
+        } else if (this.testamentFilter === 'NT') {
+            filteredData = filteredData.filter(d => d.t === 'NT' || d.t === 'Both');
+        }
+        
+        let minX = d3.min(filteredData, d => d.x);
+        let maxX = d3.max(filteredData, d => d.x);
+        let minY = d3.min(filteredData, d => d.y);
+        let maxY = d3.max(filteredData, d => d.y);
+        
+        let cw = this.logicalWidth || 800;
+        let ch = this.logicalHeight || 600;
+        
+        let dx = maxX - minX || 1;
+        let dy = maxY - minY || 1;
+        let x = (minX + maxX) / 2;
+        let y = (minY + maxY) / 2;
+        let scale = 0.85 / Math.max(dx / cw, dy / ch);
+        
+        this.transform = d3.zoomIdentity.translate(cw / 2 - scale * x, ch / 2 - scale * y).scale(scale);
+        d3.select(this.canvas).call(this.zoom.transform, this.transform);
+        
+        this.nodes = filteredData.map(d => ({
+            id: d.w,
+            w: d.w,
+            f: d.f,
+            x: d.x,
+            y: d.y,
+            isKw: false
+        }));
+        this.links = [];
+        this.draw();
+    }
+
+    draw() {
+        if (!this.ctx) return;
+        this.updateColors();
+        
+        let cw = this.logicalWidth;
+        let ch = this.logicalHeight;
+        
+        this.ctx.clearRect(0, 0, cw, ch);
+        this.ctx.fillStyle = this.colors.bg;
+        this.ctx.fillRect(0, 0, cw, ch);
+        
+        this.ctx.save();
+        this.ctx.translate(this.transform.x, this.transform.y);
+        this.ctx.scale(this.transform.k, this.transform.k);
+        
+        this.links.forEach(l => {
+            if (!l.source.x || !l.target.x) return;
+            this.ctx.beginPath();
+            this.ctx.moveTo(l.source.x, l.source.y);
+            this.ctx.lineTo(l.target.x, l.target.y);
+            this.ctx.strokeStyle = l.type === 'direct' ? this.colors.linkDir : this.colors.linkIndir;
+            this.ctx.lineWidth = l.type === 'direct' ? 1.5 / this.transform.k : 1 / this.transform.k;
+            this.ctx.stroke();
+        });
+        
+        this.nodes.forEach(n => {
+            this.ctx.beginPath();
+            let r = n.isKw ? 12 : (this.isSearchMode ? 5 : Math.max(1, Math.min(6, Math.log(n.f || 3))));
+            let scaledR = r / Math.pow(this.transform.k, 0.4); 
+            
+            this.ctx.arc(n.x, n.y, scaledR, 0, 2 * Math.PI);
+            this.ctx.fillStyle = n.isKw ? this.colors.nodeKw : this.colors.nodeDef;
+            
+            if (this.hoveredNode === n) {
+                this.ctx.fillStyle = this.colors.nodeHover;
+                this.ctx.shadowBlur = 10;
+                this.ctx.shadowColor = this.colors.nodeHover;
+            } else {
+                this.ctx.shadowBlur = 0;
+            }
+            this.ctx.fill();
+            
+            let showLabel = n.isKw || this.hoveredNode === n || (this.transform.k > 3 && !this.isSearchMode) || (this.isSearchMode && this.transform.k > 1.5);
+            if (showLabel) {
+                this.ctx.shadowBlur = 0;
+                let fontSize = Math.max(10, 14 / this.transform.k);
+                this.ctx.font = `${fontSize}px ${this.colors.font}`;
+                this.ctx.fillStyle = this.colors.text;
+                this.ctx.textAlign = "center";
+                this.ctx.textBaseline = "top";
+                this.ctx.fillText(n.w, n.x, n.y + scaledR + (2 / this.transform.k));
+            }
+        });
+        
+        this.ctx.restore();
+    }
+
+    handleMouseMove(e) {
+        if (!this.nodes || this.nodes.length === 0) return;
+        
+        let rect = this.canvas.getBoundingClientRect();
+        let mouseX = e.clientX - rect.left;
+        let mouseY = e.clientY - rect.top;
+        
+        let [logicalX, logicalY] = this.transform.invert([mouseX, mouseY]);
+        
+        let closestNode = null;
+        let minDist = Infinity;
+        let searchRadius = 20 / this.transform.k;
+        
+        for (let n of this.nodes) {
+            let dx = n.x - logicalX;
+            let dy = n.y - logicalY;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < searchRadius && dist < minDist) {
+                minDist = dist;
+                closestNode = n;
+            }
+        }
+        
+        if (closestNode) {
+            if (this.hoveredNode !== closestNode) {
+                this.hoveredNode = closestNode;
+                this.canvas.style.cursor = "pointer";
+                this.showTooltip(closestNode, mouseX, mouseY);
+                this.draw();
+            } else {
+                this.updateTooltipPos(mouseX, mouseY);
+            }
+        } else {
+            this.hideTooltip();
+        }
+    }
+
+    handleClick(e) {
+        if (this.hoveredNode) {
+            let currentSearch = this.searchInput.value.trim();
+            if (currentSearch) {
+                let words = currentSearch.split(/[\\s,]+/).filter(w => w);
+                if (!words.includes(this.hoveredNode.w)) {
+                    this.searchInput.value = currentSearch + " " + this.hoveredNode.w;
+                }
+            } else {
+                this.searchInput.value = this.hoveredNode.w;
+            }
+            this.searchWord();
+        }
+    }
+
+    showTooltip(node, mouseX, mouseY) {
+        clearTimeout(this.tooltipTimeout);
+        this.tooltip.style.opacity = '1';
+        this.tooltip.style.pointerEvents = 'auto';
+        
+        let content = `<b style="font-size:1.2em;">${node.w}</b><br>`;
+        
+        if (this.isSearchMode && this.wordToVerses && this.verses) {
+            let hasLinks = false;
+            let myVerses = this.wordToVerses[node.w] || [];
+            
+            this.searchedWords.forEach(sw => {
+                let swVerses = this.wordToVerses[sw] || [];
+                let intersection = myVerses.filter(v => swVerses.includes(v));
+                if (intersection.length > 0) {
+                    hasLinks = true;
+                    content += `<div style="margin-top: 8px;"><b>Links to '${sw}':</b><br>`;
+                    let refs = intersection.map(id => (this.verses[id] || "").split('|')[0]);
+                    
+                    if (refs.length > 3) {
+                        content += refs.slice(0, 3).join("<br>") + `<br><i style="color:var(--bwm-text); opacity:0.7;">...and ${refs.length - 3} more</i>`;
+                    } else {
+                        content += refs.join("<br>");
+                    }
+                    content += `</div>`;
+                }
+            });
+            
+            if (!hasLinks && !node.isKw) {
+                content += `<div style="margin-top: 8px; font-style: italic; opacity: 0.7;">No direct verse links</div>`;
+            }
+        }
+        
+        this.tooltip.innerHTML = content;
+        this.updateTooltipPos(mouseX, mouseY);
+    }
+    
+    updateTooltipPos(mouseX, mouseY) {
+        let rect = this.canvas.getBoundingClientRect();
+        let tw = this.tooltip.offsetWidth;
+        let th = this.tooltip.offsetHeight;
+        
+        let x = mouseX + 15;
+        let y = mouseY + 15;
+        
+        if (x + tw > rect.width) x = mouseX - tw - 15;
+        if (y + th > rect.height) y = mouseY - th - 15;
+        
+        this.tooltip.style.left = x + 'px';
+        this.tooltip.style.top = y + 'px';
+    }
+
+    hideTooltip() {
+        if (this.tooltipTimeout) clearTimeout(this.tooltipTimeout);
+        this.tooltipTimeout = setTimeout(() => {
+            this.tooltip.style.opacity = '0';
+            this.tooltip.style.pointerEvents = 'none';
+            this.hoveredNode = null;
+            this.canvas.style.cursor = "grab";
+            this.draw();
+        }, 150);
     }
 }
 
