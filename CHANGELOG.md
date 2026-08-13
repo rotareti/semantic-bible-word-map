@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.0.24] - 2026-08-13
+### Added
+- Auto-show labels when zoomed deep into the global map (when < 150 words are visible on screen).
+
+### Fixed
+- Removed artificial zoom limit to allow zooming deep into the default global map.
+
 ## [4.0.22] - 2026-08-13
 ### Added
 - "Freely you have received; freely give." quote to the footer.

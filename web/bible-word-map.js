@@ -618,6 +618,20 @@ class BibleWordMap extends HTMLElement {
         this.ctx.fillStyle = this.colors.bg;
         this.ctx.fillRect(0, 0, cw, ch);
         
+        let minX = this.transform.invertX(0);
+        let maxX = this.transform.invertX(cw);
+        let minY = this.transform.invertY(0);
+        let maxY = this.transform.invertY(ch);
+        
+        let visibleNodesCount = 0;
+        this.nodes.forEach(n => {
+            if (n.x >= minX && n.x <= maxX && n.y >= minY && n.y <= maxY) {
+                visibleNodesCount++;
+            }
+        });
+        let autoShowLabels = visibleNodesCount < 150;
+        
+        
         this.ctx.save();
         this.ctx.translate(this.transform.x, this.transform.y);
         this.ctx.scale(this.transform.k, this.transform.k);
@@ -663,7 +677,7 @@ class BibleWordMap extends HTMLElement {
             }
             this.ctx.fill();
             
-            let showLabel = (this.isSearchMode || n.isKw) && this.hoveredNode !== n;
+            let showLabel = (this.isSearchMode || n.isKw || autoShowLabels) && this.hoveredNode !== n;
             if (showLabel) {
                 this.ctx.shadowBlur = 0;
                 let fontSize = (n.isKw ? 14 : 11) / this.transform.k;
