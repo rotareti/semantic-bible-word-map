@@ -453,21 +453,32 @@ class BibleWordMap extends HTMLElement {
             data.forEach(d => {
                 if (this.searchedWords.includes(d.w) || !d.sourceKw) return;
                 
-                let swData = data.find(p => p.w === d.sourceKw);
-                if (swData) {
-                    let hasIntersection = false;
-                    if (this.wordToVerses) {
-                        let myVerses = this.wordToVerses[d.w] || [];
-                        let swVerses = this.wordToVerses[d.sourceKw] || [];
-                        hasIntersection = myVerses.some(vId => swVerses.includes(vId));
-                    }
+                let myVerses = this.wordToVerses ? (this.wordToVerses[d.w] || []) : [];
+                let linkedToSourceKw = false;
+                
+                // Draw green lines to all searched words that share verses
+                this.searchedWords.forEach(sw => {
+                    let swData = data.find(p => p.w === sw);
+                    if (!swData) return;
+                    
+                    let swVerses = this.wordToVerses ? (this.wordToVerses[sw] || []) : [];
+                    let hasIntersection = myVerses.some(vId => swVerses.includes(vId));
                     
                     if (hasIntersection) {
                         lineXLinked.push(d.x, swData.x, null);
                         lineYLinked.push(d.y, swData.y, null);
-                    } else {
-                        lineXUnlinked.push(d.x, swData.x, null);
-                        lineYUnlinked.push(d.y, swData.y, null);
+                        if (sw === d.sourceKw) {
+                            linkedToSourceKw = true;
+                        }
+                    }
+                });
+                
+                // If it doesn't share verses with its semantic parent, draw a grey line to the parent
+                if (!linkedToSourceKw) {
+                    let sourceKwData = data.find(p => p.w === d.sourceKw);
+                    if (sourceKwData) {
+                        lineXUnlinked.push(d.x, sourceKwData.x, null);
+                        lineYUnlinked.push(d.y, sourceKwData.y, null);
                     }
                 }
             });
