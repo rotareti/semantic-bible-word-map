@@ -45,7 +45,7 @@ class BibleWordMap extends HTMLElement {
                     display: flex;
                     flex-direction: column;
                     width: 100%;
-                    height: 80vh;
+                    height: 100%;
                     font-family: var(--bwm-font);
                     color: var(--bwm-text);
                 }
@@ -134,17 +134,80 @@ class BibleWordMap extends HTMLElement {
                     max-width: 300px;
                     z-index: 9999;
                 }
+                .bwm-info-btn {
+                    position: absolute;
+                    top: 10px;
+                    right: 10px;
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 50%;
+                    background: var(--bwm-bg);
+                    color: var(--bwm-text);
+                    border: 1px solid var(--bwm-border);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-style: italic;
+                    font-weight: bold;
+                    cursor: pointer;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                    z-index: 10;
+                    user-select: none;
+                }
+                .bwm-info-btn:hover {
+                    background: var(--bwm-border);
+                }
+                .bwm-info-panel {
+                    position: absolute;
+                    top: 45px;
+                    right: 10px;
+                    width: 320px;
+                    background-color: #ffffff;
+                    background-color: var(--bwm-tooltip-bg, #ffffff);
+                    color: var(--bwm-tooltip-text);
+                    padding: 16px;
+                    border-radius: 8px;
+                    border: 1px solid var(--bwm-border);
+                    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+                    font-size: 0.9em;
+                    line-height: 1.5;
+                    z-index: 100;
+                    opacity: 0;
+                    pointer-events: none;
+                    transition: opacity 0.2s;
+                    display: flex;
+                    flex-direction: column;
+                }
+                .bwm-info-panel.visible {
+                    opacity: 1;
+                    pointer-events: auto;
+                }
+                .bwm-info-close {
+                    align-self: flex-end;
+                    cursor: pointer;
+                    font-size: 1.2em;
+                    font-weight: bold;
+                    margin-bottom: 8px;
+                    color: var(--bwm-tooltip-text);
+                    opacity: 0.6;
+                    display: none;
+                    user-select: none;
+                }
+                .bwm-info-panel.pinned .bwm-info-close {
+                    display: block;
+                }
+                .bwm-info-close:hover {
+                    opacity: 1;
+                }
                 .bwm-loading {
                     position: absolute;
                     top: 50%; left: 50%;
                     transform: translate(-50%, -50%);
                     background: var(--bwm-tooltip-bg);
                     color: var(--bwm-tooltip-text);
-                    padding: 15px 25px;
+                    padding: 10px 20px;
                     border-radius: 8px;
-                    border: 1px solid var(--bwm-border);
-                    font-weight: bold;
-                    display: none;
+                    z-index: 50;
                 }
             </style>
             <div class="bwm-container">
@@ -158,7 +221,12 @@ class BibleWordMap extends HTMLElement {
                 <div class="bwm-canvas-container">
                     <canvas></canvas>
                     <div class="bwm-tooltip"></div>
-                    <div class="bwm-loading">Loading Data...</div>
+                    <div class="bwm-info-btn">i</div>
+                    <div class="bwm-info-panel">
+                        <div class="bwm-info-close">&times;</div>
+                        Explore the Berean Standard Bible through a mathematical lens. Each dot represents a word, and the physical distance between dots indicates how closely related their meanings are. The semantic similarity is learned based on words that are used in similar contexts, meaning they are surrounded by the same types of words, even if those two specific words never actually appear in the exact same verse together! When you search for multiple words, the map instantly recalculates to form a customized cluster showing the strongest connections to your key terms. Larger and brighter dots represent a stronger match. Green lines show words that appear in the same verse together, while gray lines mean they share similar concepts. Click or Search a set of words to explore!
+                    </div>
+                    <div class="bwm-loading">Loading data...</div>
                 </div>
             </div>
         `;
@@ -214,11 +282,38 @@ class BibleWordMap extends HTMLElement {
             
         d3.select(this.canvas).call(this.zoom);
         
-        // Tooltip handlers
-        d3.select(this.canvas).on("mousemove", (e) => this.handleMouseMove(e));
-        d3.select(this.canvas).on("click", (e) => this.handleClick(e));
-        
+        // Tooltip/Info handlers
+        this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+        this.canvas.addEventListener('click', (e) => this.handleClick(e));
         this.canvas.addEventListener('mouseleave', () => this.hideTooltip());
+        
+        this.infoBtn = this.querySelector('.bwm-info-btn');
+        this.infoPanel = this.querySelector('.bwm-info-panel');
+        this.infoClose = this.querySelector('.bwm-info-close');
+        
+        let isInfoPinned = false;
+        
+        this.infoBtn.addEventListener('mouseenter', () => {
+            if (!isInfoPinned) this.infoPanel.classList.add('visible');
+        });
+        
+        this.infoBtn.addEventListener('mouseleave', () => {
+            if (!isInfoPinned) this.infoPanel.classList.remove('visible');
+        });
+        
+        this.infoBtn.addEventListener('click', () => {
+            isInfoPinned = true;
+            this.infoPanel.classList.add('visible');
+            this.infoPanel.classList.add('pinned');
+        });
+        
+        this.infoClose.addEventListener('click', (e) => {
+            e.stopPropagation();
+            isInfoPinned = false;
+            this.infoPanel.classList.remove('visible');
+            this.infoPanel.classList.remove('pinned');
+        });
+        
         this.tooltip.addEventListener('mouseenter', () => clearTimeout(this.tooltipTimeout));
         this.tooltip.addEventListener('mouseleave', () => {
             this.tooltip.style.opacity = '0';
