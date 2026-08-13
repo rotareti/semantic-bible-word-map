@@ -399,8 +399,10 @@ class BibleWordMap extends HTMLElement {
             trace.textfont = textFonts;
         }
 
-        let lineX = [];
-        let lineY = [];
+        let lineXLinked = [];
+        let lineYLinked = [];
+        let lineXUnlinked = [];
+        let lineYUnlinked = [];
         
         if (this.isSearchMode && this.localSearchData) {
             data.forEach(d => {
@@ -408,18 +410,42 @@ class BibleWordMap extends HTMLElement {
                 
                 let swData = data.find(p => p.w === d.sourceKw);
                 if (swData) {
-                    lineX.push(d.x, swData.x, null);
-                    lineY.push(d.y, swData.y, null);
+                    let hasIntersection = false;
+                    if (this.wordToVerses) {
+                        let myVerses = this.wordToVerses[d.w] || [];
+                        let swVerses = this.wordToVerses[d.sourceKw] || [];
+                        hasIntersection = myVerses.some(vId => swVerses.includes(vId));
+                    }
+                    
+                    if (hasIntersection) {
+                        lineXLinked.push(d.x, swData.x, null);
+                        lineYLinked.push(d.y, swData.y, null);
+                    } else {
+                        lineXUnlinked.push(d.x, swData.x, null);
+                        lineYUnlinked.push(d.y, swData.y, null);
+                    }
                 }
             });
         }
         
-        const lineTrace = {
-            x: lineX,
-            y: lineY,
+        const lineTraceLinked = {
+            x: lineXLinked,
+            y: lineYLinked,
             mode: 'lines',
             line: {
-                color: 'rgba(150, 150, 150, 0.25)',
+                color: 'rgba(40, 167, 69, 0.5)', // Distinct green for verse links
+                width: 1.5
+            },
+            hoverinfo: 'none',
+            showlegend: false
+        };
+        
+        const lineTraceUnlinked = {
+            x: lineXUnlinked,
+            y: lineYUnlinked,
+            mode: 'lines',
+            line: {
+                color: 'rgba(150, 150, 150, 0.15)', // Faint grey for semantic-only links
                 width: 1
             },
             hoverinfo: 'none',
@@ -438,7 +464,7 @@ class BibleWordMap extends HTMLElement {
             showlegend: false
         };
 
-        return window.Plotly.newPlot(this.plotDiv, [lineTrace, trace], layout, {
+        return window.Plotly.newPlot(this.plotDiv, [lineTraceUnlinked, lineTraceLinked, trace], layout, {
             responsive: true, 
             displayModeBar: true, 
             displaylogo: false, 
