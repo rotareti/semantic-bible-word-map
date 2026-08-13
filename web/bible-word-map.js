@@ -16,10 +16,10 @@ class BibleWordMap extends HTMLElement {
                 .container {
                     flex: 1;
                     width: 100%;
-                    border: 1px solid #ddd;
+                    border: 1px solid var(--border-color);
                     border-radius: 8px;
                     overflow: hidden;
-                    background: #f8f9fa;
+                    background: var(--bg-color);
                     position: relative;
                 }
                 .top-bar {
@@ -27,18 +27,27 @@ class BibleWordMap extends HTMLElement {
                     justify-content: space-between;
                     align-items: center;
                     padding-bottom: 12px;
+                    flex-wrap: wrap;
+                    gap: 10px;
                 }
                 .search-box, .controls {
                     display: flex;
                     gap: 8px;
+                    flex-wrap: wrap;
+                }
+                .search-box {
+                    flex: 1;
+                    min-width: 250px;
                 }
                 input[type="text"] {
+                    flex: 1;
                     padding: 8px 12px;
-                    border: 1px solid #ccc;
+                    border: 1px solid var(--border-color);
                     border-radius: 4px;
                     outline: none;
                     font-size: 1rem;
-                    width: 300px;
+                    background: var(--input-bg);
+                    color: var(--text-color);
                 }
                 input[type="text"]:focus {
                     border-color: #2563eb;
@@ -46,13 +55,14 @@ class BibleWordMap extends HTMLElement {
                 button {
                     cursor: pointer;
                     padding: 8px 16px;
-                    border: 1px solid #ccc;
-                    background: #fff;
+                    border: 1px solid var(--border-color);
+                    background: var(--btn-bg);
+                    color: var(--text-color);
                     border-radius: 4px;
                     font-weight: 600;
                     transition: all 0.2s;
                 }
-                button:hover { background: #f0f0f0; }
+                button:hover { background: var(--btn-hover); }
                 button.active {
                     background: #2563eb;
                     color: white;
@@ -68,18 +78,24 @@ class BibleWordMap extends HTMLElement {
                     left: 50%;
                     transform: translate(-50%, -50%);
                     font-size: 1.2rem;
-                    color: #666;
-                    background: rgba(255, 255, 255, 0.9);
+                    color: var(--text-muted);
+                    background: var(--card-bg);
                     padding: 20px;
                     border-radius: 8px;
-                    border: 1px solid #ccc;
+                    border: 1px solid var(--border-color);
                     z-index: 10;
+                    box-shadow: var(--shadow);
                 }
                 .error-msg {
                     color: #d32f2f;
                     font-size: 0.9rem;
                     display: none;
                     align-items: center;
+                    width: 100%;
+                }
+                @media (max-width: 600px) {
+                    .top-bar { flex-direction: column; align-items: stretch; }
+                    .controls { justify-content: center; }
                 }
             </style>
             <div class="top-bar">
@@ -118,6 +134,11 @@ class BibleWordMap extends HTMLElement {
         this.searchBtn.addEventListener('click', () => this.searchWord());
         this.searchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.searchWord();
+        });
+
+        // Re-render when theme changes so plotly font colors update
+        window.addEventListener('themechanged', () => {
+            if (this.data2d) this.renderPlot();
         });
 
         await this.loadData();
@@ -316,7 +337,8 @@ class BibleWordMap extends HTMLElement {
                     customdata.push("Key Search Word");
                 } else {
                     textFonts.size.push(Math.max(9, Math.floor(d.sim * 14)));
-                    textFonts.color.push('#666');
+                    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                    textFonts.color.push(isDark ? '#aaaaaa' : '#666666');
                     
                     if (this.wordToVerses && this.verses) {
                         let myVerses = this.wordToVerses[d.w] || [];
@@ -364,7 +386,7 @@ class BibleWordMap extends HTMLElement {
                 colorscale: 'Viridis',
                 opacity: 0.7,
                 line: {
-                    color: 'rgba(255, 255, 255, 0.5)',
+                    color: 'rgba(255, 255, 255, 0.2)',
                     width: 0.5
                 }
             }
@@ -373,12 +395,16 @@ class BibleWordMap extends HTMLElement {
         if (this.isSearchMode) {
             trace.textfont = textFonts;
         }
+        
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
 
         const layout = {
             margin: { t: 0, r: 0, b: 0, l: 0 },
             hovermode: 'closest',
+            dragmode: 'pan', // Better for mobile touch
             paper_bgcolor: 'rgba(0,0,0,0)',
             plot_bgcolor: 'rgba(0,0,0,0)',
+            font: { color: isDark ? '#e0e0e0' : '#333333' },
             xaxis: { showgrid: false, zeroline: false, visible: false },
             yaxis: { showgrid: false, zeroline: false, visible: false }
         };
