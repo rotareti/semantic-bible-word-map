@@ -407,6 +407,19 @@ class BibleWordMap extends HTMLElement {
             displaylogo: false, 
             scrollZoom: true,
             modeBarButtonsToRemove: ['lasso2d', 'select2d']
+        }).then((plot) => {
+            plot.on('plotly_click', (clickData) => {
+                if (clickData.points && clickData.points.length > 0) {
+                    const clickedWord = clickData.points[0].text;
+                    let currentVal = this.searchInput.value.trim();
+                    let words = currentVal.toLowerCase().split(/[\s,]+/).filter(w => w);
+                    
+                    if (!words.includes(clickedWord.toLowerCase())) {
+                        this.searchInput.value = (currentVal ? currentVal + ' ' : '') + clickedWord;
+                        this.searchWord();
+                    }
+                }
+            });
         }).catch(err => {
             console.error("Plotly rendering error:", err);
         });
