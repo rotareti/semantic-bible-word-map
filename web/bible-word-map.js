@@ -289,6 +289,7 @@ class BibleWordMap extends HTMLElement {
         this.zoom = d3.zoom()
             .scaleExtent([0.05, 100000])
             .on("zoom", (e) => {
+                if (e.sourceEvent) this.userInteracted = true;
                 this.transform = e.transform;
                 this.draw();
             });
@@ -468,7 +469,7 @@ class BibleWordMap extends HTMLElement {
 
         let finalTopWords = Array.from(topWordsSet.values());
         
-        this.nodes = finalTopWords.map(s => ({
+        this.allSearchNodes = finalTopWords.map(s => ({
             id: s.point.w,
             w: s.point.w,
             f: s.point.f,
@@ -476,11 +477,12 @@ class BibleWordMap extends HTMLElement {
             sourceKw: s.sourceKw,
             isKw: this.searchedWords.includes(s.point.w),
             x: 0,
-            y: 0
+            y: 0,
+            v: s.point.v
         }));
 
-        this.links = [];
-        this.nodes.forEach(n => {
+        this.allSearchLinks = [];
+        this.allSearchNodes.forEach(n => {
             if (n.isKw || !n.sourceKw) return;
             
             let myVerses = this.wordToVerses ? (this.wordToVerses[n.w] || []) : [];
@@ -490,87 +492,160 @@ class BibleWordMap extends HTMLElement {
                 let swVerses = this.wordToVerses ? (this.wordToVerses[sw] || []) : [];
                 let intersection = myVerses.filter(vId => swVerses.includes(vId));
                 if (intersection.length > 0) {
-                    this.links.push({
+                    this.allSearchLinks.push({
                         source: n.id,
                         target: sw,
                         type: 'direct',
-                        intersection: intersection
+                        intersection: intersection,
+                        sim: n.sim
                     });
                     if (sw === n.sourceKw) linkedToSourceKw = true;
                 }
             });
             
             if (!linkedToSourceKw) {
-                this.links.push({
+                this.allSearchLinks.push({
                     source: n.id,
                     target: n.sourceKw,
-                    type: 'indirect'
+                    type: 'indirect',
+                    sim: n.sim
                 });
             }
         });
 
         // Normalize similarity to [0, 1] to maximize color and size contrast like Plotly did
-        let minSim = d3.min(this.nodes.filter(n => !n.isKw), n => n.sim) || 0;
-        let maxSim = d3.max(this.nodes.filter(n => !n.isKw), n => n.sim) || 1;
-        this.nodes.forEach(n => {
+        let minSim = d3.min(this.allSearchNodes.filter(n => !n.isKw), n => n.sim) || 0;
+        let maxSim = d3.max(this.allSearchNodes.filter(n => !n.isKw), n => n.sim) || 1;
+        this.allSearchNodes.forEach(n => {
             if (n.isKw) n.normSim = 1;
             else n.normSim = (n.sim - minSim) / (maxSim - minSim || 1);
         });
 
         this.isSearchMode = true;
+        this.userInteracted = false;
         this.runSimulation();
     }
 
     runSimulation() {
         if (this.simulation) this.simulation.stop();
+        if (this.spawnInterval) clearInterval(this.spawnInterval);
         
-        let kwNodes = this.nodes.filter(n => n.isKw);
+        let kwNodes = this.allSearchNodes.filter(n => n.isKw);
+        let otherNodes = this.allSearchNodes.filter(n => !n.isKw);
         
-        if (kwNodes.length === 1) {
-            kwNodes[0].fx = 0;
-            kwNodes[0].fy = 0;
-        } else if (kwNodes.length === 2) {
-            let sim = this.cosineSimilarity(
-                this.data2d.find(d=>d.w===kwNodes[0].w).v,
-                this.data2d.find(d=>d.w===kwNodes[1].w).v
-            );
-            let dist = (1 - sim) * 600;
-            kwNodes[0].fx = -dist/2; kwNodes[0].fy = 0;
-            kwNodes[1].fx = dist/2; kwNodes[1].fy = 0;
-        } else if (kwNodes.length > 2) {
-            let avgSim = 0, count = 0;
-            for(let i=0; i<kwNodes.length; i++) {
-                for(let j=i+1; j<kwNodes.length; j++) {
-                    avgSim += this.cosineSimilarity(
-                        this.data2d.find(d=>d.w===kwNodes[i].w).v,
-                        this.data2d.find(d=>d.w===kwNodes[j].w).v
-                    );
-                    count++;
-                }
+        // Sort other nodes by similarity descending
+        otherNodes.sort((a, b) => b.sim - a.sim);
+        
+        // Let keywords freely float but gently pull them together and center them
+        kwNodes.forEach(n => {
+            n.x = (Math.random() - 0.5) * 20;
+            n.y = (Math.random() - 0.5) * 20;
+            delete n.fx;
+            delete n.fy;
+        });
+        
+        // Add kw-kw links based on true similarity
+        for (let i = 0; i < kwNodes.length; i++) {
+            for (let j = i + 1; j < kwNodes.length; j++) {
+                let sim = this.cosineSimilarity(kwNodes[i].v, kwNodes[j].v);
+                this.allSearchLinks.push({
+                    source: kwNodes[i].id,
+                    target: kwNodes[j].id,
+                    type: 'kw-kw',
+                    sim: sim
+                });
             }
-            let dist = (1 - (avgSim/count)) * 600;
-            kwNodes.forEach((n, i) => {
-                let angle = (i / kwNodes.length) * Math.PI * 2;
-                n.fx = Math.cos(angle) * dist;
-                n.fy = Math.sin(angle) * dist;
-            });
         }
+        
+        // We start simulation with ONLY keywords
+        this.nodes = [...kwNodes];
+        this.links = this.allSearchLinks.filter(l => l.type === 'kw-kw');
         
         let cw = this.logicalWidth || 800;
         let ch = this.logicalHeight || 600;
-        this.transform = d3.zoomIdentity.translate(cw/2, ch/2).scale(0.8);
+        
+        this.transform = d3.zoomIdentity.translate(cw/2, ch/2).scale(1);
         d3.select(this.canvas).call(this.zoom.transform, this.transform);
 
         const LCG = d3.randomLcg(42); 
         
         this.simulation = d3.forceSimulation(this.nodes)
             .randomSource(LCG)
-            .force("link", d3.forceLink(this.links).id(d => d.id).distance(d => d.type === 'direct' ? 40 : 120).strength(0.5))
-            .force("charge", d3.forceManyBody().strength(-150))
+            .force("link", d3.forceLink(this.links).id(d => d.id).distance(d => {
+                if (d.type === 'kw-kw') return Math.max(80, (1 - d.sim) * 400);
+                return d.type === 'direct' ? Math.max(30, (1 - d.sim) * 150) : Math.max(60, (1 - d.sim) * 250);
+            }).strength(d => d.type === 'kw-kw' ? 1.5 : 0.6))
+            .force("charge", d3.forceManyBody().strength(-200))
             .force("collide", d3.forceCollide().radius(d => d.isKw ? 25 : 12))
-            .on("tick", () => this.draw());
+            .force("center", d3.forceCenter(0, 0).strength(0.05))
+            .on("tick", () => {
+                this.updateDynamicZoom();
+                this.draw();
+            });
             
-        this.draw();
+        // Iterate and add nodes over time
+        let batchSize = 3;
+        let index = 0;
+        
+        this.spawnInterval = setInterval(() => {
+            if (index >= otherNodes.length) {
+                clearInterval(this.spawnInterval);
+                return;
+            }
+            
+            let batch = otherNodes.slice(index, index + batchSize);
+            index += batchSize;
+            
+            batch.forEach(n => {
+                n.x = (Math.random() - 0.5) * 10;
+                n.y = (Math.random() - 0.5) * 10;
+                this.nodes.push(n);
+                
+                let nodeLinks = this.allSearchLinks.filter(l => l.source === n.id);
+                this.links.push(...nodeLinks);
+            });
+            
+            this.simulation.nodes(this.nodes);
+            this.simulation.force("link").links(this.links);
+            this.simulation.alpha(0.3).restart();
+            
+        }, 50); 
+    }
+
+    updateDynamicZoom() {
+        if (!this.isSearchMode || this.nodes.length === 0 || this.userInteracted) return;
+        
+        let minX = d3.min(this.nodes, d => d.x);
+        let maxX = d3.max(this.nodes, d => d.x);
+        let minY = d3.min(this.nodes, d => d.y);
+        let maxY = d3.max(this.nodes, d => d.y);
+        
+        let dx = maxX - minX || 1;
+        let dy = maxY - minY || 1;
+        let cx = (minX + maxX) / 2;
+        let cy = (minY + maxY) / 2;
+        
+        let cw = this.logicalWidth || 800;
+        let ch = this.logicalHeight || 600;
+        
+        // Target scale to fit the bounds with some padding
+        let targetScale = 0.8 / Math.max(dx / cw, dy / ch);
+        targetScale = Math.min(targetScale, 3); // don't zoom in too crazy close
+        
+        // Smoothly interpolate current transform towards target transform
+        let k = this.transform.k + (targetScale - this.transform.k) * 0.05;
+        
+        let targetX = cw / 2 - k * cx;
+        let targetY = ch / 2 - k * cy;
+        
+        let tx = this.transform.x + (targetX - this.transform.x) * 0.05;
+        let ty = this.transform.y + (targetY - this.transform.y) * 0.05;
+        
+        let newTransform = d3.zoomIdentity.translate(tx, ty).scale(k);
+        this.transform = newTransform;
+        
+        // Silently update d3 zoom state to match our programmatic panning
+        this.canvas.__zoom = newTransform;
     }
 
     buildAllWordsGraph() {
