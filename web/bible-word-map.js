@@ -189,11 +189,12 @@ class BibleWordMap extends HTMLElement {
                     pointer-events: auto;
                 }
                 .bwm-info-close {
-                    align-self: flex-end;
+                    position: absolute;
+                    top: 8px;
+                    right: 12px;
                     cursor: pointer;
                     font-size: 1.2em;
                     font-weight: bold;
-                    margin-bottom: 8px;
                     color: var(--bwm-tooltip-text);
                     opacity: 0.6;
                     display: none;
@@ -310,9 +311,15 @@ class BibleWordMap extends HTMLElement {
         });
         
         this.infoBtn.addEventListener('click', () => {
-            isInfoPinned = true;
-            this.infoPanel.classList.add('visible');
-            this.infoPanel.classList.add('pinned');
+            if (isInfoPinned) {
+                isInfoPinned = false;
+                this.infoPanel.classList.remove('visible');
+                this.infoPanel.classList.remove('pinned');
+            } else {
+                isInfoPinned = true;
+                this.infoPanel.classList.add('visible');
+                this.infoPanel.classList.add('pinned');
+            }
         });
         
         this.infoClose.addEventListener('click', (e) => {
