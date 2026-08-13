@@ -45,7 +45,9 @@ class BibleWordMap extends HTMLElement {
                     display: flex;
                     flex-direction: column;
                     width: 100%;
-                    height: 100%;
+                    flex: 1;
+                    min-height: 0;
+                    min-width: 0;
                     font-family: var(--bwm-font);
                     color: var(--bwm-text);
                 }
@@ -107,6 +109,8 @@ class BibleWordMap extends HTMLElement {
                     border-radius: 8px;
                     overflow: hidden;
                     background: var(--bwm-bg);
+                    min-height: 0;
+                    min-width: 0;
                 }
                 canvas {
                     width: 100%;

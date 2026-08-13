@@ -62,12 +62,16 @@ main {
     display: flex;
     flex-direction: column;
     margin-bottom: 20px;
+    min-height: 0;
+    min-width: 0;
 }
 bible-word-map {
-    display: block;
+    display: flex;
+    flex-direction: column;
     flex: 1;
     width: 100%;
     min-height: 0;
+    min-width: 0;
 }
 
 footer {
