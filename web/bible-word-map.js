@@ -185,7 +185,12 @@ class BibleWordMap extends HTMLElement {
     searchWord() {
         const rawQueries = this.searchInput.value.toLowerCase().split(/[\s,]+/).filter(w => w);
         this.searchError.style.display = 'none';
-        if (rawQueries.length === 0) return;
+        
+        if (rawQueries.length === 0) {
+            this.isSearchMode = false;
+            this.renderPlot();
+            return;
+        }
 
         let data = this.is3D ? this.data3d : this.data2d;
         if (this.testamentFilter === 'OT') {
@@ -194,132 +199,65 @@ class BibleWordMap extends HTMLElement {
             data = data.filter(d => d.t === 'NT' || d.t === 'Both');
         }
         
-        let foundPoints = [];
-        let notFound = [];
-
-        rawQueries.forEach(q => {
-            const pointIndex = data.findIndex(d => d.w === q);
-            if (pointIndex !== -1) {
-                foundPoints.push(data[pointIndex]);
-            } else {
-                notFound.push(q);
-            }
-        });
-
-        if (foundPoints.length === 0) {
-            this.searchError.textContent = "Word(s) not found";
+        let pointIndex = data.findIndex(d => d.w === rawQueries[0]);
+        if (pointIndex === -1) {
+            this.searchError.textContent = "Word not found";
             this.searchError.style.display = 'flex';
             return;
         }
 
-        if (notFound.length > 0) {
-            this.searchError.textContent = `Not found: ${notFound.join(', ')}`;
-            this.searchError.style.display = 'flex';
-        }
+        const primaryPoint = data[pointIndex];
+        
+        // Show loading state for local projection
+        this.loadingDiv.textContent = "Generating semantic neighborhood...";
+        this.loadingDiv.style.display = 'block';
+        this.plotDiv.style.opacity = '0.5';
 
-        let annotations = foundPoints.map(point => ({
-            x: point.x,
-            y: point.y,
-            text: point.w.toUpperCase(),
-            showarrow: true,
-            arrowhead: 2,
-            arrowcolor: '#333333',
-            font: { size: 15, color: '#000000', weight: 'bold' },
-            bgcolor: 'rgba(255, 255, 255, 0.95)',
-            bordercolor: '#cccccc',
-            borderwidth: 1,
-            borderpad: 6,
-            ax: 0,
-            ay: -40
-        }));
-
-        // True 100D Semantic Highlighting
-        if (foundPoints.length > 0 && foundPoints[0].v) {
-            const primaryPoint = foundPoints[0];
+        // Use setTimeout to allow UI to update loading state before blocking CPU
+        setTimeout(async () => {
             let similarities = data.map(d => ({
                 point: d,
                 sim: this.cosineSimilarity(primaryPoint.v, d.v)
             }));
             
-            // Exclude the searched word itself and get the top 5
-            similarities = similarities.filter(s => s.point.w !== primaryPoint.w);
             similarities.sort((a, b) => b.sim - a.sim);
-            const top5 = similarities.slice(0, 5);
-            
-            top5.forEach(s => {
-                let anno = {
-                    x: s.point.x,
-                    y: s.point.y,
-                    text: s.point.w + " (" + (s.sim * 100).toFixed(0) + "%)",
-                    font: { size: 12, color: '#2563eb', weight: 'bold' },
-                    bgcolor: 'rgba(255, 255, 255, 0.95)',
-                    bordercolor: 'rgba(37, 99, 235, 0.5)',
-                    borderwidth: 1,
-                    borderpad: 4
-                };
+            // Get top 150 closest words for a localized semantic map
+            const topWords = similarities.slice(0, 150);
+            const vectors = topWords.map(s => s.point.v);
+
+            try {
+                // Run UMAP directly in the browser for just these 150 words
+                const umap = new window.UMAP({
+                    nNeighbors: 15,
+                    minDist: 0.1,
+                    nComponents: this.is3D ? 3 : 2,
+                    nEpochs: 200
+                });
+
+                const embedding = umap.fit(vectors);
+
+                this.localSearchData = topWords.map((s, i) => {
+                    let newPoint = {...s.point};
+                    newPoint.x = embedding[i][0];
+                    newPoint.y = embedding[i][1];
+                    if (this.is3D) newPoint.z = embedding[i][2];
+                    newPoint.sim = s.sim; // save similarity for visual scaling
+                    return newPoint;
+                });
+
+                this.isSearchMode = true;
+                this.searchedWord = primaryPoint.w;
                 
-                // Draw connecting lines in 2D using data coordinates
-                if (!this.is3D) {
-                    anno.ax = primaryPoint.x;
-                    anno.ay = primaryPoint.y;
-                    anno.axref = 'x';
-                    anno.ayref = 'y';
-                    anno.showarrow = true;
-                    anno.arrowhead = 0; // line only
-                    anno.arrowcolor = 'rgba(37, 99, 235, 0.3)';
-                    anno.arrowwidth = 2;
-                } else {
-                    // 3D doesn't support data-coordinate arrows easily, so just label them
-                    anno.showarrow = true;
-                    anno.arrowhead = 1;
-                    anno.arrowcolor = 'rgba(37, 99, 235, 0.5)';
-                    anno.ax = 0;
-                    anno.ay = -25;
-                }
-                annotations.push(anno);
-            });
-        }
+            } catch (err) {
+                console.error("UMAP error:", err);
+                this.searchError.textContent = "Error generating neighborhood";
+                this.searchError.style.display = 'flex';
+            }
 
-        if (this.is3D) {
-            const cx = foundPoints.reduce((sum, p) => sum + p.x, 0) / foundPoints.length;
-            const cy = foundPoints.reduce((sum, p) => sum + p.y, 0) / foundPoints.length;
-            const cz = foundPoints.reduce((sum, p) => sum + p.z, 0) / foundPoints.length;
-            
-            let maxDist = 2.0;
-            foundPoints.forEach(p => {
-                const dist = Math.sqrt((p.x - cx)**2 + (p.y - cy)**2 + (p.z - cz)**2);
-                if (dist > maxDist) maxDist = dist;
-            });
-            const offset = Math.max(1, maxDist * 1.5);
-
-            const update = {
-                'scene.camera': {
-                    center: { x: cx, y: cy, z: cz },
-                    eye: { x: cx + offset, y: cy + offset, z: cz + offset }
-                }
-            };
-            window.Plotly.relayout(this.plotDiv, update);
-        } else {
-            const xs = foundPoints.map(p => p.x);
-            const ys = foundPoints.map(p => p.y);
-            const minX = Math.min(...xs);
-            const maxX = Math.max(...xs);
-            const minY = Math.min(...ys);
-            const maxY = Math.max(...ys);
-
-            const spanX = Math.max(2.0, (maxX - minX) * 0.6 + 1.0);
-            const spanY = Math.max(2.0, (maxY - minY) * 0.6 + 1.0);
-            
-            const cx = (minX + maxX) / 2;
-            const cy = (minY + maxY) / 2;
-
-            const update = {
-                'xaxis.range': [cx - spanX, cx + spanX],
-                'yaxis.range': [cy - spanY, cy + spanY],
-                'annotations': annotations
-            };
-            window.Plotly.relayout(this.plotDiv, update);
-        }
+            this.loadingDiv.style.display = 'none';
+            this.plotDiv.style.opacity = '1.0';
+            await this.renderPlot();
+        }, 50);
     }
 
     cosineSimilarity(vecA, vecB) {
@@ -355,28 +293,53 @@ class BibleWordMap extends HTMLElement {
         try { window.Plotly.purge(this.plotDiv); } catch(e) {}
         this.plotDiv.innerHTML = '';
 
-        let data = this.is3D ? this.data3d : this.data2d;
-        
-        if (this.testamentFilter === 'OT') {
-            data = data.filter(d => d.t === 'OT' || d.t === 'Both');
-        } else if (this.testamentFilter === 'NT') {
-            data = data.filter(d => d.t === 'NT' || d.t === 'Both');
+        let data = [];
+        if (this.isSearchMode && this.localSearchData) {
+            data = this.localSearchData;
+        } else {
+            data = this.is3D ? this.data3d : this.data2d;
+            if (this.testamentFilter === 'OT') {
+                data = data.filter(d => d.t === 'OT' || d.t === 'Both');
+            } else if (this.testamentFilter === 'NT') {
+                data = data.filter(d => d.t === 'NT' || d.t === 'Both');
+            }
         }
         
         const words = data.map(d => d.w);
         const freqs = data.map(d => d.f);
-        const sizes = freqs.map(f => Math.max(5, Math.min(25, Math.log(f) * 2)));
+        
+        let sizes, colors;
+        let textFonts = { size: [], color: [] };
+
+        if (this.isSearchMode) {
+            sizes = data.map(d => d.w === this.searchedWord ? 25 : Math.max(8, d.sim * 18));
+            colors = data.map(d => d.w === this.searchedWord ? '#d32f2f' : d.sim);
+            
+            data.forEach(d => {
+                if (d.w === this.searchedWord) {
+                    textFonts.size.push(16);
+                    textFonts.color.push('#d32f2f');
+                } else {
+                    textFonts.size.push(Math.max(9, Math.floor(d.sim * 14)));
+                    textFonts.color.push('#666');
+                }
+            });
+        } else {
+            sizes = freqs.map(f => Math.max(5, Math.min(25, Math.log(f) * 2)));
+            colors = sizes;
+        }
         
         const trace = {
             x: data.map(d => d.x),
             y: data.map(d => d.y),
             text: words,
-            mode: 'markers',
+            mode: (this.isSearchMode && !this.is3D) ? 'markers+text' : 'markers',
+            textposition: 'top center',
             hovertemplate: '<b>%{text}</b><extra></extra>',
             hoverlabel: { font: { size: 16 } },
             marker: {
                 size: sizes,
-                color: sizes,
+                color: colors,
                 colorscale: 'Viridis',
                 opacity: 0.7,
                 line: {
@@ -385,6 +348,10 @@ class BibleWordMap extends HTMLElement {
                 }
             }
         };
+
+        if (this.isSearchMode && !this.is3D) {
+            trace.textfont = textFonts;
+        }
 
         if (this.is3D) {
             trace.type = 'scatter3d';
