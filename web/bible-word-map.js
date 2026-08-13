@@ -385,11 +385,25 @@ class BibleWordMap extends HTMLElement {
                                     let prefix = start > 0 ? "..." : "";
                                     let suffix = end < text.length ? "..." : "";
                                     
-                                    let highlighted = snippet
+                                    // Word wrap the snippet every ~45 chars
+                                    let wrappedSnippet = "";
+                                    let currentLine = "";
+                                    let wordsInSnippet = snippet.split(' ');
+                                    for (let w of wordsInSnippet) {
+                                        if (currentLine.length + w.length > 45) {
+                                            wrappedSnippet += currentLine.trim() + "<br>";
+                                            currentLine = w + " ";
+                                        } else {
+                                            currentLine += w + " ";
+                                        }
+                                    }
+                                    wrappedSnippet += currentLine.trim();
+                                    
+                                    let highlighted = wrappedSnippet
                                         .replace(new RegExp(`\\b(${hw})\\b`, 'gi'), `<span style="color: #2563eb;"><b>$1</b></span>`)
                                         .replace(new RegExp(`\\b(${kw})\\b`, 'gi'), `<span style="color: #d32f2f;"><b>$1</b></span>`);
                                         
-                                    return `<b>${ref}</b>: "<i>${prefix}${highlighted}${suffix}</i>"`;
+                                    return `<b>${ref}</b>:<br><i style="color: #444;">${prefix}${highlighted}${suffix}</i>`;
                                 });
                                 
                                 tooltipContent += `<b style="font-size: 1.1em;">Links to '${sw}':</b><br>`;
