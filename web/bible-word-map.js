@@ -128,8 +128,18 @@ class BibleWordMap extends HTMLElement {
     async loadData() {
         try {
             const src2d = this.getAttribute('src-2d');
-            const res2d = await fetch(src2d).then(r => r.json());
+            const srcVerses = this.getAttribute('src-verses');
+            
+            const [res2d, resVerses] = await Promise.all([
+                fetch(src2d).then(r => r.json()),
+                srcVerses ? fetch(srcVerses).then(r => r.json()) : Promise.resolve(null)
+            ]);
+            
             this.data2d = res2d;
+            if (resVerses) {
+                this.verses = resVerses.verses;
+                this.wordToVerses = resVerses.words;
+            }
         } catch (e) {
             console.error("Failed to load map data:", e);
             this.loadingDiv.innerHTML = `<span style="color:red;">Error loading data. Run 'make serve' from root to fix paths.</span>`;
@@ -293,6 +303,7 @@ class BibleWordMap extends HTMLElement {
         
         let sizes, colors;
         let textFonts = { size: [], color: [] };
+        let customdata = [];
 
         if (this.isSearchMode) {
             sizes = data.map(d => this.searchedWords.includes(d.w) ? 25 : Math.max(8, d.sim * 18));
@@ -302,24 +313,51 @@ class BibleWordMap extends HTMLElement {
                 if (this.searchedWords.includes(d.w)) {
                     textFonts.size.push(16);
                     textFonts.color.push('#d32f2f');
+                    customdata.push("Key Search Word");
                 } else {
                     textFonts.size.push(Math.max(9, Math.floor(d.sim * 14)));
                     textFonts.color.push('#666');
+                    
+                    if (this.wordToVerses && this.verses) {
+                        let myVerses = this.wordToVerses[d.w] || [];
+                        let linkedVerseIds = new Set();
+                        this.searchedWords.forEach(sw => {
+                            let swVerses = this.wordToVerses[sw] || [];
+                            myVerses.forEach(vId => {
+                                if (swVerses.includes(vId)) linkedVerseIds.add(vId);
+                            });
+                        });
+                        
+                        let linkedVerses = Array.from(linkedVerseIds).map(id => this.verses[id]);
+                        if (linkedVerses.length === 0) {
+                            customdata.push("No direct verses linking these words");
+                        } else if (linkedVerses.length > 5) {
+                            customdata.push(linkedVerses.slice(0, 5).join("<br>") + `<br><i>...and ${linkedVerses.length - 5} more</i>`);
+                        } else {
+                            customdata.push(linkedVerses.join("<br>"));
+                        }
+                    } else {
+                        customdata.push("");
+                    }
                 }
             });
         } else {
             sizes = freqs.map(f => Math.max(5, Math.min(25, Math.log(f) * 2)));
             colors = sizes;
+            customdata = words.map(() => "");
         }
         
         const trace = {
             x: data.map(d => d.x),
             y: data.map(d => d.y),
             text: words,
+            customdata: customdata,
             mode: this.isSearchMode ? 'markers+text' : 'markers',
             textposition: 'top center',
-            hovertemplate: '<b>%{text}</b><extra></extra>',
-            hoverlabel: { font: { size: 16 } },
+            hovertemplate: this.isSearchMode 
+                ? '<b>%{text}</b><br><br>%{customdata}<extra></extra>' 
+                : '<b>%{text}</b><extra></extra>',
+            hoverlabel: { font: { size: 14 }, bgcolor: '#ffffff' },
             marker: {
                 size: sizes,
                 color: colors,
