@@ -138,10 +138,12 @@ class BibleWordMap extends HTMLElement {
                     max-width: 300px;
                     z-index: 9999;
                 }
+                .bwm-info-wrapper {
+                    position: relative;
+                    display: flex;
+                    align-items: center;
+                }
                 .bwm-info-btn {
-                    position: absolute;
-                    top: 10px;
-                    right: 10px;
                     width: 28px;
                     height: 28px;
                     border-radius: 50%;
@@ -155,16 +157,16 @@ class BibleWordMap extends HTMLElement {
                     font-weight: bold;
                     cursor: pointer;
                     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-                    z-index: 10;
                     user-select: none;
+                    flex-shrink: 0;
                 }
                 .bwm-info-btn:hover {
                     background: var(--bwm-border);
                 }
                 .bwm-info-panel {
                     position: absolute;
-                    top: 45px;
-                    right: 10px;
+                    top: 36px;
+                    right: 0;
                     width: 320px;
                     background-color: #ffffff;
                     background-color: var(--bwm-tooltip-bg, #ffffff);
@@ -221,15 +223,17 @@ class BibleWordMap extends HTMLElement {
                         <button class="bwm-btn" id="bwm-btn-search">Search</button>
                         <span id="bwm-error" class="bwm-error">Word not found</span>
                     </div>
+                    <div class="bwm-info-wrapper">
+                        <div class="bwm-info-btn">i</div>
+                        <div class="bwm-info-panel">
+                            <div class="bwm-info-close">&times;</div>
+                            Explore the Berean Standard Bible through a mathematical lens. Each dot represents a word, and the physical distance between dots indicates how closely related their meanings are. The semantic similarity is learned based on words that are used in similar contexts, meaning they are surrounded by the same types of words, even if those two specific words never actually appear in the exact same verse together! When you search for multiple words, the map instantly recalculates to form a customized cluster showing the strongest connections to your key terms. Larger and brighter dots represent a stronger match. Green lines show words that appear in the same verse together, while gray lines mean they share similar concepts. Click or Search a set of words to explore!
+                        </div>
+                    </div>
                 </div>
                 <div class="bwm-canvas-container">
                     <canvas></canvas>
                     <div class="bwm-tooltip"></div>
-                    <div class="bwm-info-btn">i</div>
-                    <div class="bwm-info-panel">
-                        <div class="bwm-info-close">&times;</div>
-                        Explore the Berean Standard Bible through a mathematical lens. Each dot represents a word, and the physical distance between dots indicates how closely related their meanings are. The semantic similarity is learned based on words that are used in similar contexts, meaning they are surrounded by the same types of words, even if those two specific words never actually appear in the exact same verse together! When you search for multiple words, the map instantly recalculates to form a customized cluster showing the strongest connections to your key terms. Larger and brighter dots represent a stronger match. Green lines show words that appear in the same verse together, while gray lines mean they share similar concepts. Click or Search a set of words to explore!
-                    </div>
                     <div class="bwm-loading">Loading data...</div>
                 </div>
             </div>

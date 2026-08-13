@@ -55,13 +55,17 @@ h1 {
 
 main {
     flex: 1;
-    width: 100%;
+    width: auto;
+    align-self: stretch;
     background: var(--card-bg);
-    padding: 0 10px;
+    padding: 10px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    margin-bottom: 20px;
+    margin: 0 10px 10px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
     min-height: 0;
     min-width: 0;
 }
@@ -76,11 +80,10 @@ bible-word-map {
 
 footer {
     text-align: center;
-    padding: 8px;
+    padding: 5px;
     flex-shrink: 0;
     font-size: 0.85em;
-    background: var(--card-bg);
-    border-top: 1px solid var(--border-color);
+    background: transparent;
 }
 footer a {
     color: #2563eb;
