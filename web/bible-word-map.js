@@ -25,8 +25,9 @@ class BibleWordMap extends HTMLElement {
                     --bwm-node-hover: #2563eb;
                     --bwm-link-direct: rgba(40, 167, 69, 0.6);
                     --bwm-link-indirect: rgba(150, 150, 150, 0.2);
-                    --bwm-tooltip-bg: #ffffff;
-                    --bwm-tooltip-text: #111111;
+                    --bwm-tooltip-bg: #222222;
+                    --bwm-tooltip-text: #f9f9f9;
+                    --bwm-tooltip-link: #60a5fa;
                     --bwm-font: system-ui, -apple-system, sans-serif;
                 }
                 @media (prefers-color-scheme: dark) {
@@ -35,8 +36,9 @@ class BibleWordMap extends HTMLElement {
                         --bwm-text: #e0e0e0;
                         --bwm-border: #333333;
                         --bwm-node-default: #999999;
-                        --bwm-tooltip-bg: #1e1e1e;
-                        --bwm-tooltip-text: #ffffff;
+                        --bwm-tooltip-bg: #f0f0f0;
+                        --bwm-tooltip-text: #111111;
+                        --bwm-tooltip-link: #2563eb;
                     }
                 }
                 .bwm-container {
@@ -616,9 +618,10 @@ class BibleWordMap extends HTMLElement {
                     let refs = intersection.map(id => (this.verses[id] || "").split('|')[0]);
                     
                     if (refs.length > 3) {
-                        content += refs.slice(0, 3).join("<br>") + `<br><i style="color:var(--bwm-text); opacity:0.7;">...and ${refs.length - 3} more</i>`;
+                        let formattedRefs = refs.slice(0, 3).map(r => `<span style="color:var(--bwm-tooltip-link); font-family: monospace;">${r}</span>`).join("<br>");
+                        content += formattedRefs + `<br><i style="color:var(--bwm-tooltip-text); opacity:0.7;">...and ${refs.length - 3} more</i>`;
                     } else {
-                        content += refs.join("<br>");
+                        content += refs.map(r => `<span style="color:var(--bwm-tooltip-link); font-family: monospace;">${r}</span>`).join("<br>");
                     }
                     content += `</div>`;
                 }
