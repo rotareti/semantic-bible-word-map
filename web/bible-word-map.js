@@ -349,68 +349,14 @@ class BibleWordMap extends HTMLElement {
                                 let linkedVerses = intersection.map(id => {
                                     let verseData = this.verses[id];
                                     if (!verseData) return "";
-                                    
-                                    let parts = verseData.split('|');
-                                    if (parts.length === 1) return parts[0];
-                                    
-                                    let ref = parts[0];
-                                    let text = parts.slice(1).join('|');
-                                    let hw = d.w;
-                                    let kw = sw;
-                                    
-                                    let lowerText = text.toLowerCase();
-                                    let pos1 = lowerText.indexOf(hw.toLowerCase());
-                                    let pos2 = lowerText.indexOf(kw.toLowerCase());
-                                    
-                                    if (pos1 === -1) pos1 = pos2;
-                                    if (pos2 === -1) pos2 = pos1;
-                                    if (pos1 === -1) return ref;
-                                    
-                                    let minPos = Math.min(pos1, pos2);
-                                    let maxPos = Math.max(pos1, pos2) + Math.max(hw.length, kw.length);
-                                    
-                                    let start = Math.max(0, minPos - 35);
-                                    let end = Math.min(text.length, maxPos + 35);
-                                    
-                                    if (start > 0) {
-                                        let spaceIdx = text.indexOf(' ', start);
-                                        if (spaceIdx !== -1 && spaceIdx < minPos) start = spaceIdx + 1;
-                                    }
-                                    if (end < text.length) {
-                                        let spaceIdx = text.lastIndexOf(' ', end);
-                                        if (spaceIdx !== -1 && spaceIdx > maxPos) end = spaceIdx;
-                                    }
-                                    
-                                    let snippet = text.substring(start, end);
-                                    let prefix = start > 0 ? "..." : "";
-                                    let suffix = end < text.length ? "..." : "";
-                                    
-                                    // Word wrap the snippet every ~45 chars
-                                    let wrappedSnippet = "";
-                                    let currentLine = "";
-                                    let wordsInSnippet = snippet.split(' ');
-                                    for (let w of wordsInSnippet) {
-                                        if (currentLine.length + w.length > 45) {
-                                            wrappedSnippet += currentLine.trim() + "<br>";
-                                            currentLine = w + " ";
-                                        } else {
-                                            currentLine += w + " ";
-                                        }
-                                    }
-                                    wrappedSnippet += currentLine.trim();
-                                    
-                                    let highlighted = wrappedSnippet
-                                        .replace(new RegExp(`\\b(${hw})\\b`, 'gi'), `<span style="color: #2563eb;"><b>$1</b></span>`)
-                                        .replace(new RegExp(`\\b(${kw})\\b`, 'gi'), `<span style="color: #d32f2f;"><b>$1</b></span>`);
-                                        
-                                    return `<b>${ref}</b>:<br><i style="color: #444;">${prefix}${highlighted}${suffix}</i>`;
+                                    return verseData.split('|')[0];
                                 });
                                 
                                 tooltipContent += `<b style="font-size: 1.1em;">Links to '${sw}':</b><br>`;
                                 if (linkedVerses.length > 3) {
-                                    tooltipContent += linkedVerses.slice(0, 3).join("<br><br>") + `<br><br><i style="color: #666;">...and ${linkedVerses.length - 3} more</i><br><br>`;
+                                    tooltipContent += linkedVerses.slice(0, 3).join("<br>") + `<br><i style="color: #666;">...and ${linkedVerses.length - 3} more</i><br><br>`;
                                 } else {
-                                    tooltipContent += linkedVerses.join("<br><br>") + "<br><br>";
+                                    tooltipContent += linkedVerses.join("<br>") + "<br><br>";
                                 }
                             }
                         });
