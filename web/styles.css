@@ -31,6 +31,7 @@ body {
     margin: 0;
     padding: 0;
     height: 100vh;
+    height: 100dvh; /* Dynamic viewport height to prevent URL bar clipping on mobile */
     overflow: hidden;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     background-color: var(--bg-color);
@@ -97,10 +98,18 @@ footer a {
 
 /* Mobile responsive styles */
 @media (max-width: 768px) {
+    header {
+        padding: 5px;
+    }
     h1 {
-        font-size: 1.4rem;
+        font-size: 1.2rem;
     }
     main {
         padding: 5px;
+        margin: 0 5px 5px 5px;
+    }
+    footer {
+        padding: 2px 5px;
+        font-size: 0.75em;
     }
 }
