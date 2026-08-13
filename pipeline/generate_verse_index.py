@@ -17,15 +17,16 @@ word_to_verse = {}
 # Regex to keep only alphabetic characters and spaces
 clean_re = re.compile(r'[^a-zA-Z\s]')
 
-def extract_strings_and_verses(val, current_ref, words_in_verse):
+def extract_strings_and_verses(val, current_ref, words_in_verse, current_verse_text):
     if isinstance(val, str):
+        current_verse_text.append(val)
         cleaned = clean_re.sub(' ', val).lower()
         for w in cleaned.split():
             if w:
                 words_in_verse.add(w)
     elif isinstance(val, list):
         for item in val:
-            extract_strings_and_verses(item, current_ref, words_in_verse)
+            extract_strings_and_verses(item, current_ref, words_in_verse, current_verse_text)
     elif isinstance(val, dict):
         # Check if this object is a chapter or verse marker
         if val.get('type') == 'chapter':
@@ -35,19 +36,21 @@ def extract_strings_and_verses(val, current_ref, words_in_verse):
             v_num = val.get('number')
             if v_num:
                 # Flush the old verse
-                flush_verse(current_ref, words_in_verse)
+                flush_verse(current_ref, words_in_verse, current_verse_text)
                 current_ref['v'] = v_num
                 words_in_verse.clear()
+                current_verse_text.clear()
         
         # Recurse into content if present
         if 'content' in val:
-            extract_strings_and_verses(val['content'], current_ref, words_in_verse)
+            extract_strings_and_verses(val['content'], current_ref, words_in_verse, current_verse_text)
 
-def flush_verse(current_ref, words_in_verse):
+def flush_verse(current_ref, words_in_verse, current_verse_text):
     if not words_in_verse or not current_ref['b'] or not current_ref['c'] or not current_ref['v']:
         return
         
-    verse_str = f"{current_ref['b']} {current_ref['c']}:{current_ref['v']}"
+    full_text = "".join(current_verse_text).strip()
+    verse_str = f"{current_ref['b']} {current_ref['c']}:{current_ref['v']}|{full_text}"
     verse_id = len(verses)
     verses.append(verse_str)
     
@@ -66,8 +69,9 @@ for f in files:
         data = json.load(file)
         current_ref = {'b': book_code, 'c': None, 'v': None}
         words_in_verse = set()
-        extract_strings_and_verses(data, current_ref, words_in_verse)
-        flush_verse(current_ref, words_in_verse)
+        current_verse_text = []
+        extract_strings_and_verses(data, current_ref, words_in_verse, current_verse_text)
+        flush_verse(current_ref, words_in_verse, current_verse_text)
 
 # Now we filter the word_to_verse map to only include words that appear 
 # in our word2vec model (count >= 3). We'll load wordmap_2d.json for that.
