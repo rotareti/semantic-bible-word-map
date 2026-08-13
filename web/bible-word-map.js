@@ -100,8 +100,8 @@ class BibleWordMap extends HTMLElement {
             </style>
             <div class="top-bar">
                 <div class="search-box">
-                    <input type="text" id="search-input" placeholder="Search for words (e.g. God Son Spirit)..." />
-                    <button id="search-btn">Find</button>
+                    <input type="text" id="search-input" placeholder="Search for words (e.g. Father Son Spirit)..." />
+                    <button id="search-btn">Search</button>
                     <span id="search-error" class="error-msg">Word not found</span>
                 </div>
                 <div class="controls">
