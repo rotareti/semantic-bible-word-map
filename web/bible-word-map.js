@@ -385,6 +385,14 @@ class BibleWordMap extends HTMLElement {
             }
         });
 
+        // Normalize similarity to [0, 1] to maximize color and size contrast like Plotly did
+        let minSim = d3.min(this.nodes.filter(n => !n.isKw), n => n.sim) || 0;
+        let maxSim = d3.max(this.nodes.filter(n => !n.isKw), n => n.sim) || 1;
+        this.nodes.forEach(n => {
+            if (n.isKw) n.normSim = 1;
+            else n.normSim = (n.sim - minSim) / (maxSim - minSim || 1);
+        });
+
         this.isSearchMode = true;
         this.runSimulation();
     }
@@ -511,7 +519,7 @@ class BibleWordMap extends HTMLElement {
             // Calculate a fixed screen pixel radius, then scale it into canvas coordinates
             let pixelR = 3;
             if (n.isKw) pixelR = 12;
-            else if (this.isSearchMode) pixelR = Math.max(3, n.sim * 10);
+            else if (this.isSearchMode) pixelR = 3 + (n.normSim * 7); // Rages from 3 to 10
             else pixelR = Math.max(1.5, Math.min(8, Math.log(n.f || 3) * 1.2));
             
             let canvasR = pixelR / this.transform.k;
@@ -521,7 +529,7 @@ class BibleWordMap extends HTMLElement {
             if (n.isKw) {
                 fill = this.colors.nodeKw;
             } else if (this.isSearchMode) {
-                fill = d3.interpolateViridis(n.sim);
+                fill = d3.interpolateViridis(n.normSim);
             } else {
                 fill = d3.interpolateViridis(Math.min(1, Math.max(0, Math.log(n.f || 1) / 10)));
             }
