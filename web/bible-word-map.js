@@ -239,11 +239,12 @@ class BibleWordMap extends HTMLElement {
                 const topWords = similarities.slice(0, 100);
                 topWords.forEach(s => {
                     if (!topWordsSet.has(s.point.w)) {
-                        topWordsSet.set(s.point.w, { point: s.point, maxSim: s.sim });
+                        topWordsSet.set(s.point.w, { point: s.point, maxSim: s.sim, sourceKw: primaryPoint.w });
                     } else {
                         let existing = topWordsSet.get(s.point.w);
                         if (s.sim > existing.maxSim) {
                             existing.maxSim = s.sim;
+                            existing.sourceKw = primaryPoint.w;
                         }
                     }
                 });
@@ -267,6 +268,7 @@ class BibleWordMap extends HTMLElement {
                     newPoint.x = embedding[i][0];
                     newPoint.y = embedding[i][1];
                     newPoint.sim = s.maxSim;
+                    newPoint.sourceKw = s.sourceKw;
                     return newPoint;
                 });
 
@@ -400,25 +402,15 @@ class BibleWordMap extends HTMLElement {
         let lineX = [];
         let lineY = [];
         
-        if (this.isSearchMode && this.wordToVerses) {
+        if (this.isSearchMode && this.localSearchData) {
             data.forEach(d => {
-                if (this.searchedWords.includes(d.w)) return;
+                if (this.searchedWords.includes(d.w) || !d.sourceKw) return;
                 
-                let myVerses = this.wordToVerses[d.w] || [];
-                if (myVerses.length === 0) return;
-                
-                this.searchedWords.forEach(sw => {
-                    let swData = data.find(p => p.w === sw);
-                    if (!swData) return;
-                    
-                    let swVerses = this.wordToVerses[sw] || [];
-                    let hasIntersection = myVerses.some(vId => swVerses.includes(vId));
-                    
-                    if (hasIntersection) {
-                        lineX.push(d.x, swData.x, null);
-                        lineY.push(d.y, swData.y, null);
-                    }
-                });
+                let swData = data.find(p => p.w === d.sourceKw);
+                if (swData) {
+                    lineX.push(d.x, swData.x, null);
+                    lineY.push(d.y, swData.y, null);
+                }
             });
         }
         
@@ -427,7 +419,7 @@ class BibleWordMap extends HTMLElement {
             y: lineY,
             mode: 'lines',
             line: {
-                color: 'rgba(150, 150, 150, 0.2)',
+                color: 'rgba(150, 150, 150, 0.25)',
                 width: 1
             },
             hoverinfo: 'none',
