@@ -25,7 +25,7 @@ class BibleWordMap extends HTMLElement {
                     --bwm-node-hover: #2563eb;
                     --bwm-link-direct: rgba(40, 167, 69, 0.6);
                     --bwm-link-indirect: rgba(150, 150, 150, 0.2);
-                    --bwm-tooltip-bg: rgba(255, 255, 255, 0.95);
+                    --bwm-tooltip-bg: #ffffff;
                     --bwm-tooltip-text: #111111;
                     --bwm-font: system-ui, -apple-system, sans-serif;
                 }
@@ -35,7 +35,7 @@ class BibleWordMap extends HTMLElement {
                         --bwm-text: #e0e0e0;
                         --bwm-border: #333333;
                         --bwm-node-default: #999999;
-                        --bwm-tooltip-bg: rgba(30, 30, 30, 0.95);
+                        --bwm-tooltip-bg: #1e1e1e;
                         --bwm-tooltip-text: #ffffff;
                     }
                 }
@@ -119,14 +119,15 @@ class BibleWordMap extends HTMLElement {
                     position: absolute;
                     background: var(--bwm-tooltip-bg);
                     color: var(--bwm-tooltip-text);
-                    padding: 12px;
-                    border-radius: 6px;
+                    padding: 10px 14px;
+                    border-radius: 10px;
                     border: 1px solid var(--bwm-border);
                     pointer-events: none;
                     opacity: 0;
                     transition: opacity 0.2s;
-                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                    font-size: 0.9em;
+                    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+                    font-size: 0.85em;
+                    line-height: 1.4;
                     max-width: 300px;
                     z-index: 100;
                 }
@@ -544,7 +545,7 @@ class BibleWordMap extends HTMLElement {
             }
             this.ctx.fill();
             
-            let showLabel = this.isSearchMode || this.hoveredNode === n;
+            let showLabel = (this.isSearchMode || n.isKw) && this.hoveredNode !== n;
             if (showLabel) {
                 this.ctx.shadowBlur = 0;
                 let fontSize = (n.isKw ? 14 : 11) / this.transform.k;
@@ -616,7 +617,7 @@ class BibleWordMap extends HTMLElement {
         this.tooltip.style.opacity = '1';
         this.tooltip.style.pointerEvents = 'auto';
         
-        let content = `<b style="font-size:1.2em;">${node.w}</b><br>`;
+        let content = `<b style="font-size:1.1em; display:block; margin-bottom: 4px;">${node.w}</b>`;
         
         if (this.isSearchMode && this.wordToVerses && this.verses) {
             let hasLinks = false;
