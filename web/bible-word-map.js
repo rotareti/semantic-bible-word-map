@@ -66,27 +66,31 @@ class BibleWordMap extends HTMLElement {
                 .bwm-search-controls input {
                     flex: 1;
                     min-width: 200px;
-                    padding: 8px 12px;
+                    padding: 8px 16px;
                     border: 1px solid var(--bwm-border);
-                    border-radius: 4px;
-                    background: var(--bwm-bg);
+                    border-radius: 20px;
+                    background: var(--bwm-input-bg, #f9fafb);
                     color: var(--bwm-text);
                     outline: none;
                     font-family: var(--bwm-font);
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.02) inset;
                 }
                 .bwm-search-controls input:focus {
                     border-color: var(--bwm-node-hover);
+                    background: var(--bwm-bg);
+                    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
                 }
                 .bwm-btn {
-                    padding: 8px 16px;
+                    padding: 8px 20px;
                     border: 1px solid var(--bwm-border);
-                    border-radius: 4px;
-                    background: var(--bwm-bg);
+                    border-radius: 20px;
+                    background: var(--bwm-input-bg, #f9fafb);
                     color: var(--bwm-text);
                     cursor: pointer;
                     font-weight: 600;
                     transition: all 0.2s;
                     font-family: var(--bwm-font);
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.04);
                 }
                 .bwm-btn:hover {
                     background: var(--bwm-border);
