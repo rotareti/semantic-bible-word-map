@@ -49,8 +49,8 @@ main {
     width: 100%;
     max-width: 1200px;
     background: var(--card-bg);
-    padding: 15px;
-    border-radius: 12px;
+    padding: 10px;
+    border-radius: 8px;
     box-shadow: var(--shadow);
     box-sizing: border-box;
 }

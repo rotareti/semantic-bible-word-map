@@ -433,8 +433,8 @@ class BibleWordMap extends HTMLElement {
             y: lineYLinked,
             mode: 'lines',
             line: {
-                color: 'rgba(40, 167, 69, 0.5)', // Distinct green for verse links
-                width: 1.5
+                color: 'rgba(40, 167, 69, 0.2)', // Lightened green
+                width: 1
             },
             hoverinfo: 'none',
             showlegend: false
