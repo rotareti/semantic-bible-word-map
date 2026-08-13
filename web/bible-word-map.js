@@ -299,6 +299,13 @@ class BibleWordMap extends HTMLElement {
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
         this.canvas.addEventListener('click', (e) => this.handleClick(e));
         this.canvas.addEventListener('mouseleave', () => this.hideTooltip());
+        this.canvas.addEventListener('touchstart', (e) => {
+            this.isTouch = true;
+            if (this.tooltip.style.opacity === '1') {
+                this.touchCloseTooltip = true;
+                this.hideTooltip();
+            }
+        }, {passive: true});
         
         this.infoBtn = this.querySelector('.bwm-info-btn');
         this.infoPanel = this.querySelector('.bwm-info-panel');
@@ -715,6 +722,15 @@ class BibleWordMap extends HTMLElement {
     }
 
     handleClick(e) {
+        if (this.ignoreNextClick) {
+            this.ignoreNextClick = false;
+            return;
+        }
+        if (this.isTouch && this.touchCloseTooltip) {
+            this.touchCloseTooltip = false;
+            return;
+        }
+
         if (this.hoveredNode) {
             let currentSearch = this.searchInput.value.trim();
             if (currentSearch) {
@@ -734,7 +750,12 @@ class BibleWordMap extends HTMLElement {
         this.tooltip.style.opacity = '1';
         this.tooltip.style.pointerEvents = 'auto';
         
-        let content = `<b style="font-size:1.1em; display:block; margin-bottom: 4px;">${node.w}</b>`;
+        let content = `
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; gap: 8px;">
+                <b style="font-size:1.1em;">${node.w}</b>
+                <span class="bwm-tooltip-close" style="cursor:pointer; font-size:1.2em; line-height:1; opacity:0.6;">&times;</span>
+            </div>
+        `;
         
         if (this.isSearchMode && this.wordToVerses && this.verses) {
             let hasLinks = false;
@@ -764,6 +785,18 @@ class BibleWordMap extends HTMLElement {
         }
         
         this.tooltip.innerHTML = content;
+        
+        let closeBtn = this.tooltip.querySelector('.bwm-tooltip-close');
+        if (closeBtn) {
+            let closeHandler = (e) => {
+                e.stopPropagation();
+                this.hideTooltip();
+                this.ignoreNextClick = true;
+            };
+            closeBtn.addEventListener('click', closeHandler);
+            closeBtn.addEventListener('touchstart', closeHandler, {passive: true});
+        }
+        
         this.updateTooltipPos(mouseX, mouseY);
     }
     
