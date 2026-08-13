@@ -119,19 +119,20 @@ class BibleWordMap extends HTMLElement {
                 }
                 .bwm-tooltip {
                     position: absolute;
-                    background-color: var(--bwm-tooltip-bg);
+                    background-color: #ffffff; /* Hardcoded solid fallback */
+                    background-color: var(--bwm-tooltip-bg, #ffffff);
                     color: var(--bwm-tooltip-text);
-                    padding: 18px 24px;
-                    border-radius: 12px;
-                    border: 1px solid var(--bwm-border);
+                    padding: 10px 14px;
+                    border-radius: 8px;
+                    border: 2px solid var(--bwm-node-hover); /* Make it obvious it's a solid box */
                     pointer-events: none;
                     opacity: 0;
                     transition: opacity 0.1s;
-                    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
                     font-size: 0.9em;
-                    line-height: 1.5;
-                    max-width: 320px;
-                    z-index: 100;
+                    line-height: 1.4;
+                    max-width: 300px;
+                    z-index: 9999;
                 }
                 .bwm-loading {
                     position: absolute;
