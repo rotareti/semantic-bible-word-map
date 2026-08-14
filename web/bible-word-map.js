@@ -1088,8 +1088,7 @@ class BibleWordMap extends HTMLElement {
                 this.ctx.font = `${fontSize}px ${this.colors.font}`;
                 this.ctx.textAlign = "center";
                 this.ctx.textBaseline = "top";
-                
-                let yOffset = (canvasR * this.transform.k) + 2;
+                let yOffset = (n.canvasR * this.transform.k) + 2;
                 
                 // Draw a solid halo background for the text to improve readability over layered lines/dots
                 this.ctx.lineWidth = 3;
