@@ -116,7 +116,7 @@ footer a {
 /* Info Button Styles */
 .info-wrapper {
     position: absolute;
-    right: -40px;
+    right: 15px;
     top: 50%;
     transform: translateY(-50%);
 }
