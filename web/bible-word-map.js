@@ -1045,6 +1045,9 @@ class BibleWordMap extends HTMLElement {
 
         if (this.hoveredNode) {
             this.addKeyword(this.hoveredNode.w);
+            if (this.isTouch) {
+                this.hoveredNode = null;
+            }
         }
     }
 
