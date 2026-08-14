@@ -306,7 +306,66 @@ class BibleWordMap extends HTMLElement {
                 this.touchCloseTooltip = true;
                 this.hideTooltip();
             }
+            
+            if (e.touches && e.touches.length > 0) {
+                let touch = e.touches[0];
+                let rect = this.canvas.getBoundingClientRect();
+                let mouseX = touch.clientX - rect.left;
+                let mouseY = touch.clientY - rect.top;
+                
+                this.lastTouchX = touch.clientX;
+                this.lastTouchY = touch.clientY;
+                
+                let [logicalX, logicalY] = this.transform.invert([mouseX, mouseY]);
+                let searchRadius = 30 / this.transform.k; // slightly larger radius for fat fingers
+                let minDist = Infinity;
+                let closestNode = null;
+                
+                if (this.nodes) {
+                    for (let n of this.nodes) {
+                        let dx = n.x - logicalX;
+                        let dy = n.y - logicalY;
+                        let dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < searchRadius && dist < minDist) {
+                            minDist = dist;
+                            closestNode = n;
+                        }
+                    }
+                }
+                
+                this.touchTargetNode = closestNode;
+                
+                if (closestNode) {
+                    this.touchTimer = setTimeout(() => {
+                        this.touchTimer = null;
+                        this.hoveredNode = closestNode;
+                        this.showTooltip(closestNode, mouseX, mouseY);
+                        this.draw();
+                        this.ignoreNextClick = true; // prevent tap from triggering additive search on long press
+                    }, 500);
+                }
+            }
         }, {passive: true});
+        
+        this.canvas.addEventListener('touchmove', () => {
+            if (this.touchTimer) {
+                clearTimeout(this.touchTimer);
+                this.touchTimer = null;
+                this.touchTargetNode = null;
+            }
+        }, {passive: true});
+        
+        this.canvas.addEventListener('touchend', () => {
+            if (this.touchTimer) {
+                clearTimeout(this.touchTimer);
+                this.touchTimer = null;
+                // If it was a short tap, the simulated click event will fire.
+                // We set the hoveredNode so handleClick can process the additive search!
+                if (this.touchTargetNode) {
+                    this.hoveredNode = this.touchTargetNode;
+                }
+            }
+        });
         
         this.infoBtn = this.querySelector('.bwm-info-btn');
         this.infoPanel = this.querySelector('.bwm-info-panel');
@@ -901,6 +960,21 @@ class BibleWordMap extends HTMLElement {
     handleMouseMove(e) {
         if (!this.nodes || this.nodes.length === 0) return;
         
+        if (this.isTouch) {
+            // Ignore synthesized mouse moves. If it's a real mouse (moved >20px from last touch), revert to mouse mode.
+            if (this.lastTouchX !== undefined) {
+                let dx = e.clientX - this.lastTouchX;
+                let dy = e.clientY - this.lastTouchY;
+                if (Math.abs(dx) > 20 || Math.abs(dy) > 20) {
+                    this.isTouch = false;
+                } else {
+                    return;
+                }
+            } else {
+                return;
+            }
+        }
+        
         let rect = this.canvas.getBoundingClientRect();
         let mouseX = e.clientX - rect.left;
         let mouseY = e.clientY - rect.top;
@@ -1013,8 +1087,14 @@ class BibleWordMap extends HTMLElement {
         let x = mouseX + 15;
         let y = mouseY + 15;
         
-        if (x + tw > rect.width) x = mouseX - tw - 15;
-        if (y + th > rect.height) y = mouseY - th - 15;
+        if (y + th > rect.height) {
+            y = mouseY - th - 15;
+            if (y < 10) y = 10;
+        }
+        if (x + tw > rect.width) {
+            x = mouseX - tw - 15;
+            if (x < 10) x = 10;
+        }
         
         this.tooltip.style.left = x + 'px';
         this.tooltip.style.top = y + 'px';

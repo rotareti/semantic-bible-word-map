@@ -1,5 +1,10 @@
 # Changelog
 
+## [4.1.1] - 2026-08-14
+### Fixed
+- Fixed tooltip overflowing the top of the screen on mobile devices making the close button inaccessible.
+- Redesigned touch handling so a short tap adds a word to the active map, and a long press opens the verse tooltip without conflicting with the map interaction.
+
 ## [4.1.0] - 2026-08-13
 ### Added
 - **True Physics Iterative Engine:** Rebuilt the visualization engine to compute graph topology dynamically. Node placement is now dictated directly by genuine 100D cosine similarities between words, creating a highly realistic mapping of semantic space.
