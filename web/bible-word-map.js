@@ -294,12 +294,10 @@ class BibleWordMap extends HTMLElement {
                 this.draw();
             });
             
-        d3.select(this.canvas).call(this.zoom);
-        
         // Tooltip/Info handlers
-        this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-        this.canvas.addEventListener('click', (e) => this.handleClick(e));
-        this.canvas.addEventListener('mouseleave', () => this.hideTooltip());
+        this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e), {capture: true});
+        this.canvas.addEventListener('click', (e) => this.handleClick(e), {capture: true});
+        this.canvas.addEventListener('mouseleave', () => this.hideTooltip(), {capture: true});
         this.canvas.addEventListener('touchstart', (e) => {
             this.isTouch = true;
             this.lastTouchStartTime = Date.now();
@@ -346,7 +344,7 @@ class BibleWordMap extends HTMLElement {
                     }, 500);
                 }
             }
-        }, {passive: true});
+        }, {passive: true, capture: true});
         
         this.canvas.addEventListener('touchmove', (e) => {
             if (this.touchTimer && e.touches && e.touches.length > 0) {
@@ -359,7 +357,7 @@ class BibleWordMap extends HTMLElement {
                     this.touchTargetNode = null;
                 }
             }
-        }, {passive: true});
+        }, {passive: true, capture: true});
         
         this.canvas.addEventListener('touchend', () => {
             this.lastTouchEndTime = Date.now();
@@ -370,9 +368,14 @@ class BibleWordMap extends HTMLElement {
                 // We set the hoveredNode so handleClick can process the additive search!
                 if (this.touchTargetNode) {
                     this.hoveredNode = this.touchTargetNode;
+                } else {
+                    this.hoveredNode = null;
                 }
             }
-        });
+        }, {passive: true, capture: true});
+        
+        // Bind D3 zoom LAST so our capture events fire first
+        d3.select(this.canvas).call(this.zoom);
         
         this.infoBtn = this.querySelector('.bwm-info-btn');
         this.infoPanel = this.querySelector('.bwm-info-panel');
@@ -477,6 +480,7 @@ class BibleWordMap extends HTMLElement {
     }
 
     async searchWord() {
+        this.hoveredNode = null;
         let query = this.searchInput.value.trim();
         if (!query) {
             this.isSearchMode = false;

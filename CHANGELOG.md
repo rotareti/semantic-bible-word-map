@@ -1,5 +1,10 @@
 # Changelog
 
+## [4.1.3] - 2026-08-14
+### Fixed
+- Fixed critical race condition where D3 zoom was swallowing `touchend` events, causing the long-press tooltip to open 500ms after a short tap. Touch events now properly intercept during the browser's capture phase before D3 zoom logic runs.
+- Fixed an issue where the second tap on empty space would erroneously re-add the previous keyword due to a stale hover state.
+
 ## [4.1.2] - 2026-08-14
 ### Fixed
 - Fixed bug on mobile devices where a short tap was incorrectly triggering the hover tooltip due to the browser synthesizing rogue `mousemove` events milliseconds after the `touchend` event.
