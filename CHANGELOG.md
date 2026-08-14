@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.1.6] - 2026-08-14
+### Fixed
+- Fixed bug where closing the long-press tooltip would occasionally block the very next touch tap from adding a keyword.
+
+### Changed
+- Updated wording in the info panel to emphasize "semantic relationships" rather than "mathematical lens" for approachability.
+
 ## [4.1.5] - 2026-08-14
 ### Fixed
 - Fixed bug where a short tap on a word would leave the word highlighted in blue instead of transitioning to the active red color because the internal hover state remained artificially stuck on the tap coordinates until the user touched elsewhere.

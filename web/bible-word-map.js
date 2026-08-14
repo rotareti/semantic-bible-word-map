@@ -232,7 +232,7 @@ class BibleWordMap extends HTMLElement {
                         <div class="bwm-info-btn">i</div>
                         <div class="bwm-info-panel">
                             <div class="bwm-info-close">&times;</div>
-                            Explore the Berean Standard Bible through a mathematical lens. Each dot represents a word, and the physical distance between dots indicates how closely related their meanings are. The semantic similarity is learned based on words that are used in similar contexts, meaning they are surrounded by the same types of words, even if those two specific words never actually appear in the exact same verse together! When you search for multiple words, the map instantly recalculates to form a customized cluster showing the strongest connections to your key terms. Larger and brighter dots represent a stronger match. Green lines show words that appear in the same verse together, while gray lines mean they share similar concepts. Click or Search a set of words to explore!
+                            Explore the Berean Standard Bible through a semantic lens. Each dot represents a word, and the physical distance between dots indicates how closely related their meanings are. The semantic similarity is learned based on words that are used in similar contexts, meaning they are surrounded by the same types of words, even if those two specific words never actually appear in the exact same verse together! When you search for multiple words, the map instantly recalculates to form a customized cluster showing the strongest connections to your key terms. Larger and brighter dots represent a stronger match. Green lines show words that appear in the same verse together, while gray lines mean they share similar concepts. Click or Search a set of words to explore!
                         </div>
                     </div>
                 </div>
@@ -300,6 +300,7 @@ class BibleWordMap extends HTMLElement {
         this.canvas.addEventListener('mouseleave', () => this.hideTooltip(), {capture: true});
         this.canvas.addEventListener('touchstart', (e) => {
             this.isTouch = true;
+            this.ignoreNextClick = false;
             this.lastTouchStartTime = Date.now();
             if (this.tooltip.style.opacity === '1') {
                 this.touchCloseTooltip = true;
