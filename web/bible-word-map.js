@@ -814,8 +814,8 @@ class BibleWordMap extends HTMLElement {
             let ch = this.logicalHeight || 600;
             kwNode = {
                 id: p.id, w: p.w, f: p.f, sim: 1, sourceKw: p.id, isKw: true,
-                x: this.transform.invertX(cw/2) + (Math.random()-0.5)*10, 
-                y: this.transform.invertY(ch/2) + (Math.random()-0.5)*10,
+                x: (Math.random()-0.5)*10, 
+                y: (Math.random()-0.5)*10,
                 v: p.v, normSim: 1, pos: p.pos
             };
             this.nodes.push(kwNode);
@@ -992,7 +992,8 @@ class BibleWordMap extends HTMLElement {
             
             // Match the opacity of the node it connects to
             if (this.isSearchMode && !l.source.isKw) {
-                this.ctx.globalAlpha = Math.max(0.1, l.source.normSim || 0.1);
+                let alpha = (l.source.normSim !== undefined && !isNaN(l.source.normSim)) ? l.source.normSim : 0.2;
+                this.ctx.globalAlpha = Math.max(0.15, alpha);
             } else {
                 this.ctx.globalAlpha = 1.0;
             }
@@ -1029,9 +1030,9 @@ class BibleWordMap extends HTMLElement {
 
             this.ctx.fillStyle = posColor;
             
-            // In search mode, lower similarity words get faded out
             if (this.isSearchMode && !n.isKw) {
-                this.ctx.globalAlpha = Math.max(0.1, n.normSim);
+                let alpha = (n.normSim !== undefined && !isNaN(n.normSim)) ? n.normSim : 0.2;
+                this.ctx.globalAlpha = Math.max(0.15, alpha);
             } else {
                 this.ctx.globalAlpha = 1.0;
             }
