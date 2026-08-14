@@ -683,7 +683,10 @@ class BibleWordMap extends HTMLElement {
 
     runSimulation() {
         if (this.simulation) this.simulation.stop();
-        if (this.spawnInterval) clearInterval(this.spawnInterval);
+        if (this.spawnInterval) {
+            clearInterval(this.spawnInterval);
+            this.spawnInterval = null;
+        }
         
         let kwNodes = this.allSearchNodes.filter(n => n.isKw);
         let otherNodes = this.allSearchNodes.filter(n => !n.isKw);
