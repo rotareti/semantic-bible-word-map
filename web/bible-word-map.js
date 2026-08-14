@@ -987,6 +987,19 @@ class BibleWordMap extends HTMLElement {
         this.ctx.translate(this.transform.x, this.transform.y);
         this.ctx.scale(this.transform.k, this.transform.k);
         
+        // Pre-calculate radii for all nodes so we can clip lines to their edges
+        this.nodes.forEach(n => {
+            let pixelR = 3;
+            if (n.isKw) pixelR = 12;
+            else if (this.isSearchMode) {
+                let alpha = (n.normSim !== undefined && !isNaN(n.normSim)) ? n.normSim : 0.2;
+                pixelR = 3 + (alpha * 7);
+            }
+            else pixelR = Math.max(1.5, Math.min(8, Math.log(n.f || 3) * 1.2));
+            
+            n.canvasR = pixelR / this.transform.k;
+        });
+        
         this.links.forEach(l => {
             if (l.source.x === undefined || l.target.x === undefined) return;
             
@@ -998,9 +1011,24 @@ class BibleWordMap extends HTMLElement {
                 this.ctx.globalAlpha = 1.0;
             }
             
+            let dx = l.target.x - l.source.x;
+            let dy = l.target.y - l.source.y;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            
             this.ctx.beginPath();
-            this.ctx.moveTo(l.source.x, l.source.y);
-            this.ctx.lineTo(l.target.x, l.target.y);
+            
+            if (dist > (l.source.canvasR + l.target.canvasR)) {
+                let startX = l.source.x + (dx / dist) * l.source.canvasR;
+                let startY = l.source.y + (dy / dist) * l.source.canvasR;
+                let endX = l.target.x - (dx / dist) * l.target.canvasR;
+                let endY = l.target.y - (dy / dist) * l.target.canvasR;
+                this.ctx.moveTo(startX, startY);
+                this.ctx.lineTo(endX, endY);
+            } else {
+                this.ctx.moveTo(l.source.x, l.source.y);
+                this.ctx.lineTo(l.target.x, l.target.y);
+            }
+            
             this.ctx.strokeStyle = l.type === 'direct' ? this.colors.linkDir : this.colors.linkIndir;
             this.ctx.lineWidth = l.type === 'direct' ? 1.5 / this.transform.k : 1 / this.transform.k;
             this.ctx.stroke();
@@ -1010,14 +1038,7 @@ class BibleWordMap extends HTMLElement {
         this.nodes.forEach(n => {
             this.ctx.beginPath();
             
-            // Calculate a fixed screen pixel radius, then scale it into canvas coordinates
-            let pixelR = 3;
-            if (n.isKw) pixelR = 12;
-            else if (this.isSearchMode) pixelR = 3 + (n.normSim * 7); // Rages from 3 to 10
-            else pixelR = Math.max(1.5, Math.min(8, Math.log(n.f || 3) * 1.2));
-            
-            let canvasR = pixelR / this.transform.k;
-            this.ctx.arc(n.x, n.y, canvasR, 0, 2 * Math.PI);
+            this.ctx.arc(n.x, n.y, n.canvasR, 0, 2 * Math.PI);
             
             let posColor = '#94a3b8'; // default slate-400
             if (n.pos === 'NOUN') posColor = '#3b82f6'; // blue-500
@@ -1030,10 +1051,10 @@ class BibleWordMap extends HTMLElement {
 
             this.ctx.fillStyle = posColor;
             
-            // In search mode, make nodes slightly transparent so links show through
+            // In search mode, lower similarity words get faded out
             if (this.isSearchMode && !n.isKw) {
                 let alpha = (n.normSim !== undefined && !isNaN(n.normSim)) ? n.normSim : 0.2;
-                this.ctx.globalAlpha = Math.max(0.2, alpha * 0.9); // max opacity 0.9 for nodes so lines show through
+                this.ctx.globalAlpha = Math.max(0.4, alpha);
             } else {
                 this.ctx.globalAlpha = 1.0;
             }
