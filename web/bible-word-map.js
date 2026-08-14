@@ -166,7 +166,10 @@ class BibleWordMap extends HTMLElement {
                     right: -320px;
                     width: 300px;
                     height: 100%;
-                    background-color: var(--bwm-bg);
+                    background-color: rgba(255, 255, 255, 0.85); /* fallback for older browsers */
+                    background-color: color-mix(in srgb, var(--bwm-bg) 85%, transparent);
+                    backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
                     border-left: 1px solid var(--bwm-border);
                     box-shadow: -4px 0 15px rgba(0,0,0,0.1);
                     z-index: 1000;
@@ -247,7 +250,7 @@ class BibleWordMap extends HTMLElement {
                 </div>
                 <div class="bwm-drawer" id="bwm-drawer">
                     <div class="bwm-drawer-header">
-                        <h3>Map Controls</h3>
+                        <h3>Options</h3>
                         <div class="bwm-drawer-close" id="bwm-drawer-close">&times;</div>
                     </div>
                     <div class="bwm-drawer-content">
@@ -518,6 +521,7 @@ class BibleWordMap extends HTMLElement {
                     this.searchedWords.push(...matchingPoints.map(p => p.id));
                 }
             }
+            this.drawerWords = [...this.searchedWords];
         } else {
             // Use explicit IDs already set in this.searchedWords
             if (this.searchedWords.length === 0) {
@@ -638,24 +642,29 @@ class BibleWordMap extends HTMLElement {
         const container = this.querySelector('#bwm-active-words');
         if (!container) return;
         
-        if (this.searchedWords.length === 0) {
+        if (!this.drawerWords || this.drawerWords.length === 0) {
             container.innerHTML = '<div class="bwm-empty-state">No words selected.</div>';
             return;
         }
         
         container.innerHTML = '';
-        this.searchedWords.forEach(id => {
+        this.drawerWords.forEach(id => {
             let [w, pos] = id.split('_');
             let item = document.createElement('div');
             item.className = 'bwm-active-word-item';
             
             let cb = document.createElement('input');
             cb.type = 'checkbox';
-            cb.checked = true;
+            cb.checked = this.searchedWords.includes(id);
             cb.addEventListener('change', () => {
-                this.searchedWords = this.searchedWords.filter(x => x !== id);
+                if (cb.checked) {
+                    if (!this.searchedWords.includes(id)) this.searchedWords.push(id);
+                } else {
+                    this.searchedWords = this.searchedWords.filter(x => x !== id);
+                }
                 // Trigger a re-search with the remaining explicit IDs
-                this.searchInput.value = this.searchedWords.join(" ");
+                let baseWords = [...new Set(this.searchedWords.map(id => id.split('_')[0]))];
+                this.searchInput.value = baseWords.join(" ");
                 this.searchWord(true); // pass flag to indicate explicit IDs
             });
             
@@ -781,6 +790,9 @@ class BibleWordMap extends HTMLElement {
         if (!p) return;
         
         this.searchedWords.push(newWord);
+        if (!this.drawerWords) this.drawerWords = [];
+        if (!this.drawerWords.includes(newWord)) this.drawerWords.push(newWord);
+        
         let baseWords = [...new Set(this.searchedWords.map(id => id.split('_')[0]))];
         this.searchInput.value = baseWords.join(" ");
         this.renderActiveWords();
