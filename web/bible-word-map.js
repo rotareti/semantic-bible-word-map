@@ -990,10 +990,10 @@ class BibleWordMap extends HTMLElement {
         this.links.forEach(l => {
             if (l.source.x === undefined || l.target.x === undefined) return;
             
-            // Match the opacity of the node it connects to
+            // Make links more visible but still subtly faded for less similar words
             if (this.isSearchMode && !l.source.isKw) {
                 let alpha = (l.source.normSim !== undefined && !isNaN(l.source.normSim)) ? l.source.normSim : 0.2;
-                this.ctx.globalAlpha = Math.max(0.15, alpha);
+                this.ctx.globalAlpha = Math.max(0.25, alpha * 0.8 + 0.2); // Range from 0.25 to 1.0
             } else {
                 this.ctx.globalAlpha = 1.0;
             }
@@ -1030,9 +1030,10 @@ class BibleWordMap extends HTMLElement {
 
             this.ctx.fillStyle = posColor;
             
+            // In search mode, make nodes slightly transparent so links show through
             if (this.isSearchMode && !n.isKw) {
                 let alpha = (n.normSim !== undefined && !isNaN(n.normSim)) ? n.normSim : 0.2;
-                this.ctx.globalAlpha = Math.max(0.15, alpha);
+                this.ctx.globalAlpha = Math.max(0.2, alpha * 0.9); // max opacity 0.9 for nodes so lines show through
             } else {
                 this.ctx.globalAlpha = 1.0;
             }
