@@ -5,9 +5,20 @@ This project generates a semantic word-proximity map of the Bible using natural 
 ## Architecture
 
 The pipeline consists of three main components:
-1. **Data Ingestion (Rust)**: Parses Universal Scripture JSON (USJ) files and extracts raw text tokens.
-2. **Machine Learning Pipeline (Python)**: Uses Gensim (Word2Vec) for training word embeddings and UMAP for 2D dimensionality reduction.
+1. **Data Ingestion (Python)**: Parses Universal Scripture JSON (USJ) files, cleans out translator footnotes, and extracts pure Biblical text.
+2. **Machine Learning Pipeline (Python)**: Uses SpaCy for advanced Natural Language Processing to tag Parts of Speech. It then uses Gensim (Word2Vec) for training word embeddings and UMAP for 2D dimensionality reduction.
 3. **Web Visualization (Vanilla JS / Canvas)**: An HTML5 custom element (`<bible-word-map>`) that renders the map using D3.js for physics and interaction.
+
+## Features
+
+* **Info Button**: An interactive information panel is available next to the main title. This panel provides a quick guide on how to read the map and use the search controls.
+* **Semantic Connections**: Words are physically pulled together on the map based on how similar their contextual usage is in the Bible.
+* **Part of Speech Colors**: Words are color-coded to visually distinguish their grammatical roles.
+  * **Green**: Proper Nouns (Names, Places)
+  * **Blue**: Nouns (Objects, Concepts)
+  * **Pink**: Verbs (Actions)
+  * **Yellow**: Adjectives and Adverbs
+  * **Slate**: Other words
 
 ## Directory Structure
 

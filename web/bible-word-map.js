@@ -142,73 +142,86 @@ class BibleWordMap extends HTMLElement {
                     max-width: 300px;
                     z-index: 9999;
                 }
-                .bwm-info-wrapper {
-                    position: relative;
-                    display: flex;
-                    align-items: center;
-                }
-                .bwm-info-btn {
-                    width: 28px;
-                    height: 28px;
-                    border-radius: 50%;
+                .bwm-drawer-toggle {
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 8px;
                     background: var(--bwm-bg);
                     color: var(--bwm-text);
                     border: 1px solid var(--bwm-border);
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-style: italic;
-                    font-weight: bold;
                     cursor: pointer;
-                    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-                    user-select: none;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
                     flex-shrink: 0;
+                    margin-left: 10px;
                 }
-                .bwm-info-btn:hover {
+                .bwm-drawer-toggle:hover {
                     background: var(--bwm-border);
                 }
-                .bwm-info-panel {
+                .bwm-drawer {
                     position: absolute;
-                    top: 36px;
-                    right: 0;
-                    width: 320px;
-                    background-color: #ffffff;
-                    background-color: var(--bwm-tooltip-bg, #ffffff);
-                    color: var(--bwm-tooltip-text);
-                    padding: 16px;
-                    border-radius: 8px;
-                    border: 1px solid var(--bwm-border);
-                    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
-                    font-size: 0.9em;
-                    line-height: 1.5;
-                    z-index: 100;
-                    opacity: 0;
-                    pointer-events: none;
-                    transition: opacity 0.2s;
+                    top: 0;
+                    right: -320px;
+                    width: 300px;
+                    height: 100%;
+                    background-color: var(--bwm-bg);
+                    border-left: 1px solid var(--bwm-border);
+                    box-shadow: -4px 0 15px rgba(0,0,0,0.1);
+                    z-index: 1000;
+                    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                     display: flex;
                     flex-direction: column;
                 }
-                .bwm-info-panel.visible {
-                    opacity: 1;
-                    pointer-events: auto;
+                .bwm-drawer.open {
+                    right: 0;
                 }
-                .bwm-info-close {
-                    position: absolute;
-                    top: 8px;
-                    right: 12px;
+                .bwm-drawer-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 15px 20px;
+                    border-bottom: 1px solid var(--bwm-border);
+                }
+                .bwm-drawer-header h3 {
+                    margin: 0;
+                    font-size: 1.1em;
+                }
+                .bwm-drawer-close {
                     cursor: pointer;
-                    font-size: 1.2em;
-                    font-weight: bold;
-                    color: var(--bwm-tooltip-text);
+                    font-size: 1.5em;
+                    line-height: 1;
                     opacity: 0.6;
-                    display: none;
-                    user-select: none;
                 }
-                .bwm-info-panel.pinned .bwm-info-close {
-                    display: block;
-                }
-                .bwm-info-close:hover {
+                .bwm-drawer-close:hover {
                     opacity: 1;
+                }
+                .bwm-drawer-content {
+                    padding: 20px;
+                    overflow-y: auto;
+                    flex: 1;
+                }
+                .bwm-drawer-content h4 {
+                    margin: 0 0 10px 0;
+                    font-size: 0.9em;
+                    text-transform: uppercase;
+                    color: #888;
+                }
+                .bwm-active-word-item {
+                    display: flex;
+                    align-items: center;
+                    margin-bottom: 8px;
+                    font-size: 0.95em;
+                }
+                .bwm-active-word-item input {
+                    margin-right: 8px;
+                    cursor: pointer;
+                }
+                .bwm-empty-state {
+                    color: #888;
+                    font-size: 0.9em;
+                    font-style: italic;
                 }
                 .bwm-loading {
                     position: absolute;
@@ -228,11 +241,19 @@ class BibleWordMap extends HTMLElement {
                         <button class="bwm-btn" id="bwm-btn-search">Search</button>
                         <span id="bwm-error" class="bwm-error">Word not found</span>
                     </div>
-                    <div class="bwm-info-wrapper">
-                        <div class="bwm-info-btn">i</div>
-                        <div class="bwm-info-panel">
-                            <div class="bwm-info-close">&times;</div>
-                            Explore the Berean Standard Bible through a semantic lens. Each dot represents a word, and the physical distance between dots indicates how closely related their meanings are. The semantic similarity is learned based on words that are used in similar contexts, meaning they are surrounded by the same types of words, even if those two specific words never actually appear in the exact same verse together! When you search for multiple words, the map instantly recalculates to form a customized cluster showing the strongest connections to your key terms. Larger and brighter dots represent a stronger match. Green lines show words that appear in the same verse together, while gray lines mean they share similar concepts. Click or Search a set of words to explore!
+                    <div class="bwm-drawer-toggle" id="bwm-drawer-toggle">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                    </div>
+                </div>
+                <div class="bwm-drawer" id="bwm-drawer">
+                    <div class="bwm-drawer-header">
+                        <h3>Map Controls</h3>
+                        <div class="bwm-drawer-close" id="bwm-drawer-close">&times;</div>
+                    </div>
+                    <div class="bwm-drawer-content">
+                        <h4>Active Words</h4>
+                        <div id="bwm-active-words">
+                            <div class="bwm-empty-state">No words selected.</div>
                         </div>
                     </div>
                 </div>
@@ -387,37 +408,16 @@ class BibleWordMap extends HTMLElement {
         // Bind D3 zoom LAST so our capture events fire first
         d3.select(this.canvas).call(this.zoom);
         
-        this.infoBtn = this.querySelector('.bwm-info-btn');
-        this.infoPanel = this.querySelector('.bwm-info-panel');
-        this.infoClose = this.querySelector('.bwm-info-close');
+        this.drawerToggle = this.querySelector('#bwm-drawer-toggle');
+        this.drawer = this.querySelector('#bwm-drawer');
+        this.drawerClose = this.querySelector('#bwm-drawer-close');
         
-        let isInfoPinned = false;
-        
-        this.infoBtn.addEventListener('mouseenter', () => {
-            if (!isInfoPinned) this.infoPanel.classList.add('visible');
+        this.drawerToggle.addEventListener('click', () => {
+            this.drawer.classList.add('open');
         });
         
-        this.infoBtn.addEventListener('mouseleave', () => {
-            if (!isInfoPinned) this.infoPanel.classList.remove('visible');
-        });
-        
-        this.infoBtn.addEventListener('click', () => {
-            if (isInfoPinned) {
-                isInfoPinned = false;
-                this.infoPanel.classList.remove('visible');
-                this.infoPanel.classList.remove('pinned');
-            } else {
-                isInfoPinned = true;
-                this.infoPanel.classList.add('visible');
-                this.infoPanel.classList.add('pinned');
-            }
-        });
-        
-        this.infoClose.addEventListener('click', (e) => {
-            e.stopPropagation();
-            isInfoPinned = false;
-            this.infoPanel.classList.remove('visible');
-            this.infoPanel.classList.remove('pinned');
+        this.drawerClose.addEventListener('click', () => {
+            this.drawer.classList.remove('open');
         });
         
         this.tooltip.addEventListener('mouseenter', () => clearTimeout(this.tooltipTimeout));
@@ -489,25 +489,47 @@ class BibleWordMap extends HTMLElement {
         return dot / (Math.sqrt(normA) * Math.sqrt(normB));
     }
 
-    async searchWord() {
+    async searchWord(useExplicitIds = false) {
         this.hoveredNode = null;
-        let query = this.searchInput.value.trim();
-        if (!query) {
-            this.isSearchMode = false;
-            this.buildAllWordsGraph();
-            return;
-        }
-
-        let words = query.toLowerCase().split(/[\s,]+/).filter(w => w);
         let foundPoints = [];
-        this.searchedWords = [];
         
-        for (let w of words) {
-            let p = this.data2d.find(d => d.w === w);
-            if (p) {
-                foundPoints.push(p);
-                this.searchedWords.push(w);
+        if (!useExplicitIds) {
+            let query = this.searchInput.value.trim();
+            if (!query) {
+                this.isSearchMode = false;
+                this.buildAllWordsGraph();
+                return;
             }
+
+            let words = query.toLowerCase().split(/[\s,]+/).filter(w => w);
+            this.searchedWords = [];
+            
+            for (let w of words) {
+                let exactMatch = this.data2d.filter(d => d.id.toLowerCase() === w);
+                if (exactMatch.length > 0) {
+                    foundPoints.push(...exactMatch);
+                    this.searchedWords.push(...exactMatch.map(p => p.id));
+                    continue;
+                }
+                
+                let matchingPoints = this.data2d.filter(d => d.w.toLowerCase() === w);
+                if (matchingPoints.length > 0) {
+                    foundPoints.push(...matchingPoints);
+                    this.searchedWords.push(...matchingPoints.map(p => p.id));
+                }
+            }
+        } else {
+            // Use explicit IDs already set in this.searchedWords
+            if (this.searchedWords.length === 0) {
+                this.isSearchMode = false;
+                this.searchInput.value = "";
+                this.buildAllWordsGraph();
+                return;
+            }
+            this.searchedWords.forEach(id => {
+                let p = this.data2d.find(d => d.id === id);
+                if (p) foundPoints.push(p);
+            });
         }
         
         if (foundPoints.length === 0) {
@@ -520,8 +542,8 @@ class BibleWordMap extends HTMLElement {
         let topWordsSet = new Map();
 
         foundPoints.forEach((p) => {
-            if (!topWordsSet.has(p.w)) {
-                topWordsSet.set(p.w, { point: p, maxSim: 1, sourceKw: p.w });
+            if (!topWordsSet.has(p.id)) {
+                topWordsSet.set(p.id, { point: p, maxSim: 1, sourceKw: p.id });
             }
         });
 
@@ -535,13 +557,13 @@ class BibleWordMap extends HTMLElement {
             
             const topWords = similarities.slice(0, 100);
             topWords.forEach(s => {
-                if (!topWordsSet.has(s.point.w)) {
-                    topWordsSet.set(s.point.w, { point: s.point, maxSim: s.sim, sourceKw: primaryPoint.w });
+                if (!topWordsSet.has(s.point.id)) {
+                    topWordsSet.set(s.point.id, { point: s.point, maxSim: s.sim, sourceKw: primaryPoint.id });
                 } else {
-                    let existing = topWordsSet.get(s.point.w);
+                    let existing = topWordsSet.get(s.point.id);
                     if (s.sim > existing.maxSim) {
                         existing.maxSim = s.sim;
-                        existing.sourceKw = primaryPoint.w;
+                        existing.sourceKw = primaryPoint.id;
                     }
                 }
             });
@@ -550,12 +572,13 @@ class BibleWordMap extends HTMLElement {
         let finalTopWords = Array.from(topWordsSet.values());
         
         this.allSearchNodes = finalTopWords.map(s => ({
-            id: s.point.w,
+            id: s.point.id,
             w: s.point.w,
+            pos: s.point.pos,
             f: s.point.f,
             sim: s.maxSim,
             sourceKw: s.sourceKw,
-            isKw: this.searchedWords.includes(s.point.w),
+            isKw: this.searchedWords.includes(s.point.id),
             x: 0,
             y: 0,
             v: s.point.v
@@ -565,7 +588,7 @@ class BibleWordMap extends HTMLElement {
         this.allSearchNodes.forEach(n => {
             if (n.isKw || !n.sourceKw) return;
             
-            let myVerses = this.wordToVerses ? (this.wordToVerses[n.w] || []) : [];
+            let myVerses = this.wordToVerses ? (this.wordToVerses[n.id] || []) : [];
             let linkedToSourceKw = false;
             
             this.searchedWords.forEach(sw => {
@@ -603,7 +626,50 @@ class BibleWordMap extends HTMLElement {
 
         this.isSearchMode = true;
         this.userInteracted = false;
+        
+        let baseWords = [...new Set(this.searchedWords.map(id => id.split('_')[0]))];
+        this.searchInput.value = baseWords.join(" ");
+        
+        this.renderActiveWords();
         this.runSimulation();
+    }
+    
+    renderActiveWords() {
+        const container = this.querySelector('#bwm-active-words');
+        if (!container) return;
+        
+        if (this.searchedWords.length === 0) {
+            container.innerHTML = '<div class="bwm-empty-state">No words selected.</div>';
+            return;
+        }
+        
+        container.innerHTML = '';
+        this.searchedWords.forEach(id => {
+            let [w, pos] = id.split('_');
+            let item = document.createElement('div');
+            item.className = 'bwm-active-word-item';
+            
+            let cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.checked = true;
+            cb.addEventListener('change', () => {
+                this.searchedWords = this.searchedWords.filter(x => x !== id);
+                // Trigger a re-search with the remaining explicit IDs
+                this.searchInput.value = this.searchedWords.join(" ");
+                this.searchWord(true); // pass flag to indicate explicit IDs
+            });
+            
+            let label = document.createElement('label');
+            label.style.cursor = 'pointer';
+            label.innerHTML = `<strong>${w}</strong> <span style="color:#888;font-size:0.85em;">(${pos})</span>`;
+            
+            // Allow clicking label to toggle checkbox
+            label.addEventListener('click', () => { cb.click(); });
+            
+            item.appendChild(cb);
+            item.appendChild(label);
+            container.appendChild(item);
+        });
     }
 
     runSimulation() {
@@ -704,18 +770,20 @@ class BibleWordMap extends HTMLElement {
 
     async addKeyword(newWord) {
         if (!this.isSearchMode) {
-            this.searchInput.value = newWord;
+            this.searchInput.value = newWord.split('_')[0];
             this.searchWord();
             return;
         }
         
         if (this.searchedWords.includes(newWord)) return; // already added
         
-        let p = this.data2d.find(d => d.w === newWord);
+        let p = this.data2d.find(d => d.id === newWord);
         if (!p) return;
         
         this.searchedWords.push(newWord);
-        this.searchInput.value = this.searchedWords.join(" ");
+        let baseWords = [...new Set(this.searchedWords.map(id => id.split('_')[0]))];
+        this.searchInput.value = baseWords.join(" ");
+        this.renderActiveWords();
         
         // Find similarities for this new keyword
         let similarities = this.data2d.map(d => ({
@@ -733,10 +801,10 @@ class BibleWordMap extends HTMLElement {
             let cw = this.logicalWidth || 800;
             let ch = this.logicalHeight || 600;
             kwNode = {
-                id: p.w, w: p.w, f: p.f, sim: 1, sourceKw: p.w, isKw: true,
+                id: p.id, w: p.w, f: p.f, sim: 1, sourceKw: p.id, isKw: true,
                 x: this.transform.invertX(cw/2) + (Math.random()-0.5)*10, 
                 y: this.transform.invertY(ch/2) + (Math.random()-0.5)*10,
-                v: p.v, normSim: 1
+                v: p.v, normSim: 1, pos: p.pos
             };
             this.nodes.push(kwNode);
             this.allSearchNodes.push(kwNode);
@@ -760,35 +828,35 @@ class BibleWordMap extends HTMLElement {
         
         // 3. Process new neighbors
         topWords.forEach(s => {
-            let existingAllNode = this.allSearchNodes.find(n => n.id === s.point.w);
+            let existingAllNode = this.allSearchNodes.find(n => n.id === s.point.id);
             if (!existingAllNode) {
                 let neighborNode = {
-                    id: s.point.w, w: s.point.w, f: s.point.f, sim: s.sim, 
-                    sourceKw: p.w, isKw: false, x: 0, y: 0, v: s.point.v,
-                    normSim: s.sim
+                    id: s.point.id, w: s.point.w, f: s.point.f, sim: s.sim, 
+                    sourceKw: p.id, isKw: false, x: 0, y: 0, v: s.point.v,
+                    normSim: s.sim, pos: s.point.pos
                 };
                 this.allSearchNodes.push(neighborNode);
                 queuedNeighbors.push(neighborNode);
             } else {
                 if (s.sim > existingAllNode.sim) {
                     existingAllNode.sim = s.sim;
-                    existingAllNode.sourceKw = p.w;
+                    existingAllNode.sourceKw = p.id;
                 }
             }
             
-            let myVerses = this.wordToVerses ? (this.wordToVerses[s.point.w] || []) : [];
-            let swVerses = this.wordToVerses ? (this.wordToVerses[p.w] || []) : [];
+            let myVerses = this.wordToVerses ? (this.wordToVerses[s.point.id] || []) : [];
+            let swVerses = this.wordToVerses ? (this.wordToVerses[p.id] || []) : [];
             let intersection = myVerses.filter(vId => swVerses.includes(vId));
             
             let linkType = intersection.length > 0 ? 'direct' : 'indirect';
             this.allSearchLinks.push({
-                source: s.point.w, target: p.w, type: linkType, intersection: intersection, sim: s.sim
+                source: s.point.id, target: p.id, type: linkType, intersection: intersection, sim: s.sim
             });
             
             // If neighbor is ALREADY active, we must push the new link to the simulation links
-            let activeNode = this.nodes.find(n => n.id === s.point.w);
+            let activeNode = this.nodes.find(n => n.id === s.point.id);
             if (activeNode) {
-                let newLinks = this.allSearchLinks.filter(l => l.source === s.point.w && l.target === p.w);
+                let newLinks = this.allSearchLinks.filter(l => l.source === s.point.id && l.target === p.id);
                 this.links.push(...newLinks);
             }
         });
@@ -867,7 +935,7 @@ class BibleWordMap extends HTMLElement {
         d3.select(this.canvas).call(this.zoom.transform, this.transform);
         
         this.nodes = filteredData.map(d => ({
-            id: d.w,
+            id: d.id,
             w: d.w,
             f: d.f,
             x: d.x,
@@ -909,6 +977,14 @@ class BibleWordMap extends HTMLElement {
         
         this.links.forEach(l => {
             if (l.source.x === undefined || l.target.x === undefined) return;
+            
+            // Match the opacity of the node it connects to
+            if (this.isSearchMode && !l.source.isKw) {
+                this.ctx.globalAlpha = Math.max(0.1, l.source.normSim || 0.1);
+            } else {
+                this.ctx.globalAlpha = 1.0;
+            }
+            
             this.ctx.beginPath();
             this.ctx.moveTo(l.source.x, l.source.y);
             this.ctx.lineTo(l.target.x, l.target.y);
@@ -916,6 +992,7 @@ class BibleWordMap extends HTMLElement {
             this.ctx.lineWidth = l.type === 'direct' ? 1.5 / this.transform.k : 1 / this.transform.k;
             this.ctx.stroke();
         });
+        this.ctx.globalAlpha = 1.0;
         
         this.nodes.forEach(n => {
             this.ctx.beginPath();
@@ -929,15 +1006,23 @@ class BibleWordMap extends HTMLElement {
             let canvasR = pixelR / this.transform.k;
             this.ctx.arc(n.x, n.y, canvasR, 0, 2 * Math.PI);
             
-            let fill = this.colors.nodeDef;
-            if (n.isKw) {
-                fill = this.colors.nodeKw;
-            } else if (this.isSearchMode) {
-                fill = d3.interpolateViridis(n.normSim);
+            let posColor = '#94a3b8'; // default slate-400
+            if (n.pos === 'NOUN') posColor = '#3b82f6'; // blue-500
+            else if (n.pos === 'VERB') posColor = '#ef4444'; // red-500
+            else if (n.pos === 'PROPN') posColor = '#10b981'; // emerald-500
+            else if (n.pos === 'ADJ') posColor = '#8b5cf6'; // violet-500
+            else if (n.pos === 'ADV') posColor = '#ec4899'; // pink-500
+            else if (n.pos === 'PRON') posColor = '#14b8a6'; // teal-500
+            else if (n.pos === 'NUM') posColor = '#f59e0b'; // amber-500
+
+            this.ctx.fillStyle = posColor;
+            
+            // In search mode, lower similarity words get faded out
+            if (this.isSearchMode && !n.isKw) {
+                this.ctx.globalAlpha = Math.max(0.1, n.normSim);
             } else {
-                fill = d3.interpolateViridis(Math.min(1, Math.max(0, Math.log(n.f || 1) / 10)));
+                this.ctx.globalAlpha = 1.0;
             }
-            this.ctx.fillStyle = fill;
             
             if (this.hoveredNode === n) {
                 this.ctx.fillStyle = this.colors.nodeHover;
@@ -947,6 +1032,14 @@ class BibleWordMap extends HTMLElement {
                 this.ctx.shadowBlur = 0;
             }
             this.ctx.fill();
+            
+            if (n.isKw) {
+                this.ctx.lineWidth = 3 / this.transform.k;
+                this.ctx.strokeStyle = this.colors.text;
+                this.ctx.stroke();
+            }
+            
+            this.ctx.globalAlpha = 1.0;
             
             let showLabel = (this.isSearchMode || n.isKw || autoShowLabels) && this.hoveredNode !== n;
             if (showLabel) {
@@ -1045,7 +1138,7 @@ class BibleWordMap extends HTMLElement {
         }
 
         if (this.hoveredNode) {
-            this.addKeyword(this.hoveredNode.w);
+            this.addKeyword(this.hoveredNode.id);
             if (this.isTouch) {
                 this.hoveredNode = null;
             }
@@ -1059,21 +1152,28 @@ class BibleWordMap extends HTMLElement {
         
         let content = `
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; gap: 8px;">
-                <b style="font-size:1.1em;">${node.w}</b>
+                <b style="font-size:1.1em;">${node.w} ${node.pos ? `<span style="font-size:0.8em; font-weight:normal; opacity:0.7;">(${node.pos.toLowerCase()})</span>` : ''}</b>
                 <span class="bwm-tooltip-close" style="cursor:pointer; font-size:1.2em; line-height:1; opacity:0.6;">&times;</span>
             </div>
         `;
         
         if (this.isSearchMode && this.wordToVerses && this.verses) {
             let hasLinks = false;
-            let myVerses = this.wordToVerses[node.w] || [];
+            let myVerses = this.wordToVerses[node.id] || [];
             
             this.searchedWords.forEach(sw => {
                 let swVerses = this.wordToVerses[sw] || [];
                 let intersection = myVerses.filter(v => swVerses.includes(v));
                 if (intersection.length > 0) {
                     hasLinks = true;
-                    content += `<div style="margin-top: 8px;"><b>Links to '${sw}':</b><br>`;
+                    
+                    let parts = sw.split('_');
+                    let formattedSw = parts[0];
+                    if (parts.length > 1) {
+                        formattedSw += ` (${parts[1].toLowerCase()})`;
+                    }
+                    
+                    content += `<div style="margin-top: 8px;"><b>Links to '${formattedSw}':</b><br>`;
                     let refs = intersection.map(id => (this.verses[id] || "").split('|')[0]);
                     
                     if (refs.length > 3) {

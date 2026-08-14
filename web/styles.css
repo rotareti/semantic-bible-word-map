@@ -113,3 +113,75 @@ footer a {
         font-size: 0.75em;
     }
 }
+/* Info Button Styles */
+.info-wrapper {
+    position: absolute;
+    right: -40px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+.info-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--card-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-style: italic;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    user-select: none;
+    font-size: 0.8rem;
+}
+.info-btn:hover {
+    background: var(--border-color);
+}
+.info-panel {
+    position: absolute;
+    top: 36px;
+    right: 0;
+    width: 320px;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+    font-size: 0.9em;
+    line-height: 1.5;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    text-align: left;
+    font-weight: normal;
+}
+.info-panel.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+.info-close {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    cursor: pointer;
+    font-size: 1.2em;
+    font-weight: bold;
+    color: var(--text-muted);
+    display: none;
+}
+.info-panel.pinned .info-close {
+    display: block;
+}
+.info-close:hover {
+    color: var(--text-color);
+}
+@media (max-width: 768px) {
+    .info-wrapper {
+        right: 10px;
+    }
+}

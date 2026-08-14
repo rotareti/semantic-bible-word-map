@@ -59,8 +59,16 @@ if __name__ == '__main__':
     out_2d = []
     for i in range(len(words)):
         v_rounded = [round(float(val), 3) for val in vectors[i]]
+        
+        # Parse mark_PROPN into w="mark", pos="PROPN", id="mark_PROPN"
+        parts = words[i].split('_')
+        display_word = parts[0]
+        pos_tag = parts[1] if len(parts) > 1 else ""
+        
         out_2d.append({
-            "w": words[i],
+            "id": words[i],
+            "w": display_word,
+            "pos": pos_tag,
             "f": freqs[i],
             "t": testaments[i],
             "x": round(float(coords_2d[i][0]), 3),
@@ -71,4 +79,17 @@ if __name__ == '__main__':
     with open('data/output/wordmap_2d.json', 'w') as f:
         json.dump(out_2d, f, separators=(',', ':')) # Minified JSON
         
-    print("Map saved successfully.")
+    print("Filtering verse index...")
+    with open('data/output/verse_index_raw.json', 'r') as f:
+        v_idx = json.load(f)
+    
+    valid_words = set(words)
+    filtered_word_to_verse = {}
+    for w in valid_words:
+        if w in v_idx['words']:
+            filtered_word_to_verse[w] = v_idx['words'][w]
+            
+    with open('data/output/verse_index.json', 'w') as f:
+        json.dump({'verses': v_idx['verses'], 'words': filtered_word_to_verse}, f, separators=(',', ':'))
+        
+    print("Map and Index saved successfully.")

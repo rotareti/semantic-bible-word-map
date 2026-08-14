@@ -13,14 +13,51 @@
 </head>
 <body>
     <header>
-        <h1>Semantic Bible Word Map <span style="font-size: 0.5em; color: #666; vertical-align: middle;">v4.1.6</span></h1>
+        <div style="display: flex; align-items: center; justify-content: center; position: relative;">
+            <h1>Semantic Bible Word Map <span style="font-size: 0.5em; color: var(--text-muted); vertical-align: middle;">v5.0.0</span></h1>
+            <div class="info-wrapper">
+                <div class="info-btn" id="info-btn">i</div>
+                <div class="info-panel" id="info-panel">
+                    <div class="info-close" id="info-close">&times;</div>
+                    Explore the Berean Standard Bible through a semantic lens. Each dot represents a word, and the physical distance between dots indicates how closely related their meanings are based on Biblical usage. 
+                    <br><br>
+                    <strong>Colors:</strong><br>
+                    <span style="color: #4ade80;">■</span> Proper Nouns (Names, Places)<br>
+                    <span style="color: #60a5fa;">■</span> Nouns (Objects, Concepts)<br>
+                    <span style="color: #f472b6;">■</span> Verbs (Actions)<br>
+                    <span style="color: #fbbf24;">■</span> Adjectives & Adverbs<br>
+                    <span style="color: #94a3b8;">■</span> Other
+                </div>
+            </div>
+        </div>
     </header>
     <main>
-        <bible-word-map src-2d="data/output/wordmap_2d.json" src-verses="data/output/verse_index.json"></bible-word-map>
+        <bible-word-map src-2d="data/output/wordmap_2d.json?v=4.2.3" src-verses="data/output/verse_index.json?v=4.2.3"></bible-word-map>
     </main>
     <footer>
         <a href="https://github.com/rotareti/semantic-bible-word-map" target="_blank">View source on GitHub</a> | <i style="color: var(--text-muted);">"Freely you have received; freely give."</i>
     </footer>
-    <script src="bible-word-map.js?v=4.1.6" type="module"></script>
+    <script src="bible-word-map.js?v=5.0.0" type="module"></script>
+    <script>
+        const btn = document.getElementById('info-btn');
+        const panel = document.getElementById('info-panel');
+        const closeBtn = document.getElementById('info-close');
+        let pinned = false;
+
+        btn.addEventListener('mouseenter', () => { if (!pinned) panel.classList.add('visible'); });
+        btn.addEventListener('mouseleave', () => { if (!pinned) panel.classList.remove('visible'); });
+        btn.addEventListener('click', () => {
+            pinned = !pinned;
+            if (pinned) {
+                panel.classList.add('visible', 'pinned');
+            } else {
+                panel.classList.remove('visible', 'pinned');
+            }
+        });
+        closeBtn.addEventListener('click', () => {
+            pinned = false;
+            panel.classList.remove('visible', 'pinned');
+        });
+    </script>
 </body>
 </html>
