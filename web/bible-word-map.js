@@ -306,6 +306,15 @@ class BibleWordMap extends HTMLElement {
                 this.hideTooltip();
             }
             
+            if (e.touches && e.touches.length > 1) {
+                if (this.touchTimer) {
+                    clearTimeout(this.touchTimer);
+                    this.touchTimer = null;
+                    this.touchTargetNode = null;
+                }
+                return;
+            }
+            
             if (e.touches && e.touches.length > 0) {
                 let touch = e.touches[0];
                 let rect = this.canvas.getBoundingClientRect();
@@ -351,7 +360,7 @@ class BibleWordMap extends HTMLElement {
                 let dx = e.touches[0].clientX - this.lastTouchX;
                 let dy = e.touches[0].clientY - this.lastTouchY;
                 // Allow a small fat-finger wobble without cancelling the tap
-                if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+                if (Math.abs(dx) > 10 || Math.abs(dy) > 10 || e.touches.length > 1) {
                     clearTimeout(this.touchTimer);
                     this.touchTimer = null;
                     this.touchTargetNode = null;

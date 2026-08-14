@@ -1,5 +1,9 @@
 # Changelog
 
+## [4.1.4] - 2026-08-14
+### Fixed
+- Fixed bug where two-finger pinch-to-zoom gestures could accidentally trigger the long-press tooltip on mobile devices.
+
 ## [4.1.3] - 2026-08-14
 ### Fixed
 - Fixed critical race condition where D3 zoom was swallowing `touchend` events, causing the long-press tooltip to open 500ms after a short tap. Touch events now properly intercept during the browser's capture phase before D3 zoom logic runs.
