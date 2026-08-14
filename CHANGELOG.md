@@ -1,5 +1,10 @@
 # Changelog
 
+## [4.1.2] - 2026-08-14
+### Fixed
+- Fixed bug on mobile devices where a short tap was incorrectly triggering the hover tooltip due to the browser synthesizing rogue `mousemove` events milliseconds after the `touchend` event.
+- Improved tap reliability by allowing slight fat-finger movements during a tap to no longer cancel the touch interaction.
+
 ## [4.1.1] - 2026-08-14
 ### Fixed
 - Fixed tooltip overflowing the top of the screen on mobile devices making the close button inaccessible.

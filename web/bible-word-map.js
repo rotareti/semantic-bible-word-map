@@ -302,6 +302,7 @@ class BibleWordMap extends HTMLElement {
         this.canvas.addEventListener('mouseleave', () => this.hideTooltip());
         this.canvas.addEventListener('touchstart', (e) => {
             this.isTouch = true;
+            this.lastTouchStartTime = Date.now();
             if (this.tooltip.style.opacity === '1') {
                 this.touchCloseTooltip = true;
                 this.hideTooltip();
@@ -347,15 +348,21 @@ class BibleWordMap extends HTMLElement {
             }
         }, {passive: true});
         
-        this.canvas.addEventListener('touchmove', () => {
-            if (this.touchTimer) {
-                clearTimeout(this.touchTimer);
-                this.touchTimer = null;
-                this.touchTargetNode = null;
+        this.canvas.addEventListener('touchmove', (e) => {
+            if (this.touchTimer && e.touches && e.touches.length > 0) {
+                let dx = e.touches[0].clientX - this.lastTouchX;
+                let dy = e.touches[0].clientY - this.lastTouchY;
+                // Allow a small fat-finger wobble without cancelling the tap
+                if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+                    clearTimeout(this.touchTimer);
+                    this.touchTimer = null;
+                    this.touchTargetNode = null;
+                }
             }
         }, {passive: true});
         
         this.canvas.addEventListener('touchend', () => {
+            this.lastTouchEndTime = Date.now();
             if (this.touchTimer) {
                 clearTimeout(this.touchTimer);
                 this.touchTimer = null;
@@ -959,6 +966,10 @@ class BibleWordMap extends HTMLElement {
 
     handleMouseMove(e) {
         if (!this.nodes || this.nodes.length === 0) return;
+        
+        // Ignore synthesized mouse events within 1000ms of a touch interaction
+        if (this.lastTouchEndTime && Date.now() - this.lastTouchEndTime < 1000) return;
+        if (this.lastTouchStartTime && Date.now() - this.lastTouchStartTime < 1000) return;
         
         if (this.isTouch) {
             // Ignore synthesized mouse moves. If it's a real mouse (moved >20px from last touch), revert to mouse mode.
