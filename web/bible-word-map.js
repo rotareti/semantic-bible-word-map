@@ -16,7 +16,10 @@ class BibleWordMap extends HTMLElement {
         
         this.innerHTML = `
             <style>
-                :host {
+                bible-word-map {
+                    display: block;
+                    width: 100%;
+                    height: 100%;
                     --bwm-bg: #ffffff;
                     --bwm-text: #333333;
                     --bwm-border: #e5e7eb;
@@ -31,7 +34,7 @@ class BibleWordMap extends HTMLElement {
                     --bwm-font: system-ui, -apple-system, sans-serif;
                 }
                 @media (prefers-color-scheme: dark) {
-                    :host {
+                    bible-word-map {
                         --bwm-bg: #121212;
                         --bwm-text: #e0e0e0;
                         --bwm-border: #333333;
@@ -45,6 +48,9 @@ class BibleWordMap extends HTMLElement {
                     display: flex;
                     flex-direction: column;
                     width: 100%;
+                    height: 100%;
+                    position: relative;
+                    overflow: hidden;
                     flex: 1;
                     min-height: 0;
                     min-width: 0;
