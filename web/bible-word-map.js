@@ -637,6 +637,12 @@ class BibleWordMap extends HTMLElement {
         this.renderActiveWords();
         this.runSimulation();
     }
+    formatWord(word, pos) {
+        if (pos === 'PROPN' && word.length > 0) {
+            return word.charAt(0).toUpperCase() + word.slice(1);
+        }
+        return word;
+    }
     
     renderActiveWords() {
         const container = this.querySelector('#bwm-active-words');
@@ -670,7 +676,8 @@ class BibleWordMap extends HTMLElement {
             
             let label = document.createElement('label');
             label.style.cursor = 'pointer';
-            label.innerHTML = `<strong>${w}</strong> <span style="color:#888;font-size:0.85em;">(${pos})</span>`;
+            let displayW = this.formatWord(w, pos);
+            label.innerHTML = `<strong>${displayW}</strong> <span style="color:#888;font-size:0.85em;">(${pos})</span>`;
             
             // Allow clicking label to toggle checkbox
             label.addEventListener('click', () => { cb.click(); });
@@ -1096,10 +1103,11 @@ class BibleWordMap extends HTMLElement {
                 // Draw a solid halo background for the text to improve readability over layered lines/dots
                 this.ctx.lineWidth = 3;
                 this.ctx.strokeStyle = this.colors.bg;
-                this.ctx.strokeText(n.w, 0, yOffset);
+                let displayW = this.formatWord(n.w, n.pos);
+                this.ctx.strokeText(displayW, 0, yOffset);
                 
                 this.ctx.fillStyle = this.colors.text;
-                this.ctx.fillText(n.w, 0, yOffset);
+                this.ctx.fillText(displayW, 0, yOffset);
                 
                 this.ctx.restore();
             }
@@ -1187,9 +1195,10 @@ class BibleWordMap extends HTMLElement {
         this.tooltip.style.opacity = '1';
         this.tooltip.style.pointerEvents = 'auto';
         
+        let displayW = this.formatWord(node.w, node.pos);
         let content = `
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; gap: 8px;">
-                <b style="font-size:1.1em;">${node.w} ${node.pos ? `<span style="font-size:0.8em; font-weight:normal; opacity:0.7;">(${node.pos.toLowerCase()})</span>` : ''}</b>
+                <b style="font-size:1.1em;">${displayW} ${node.pos ? `<span style="font-size:0.8em; font-weight:normal; opacity:0.7;">(${node.pos.toLowerCase()})</span>` : ''}</b>
                 <span class="bwm-tooltip-close" style="cursor:pointer; font-size:1.2em; line-height:1; opacity:0.6;">&times;</span>
             </div>
         `;
@@ -1205,7 +1214,7 @@ class BibleWordMap extends HTMLElement {
                     hasLinks = true;
                     
                     let parts = sw.split('_');
-                    let formattedSw = parts[0];
+                    let formattedSw = parts.length > 1 ? this.formatWord(parts[0], parts[1]) : parts[0];
                     if (parts.length > 1) {
                         formattedSw += ` (${parts[1].toLowerCase()})`;
                     }
