@@ -974,6 +974,7 @@ class BibleWordMap extends HTMLElement {
             id: d.id,
             w: d.w,
             f: d.f,
+            pos: d.pos,
             x: d.x,
             y: d.y,
             isKw: false
