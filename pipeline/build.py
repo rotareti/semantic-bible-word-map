@@ -81,6 +81,10 @@ for i in range(0, len(raw_verses), batch_size):
             if not word_clean:
                 continue
             
+            # Explicitly filter edge-case fragments that survive lemmatization
+            if word_clean in ['nt', 'wo', 'ca', 's', 'm', 'll', 've', 'd', 're', 'ii']:
+                continue
+            
             # Using POS tag to differentiate homophones (e.g. mark_PROPN vs mark_VERB)
             # If POS is SPACE or PUNCT, skip
             if token.pos_ in ["SPACE", "PUNCT"]:
