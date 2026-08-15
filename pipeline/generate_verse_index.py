@@ -2,8 +2,8 @@ import json
 import os
 import re
 
-raw_dir = '../data/raw'
-output_path = '../data/output/verse_index.json'
+raw_dir = 'data/raw'
+output_path = 'data/output/verse_index.json'
 
 if not os.path.exists(raw_dir):
     print(f"Raw dir not found: {raw_dir}")
@@ -75,7 +75,7 @@ for f in files:
 
 # Now we filter the word_to_verse map to only include words that appear 
 # in our word2vec model (count >= 3). We'll load wordmap_2d.json for that.
-wordmap_path = '../data/output/wordmap_2d.json'
+wordmap_path = 'data/output/wordmap_2d.json'
 with open(wordmap_path, 'r') as file:
     wordmap = json.load(file)
     
