@@ -77,11 +77,8 @@ for i in range(0, len(raw_verses), batch_size):
         words_in_verse = set()
         
         for token in doc:
-            word_clean = clean_re.sub('', token.text).lower()
+            word_clean = clean_re.sub('', token.lemma_).lower()
             if not word_clean:
-                continue
-            
-            if word_clean in ['nt', 'wo', 'ca', 's', 'm', 'll', 've', 'd', 're']:
                 continue
             
             # Using POS tag to differentiate homophones (e.g. mark_PROPN vs mark_VERB)
