@@ -1,5 +1,20 @@
 # Changelog
 
+## [5.0.0] - 2026-08-14
+### Added
+- Integrated a spaCy NLP pipeline to significantly improve data processing. The pipeline now lemmatizes source text and extracts native Part of Speech (POS) tagging (e.g. mapping "won't" to "will" and "not" without generating invalid string artifacts).
+- Display capitalized proper nouns properly on the canvas map, in the drawer, in the search bar, and on the hover tooltips.
+
+### Changed
+- Complete overhaul of `generate_verse_index.py` to ingest the spaCy generated JSON data in order to preserve native POS mapping across the verse references, fixing missing graph edge generation.
+- Re-added manual exclusion filters after lemmatization to aggressively scrub Berean Standard Bible typographic edge cases (like `s`, `nt`, `ii`) caused by right-single quotation marks.
+- Redesigned the tooltip and side drawer UI to feature a sleek, dynamic, translucent glass-morphism aesthetic (`backdrop-filter: blur()`), abandoning the old hardcoded dark theme.
+- The default canvas word map now retains the generated POS properties, allowing it to paint itself in full color on launch instead of waiting for a search interaction.
+
+### Fixed
+- Fixed bug where deselecting part-of-speech toggles during a physics simulation would crash the graph and orphan nodes.
+- Fixed layout shifting where the hidden options drawer was generating a horizontal scrollbar that shifted the UI on load, obscuring the search bar.
+
 ## [4.1.6] - 2026-08-14
 ### Fixed
 - Fixed bug where closing the long-press tooltip would occasionally block the very next touch tap from adding a keyword.
