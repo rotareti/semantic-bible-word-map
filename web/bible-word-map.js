@@ -497,7 +497,8 @@ class BibleWordMap extends HTMLElement {
         let foundPoints = [];
         
         if (!useExplicitIds) {
-            let query = this.searchInput.value.trim();
+            let originalQuery = this.searchInput.value.trim();
+            let query = originalQuery.toLowerCase();
             if (!query) {
                 this.isSearchMode = false;
                 this.buildAllWordsGraph();
@@ -669,7 +670,10 @@ class BibleWordMap extends HTMLElement {
                     this.searchedWords = this.searchedWords.filter(x => x !== id);
                 }
                 // Trigger a re-search with the remaining explicit IDs
-                let baseWords = [...new Set(this.searchedWords.map(id => id.split('_')[0]))];
+                let baseWords = [...new Set(this.searchedWords.map(id => {
+                    let parts = id.split('_');
+                    return this.formatWord(parts[0], parts[1]);
+                }))];
                 this.searchInput.value = baseWords.join(" ");
                 this.searchWord(true); // pass flag to indicate explicit IDs
             });
@@ -789,7 +793,8 @@ class BibleWordMap extends HTMLElement {
 
     async addKeyword(newWord) {
         if (!this.isSearchMode) {
-            this.searchInput.value = newWord.split('_')[0];
+            let parts = newWord.split('_');
+            this.searchInput.value = this.formatWord(parts[0], parts[1]);
             this.searchWord();
             return;
         }
@@ -803,7 +808,10 @@ class BibleWordMap extends HTMLElement {
         if (!this.drawerWords) this.drawerWords = [];
         if (!this.drawerWords.includes(newWord)) this.drawerWords.push(newWord);
         
-        let baseWords = [...new Set(this.searchedWords.map(id => id.split('_')[0]))];
+        let baseWords = [...new Set(this.searchedWords.map(id => {
+            let parts = id.split('_');
+            return this.formatWord(parts[0], parts[1]);
+        }))];
         this.searchInput.value = baseWords.join(" ");
         this.renderActiveWords();
         
