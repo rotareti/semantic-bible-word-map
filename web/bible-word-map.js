@@ -28,9 +28,7 @@ class BibleWordMap extends HTMLElement {
                     --bwm-node-hover: #2563eb;
                     --bwm-link-direct: rgba(40, 167, 69, 0.6);
                     --bwm-link-indirect: rgba(150, 150, 150, 0.2);
-                    --bwm-tooltip-bg: #222222;
-                    --bwm-tooltip-text: #f9f9f9;
-                    --bwm-tooltip-link: #60a5fa;
+                    --bwm-tooltip-link: #2563eb;
                     --bwm-font: system-ui, -apple-system, sans-serif;
                 }
                 @media (prefers-color-scheme: dark) {
@@ -39,9 +37,7 @@ class BibleWordMap extends HTMLElement {
                         --bwm-text: #e0e0e0;
                         --bwm-border: #333333;
                         --bwm-node-default: #999999;
-                        --bwm-tooltip-bg: #f0f0f0;
-                        --bwm-tooltip-text: #111111;
-                        --bwm-tooltip-link: #2563eb;
+                        --bwm-tooltip-link: #60a5fa;
                     }
                 }
                 .bwm-container {
@@ -133,16 +129,18 @@ class BibleWordMap extends HTMLElement {
                 }
                 .bwm-tooltip {
                     position: absolute;
-                    background-color: #ffffff; /* Hardcoded solid fallback */
-                    background-color: var(--bwm-tooltip-bg, #ffffff);
-                    color: var(--bwm-tooltip-text);
+                    background-color: rgba(255, 255, 255, 0.85); /* fallback */
+                    background-color: color-mix(in srgb, var(--bwm-bg) 85%, transparent);
+                    backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
+                    color: var(--bwm-text);
                     padding: 10px 14px;
                     border-radius: 8px;
-                    border: 2px solid var(--bwm-node-hover); /* Make it obvious it's a solid box */
+                    border: 1px solid var(--bwm-border);
                     pointer-events: none;
                     opacity: 0;
                     transition: opacity 0.1s;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
                     font-size: 0.9em;
                     line-height: 1.4;
                     max-width: 300px;
