@@ -478,7 +478,24 @@ class BibleWordMap extends HTMLElement {
                 this.wordToVerses = vData.words;
             }
             
-            this.buildAllWordsGraph();
+            let params = new URLSearchParams(window.location.search);
+            let keywords = params.get('keywords');
+            if (keywords) {
+                this.searchedWords = keywords.split(',').map(k => k.trim()).filter(k => k);
+                this.drawerWords = [...this.searchedWords];
+                if (this.searchedWords.length > 0) {
+                    let baseWords = [...new Set(this.searchedWords.map(id => {
+                        let parts = id.split('_');
+                        return this.formatWord(parts[0], parts[1]);
+                    }))];
+                    this.searchInput.value = baseWords.join(" ");
+                    this.searchWord(true);
+                } else {
+                    this.buildAllWordsGraph();
+                }
+            } else {
+                this.buildAllWordsGraph();
+            }
         } catch (e) {
             console.error("Error loading Bible Word Map data", e);
         } finally {
@@ -506,6 +523,7 @@ class BibleWordMap extends HTMLElement {
             let query = originalQuery.toLowerCase();
             if (!query) {
                 this.isSearchMode = false;
+                window.history.replaceState(null, '', window.location.pathname);
                 this.buildAllWordsGraph();
                 return;
             }
@@ -533,6 +551,7 @@ class BibleWordMap extends HTMLElement {
             if (this.searchedWords.length === 0) {
                 this.isSearchMode = false;
                 this.searchInput.value = "";
+                window.history.replaceState(null, '', window.location.pathname);
                 this.buildAllWordsGraph();
                 return;
             }
@@ -637,8 +656,15 @@ class BibleWordMap extends HTMLElement {
         this.isSearchMode = true;
         this.userInteracted = false;
         
-        let baseWords = [...new Set(this.searchedWords.map(id => id.split('_')[0]))];
+        let baseWords = [...new Set(this.searchedWords.map(id => {
+            let parts = id.split('_');
+            return this.formatWord(parts[0], parts[1]);
+        }))];
         this.searchInput.value = baseWords.join(" ");
+        
+        if (this.searchedWords && this.searchedWords.length > 0) {
+            window.history.replaceState(null, '', '?keywords=' + this.searchedWords.join(','));
+        }
         
         this.renderActiveWords();
         this.runSimulation();
