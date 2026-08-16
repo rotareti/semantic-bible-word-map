@@ -80,8 +80,10 @@ bible-word-map {
 }
 
 footer {
-    text-align: center;
-    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 5px 16px 5px;
     flex-shrink: 0;
     font-size: 0.85em;
     background: transparent;
