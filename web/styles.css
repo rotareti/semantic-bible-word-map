@@ -83,7 +83,7 @@ footer {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 12px 5px 16px 5px;
+    padding: 8px 5px 10px 5px;
     flex-shrink: 0;
     font-size: 0.85em;
     background: transparent;
