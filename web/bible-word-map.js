@@ -75,6 +75,7 @@ class BibleWordMap extends HTMLElement {
                     color: var(--bwm-text);
                     outline: none;
                     font-family: var(--bwm-font);
+                    font-size: 16px;
                     box-shadow: 0 2px 4px rgba(0,0,0,0.02) inset;
                 }
                 .bwm-search-controls input:focus {
