@@ -58,16 +58,17 @@ class BibleWordMap extends HTMLElement {
                     justify-content: space-between;
                     gap: 10px;
                     padding-bottom: 12px;
-                    flex-wrap: wrap;
+                    flex-wrap: nowrap;
                 }
                 .bwm-search-controls {
                     display: flex;
                     gap: 8px;
-                    flex-wrap: wrap;
+                    flex-wrap: nowrap;
+                    flex: 1;
                 }
                 .bwm-search-controls input {
                     flex: 1;
-                    min-width: 200px;
+                    min-width: 100px;
                     padding: 8px 16px;
                     border: 1px solid var(--bwm-border);
                     border-radius: 20px;
@@ -160,7 +161,7 @@ class BibleWordMap extends HTMLElement {
                     cursor: pointer;
                     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
                     flex-shrink: 0;
-                    margin-left: 10px;
+                    margin-right: 2px;
                 }
                 .bwm-drawer-toggle:hover {
                     background: var(--bwm-border);
@@ -244,15 +245,15 @@ class BibleWordMap extends HTMLElement {
             </style>
             <div class="bwm-container">
                 <div class="bwm-top-bar">
-                    <div class="bwm-search-controls">
-                        <input type="text" id="bwm-search" placeholder="Search for words (e.g. Father Son Spirit)">
-                        <button class="bwm-btn" id="bwm-btn-search">Search</button>
-                        <span id="bwm-error" class="bwm-error">Word not found</span>
-                    </div>
                     <div class="bwm-drawer-toggle" id="bwm-drawer-toggle">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                     </div>
+                    <div class="bwm-search-controls">
+                        <input type="text" id="bwm-search" placeholder="Search for words (e.g. Father Son Spirit)">
+                        <button class="bwm-btn" id="bwm-btn-search">Search</button>
+                    </div>
                 </div>
+                <div style="position: relative; height: 0;"><span id="bwm-error" class="bwm-error" style="position: absolute; top: -10px; left: 50px;">Word not found</span></div>
                 <div class="bwm-drawer" id="bwm-drawer">
                     <div class="bwm-drawer-header">
                         <h3>Options</h3>
