@@ -1249,6 +1249,8 @@ class BibleWordMap extends HTMLElement {
             let myVerses = this.wordToVerses[node.id] || [];
             
             this.searchedWords.forEach(sw => {
+                if (sw === node.id) return; // Don't show links to itself
+                
                 let swVerses = this.wordToVerses[sw] || [];
                 let intersection = myVerses.filter(v => swVerses.includes(v));
                 if (intersection.length > 0) {
