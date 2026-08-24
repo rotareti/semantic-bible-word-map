@@ -1020,6 +1020,11 @@ class BibleWordMap extends HTMLElement {
             return this.formatWord(parts[0], parts[1]);
         }))];
         this.searchInput.value = baseWords.join(" ");
+        
+        if (this.searchedWords && this.searchedWords.length > 0) {
+            window.history.replaceState(null, '', '?keywords=' + this.searchedWords.join(','));
+        }
+        
         this.renderActiveWords();
         
         // Find similarities for this new keyword
