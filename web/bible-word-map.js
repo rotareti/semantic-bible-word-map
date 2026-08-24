@@ -416,7 +416,10 @@ class BibleWordMap extends HTMLElement {
         this.zoom = d3.zoom()
             .scaleExtent([0.05, 100000])
             .on("zoom", (e) => {
-                if (e.sourceEvent) this.userInteracted = true;
+                if (e.sourceEvent) {
+                    this.userInteracted = true;
+                    if (this.radialMenuNode) this.hideRadialMenu();
+                }
                 this.transform = e.transform;
                 this.draw();
             });
@@ -1025,19 +1028,51 @@ class BibleWordMap extends HTMLElement {
             }
             
             let myVerses = this.wordToVerses ? (this.wordToVerses[s.point.id] || []) : [];
-            let swVerses = this.wordToVerses ? (this.wordToVerses[p.id] || []) : [];
-            let intersection = myVerses.filter(vId => swVerses.includes(vId));
+            let linkedToSourceKw = false;
             
-            let linkType = intersection.length > 0 ? 'direct' : 'indirect';
-            this.allSearchLinks.push({
-                source: s.point.id, target: p.id, type: linkType, intersection: intersection, sim: s.sim
+            this.searchedWords.forEach(sw => {
+                let swVerses = this.wordToVerses ? (this.wordToVerses[sw] || []) : [];
+                let intersection = myVerses.filter(vId => swVerses.includes(vId));
+                if (intersection.length > 0) {
+                    let link = {
+                        source: s.point.id, target: sw, type: 'direct', intersection: intersection, sim: s.sim
+                    };
+                    this.allSearchLinks.push(link);
+                    if (sw === p.id) linkedToSourceKw = true;
+                    
+                    let activeNode = this.nodes.find(n => n.id === s.point.id);
+                    if (activeNode) this.links.push(link);
+                }
             });
             
-            // If neighbor is ALREADY active, we must push the new link to the simulation links
-            let activeNode = this.nodes.find(n => n.id === s.point.id);
-            if (activeNode) {
-                let newLinks = this.allSearchLinks.filter(l => l.source === s.point.id && l.target === p.id);
-                this.links.push(...newLinks);
+            if (!linkedToSourceKw) {
+                let link = {
+                    source: s.point.id, target: p.id, type: 'indirect', sim: s.sim
+                };
+                this.allSearchLinks.push(link);
+                
+                let activeNode = this.nodes.find(n => n.id === s.point.id);
+                if (activeNode) this.links.push(link);
+            }
+        });
+        
+        // 3.5 Ensure any already-spawned nodes that intersect with the new keyword get a direct link
+        let newKwVerses = this.wordToVerses ? (this.wordToVerses[p.id] || []) : [];
+        this.nodes.forEach(n => {
+            if (n.isKw) return;
+            
+            let hasLinkToNewKw = this.allSearchLinks.some(l => l.source === n.id && (l.target === p.id || l.target.id === p.id));
+            if (hasLinkToNewKw) return;
+            
+            let myVerses = this.wordToVerses ? (this.wordToVerses[n.id] || []) : [];
+            let intersection = myVerses.filter(vId => newKwVerses.includes(vId));
+            
+            if (intersection.length > 0) {
+                let link = {
+                    source: n.id, target: p.id, type: 'direct', intersection: intersection, sim: n.sim || 0
+                };
+                this.allSearchLinks.push(link);
+                this.links.push(link);
             }
         });
         
