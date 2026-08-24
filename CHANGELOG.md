@@ -1,5 +1,15 @@
 # Changelog
 
+## [6.0.0] - 2026-08-23
+### Added
+- **Radial Menu Interaction:** Replaced the hover-based tooltip with a native click-activated radial menu. The radial menu provides explicit, distributed buttons to add/remove a keyword or open the verses panel, preventing accidental UI triggers while navigating the map.
+- **Tabbed Verses Panel:** Completely redesigned the verses window into a tabbed interface. When clicking a word, the panel now elegantly separates the verses into tabs for every keyword it connects with, sorted intelligently by semantic similarity. The scrollable content ensures the fixed header and tabs are always accessible.
+- **Dynamic Node Hover Design:** Nodes no longer uniformly turn blue on hover, which previously conflicted with the 'Noun' legend color. Instead, hovered nodes dynamically scale up 1.4x and cast a glowing shadow in their *native* Part of Speech color.
+
+### Fixed
+- Fixed USFM parsing flaw in the pipeline where section headers, book titles, and parallel references were inadvertently leaking into the verse strings. The verse text is now perfectly clean.
+- Fixed a rendering bug where adding a word via the new radial menu did not correctly append it to the URL parameters.
+- Fixed a graph linking bug where new words added to the map were not properly drawing all their direct relationship lines (green edges) to preexisting keywords.
 ## [5.0.0] - 2026-08-14
 ### Added
 - Integrated a spaCy NLP pipeline to significantly improve data processing. The pipeline now lemmatizes source text and extracts native Part of Speech (POS) tagging (e.g. mapping "won't" to "will" and "not" without generating invalid string artifacts).
