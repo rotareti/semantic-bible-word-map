@@ -415,6 +415,7 @@ class BibleWordMap extends HTMLElement {
                 if (e.sourceEvent) {
                     this.userInteracted = true;
                     if (this.radialMenuNode) this.hideRadialMenu();
+                    if (this.versesPanel && this.versesPanel.classList.contains('visible')) this.hideVersesPanel();
                 }
                 this.transform = e.transform;
                 this.draw();
@@ -438,9 +439,15 @@ class BibleWordMap extends HTMLElement {
             this.isTouch = true;
             this.ignoreNextClick = false;
             this.lastTouchStartTime = Date.now();
-            if (this.radialMenuNode) {
+            let menuWasVisible = this.radialMenuNode !== null;
+            let versesWasVisible = this.versesPanel && this.versesPanel.classList.contains('visible');
+            if (menuWasVisible) {
                 this.touchCloseTooltip = true;
                 this.hideRadialMenu();
+            }
+            if (versesWasVisible) {
+                this.touchCloseTooltip = true;
+                this.hideVersesPanel();
             }
             
             if (e.touches && e.touches.length > 1) {
@@ -535,10 +542,16 @@ class BibleWordMap extends HTMLElement {
             this.drawer.classList.remove('open');
         });
         
-        // Close radial menu when clicking outside
+        // Close radial menu and verses panel when clicking outside
         document.addEventListener('click', (e) => {
-            if (this.radialMenuNode && !this.radialMenu.contains(e.target) && !this.versesPanel.contains(e.target) && !this.canvas.contains(e.target)) {
-                this.hideRadialMenu();
+            let isMenuVisible = this.radialMenuNode !== null;
+            let isVersesVisible = this.versesPanel.classList.contains('visible');
+            
+            if (isMenuVisible || isVersesVisible) {
+                if (!this.radialMenu.contains(e.target) && !this.versesPanel.contains(e.target) && !this.canvas.contains(e.target)) {
+                    this.hideRadialMenu();
+                    this.hideVersesPanel();
+                }
             }
         });
     }
@@ -1387,11 +1400,13 @@ class BibleWordMap extends HTMLElement {
             }
         } else {
             this.hideRadialMenu();
+            this.hideVersesPanel();
         }
     }
 
     showRadialMenu(node, mouseX, mouseY) {
         this.hideRadialMenu();
+        this.hideVersesPanel();
         this.radialMenuNode = node;
         this.hoveredNode = node;
         this.draw();
@@ -1413,7 +1428,7 @@ class BibleWordMap extends HTMLElement {
         } else {
             menuItems.push({ icon: '+', label: 'Add keyword', action: () => { this.hideRadialMenu(); this.addKeyword(node.id); } });
         }
-        menuItems.push({ icon: '\u{1F4D6}', label: 'Verses', action: () => { this.showVersesPanel(node, screenX, screenY); } });
+        menuItems.push({ icon: '\u{1F4D6}', label: 'Verses', action: () => { this.hideRadialMenu(); this.showVersesPanel(node, screenX, screenY); } });
         
         this.radialMenu.innerHTML = '';
         let radius = 45;
@@ -1455,9 +1470,12 @@ class BibleWordMap extends HTMLElement {
         this.radialMenu.innerHTML = '';
         this.tooltip.style.opacity = '0';
         this.tooltip.style.pointerEvents = 'none';
+        this.draw();
+    }
+
+    hideVersesPanel() {
         this.versesPanel.classList.remove('visible');
         this.versesPanel.innerHTML = '';
-        this.draw();
     }
 
     showVersesPanel(node, anchorX, anchorY) {
