@@ -158,7 +158,9 @@ class BibleWordMap extends HTMLElement {
                     width: 36px;
                     height: 36px;
                     border-radius: 50%;
-                    background: #1a1a1a;
+                    background: rgba(26, 26, 26, 0.85);
+                    backdrop-filter: blur(4px);
+                    -webkit-backdrop-filter: blur(4px);
                     color: #ffffff;
                     display: flex;
                     align-items: center;
@@ -179,7 +181,7 @@ class BibleWordMap extends HTMLElement {
                     opacity: 1;
                 }
                 .bwm-radial-item:hover {
-                    background: #333333;
+                    background: rgba(51, 51, 51, 0.9);
                     transform: scale(1.15);
                 }
                 .bwm-radial-item:active {
@@ -927,6 +929,18 @@ class BibleWordMap extends HTMLElement {
         }, 50); 
     }
 
+    removeKeyword(oldWord) {
+        if (!this.isSearchMode || !this.searchedWords.includes(oldWord)) return;
+        
+        this.searchedWords = this.searchedWords.filter(x => x !== oldWord);
+        let baseWords = [...new Set(this.searchedWords.map(id => {
+            let parts = id.split('_');
+            return this.formatWord(parts[0], parts[1]);
+        }))];
+        this.searchInput.value = baseWords.join(" ");
+        this.searchWord(true);
+    }
+
     async addKeyword(newWord) {
         if (!this.isSearchMode) {
             let parts = newWord.split('_');
@@ -1358,10 +1372,15 @@ class BibleWordMap extends HTMLElement {
         let screenX = rawX + offsetX;
         let screenY = rawY + offsetY;
         
-        let menuItems = [
-            { icon: '+', label: 'Add keyword', action: () => { this.hideRadialMenu(); this.addKeyword(node.id); } },
-            { icon: '\u{1F4D6}', label: 'Verses', action: () => { this.showVersesPanel(node, screenX, screenY); } }
-        ];
+        let isAlreadyKw = this.isSearchMode && this.searchedWords && this.searchedWords.includes(node.id);
+        let menuItems = [];
+        
+        if (isAlreadyKw) {
+            menuItems.push({ icon: '-', label: 'Remove keyword', action: () => { this.hideRadialMenu(); this.removeKeyword(node.id); } });
+        } else {
+            menuItems.push({ icon: '+', label: 'Add keyword', action: () => { this.hideRadialMenu(); this.addKeyword(node.id); } });
+        }
+        menuItems.push({ icon: '\u{1F4D6}', label: 'Verses', action: () => { this.showVersesPanel(node, screenX, screenY); } });
         
         this.radialMenu.innerHTML = '';
         let radius = 45;
@@ -1396,20 +1415,6 @@ class BibleWordMap extends HTMLElement {
                 });
             });
         });
-        
-        // Show word label in tooltip area
-        let displayW = this.formatWord(node.w, node.pos);
-        this.tooltip.innerHTML = `<b style="font-size:1.1em;">${displayW}</b> ${node.pos ? `<span style="font-size:0.8em; opacity:0.7;">(${node.pos.toLowerCase()})</span>` : ''}`;
-        this.tooltip.style.opacity = '1';
-        this.tooltip.style.pointerEvents = 'none';
-        
-        let tx = screenX - 50;
-        let ty = screenY + radius + 28;
-        let boundsRect = this.canvas.parentElement.getBoundingClientRect();
-        if (ty + 30 > boundsRect.height) ty = screenY - radius - 38;
-        if (tx < 5) tx = 5;
-        this.tooltip.style.left = tx + 'px';
-        this.tooltip.style.top = ty + 'px';
     }
     
     hideRadialMenu() {
