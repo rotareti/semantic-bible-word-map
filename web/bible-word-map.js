@@ -148,6 +148,99 @@ class BibleWordMap extends HTMLElement {
                     max-width: 300px;
                     z-index: 9999;
                 }
+                .bwm-radial-menu {
+                    position: absolute;
+                    pointer-events: none;
+                    z-index: 10000;
+                }
+                .bwm-radial-item {
+                    position: absolute;
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 50%;
+                    background: #1a1a1a;
+                    color: #ffffff;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    pointer-events: auto;
+                    font-size: 18px;
+                    font-weight: bold;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                    transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+                    transform: scale(0);
+                    opacity: 0;
+                    user-select: none;
+                    -webkit-user-select: none;
+                }
+                .bwm-radial-item.visible {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+                .bwm-radial-item:hover {
+                    background: #333333;
+                    transform: scale(1.15);
+                }
+                .bwm-radial-item:active {
+                    transform: scale(0.95);
+                }
+                .bwm-radial-label {
+                    position: absolute;
+                    top: -22px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    white-space: nowrap;
+                    font-size: 11px;
+                    font-weight: 600;
+                    color: var(--bwm-text);
+                    background: color-mix(in srgb, var(--bwm-bg) 90%, transparent);
+                    backdrop-filter: blur(8px);
+                    -webkit-backdrop-filter: blur(8px);
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    pointer-events: none;
+                    opacity: 0;
+                    transition: opacity 0.15s;
+                }
+                .bwm-radial-item:hover .bwm-radial-label {
+                    opacity: 1;
+                }
+                .bwm-verses-panel {
+                    position: absolute;
+                    background-color: rgba(255, 255, 255, 0.92);
+                    background-color: color-mix(in srgb, var(--bwm-bg) 92%, transparent);
+                    backdrop-filter: blur(14px);
+                    -webkit-backdrop-filter: blur(14px);
+                    color: var(--bwm-text);
+                    padding: 14px 16px;
+                    border-radius: 10px;
+                    border: 1px solid var(--bwm-border);
+                    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+                    font-size: 0.9em;
+                    line-height: 1.5;
+                    max-width: 340px;
+                    max-height: 300px;
+                    overflow-y: auto;
+                    z-index: 10001;
+                    pointer-events: auto;
+                    opacity: 0;
+                    transition: opacity 0.15s;
+                }
+                .bwm-verses-panel.visible {
+                    opacity: 1;
+                }
+                .bwm-verses-close {
+                    float: right;
+                    cursor: pointer;
+                    font-size: 1.3em;
+                    line-height: 1;
+                    opacity: 0.5;
+                    margin-left: 8px;
+                }
+                .bwm-verses-close:hover {
+                    opacity: 1;
+                }
                 .bwm-drawer-toggle {
                     width: 36px;
                     height: 36px;
@@ -269,6 +362,8 @@ class BibleWordMap extends HTMLElement {
                 <div class="bwm-canvas-container">
                     <canvas></canvas>
                     <div class="bwm-tooltip"></div>
+                    <div class="bwm-radial-menu" id="bwm-radial-menu"></div>
+                    <div class="bwm-verses-panel" id="bwm-verses-panel"></div>
                     <div class="bwm-loading">Loading data...</div>
                 </div>
             </div>
@@ -324,17 +419,27 @@ class BibleWordMap extends HTMLElement {
                 this.draw();
             });
             
-        // Tooltip/Info handlers
+        // Radial menu handlers
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e), {capture: true});
         this.canvas.addEventListener('click', (e) => this.handleClick(e), {capture: true});
-        this.canvas.addEventListener('mouseleave', () => this.hideTooltip(), {capture: true});
+        this.canvas.addEventListener('mouseleave', () => {
+            if (!this.radialMenuNode) {
+                this.hoveredNode = null;
+                this.canvas.style.cursor = 'grab';
+                this.draw();
+            }
+        }, {capture: true});
+        
+        this.radialMenu = this.querySelector('#bwm-radial-menu');
+        this.versesPanel = this.querySelector('#bwm-verses-panel');
+        this.radialMenuNode = null;
         this.canvas.addEventListener('touchstart', (e) => {
             this.isTouch = true;
             this.ignoreNextClick = false;
             this.lastTouchStartTime = Date.now();
-            if (this.tooltip.style.opacity === '1') {
+            if (this.radialMenuNode) {
                 this.touchCloseTooltip = true;
-                this.hideTooltip();
+                this.hideRadialMenu();
             }
             
             if (e.touches && e.touches.length > 1) {
@@ -378,9 +483,9 @@ class BibleWordMap extends HTMLElement {
                     this.touchTimer = setTimeout(() => {
                         this.touchTimer = null;
                         this.hoveredNode = closestNode;
-                        this.showTooltip(closestNode, mouseX, mouseY);
+                        this.showRadialMenu(closestNode, mouseX, mouseY);
                         this.draw();
-                        this.ignoreNextClick = true; // prevent tap from triggering additive search on long press
+                        this.ignoreNextClick = true;
                     }, 500);
                 }
             }
@@ -429,12 +534,11 @@ class BibleWordMap extends HTMLElement {
             this.drawer.classList.remove('open');
         });
         
-        this.tooltip.addEventListener('mouseenter', () => clearTimeout(this.tooltipTimeout));
-        this.tooltip.addEventListener('mouseleave', () => {
-            this.tooltip.style.opacity = '0';
-            this.tooltip.style.pointerEvents = 'none';
-            this.hoveredNode = null;
-            this.draw();
+        // Close radial menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (this.radialMenuNode && !this.radialMenu.contains(e.target) && !this.versesPanel.contains(e.target) && !this.canvas.contains(e.target)) {
+                this.hideRadialMenu();
+            }
         });
     }
 
@@ -1203,13 +1307,14 @@ class BibleWordMap extends HTMLElement {
             if (this.hoveredNode !== closestNode) {
                 this.hoveredNode = closestNode;
                 this.canvas.style.cursor = "pointer";
-                this.showTooltip(closestNode, mouseX, mouseY);
                 this.draw();
-            } else {
-                this.updateTooltipPos(mouseX, mouseY);
             }
-        } else {
-            this.hideTooltip();
+        } else if (!this.radialMenuNode) {
+            if (this.hoveredNode) {
+                this.hoveredNode = null;
+                this.canvas.style.cursor = "grab";
+                this.draw();
+            }
         }
     }
 
@@ -1223,109 +1328,181 @@ class BibleWordMap extends HTMLElement {
             return;
         }
 
+        let rect = this.canvas.getBoundingClientRect();
+        let mouseX = e.clientX - rect.left;
+        let mouseY = e.clientY - rect.top;
+
         if (this.hoveredNode) {
-            this.addKeyword(this.hoveredNode.id);
-            if (this.isTouch) {
-                this.hoveredNode = null;
+            if (this.radialMenuNode === this.hoveredNode) {
+                this.hideRadialMenu();
+            } else {
+                this.showRadialMenu(this.hoveredNode, mouseX, mouseY);
             }
+        } else {
+            this.hideRadialMenu();
         }
     }
 
-    showTooltip(node, mouseX, mouseY) {
-        clearTimeout(this.tooltipTimeout);
-        this.tooltip.style.opacity = '1';
-        this.tooltip.style.pointerEvents = 'auto';
+    showRadialMenu(node, mouseX, mouseY) {
+        this.hideRadialMenu();
+        this.radialMenuNode = node;
+        this.hoveredNode = node;
+        this.draw();
         
+        // Compute screen position of the node center
+        let [screenX, screenY] = this.transform.apply([node.x, node.y]);
+        
+        let menuItems = [
+            { icon: '+', label: 'Add keyword', action: () => { this.hideRadialMenu(); this.addKeyword(node.id); } },
+            { icon: '\u{1F4D6}', label: 'Verses', action: () => { this.showVersesPanel(node, screenX, screenY); } }
+        ];
+        
+        this.radialMenu.innerHTML = '';
+        let radius = 45;
+        let startAngle = -Math.PI / 2; // start from top
+        let angleStep = (2 * Math.PI) / menuItems.length;
+        
+        menuItems.forEach((item, i) => {
+            let angle = startAngle + i * angleStep;
+            let ix = screenX + radius * Math.cos(angle) - 18; // 18 = half of 36px item
+            let iy = screenY + radius * Math.sin(angle) - 18;
+            
+            let el = document.createElement('div');
+            el.className = 'bwm-radial-item';
+            el.style.left = ix + 'px';
+            el.style.top = iy + 'px';
+            el.innerHTML = `${item.icon}<span class="bwm-radial-label">${item.label}</span>`;
+            
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                item.action();
+            });
+            el.addEventListener('touchstart', (e) => {
+                e.stopPropagation();
+            }, {passive: true});
+            
+            this.radialMenu.appendChild(el);
+            
+            // Trigger the scale-in animation
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    el.classList.add('visible');
+                });
+            });
+        });
+        
+        // Show word label in tooltip area
         let displayW = this.formatWord(node.w, node.pos);
-        let content = `
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; gap: 8px;">
-                <b style="font-size:1.1em;">${displayW} ${node.pos ? `<span style="font-size:0.8em; font-weight:normal; opacity:0.7;">(${node.pos.toLowerCase()})</span>` : ''}</b>
-                <span class="bwm-tooltip-close" style="cursor:pointer; font-size:1.2em; line-height:1; opacity:0.6;">&times;</span>
-            </div>
-        `;
+        this.tooltip.innerHTML = `<b style="font-size:1.1em;">${displayW}</b> ${node.pos ? `<span style="font-size:0.8em; opacity:0.7;">(${node.pos.toLowerCase()})</span>` : ''}`;
+        this.tooltip.style.opacity = '1';
+        this.tooltip.style.pointerEvents = 'none';
+        
+        let tx = screenX - 50;
+        let ty = screenY + radius + 28;
+        let containerRect = this.canvas.parentElement.getBoundingClientRect();
+        if (ty + 30 > containerRect.height) ty = screenY - radius - 38;
+        if (tx < 5) tx = 5;
+        this.tooltip.style.left = tx + 'px';
+        this.tooltip.style.top = ty + 'px';
+    }
+    
+    hideRadialMenu() {
+        this.radialMenuNode = null;
+        this.radialMenu.innerHTML = '';
+        this.tooltip.style.opacity = '0';
+        this.tooltip.style.pointerEvents = 'none';
+        this.versesPanel.classList.remove('visible');
+        this.versesPanel.innerHTML = '';
+        this.draw();
+    }
+
+    showVersesPanel(node, anchorX, anchorY) {
+        let displayW = this.formatWord(node.w, node.pos);
+        let content = `<span class="bwm-verses-close" id="bwm-verses-close">&times;</span>`;
+        content += `<b style="font-size:1.05em;">${displayW}</b>`;
+        if (node.pos) content += ` <span style="font-size:0.8em; opacity:0.6;">(${node.pos.toLowerCase()})</span>`;
         
         if (this.isSearchMode && this.wordToVerses && this.verses) {
-            let hasLinks = false;
             let myVerses = this.wordToVerses[node.id] || [];
+            let anyLinks = false;
             
             this.searchedWords.forEach(sw => {
-                if (sw === node.id) return; // Don't show links to itself
-                
+                if (sw === node.id) return;
                 let swVerses = this.wordToVerses[sw] || [];
                 let intersection = myVerses.filter(v => swVerses.includes(v));
                 if (intersection.length > 0) {
-                    hasLinks = true;
-                    
+                    anyLinks = true;
                     let parts = sw.split('_');
                     let formattedSw = parts.length > 1 ? this.formatWord(parts[0], parts[1]) : parts[0];
-                    if (parts.length > 1) {
-                        formattedSw += ` (${parts[1].toLowerCase()})`;
-                    }
+                    if (parts.length > 1) formattedSw += ` (${parts[1].toLowerCase()})`;
                     
-                    content += `<div style="margin-top: 8px;"><b>Links to '${formattedSw}':</b><br>`;
-                    let refs = intersection.map(id => (this.verses[id] || "").split('|')[0]);
-                    
-                    if (refs.length > 3) {
-                        let formattedRefs = refs.slice(0, 3).map(r => `<span style="color:var(--bwm-tooltip-link); font-family: monospace;">${r}</span>`).join("<br>");
-                        content += formattedRefs + `<br><i style="color:var(--bwm-tooltip-text); opacity:0.7;">...and ${refs.length - 3} more</i>`;
-                    } else {
-                        content += refs.map(r => `<span style="color:var(--bwm-tooltip-link); font-family: monospace;">${r}</span>`).join("<br>");
-                    }
-                    content += `</div>`;
+                    content += `<div style="margin-top: 10px;"><b style="font-size:0.95em;">Links to '${formattedSw}':</b><br>`;
+                    let refs = intersection.map(id => {
+                        let v = this.verses[id] || '';
+                        let [ref, text] = v.split('|');
+                        return `<div style="margin: 4px 0; padding: 4px 0; border-bottom: 1px solid var(--bwm-border);"><span style="color:var(--bwm-tooltip-link); font-family: monospace; font-weight:600;">${ref}</span><br><span style="font-size:0.85em; opacity:0.85;">${text || ''}</span></div>`;
+                    });
+                    content += refs.join('') + `</div>`;
                 }
             });
             
-            if (!hasLinks && !node.isKw) {
-                content += `<div style="margin-top: 8px; font-style: italic; opacity: 0.7;">No direct verse links</div>`;
+            if (!anyLinks) {
+                if (myVerses.length > 0) {
+                    content += `<div style="margin-top: 10px;"><b style="font-size:0.95em;">Appears in:</b><br>`;
+                    let showCount = Math.min(myVerses.length, 10);
+                    let refs = myVerses.slice(0, showCount).map(id => {
+                        let v = this.verses[id] || '';
+                        let [ref, text] = v.split('|');
+                        return `<div style="margin: 4px 0; padding: 4px 0; border-bottom: 1px solid var(--bwm-border);"><span style="color:var(--bwm-tooltip-link); font-family: monospace; font-weight:600;">${ref}</span><br><span style="font-size:0.85em; opacity:0.85;">${text || ''}</span></div>`;
+                    });
+                    content += refs.join('');
+                    if (myVerses.length > showCount) content += `<div style="font-style:italic; opacity:0.6; margin-top:4px;">...and ${myVerses.length - showCount} more</div>`;
+                    content += `</div>`;
+                } else {
+                    content += `<div style="margin-top: 10px; font-style: italic; opacity: 0.6;">No verse data available</div>`;
+                }
+            }
+        } else {
+            let myVerses = this.wordToVerses ? (this.wordToVerses[node.id] || []) : [];
+            if (myVerses.length > 0) {
+                content += `<div style="margin-top: 10px;"><b style="font-size:0.95em;">Appears in:</b><br>`;
+                let showCount = Math.min(myVerses.length, 10);
+                let refs = myVerses.slice(0, showCount).map(id => {
+                    let v = this.verses[id] || '';
+                    let [ref, text] = v.split('|');
+                    return `<div style="margin: 4px 0; padding: 4px 0; border-bottom: 1px solid var(--bwm-border);"><span style="color:var(--bwm-tooltip-link); font-family: monospace; font-weight:600;">${ref}</span><br><span style="font-size:0.85em; opacity:0.85;">${text || ''}</span></div>`;
+                });
+                content += refs.join('');
+                if (myVerses.length > showCount) content += `<div style="font-style:italic; opacity:0.6; margin-top:4px;">...and ${myVerses.length - showCount} more</div>`;
+                content += `</div>`;
+            } else {
+                content += `<div style="margin-top: 10px; font-style: italic; opacity: 0.6;">No verse data available</div>`;
             }
         }
         
-        this.tooltip.innerHTML = content;
+        this.versesPanel.innerHTML = content;
         
-        let closeBtn = this.tooltip.querySelector('.bwm-tooltip-close');
+        // Position near anchor
+        let containerRect = this.canvas.parentElement.getBoundingClientRect();
+        let px = anchorX + 50;
+        let py = anchorY - 50;
+        if (px + 340 > containerRect.width) px = anchorX - 360;
+        if (px < 5) px = 5;
+        if (py < 5) py = 5;
+        if (py + 300 > containerRect.height) py = containerRect.height - 310;
+        
+        this.versesPanel.style.left = px + 'px';
+        this.versesPanel.style.top = py + 'px';
+        this.versesPanel.classList.add('visible');
+        
+        let closeBtn = this.versesPanel.querySelector('#bwm-verses-close');
         if (closeBtn) {
-            let closeHandler = (e) => {
+            closeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                this.hideTooltip();
-                this.ignoreNextClick = true;
-            };
-            closeBtn.addEventListener('click', closeHandler);
-            closeBtn.addEventListener('touchstart', closeHandler, {passive: true});
+                this.versesPanel.classList.remove('visible');
+                this.versesPanel.innerHTML = '';
+            });
         }
-        
-        this.updateTooltipPos(mouseX, mouseY);
-    }
-    
-    updateTooltipPos(mouseX, mouseY) {
-        let rect = this.canvas.getBoundingClientRect();
-        let tw = this.tooltip.offsetWidth;
-        let th = this.tooltip.offsetHeight;
-        
-        let x = mouseX + 15;
-        let y = mouseY + 15;
-        
-        if (y + th > rect.height) {
-            y = mouseY - th - 15;
-            if (y < 10) y = 10;
-        }
-        if (x + tw > rect.width) {
-            x = mouseX - tw - 15;
-            if (x < 10) x = 10;
-        }
-        
-        this.tooltip.style.left = x + 'px';
-        this.tooltip.style.top = y + 'px';
-    }
-
-    hideTooltip() {
-        if (this.tooltipTimeout) clearTimeout(this.tooltipTimeout);
-        this.tooltipTimeout = setTimeout(() => {
-            this.tooltip.style.opacity = '0';
-            this.tooltip.style.pointerEvents = 'none';
-            this.hoveredNode = null;
-            this.canvas.style.cursor = "grab";
-            this.draw();
-        }, 150);
     }
 }
 
