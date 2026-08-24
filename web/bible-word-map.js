@@ -362,10 +362,10 @@ class BibleWordMap extends HTMLElement {
                 <div class="bwm-canvas-container">
                     <canvas></canvas>
                     <div class="bwm-tooltip"></div>
-                    <div class="bwm-radial-menu" id="bwm-radial-menu"></div>
-                    <div class="bwm-verses-panel" id="bwm-verses-panel"></div>
                     <div class="bwm-loading">Loading data...</div>
                 </div>
+                <div class="bwm-radial-menu" id="bwm-radial-menu"></div>
+                <div class="bwm-verses-panel" id="bwm-verses-panel"></div>
             </div>
         `;
     }
@@ -1231,7 +1231,7 @@ class BibleWordMap extends HTMLElement {
             
             this.ctx.globalAlpha = 1.0;
             
-            let showLabel = (this.isSearchMode || n.isKw || autoShowLabels) && this.hoveredNode !== n;
+            let showLabel = (this.isSearchMode || n.isKw || autoShowLabels);
             if (showLabel) {
                 this.ctx.shadowBlur = 0;
                 
@@ -1349,8 +1349,14 @@ class BibleWordMap extends HTMLElement {
         this.hoveredNode = node;
         this.draw();
         
-        // Compute screen position of the node center
-        let [screenX, screenY] = this.transform.apply([node.x, node.y]);
+        // Compute screen position of the node center, offset by canvas position within container
+        let [rawX, rawY] = this.transform.apply([node.x, node.y]);
+        let canvasRect = this.canvas.parentElement.getBoundingClientRect();
+        let containerRect = this.querySelector('.bwm-container').getBoundingClientRect();
+        let offsetX = canvasRect.left - containerRect.left;
+        let offsetY = canvasRect.top - containerRect.top;
+        let screenX = rawX + offsetX;
+        let screenY = rawY + offsetY;
         
         let menuItems = [
             { icon: '+', label: 'Add keyword', action: () => { this.hideRadialMenu(); this.addKeyword(node.id); } },
