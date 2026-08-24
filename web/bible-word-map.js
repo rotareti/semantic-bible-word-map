@@ -159,8 +159,6 @@ class BibleWordMap extends HTMLElement {
                     height: 36px;
                     border-radius: 50%;
                     background: rgba(26, 26, 26, 0.85);
-                    backdrop-filter: blur(4px);
-                    -webkit-backdrop-filter: blur(4px);
                     color: #ffffff;
                     display: flex;
                     align-items: center;
@@ -195,10 +193,8 @@ class BibleWordMap extends HTMLElement {
                     white-space: nowrap;
                     font-size: 11px;
                     font-weight: 600;
-                    color: var(--bwm-text);
-                    background: color-mix(in srgb, var(--bwm-bg) 90%, transparent);
-                    backdrop-filter: blur(8px);
-                    -webkit-backdrop-filter: blur(8px);
+                    color: #ffffff;
+                    background: rgba(0, 0, 0, 0.75);
                     padding: 2px 6px;
                     border-radius: 4px;
                     pointer-events: none;

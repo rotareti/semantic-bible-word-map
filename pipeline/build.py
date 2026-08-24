@@ -24,8 +24,13 @@ def extract_text(val, current_ref, current_verse_text):
         for item in val:
             extract_text(item, current_ref, current_verse_text)
     elif isinstance(val, dict):
+        # Skip notes, headings, and cross-references
         if val.get('type') == 'note':
             return
+        marker = val.get('marker')
+        if marker in ['h', 'toc1', 'toc2', 'toc3', 'mt1', 'mt2', 'mt3', 's', 's1', 's2', 's3', 'r', 'd']:
+            return
+            
         if val.get('type') == 'chapter':
             current_ref['c'] = val.get('number', current_ref['c'])
         elif val.get('type') == 'verse':
