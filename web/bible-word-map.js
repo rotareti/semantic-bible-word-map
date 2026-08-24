@@ -1405,8 +1405,8 @@ class BibleWordMap extends HTMLElement {
         
         let tx = screenX - 50;
         let ty = screenY + radius + 28;
-        let containerRect = this.canvas.parentElement.getBoundingClientRect();
-        if (ty + 30 > containerRect.height) ty = screenY - radius - 38;
+        let boundsRect = this.canvas.parentElement.getBoundingClientRect();
+        if (ty + 30 > boundsRect.height) ty = screenY - radius - 38;
         if (tx < 5) tx = 5;
         this.tooltip.style.left = tx + 'px';
         this.tooltip.style.top = ty + 'px';
