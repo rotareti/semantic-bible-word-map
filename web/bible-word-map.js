@@ -211,19 +211,64 @@ class BibleWordMap extends HTMLElement {
                     backdrop-filter: blur(14px);
                     -webkit-backdrop-filter: blur(14px);
                     color: var(--bwm-text);
-                    padding: 14px 16px;
                     border-radius: 10px;
                     border: 1px solid var(--bwm-border);
                     box-shadow: 0 6px 20px rgba(0,0,0,0.15);
                     font-size: 0.9em;
                     line-height: 1.5;
-                    max-width: 340px;
-                    max-height: 300px;
-                    overflow-y: auto;
+                    width: 340px;
+                    max-height: 320px;
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
                     z-index: 10001;
                     pointer-events: auto;
                     opacity: 0;
                     transition: opacity 0.15s;
+                }
+                .bwm-verses-header {
+                    padding: 12px 14px 0 14px;
+                    border-bottom: 1px solid var(--bwm-border);
+                    flex-shrink: 0;
+                    background: color-mix(in srgb, var(--bwm-bg) 95%, transparent);
+                }
+                .bwm-verses-title {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 8px;
+                }
+                .bwm-verses-tabs {
+                    display: flex;
+                    gap: 16px;
+                    overflow-x: auto;
+                    scrollbar-width: none;
+                }
+                .bwm-verses-tabs::-webkit-scrollbar {
+                    display: none;
+                }
+                .bwm-verses-tab {
+                    padding: 4px 0px;
+                    cursor: pointer;
+                    opacity: 0.6;
+                    border-bottom: 2px solid transparent;
+                    white-space: nowrap;
+                    font-weight: 600;
+                    font-size: 0.9em;
+                    transition: opacity 0.15s;
+                }
+                .bwm-verses-tab:hover {
+                    opacity: 0.9;
+                }
+                .bwm-verses-tab.active {
+                    opacity: 1;
+                    border-bottom-color: var(--bwm-node-hover);
+                    color: var(--bwm-node-hover);
+                }
+                .bwm-verses-content {
+                    padding: 12px 14px;
+                    overflow-y: auto;
+                    flex-grow: 1;
                 }
                 .bwm-verses-panel.visible {
                     opacity: 1;
@@ -1480,69 +1525,101 @@ class BibleWordMap extends HTMLElement {
 
     showVersesPanel(node, anchorX, anchorY) {
         let displayW = this.formatWord(node.w, node.pos);
-        let content = `<span class="bwm-verses-close" id="bwm-verses-close">&times;</span>`;
-        content += `<b style="font-size:1.05em;">${displayW}</b>`;
-        if (node.pos) content += ` <span style="font-size:0.8em; opacity:0.6;">(${node.pos.toLowerCase()})</span>`;
+        
+        let headerHtml = `<div class="bwm-verses-header">`;
+        headerHtml += `<div class="bwm-verses-title">`;
+        headerHtml += `<div><b style="font-size:1.05em;">${displayW}</b>`;
+        if (node.pos) headerHtml += ` <span style="font-size:0.8em; opacity:0.6;">(${node.pos.toLowerCase()})</span>`;
+        headerHtml += `</div><span class="bwm-verses-close" id="bwm-verses-close">&times;</span>`;
+        headerHtml += `</div>`;
+        
+        let tabsData = [];
+        let myVerses = this.wordToVerses ? (this.wordToVerses[node.id] || []) : [];
         
         if (this.isSearchMode && this.wordToVerses && this.verses) {
-            let myVerses = this.wordToVerses[node.id] || [];
-            let anyLinks = false;
-            
             this.searchedWords.forEach(sw => {
                 if (sw === node.id) return;
                 let swVerses = this.wordToVerses[sw] || [];
                 let intersection = myVerses.filter(v => swVerses.includes(v));
                 if (intersection.length > 0) {
-                    anyLinks = true;
+                    let kwNode = this.nodes.find(n => n.id === sw);
+                    let sim = kwNode ? this.cosineSimilarity(node.v, kwNode.v) : 0;
+                    
                     let parts = sw.split('_');
                     let formattedSw = parts.length > 1 ? this.formatWord(parts[0], parts[1]) : parts[0];
                     if (parts.length > 1) formattedSw += ` (${parts[1].toLowerCase()})`;
                     
-                    content += `<div style="margin-top: 10px;"><b style="font-size:0.95em;">Links to '${formattedSw}':</b><br>`;
-                    let refs = intersection.map(id => {
-                        let v = this.verses[id] || '';
-                        let [ref, text] = v.split('|');
-                        return `<div style="margin: 4px 0; padding: 4px 0; border-bottom: 1px solid var(--bwm-border);"><span style="color:var(--bwm-tooltip-link); font-family: monospace; font-weight:600;">${ref}</span><br><span style="font-size:0.85em; opacity:0.85;">${text || ''}</span></div>`;
+                    tabsData.push({
+                        id: sw,
+                        title: formattedSw,
+                        verses: intersection,
+                        sim: sim
                     });
-                    content += refs.join('') + `</div>`;
                 }
             });
-            
-            if (!anyLinks) {
-                if (myVerses.length > 0) {
-                    content += `<div style="margin-top: 10px;"><b style="font-size:0.95em;">Appears in:</b><br>`;
-                    let showCount = Math.min(myVerses.length, 10);
-                    let refs = myVerses.slice(0, showCount).map(id => {
-                        let v = this.verses[id] || '';
-                        let [ref, text] = v.split('|');
-                        return `<div style="margin: 4px 0; padding: 4px 0; border-bottom: 1px solid var(--bwm-border);"><span style="color:var(--bwm-tooltip-link); font-family: monospace; font-weight:600;">${ref}</span><br><span style="font-size:0.85em; opacity:0.85;">${text || ''}</span></div>`;
-                    });
-                    content += refs.join('');
-                    if (myVerses.length > showCount) content += `<div style="font-style:italic; opacity:0.6; margin-top:4px;">...and ${myVerses.length - showCount} more</div>`;
-                    content += `</div>`;
-                } else {
-                    content += `<div style="margin-top: 10px; font-style: italic; opacity: 0.6;">No verse data available</div>`;
-                }
-            }
-        } else {
-            let myVerses = this.wordToVerses ? (this.wordToVerses[node.id] || []) : [];
-            if (myVerses.length > 0) {
-                content += `<div style="margin-top: 10px;"><b style="font-size:0.95em;">Appears in:</b><br>`;
-                let showCount = Math.min(myVerses.length, 10);
-                let refs = myVerses.slice(0, showCount).map(id => {
-                    let v = this.verses[id] || '';
-                    let [ref, text] = v.split('|');
-                    return `<div style="margin: 4px 0; padding: 4px 0; border-bottom: 1px solid var(--bwm-border);"><span style="color:var(--bwm-tooltip-link); font-family: monospace; font-weight:600;">${ref}</span><br><span style="font-size:0.85em; opacity:0.85;">${text || ''}</span></div>`;
-                });
-                content += refs.join('');
-                if (myVerses.length > showCount) content += `<div style="font-style:italic; opacity:0.6; margin-top:4px;">...and ${myVerses.length - showCount} more</div>`;
-                content += `</div>`;
-            } else {
-                content += `<div style="margin-top: 10px; font-style: italic; opacity: 0.6;">No verse data available</div>`;
-            }
+            // Sort by semantic similarity (highest first)
+            tabsData.sort((a, b) => b.sim - a.sim);
         }
         
-        this.versesPanel.innerHTML = content;
+        if (tabsData.length > 0) {
+            headerHtml += `<div class="bwm-verses-tabs">`;
+            tabsData.forEach((t, i) => {
+                headerHtml += `<div class="bwm-verses-tab ${i === 0 ? 'active' : ''}" data-tab-id="${t.id}">${t.title}</div>`;
+            });
+            headerHtml += `</div>`;
+        }
+        headerHtml += `</div>`; // end header
+        
+        let contentHtml = `<div class="bwm-verses-content">`;
+        
+        // Helper to format verses list
+        const buildVersesHtml = (vList) => {
+            let limit = 10;
+            let res = vList.slice(0, limit).map(id => {
+                let v = this.verses[id] || '';
+                let [ref, text] = v.split('|');
+                return `<div style="margin: 4px 0; padding: 4px 0; border-bottom: 1px solid var(--bwm-border);"><span style="color:var(--bwm-tooltip-link); font-family: monospace; font-weight:600;">${ref}</span><br><span style="font-size:0.85em; opacity:0.85;">${text || ''}</span></div>`;
+            }).join('');
+            if (vList.length > limit) res += `<div style="font-style:italic; opacity:0.6; margin-top:4px;">...and ${vList.length - limit} more</div>`;
+            return res;
+        };
+        
+        if (tabsData.length > 0) {
+            tabsData.forEach((t, i) => {
+                contentHtml += `<div class="bwm-verses-tab-content" id="bwm-tab-content-${t.id}" style="display: ${i === 0 ? 'block' : 'none'};">`;
+                contentHtml += buildVersesHtml(t.verses);
+                contentHtml += `</div>`;
+            });
+        } else {
+            if (myVerses.length > 0) {
+                contentHtml += `<div style="margin-bottom: 8px;"><b style="font-size:0.95em;">Appears in:</b></div>`;
+                contentHtml += buildVersesHtml(myVerses);
+            } else {
+                contentHtml += `<div style="font-style: italic; opacity: 0.6;">No verse data available</div>`;
+            }
+        }
+        contentHtml += `</div>`; // end content
+        
+        this.versesPanel.innerHTML = headerHtml + contentHtml;
+        
+        // Setup tabs
+        let tabEls = this.versesPanel.querySelectorAll('.bwm-verses-tab');
+        tabEls.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // Deactivate all
+                this.versesPanel.querySelectorAll('.bwm-verses-tab').forEach(t => t.classList.remove('active'));
+                this.versesPanel.querySelectorAll('.bwm-verses-tab-content').forEach(c => c.style.display = 'none');
+                // Activate clicked
+                tab.classList.add('active');
+                let tid = tab.getAttribute('data-tab-id');
+                let contentEl = this.versesPanel.querySelector(`#bwm-tab-content-${tid}`);
+                if (contentEl) contentEl.style.display = 'block';
+                
+                // reset scroll
+                this.versesPanel.querySelector('.bwm-verses-content').scrollTop = 0;
+            });
+        });
         
         // Position near anchor
         let containerRect = this.canvas.parentElement.getBoundingClientRect();
