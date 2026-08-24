@@ -1238,8 +1238,6 @@ class BibleWordMap extends HTMLElement {
         this.nodes.forEach(n => {
             this.ctx.beginPath();
             
-            this.ctx.arc(n.x, n.y, n.canvasR, 0, 2 * Math.PI);
-            
             let posColor = '#94a3b8'; // default slate-400
             if (n.pos === 'NOUN') posColor = '#3b82f6'; // blue-500
             else if (n.pos === 'VERB') posColor = '#ef4444'; // red-500
@@ -1259,13 +1257,16 @@ class BibleWordMap extends HTMLElement {
                 this.ctx.globalAlpha = 1.0;
             }
             
+            let drawR = n.canvasR;
             if (this.hoveredNode === n) {
-                this.ctx.fillStyle = this.colors.nodeHover;
-                this.ctx.shadowBlur = 10 / this.transform.k;
-                this.ctx.shadowColor = this.colors.nodeHover;
+                drawR = n.canvasR * 1.4;
+                this.ctx.shadowBlur = 12 / this.transform.k;
+                this.ctx.shadowColor = posColor;
             } else {
                 this.ctx.shadowBlur = 0;
             }
+            
+            this.ctx.arc(n.x, n.y, drawR, 0, 2 * Math.PI);
             this.ctx.fill();
             
             if (n.isKw) {
@@ -1288,7 +1289,8 @@ class BibleWordMap extends HTMLElement {
                 this.ctx.font = `${fontSize}px ${this.colors.font}`;
                 this.ctx.textAlign = "center";
                 this.ctx.textBaseline = "top";
-                let yOffset = (n.canvasR * this.transform.k) + 2;
+                let currentR = (this.hoveredNode === n) ? n.canvasR * 1.4 : n.canvasR;
+                let yOffset = (currentR * this.transform.k) + 2;
                 
                 // Draw a solid halo background for the text to improve readability over layered lines/dots
                 this.ctx.lineWidth = 3;
