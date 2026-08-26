@@ -21,8 +21,14 @@ class BibleWordMap extends HTMLElement {
                     width: 100%;
                     height: 100%;
                     --bwm-bg: #ffffff;
+                    --bwm-input-bg: #f9fafb;
+                    --bwm-input-focus-bg: #ffffff;
+                    --bwm-btn-bg: #f9fafb;
+                    --bwm-btn-hover: #e5e7eb;
                     --bwm-text: #333333;
+                    --bwm-text-muted: #666666;
                     --bwm-border: #e5e7eb;
+                    --bwm-badge-bg: rgba(0, 0, 0, 0.05);
                     --bwm-node-default: #888888;
                     --bwm-node-kw: #d32f2f;
                     --bwm-node-hover: #2563eb;
@@ -34,8 +40,14 @@ class BibleWordMap extends HTMLElement {
                 @media (prefers-color-scheme: dark) {
                     bible-word-map {
                         --bwm-bg: #121212;
+                        --bwm-input-bg: #1e1e1e;
+                        --bwm-input-focus-bg: #161b22;
+                        --bwm-btn-bg: #21262d;
+                        --bwm-btn-hover: #30363d;
                         --bwm-text: #e0e0e0;
+                        --bwm-text-muted: #8b949e;
                         --bwm-border: #333333;
+                        --bwm-badge-bg: rgba(255, 255, 255, 0.08);
                         --bwm-node-default: #999999;
                         --bwm-tooltip-link: #60a5fa;
                     }
@@ -72,23 +84,27 @@ class BibleWordMap extends HTMLElement {
                     padding: 8px 16px;
                     border: 1px solid var(--bwm-border);
                     border-radius: 20px;
-                    background: var(--bwm-input-bg, #f9fafb);
+                    background: var(--bwm-input-bg);
                     color: var(--bwm-text);
                     outline: none;
                     font-family: var(--bwm-font);
                     font-size: 16px;
                     box-shadow: 0 2px 4px rgba(0,0,0,0.02) inset;
                 }
+                .bwm-search-controls input::placeholder {
+                    color: var(--bwm-text-muted);
+                    opacity: 0.8;
+                }
                 .bwm-search-controls input:focus {
                     border-color: var(--bwm-node-hover);
-                    background: var(--bwm-bg);
-                    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+                    background: var(--bwm-input-focus-bg);
+                    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
                 }
                 .bwm-btn {
                     padding: 8px 20px;
                     border: 1px solid var(--bwm-border);
                     border-radius: 20px;
-                    background: var(--bwm-input-bg, #f9fafb);
+                    background: var(--bwm-btn-bg);
                     color: var(--bwm-text);
                     cursor: pointer;
                     font-weight: 600;
@@ -97,7 +113,7 @@ class BibleWordMap extends HTMLElement {
                     box-shadow: 0 2px 5px rgba(0,0,0,0.04);
                 }
                 .bwm-btn:hover {
-                    background: var(--bwm-border);
+                    background: var(--bwm-btn-hover);
                 }
                 .bwm-btn.active {
                     background: var(--bwm-node-hover);
@@ -217,6 +233,7 @@ class BibleWordMap extends HTMLElement {
                     font-size: 0.9em;
                     line-height: 1.5;
                     width: 340px;
+                    max-width: calc(100% - 20px);
                     max-height: 320px;
                     display: flex;
                     flex-direction: column;
@@ -265,6 +282,12 @@ class BibleWordMap extends HTMLElement {
                     border-bottom-color: var(--bwm-node-hover);
                     color: var(--bwm-node-hover);
                 }
+                .bwm-verses-pane {
+                    display: none;
+                }
+                .bwm-verses-pane.active {
+                    display: block;
+                }
                 .bwm-verses-content {
                     padding: 12px 14px;
                     overflow-y: auto;
@@ -288,7 +311,7 @@ class BibleWordMap extends HTMLElement {
                     width: 36px;
                     height: 36px;
                     border-radius: 8px;
-                    background: var(--bwm-bg);
+                    background: var(--bwm-btn-bg);
                     color: var(--bwm-text);
                     border: 1px solid var(--bwm-border);
                     display: flex;
@@ -300,7 +323,7 @@ class BibleWordMap extends HTMLElement {
                     margin-right: 2px;
                 }
                 .bwm-drawer-toggle:hover {
-                    background: var(--bwm-border);
+                    background: var(--bwm-btn-hover);
                 }
                 .bwm-drawer {
                     position: absolute;
@@ -372,11 +395,96 @@ class BibleWordMap extends HTMLElement {
                     position: absolute;
                     top: 50%; left: 50%;
                     transform: translate(-50%, -50%);
-                    background: var(--bwm-tooltip-bg);
-                    color: var(--bwm-tooltip-text);
-                    padding: 10px 20px;
-                    border-radius: 8px;
-                    z-index: 50;
+                    background-color: rgba(255, 255, 255, 0.92);
+                    background-color: color-mix(in srgb, var(--bwm-bg) 92%, transparent);
+                    backdrop-filter: blur(16px);
+                    -webkit-backdrop-filter: blur(16px);
+                    color: var(--bwm-text);
+                    border: 1px solid var(--bwm-border);
+                    padding: 14px 18px 12px 18px;
+                    border-radius: 16px;
+                    box-shadow: 0 12px 36px rgba(0,0,0,0.18);
+                    z-index: 100;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    width: 320px;
+                    max-width: calc(100% - 30px);
+                    box-sizing: border-box;
+                    user-select: none;
+                    pointer-events: none;
+                }
+                .bwm-loading-visual {
+                    position: relative;
+                    width: 280px;
+                    height: 160px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .bwm-loading-canvas {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 280px;
+                    height: 160px;
+                    border-radius: 10px;
+                }
+                .bwm-loading-tip-container {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    pointer-events: none;
+                    padding: 0 15px;
+                    box-sizing: border-box;
+                    z-index: 2;
+                }
+                .bwm-loading-tip {
+                    font-size: 0.92em;
+                    font-weight: 600;
+                    text-align: center;
+                    line-height: 1.35;
+                    color: var(--bwm-text);
+                    background-color: rgba(255, 255, 255, 0.9);
+                    background-color: color-mix(in srgb, var(--bwm-bg) 90%, transparent);
+                    padding: 8px 14px;
+                    border-radius: 12px;
+                    border: 1px solid var(--bwm-border);
+                    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+                    opacity: 0;
+                    transform: scale(0.85);
+                    transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                }
+                .bwm-loading-tip.visible {
+                    opacity: 1;
+                    transform: scale(1);
+                }
+                .bwm-loading-status {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    margin-top: 8px;
+                    font-size: 0.85em;
+                    color: var(--bwm-text-muted);
+                    font-weight: 500;
+                }
+                .bwm-loading-spinner {
+                    width: 13px;
+                    height: 13px;
+                    border: 2px solid var(--bwm-border);
+                    border-top-color: var(--bwm-node-hover);
+                    border-radius: 50%;
+                    animation: bwm-spin 0.8s linear infinite;
+                }
+                @keyframes bwm-spin {
+                    to { transform: rotate(360deg); }
                 }
             </style>
             <div class="bwm-container">
@@ -405,7 +513,18 @@ class BibleWordMap extends HTMLElement {
                 <div class="bwm-canvas-container">
                     <canvas></canvas>
                     <div class="bwm-tooltip"></div>
-                    <div class="bwm-loading">Loading data...</div>
+                    <div class="bwm-loading">
+                        <div class="bwm-loading-visual">
+                            <canvas class="bwm-loading-canvas"></canvas>
+                            <div class="bwm-loading-tip-container">
+                                <div class="bwm-loading-tip"></div>
+                            </div>
+                        </div>
+                        <div class="bwm-loading-status">
+                            <span class="bwm-loading-spinner"></span>
+                            <span>Loading Bible Word Map...</span>
+                        </div>
+                    </div>
                 </div>
                 <div class="bwm-radial-menu" id="bwm-radial-menu"></div>
                 <div class="bwm-verses-panel" id="bwm-verses-panel"></div>
@@ -421,6 +540,8 @@ class BibleWordMap extends HTMLElement {
         this.ctx = this.canvas.getContext('2d');
         this.tooltip = this.querySelector('.bwm-tooltip');
         this.loading = this.querySelector('.bwm-loading');
+        this.loadingCanvas = this.querySelector('.bwm-loading-canvas');
+        this.loadingTip = this.querySelector('.bwm-loading-tip');
         
         this.searchInput = this.querySelector('#bwm-search');
         this.searchBtn = this.querySelector('#bwm-btn-search');
@@ -630,7 +751,8 @@ class BibleWordMap extends HTMLElement {
 
     async loadData() {
         if (!this.src2d) return;
-        this.loading.style.display = 'block';
+        this.loading.style.display = 'flex';
+        this.startLoadingAnimation();
         try {
             const res2d = await fetch(this.src2d);
             this.data2d = await res2d.json();
@@ -663,6 +785,7 @@ class BibleWordMap extends HTMLElement {
         } catch (e) {
             console.error("Error loading Bible Word Map data", e);
         } finally {
+            this.stopLoadingAnimation();
             this.loading.style.display = 'none';
         }
     }
@@ -774,6 +897,7 @@ class BibleWordMap extends HTMLElement {
             isKw: this.searchedWords.includes(s.point.id),
             x: 0,
             y: 0,
+            original: s.point.original,
             v: s.point.v
         }));
 
@@ -1215,6 +1339,7 @@ class BibleWordMap extends HTMLElement {
             pos: d.pos,
             x: d.x,
             y: d.y,
+            original: d.original,
             isKw: false
         }));
         this.links = [];
@@ -1479,6 +1604,9 @@ class BibleWordMap extends HTMLElement {
             menuItems.push({ icon: '+', label: 'Add keyword', action: () => { this.hideRadialMenu(); this.addKeyword(node.id); } });
         }
         menuItems.push({ icon: '\u{1F4D6}', label: 'Verses', action: () => { this.hideRadialMenu(); this.showVersesPanel(node, screenX, screenY); } });
+        if (node.original && node.original.length > 0) {
+            menuItems.push({ icon: '<span style="font-size:0.7em;font-weight:bold;">α/א</span>', label: 'Original Language', action: () => { this.hideRadialMenu(); this.showOriginalLangPanel(node, screenX, screenY); } });
+        }
         
         this.radialMenu.innerHTML = '';
         let radius = 45;
@@ -1646,6 +1774,305 @@ class BibleWordMap extends HTMLElement {
                 this.versesPanel.classList.remove('visible');
                 this.versesPanel.innerHTML = '';
             });
+        }
+    }
+    showOriginalLangPanel(node, anchorX, anchorY) {
+        let displayW = this.formatWord(node.w, node.pos);
+        
+        let headerHtml = `<div class="bwm-verses-header">`;
+        headerHtml += `<div class="bwm-verses-title">`;
+        headerHtml += `<div><b style="font-size:1.05em;">${displayW}</b>`;
+        if (node.pos) headerHtml += ` <span style="font-size:0.8em; opacity:0.6;">(${node.pos.toLowerCase()})</span>`;
+        headerHtml += `</div><span class="bwm-verses-close" id="bwm-verses-close">&times;</span>`;
+        headerHtml += `</div>`;
+        
+        let tabsData = [];
+        if (node.original && node.original.length > 0) {
+            node.original.forEach((orig, i) => {
+                tabsData.push({
+                    id: `orig-${i}`,
+                    label: orig.lemma || orig.strongs,
+                    isActive: i === 0,
+                    data: orig
+                });
+            });
+        }
+        
+        if (tabsData.length > 1) {
+            headerHtml += `<div class="bwm-verses-tabs">`;
+            tabsData.forEach(t => {
+                let activeCls = t.isActive ? ' active' : '';
+                headerHtml += `<div class="bwm-verses-tab${activeCls}" data-target="${t.id}">${t.label}</div>`;
+            });
+            headerHtml += `</div>`;
+        }
+        headerHtml += `</div>`; // end header
+        
+        let contentHtml = `<div class="bwm-verses-content">`;
+        if (tabsData.length === 0) {
+            contentHtml += `<div style="font-style: italic; opacity: 0.6; padding: 15px;">No original language data available.</div>`;
+        } else {
+            tabsData.forEach(t => {
+                let activeCls = t.isActive ? ' active' : '';
+                let orig = t.data;
+                contentHtml += `<div class="bwm-verses-pane${activeCls}" id="${t.id}">`;
+                
+                contentHtml += `<div style="margin-bottom: 15px;">`;
+                contentHtml += `<div style="font-size: 1.4em; font-weight: bold; margin-bottom: 5px;">${orig.lemma || orig.strongs}</div>`;
+                if (orig.translit) {
+                    contentHtml += `<div style="font-size: 1.1em; color: var(--bwm-text-muted); margin-bottom: 5px;">${orig.translit}</div>`;
+                }
+                contentHtml += `<div style="font-size: 0.9em; margin-bottom: 15px;">
+                    <span style="background: var(--bwm-badge-bg); border: 1px solid var(--bwm-border); padding: 2px 6px; border-radius: 4px; font-family: monospace;">${orig.strongs}</span>
+                    <span style="opacity: 0.7; margin-left: 10px;">Translated ${orig.count} time${orig.count === 1 ? '' : 's'} as "${node.w}"</span>
+                </div>`;
+                contentHtml += `</div>`;
+                
+                if (orig.def) {
+                    contentHtml += `<div style="border-top: 1px solid var(--bwm-border); padding-top: 12px; line-height: 1.5;">`;
+                    contentHtml += `<strong>Strong's Definition:</strong><br/>`;
+                    contentHtml += `<span>${orig.def}</span>`;
+                    contentHtml += `</div>`;
+                }
+                
+                contentHtml += `</div>`;
+            });
+        }
+        contentHtml += `</div>`; // end content
+        
+        this.versesPanel.innerHTML = headerHtml + contentHtml;
+        
+        let tabEls = this.versesPanel.querySelectorAll('.bwm-verses-tab');
+        tabEls.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                e.stopPropagation();
+                tabEls.forEach(t => t.classList.remove('active'));
+                this.versesPanel.querySelectorAll('.bwm-verses-pane').forEach(p => p.classList.remove('active'));
+                
+                tab.classList.add('active');
+                let targetId = tab.getAttribute('data-target');
+                let targetPane = this.versesPanel.querySelector(`#${targetId}`);
+                if (targetPane) targetPane.classList.add('active');
+            });
+        });
+        
+        // Position near anchor
+        let containerRect = this.canvas.parentElement.getBoundingClientRect();
+        let px = anchorX + 50;
+        let py = anchorY - 50;
+        if (px + 340 > containerRect.width) px = anchorX - 360;
+        if (px < 5) px = 5;
+        if (py < 5) py = 5;
+        if (py + 300 > containerRect.height) py = containerRect.height - 310;
+        if (py < 5) py = 5;
+        
+        this.versesPanel.style.left = px + 'px';
+        this.versesPanel.style.top = py + 'px';
+        this.versesPanel.classList.add('visible');
+        
+        let closeBtn = this.versesPanel.querySelector('#bwm-verses-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.hideVersesPanel();
+            });
+        }
+    }
+
+    startLoadingAnimation() {
+        if (!this.loadingCanvas) return;
+        this.stopLoadingAnimation();
+        
+        const canvas = this.loadingCanvas;
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        const width = 280;
+        const height = 160;
+        
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        ctx.scale(dpr, dpr);
+        
+        const cx = width / 2;
+        const cy = height / 2;
+        
+        // Colors matching the Part-of-Speech palette
+        const colors = ['#4ade80', '#60a5fa', '#f472b6', '#fbbf24', '#94a3b8'];
+        const numParticles = 36;
+        const particles = [];
+        
+        for (let i = 0; i < numParticles; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = Math.random() * 60 + 15;
+            particles.push({
+                x: cx + Math.cos(angle) * dist,
+                y: cy + Math.sin(angle) * dist,
+                vx: (Math.random() - 0.5) * 1.1,
+                vy: (Math.random() - 0.5) * 1.1,
+                radius: Math.random() * 2 + 2.2,
+                color: colors[i % colors.length]
+            });
+        }
+        
+        const tips = [
+            "Search any word in the Bible",
+            "Select a word bubble to learn more",
+            "Explore original Greek & Hebrew definitions",
+            "View verse links and semantic proximity",
+            "Filter by Old or New Testament"
+        ];
+        let tipIdx = 0;
+        
+        const STATE_FLOAT = 0;
+        const STATE_GRAVITATE = 1;
+        const STATE_SHOW_TIP = 2;
+        const STATE_EXPLODE = 3;
+        
+        let state = STATE_FLOAT;
+        let stateStartTime = performance.now();
+        
+        const updateTipText = () => {
+            if (this.loadingTip) {
+                this.loadingTip.textContent = tips[tipIdx % tips.length];
+                tipIdx++;
+            }
+        };
+        updateTipText();
+        
+        const animate = (now) => {
+            const elapsed = now - stateStartTime;
+            ctx.clearRect(0, 0, width, height);
+            
+            if (state === STATE_FLOAT) {
+                if (this.loadingTip) this.loadingTip.classList.remove('visible');
+                // Floating ambient motion
+                for (let p of particles) {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.x < 10) { p.x = 10; p.vx *= -1; }
+                    if (p.x > width - 10) { p.x = width - 10; p.vx *= -1; }
+                    if (p.y < 10) { p.y = 10; p.vy *= -1; }
+                    if (p.y > height - 10) { p.y = height - 10; p.vy *= -1; }
+                }
+                
+                if (elapsed > 3000) {
+                    state = STATE_GRAVITATE;
+                    stateStartTime = now;
+                }
+            } else if (state === STATE_GRAVITATE) {
+                // Accelerate towards center
+                for (let p of particles) {
+                    const dx = cx - p.x;
+                    const dy = cy - p.y;
+                    p.vx += dx * 0.045;
+                    p.vy += dy * 0.045;
+                    p.vx *= 0.86;
+                    p.vy *= 0.86;
+                    p.x += p.vx;
+                    p.y += p.vy;
+                }
+                
+                if (elapsed > 900) {
+                    state = STATE_SHOW_TIP;
+                    stateStartTime = now;
+                    if (this.loadingTip) this.loadingTip.classList.add('visible');
+                }
+            } else if (state === STATE_SHOW_TIP) {
+                // Gentle clustering & orbiting around center
+                const t = (now - stateStartTime) * 0.003;
+                for (let i = 0; i < particles.length; i++) {
+                    const p = particles[i];
+                    const targetAngle = (i / particles.length) * Math.PI * 2 + t;
+                    const targetDist = 18 + Math.sin(t * 2 + i) * 10;
+                    const targetX = cx + Math.cos(targetAngle) * targetDist;
+                    const targetY = cy + Math.sin(targetAngle) * targetDist;
+                    
+                    p.x += (targetX - p.x) * 0.08;
+                    p.y += (targetY - p.y) * 0.08;
+                }
+                
+                if (elapsed > 3000) {
+                    state = STATE_EXPLODE;
+                    stateStartTime = now;
+                    if (this.loadingTip) this.loadingTip.classList.remove('visible');
+                    // Explode outwards
+                    for (let p of particles) {
+                        const angle = Math.atan2(p.y - cy, p.x - cx) + (Math.random() - 0.5) * 0.6;
+                        const speed = Math.random() * 3.5 + 3;
+                        p.vx = Math.cos(angle) * speed;
+                        p.vy = Math.sin(angle) * speed;
+                    }
+                }
+            } else if (state === STATE_EXPLODE) {
+                // Bursting outwards with drag
+                for (let p of particles) {
+                    p.vx *= 0.93;
+                    p.vy *= 0.93;
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.x < 10) { p.x = 10; p.vx *= -1; }
+                    if (p.x > width - 10) { p.x = width - 10; p.vx *= -1; }
+                    if (p.y < 10) { p.y = 10; p.vy *= -1; }
+                    if (p.y > height - 10) { p.y = height - 10; p.vy *= -1; }
+                }
+                
+                if (elapsed > 700) {
+                    state = STATE_FLOAT;
+                    stateStartTime = now;
+                    updateTipText();
+                    for (let p of particles) {
+                        p.vx = (Math.random() - 0.5) * 1.1;
+                        p.vy = (Math.random() - 0.5) * 1.1;
+                    }
+                }
+            }
+            
+            // Draw connecting lines between close particles
+            const maxDist = state === STATE_GRAVITATE || state === STATE_SHOW_TIP ? 40 : 55;
+            ctx.lineWidth = 1;
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const p1 = particles[i];
+                    const p2 = particles[j];
+                    const dx = p1.x - p2.x;
+                    const dy = p1.y - p2.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < maxDist) {
+                        const alpha = (1 - dist / maxDist) * 0.35;
+                        ctx.strokeStyle = `rgba(150, 150, 150, ${alpha})`;
+                        ctx.beginPath();
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.stroke();
+                    }
+                }
+            }
+            
+            // Draw particles
+            for (let p of particles) {
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            this.loadingAnimId = requestAnimationFrame(animate);
+        };
+        
+        this.loadingAnimId = requestAnimationFrame(animate);
+    }
+
+    stopLoadingAnimation() {
+        if (this.loadingAnimId) {
+            cancelAnimationFrame(this.loadingAnimId);
+            this.loadingAnimId = null;
+        }
+        if (this.loadingCanvas) {
+            const ctx = this.loadingCanvas.getContext('2d');
+            ctx.clearRect(0, 0, this.loadingCanvas.width, this.loadingCanvas.height);
+        }
+        if (this.loadingTip) {
+            this.loadingTip.classList.remove('visible');
         }
     }
 }

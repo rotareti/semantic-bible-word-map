@@ -1,5 +1,17 @@
 # Changelog
 
+## [6.1.0] - 2026-08-26
+### Added
+- **Original Language & Strong's Panel:** Integrated the Berean Standard Bible Interlinear mapping with the OpenScriptures Strong's Greek and Hebrew Lexicon. Clicking the new original language button (`α/א`) on the radial menu opens a tabbed panel displaying the original lemmas, transliterations, translation counts, and full Strong's definitions.
+- **Particle Loading Animation:** Added an animated network of Part of Speech colored particles that float, connect, gravitate, and burst while the dataset loads, accompanied by helpful rotating tips.
+- **Data Attribution:** Added open data attribution for the Berean Standard Bible and OpenScriptures Strong's Dictionary.
+
+### Fixed
+- Fixed Greek and Hebrew character encoding by pulling lemmas and transliterations directly from clean UTF-8 lexicon sources.
+- Fixed tab switching in the lexicon panel by adding missing CSS rules for pane visibility.
+- Fixed window positioning on mobile devices so panels stay clamped within the viewport rather than overflowing off-screen.
+- Darkened search bar, search button, and panel badges in default dark mode while preserving light mode styling.
+
 ## [6.0.0] - 2026-08-23
 ### Added
 - **Radial Menu Interaction:** Replaced the hover-based tooltip with a native click-activated radial menu. The radial menu provides explicit, distributed buttons to add/remove a keyword or open the verses panel, preventing accidental UI triggers while navigating the map.

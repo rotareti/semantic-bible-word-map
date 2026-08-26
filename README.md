@@ -78,3 +78,9 @@ Drop the custom element anywhere in your HTML, pointing the `src` attributes to 
 
 ### 4. Customizing Styles
 The `<bible-word-map>` element styles itself but can be configured using CSS variables (like `--bwm-bg`, `--bwm-text`, and `--bwm-node-hover`) defined on the `:host` element or wrapping container.
+
+## Credits & Data Sources
+
+This project was made possible by the following open datasets:
+* **[Berean Standard Bible (BSB)](https://berean.bible/)**: Used for the English text and Interlinear mapping tables.
+* **[OpenScriptures Strong's Dictionary](https://github.com/openscriptures/strongs)**: Used for the original language definitions (Licensed under CC-BY 4.0).
