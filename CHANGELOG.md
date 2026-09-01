@@ -1,5 +1,11 @@
 # Changelog
 
+## [6.2.0] - 2026-08-31
+### Added
+- **Configurable Relationship Density:** Added a slider control in the Options drawer to adjust the number of semantic relationships displayed per keyword (range: 10 to 250, default: 100). Changes update the active graph dynamically in real time.
+- **Search Clear Button:** Added an `(x)` clear button inside the search input box that appears whenever text or active keywords are present.
+- **Clear All Keywords Action:** Added a "Clear All" button to the active words section in the Options drawer to instantly clear keywords and return to the full map view.
+
 ## [6.1.0] - 2026-08-26
 ### Added
 - **Original Language & Strong's Panel:** Integrated the Berean Standard Bible Interlinear mapping with the OpenScriptures Strong's Greek and Hebrew Lexicon. Clicking the new original language button (`α/א`) on the radial menu opens a tabbed panel displaying the original lemmas, transliterations, translation counts, and full Strong's definitions.

@@ -13,6 +13,7 @@ class BibleWordMap extends HTMLElement {
         this.hoveredNode = null;
         this.tooltipTimeout = null;
         this.simulation = null;
+        this.neighborsPerKeyword = 100;
         
         this.innerHTML = `
             <style>
@@ -78,10 +79,16 @@ class BibleWordMap extends HTMLElement {
                     flex-wrap: nowrap;
                     flex: 1;
                 }
-                .bwm-search-controls input {
+                .bwm-search-input-wrapper {
+                    position: relative;
+                    display: flex;
                     flex: 1;
-                    min-width: 100px;
-                    padding: 8px 16px;
+                    align-items: center;
+                }
+                .bwm-search-controls input {
+                    width: 100%;
+                    box-sizing: border-box;
+                    padding: 8px 36px 8px 16px;
                     border: 1px solid var(--bwm-border);
                     border-radius: 20px;
                     background: var(--bwm-input-bg);
@@ -90,6 +97,34 @@ class BibleWordMap extends HTMLElement {
                     font-family: var(--bwm-font);
                     font-size: 16px;
                     box-shadow: 0 2px 4px rgba(0,0,0,0.02) inset;
+                }
+                .bwm-search-clear {
+                    position: absolute;
+                    right: 10px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    width: 20px;
+                    height: 20px;
+                    border-radius: 50%;
+                    border: none;
+                    background: var(--bwm-border);
+                    color: var(--bwm-text-muted);
+                    font-size: 14px;
+                    line-height: 1;
+                    display: none;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    padding: 0;
+                    transition: background 0.15s, color 0.15s;
+                    user-select: none;
+                }
+                .bwm-search-clear:hover {
+                    background: var(--bwm-node-kw);
+                    color: #ffffff;
+                }
+                .bwm-search-clear.visible {
+                    display: flex;
                 }
                 .bwm-search-controls input::placeholder {
                     color: var(--bwm-text-muted);
@@ -370,11 +405,70 @@ class BibleWordMap extends HTMLElement {
                     overflow-y: auto;
                     flex: 1;
                 }
-                .bwm-drawer-content h4 {
-                    margin: 0 0 10px 0;
-                    font-size: 0.9em;
+                .bwm-drawer-section {
+                    margin-bottom: 24px;
+                }
+                .bwm-drawer-section-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 10px;
+                }
+                .bwm-drawer-section-header h4, .bwm-drawer-section h4 {
+                    margin: 0;
+                    font-size: 0.85em;
                     text-transform: uppercase;
-                    color: #888;
+                    color: var(--bwm-text-muted);
+                    letter-spacing: 0.5px;
+                }
+                .bwm-btn-clear-all {
+                    background: transparent;
+                    border: 1px solid var(--bwm-border);
+                    color: var(--bwm-text-muted);
+                    border-radius: 12px;
+                    font-size: 0.75em;
+                    font-weight: 600;
+                    padding: 3px 8px;
+                    cursor: pointer;
+                    transition: all 0.15s;
+                    font-family: var(--bwm-font);
+                    display: none;
+                }
+                .bwm-btn-clear-all:hover {
+                    background: var(--bwm-node-kw);
+                    border-color: var(--bwm-node-kw);
+                    color: #ffffff;
+                }
+                .bwm-btn-clear-all.visible {
+                    display: block;
+                }
+                .bwm-slider-container {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    margin-top: 10px;
+                }
+                .bwm-slider-container input[type="range"] {
+                    flex: 1;
+                    cursor: pointer;
+                    accent-color: var(--bwm-node-hover);
+                }
+                .bwm-slider-value {
+                    min-width: 32px;
+                    text-align: center;
+                    font-weight: 600;
+                    font-size: 0.9em;
+                    padding: 2px 6px;
+                    background: var(--bwm-btn-bg);
+                    border: 1px solid var(--bwm-border);
+                    border-radius: 6px;
+                    color: var(--bwm-text);
+                }
+                .bwm-drawer-hint {
+                    font-size: 0.8em;
+                    color: var(--bwm-text-muted);
+                    margin-top: 6px;
+                    line-height: 1.35;
                 }
                 .bwm-active-word-item {
                     display: flex;
@@ -385,9 +479,10 @@ class BibleWordMap extends HTMLElement {
                 .bwm-active-word-item input {
                     margin-right: 8px;
                     cursor: pointer;
+                    accent-color: var(--bwm-node-hover);
                 }
                 .bwm-empty-state {
-                    color: #888;
+                    color: var(--bwm-text-muted);
                     font-size: 0.9em;
                     font-style: italic;
                 }
@@ -493,7 +588,10 @@ class BibleWordMap extends HTMLElement {
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                     </div>
                     <div class="bwm-search-controls">
-                        <input type="text" id="bwm-search" placeholder="Search for words (e.g. Father Son Spirit)">
+                        <div class="bwm-search-input-wrapper">
+                            <input type="text" id="bwm-search" placeholder="Search for words (e.g. Father Son Spirit)">
+                            <button class="bwm-search-clear" id="bwm-search-clear" title="Clear all keywords" type="button">&times;</button>
+                        </div>
                         <button class="bwm-btn" id="bwm-btn-search">Search</button>
                     </div>
                 </div>
@@ -504,9 +602,24 @@ class BibleWordMap extends HTMLElement {
                         <div class="bwm-drawer-close" id="bwm-drawer-close">&times;</div>
                     </div>
                     <div class="bwm-drawer-content">
-                        <h4>Active Words</h4>
-                        <div id="bwm-active-words">
-                            <div class="bwm-empty-state">No words selected.</div>
+                        <div class="bwm-drawer-section">
+                            <div class="bwm-drawer-section-header">
+                                <h4>Active Words</h4>
+                                <button class="bwm-btn-clear-all" id="bwm-btn-clear-all" type="button" title="Clear all active keywords">Clear All</button>
+                            </div>
+                            <div id="bwm-active-words">
+                                <div class="bwm-empty-state">No words selected.</div>
+                            </div>
+                        </div>
+                        <div class="bwm-drawer-section">
+                            <div class="bwm-drawer-section-header">
+                                <h4>Relationships per Word</h4>
+                            </div>
+                            <div class="bwm-slider-container">
+                                <input type="range" id="bwm-neighbor-slider" min="10" max="250" step="5" value="100">
+                                <span class="bwm-slider-value" id="bwm-neighbor-value">100</span>
+                            </div>
+                            <div class="bwm-drawer-hint">Controls how many related words appear around each keyword.</div>
                         </div>
                     </div>
                 </div>
@@ -544,8 +657,13 @@ class BibleWordMap extends HTMLElement {
         this.loadingTip = this.querySelector('.bwm-loading-tip');
         
         this.searchInput = this.querySelector('#bwm-search');
+        this.searchClearBtn = this.querySelector('#bwm-search-clear');
         this.searchBtn = this.querySelector('#bwm-btn-search');
         this.errorSpan = this.querySelector('#bwm-error');
+        
+        this.drawerClearAllBtn = this.querySelector('#bwm-btn-clear-all');
+        this.neighborSlider = this.querySelector('#bwm-neighbor-slider');
+        this.neighborValue = this.querySelector('#bwm-neighbor-value');
         
         this.setupEvents();
         this.loadData();
@@ -571,6 +689,35 @@ class BibleWordMap extends HTMLElement {
         this.searchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.searchWord();
         });
+        this.searchInput.addEventListener('input', () => {
+            this.updateClearBtnVisibility();
+        });
+        
+        if (this.searchClearBtn) {
+            this.searchClearBtn.addEventListener('click', () => {
+                this.clearAllKeywords();
+            });
+        }
+        
+        if (this.drawerClearAllBtn) {
+            this.drawerClearAllBtn.addEventListener('click', () => {
+                this.clearAllKeywords();
+            });
+        }
+        
+        if (this.neighborSlider) {
+            this.neighborSlider.addEventListener('input', (e) => {
+                const val = parseInt(e.target.value, 10);
+                this.neighborsPerKeyword = val;
+                if (this.neighborValue) this.neighborValue.textContent = val;
+            });
+            this.neighborSlider.addEventListener('change', () => {
+                // Dynamically re-compute and update if search mode is active
+                if (this.isSearchMode && this.searchedWords && this.searchedWords.length > 0) {
+                    this.searchWord(true);
+                }
+            });
+        }
 
         // Canvas interactivity
         new ResizeObserver(() => this.resize()).observe(this.canvas.parentElement);
@@ -809,9 +956,7 @@ class BibleWordMap extends HTMLElement {
             let originalQuery = this.searchInput.value.trim();
             let query = originalQuery.toLowerCase();
             if (!query) {
-                this.isSearchMode = false;
-                window.history.replaceState(null, '', window.location.pathname);
-                this.buildAllWordsGraph();
+                this.clearAllKeywords();
                 return;
             }
 
@@ -836,10 +981,7 @@ class BibleWordMap extends HTMLElement {
         } else {
             // Use explicit IDs already set in this.searchedWords
             if (this.searchedWords.length === 0) {
-                this.isSearchMode = false;
-                this.searchInput.value = "";
-                window.history.replaceState(null, '', window.location.pathname);
-                this.buildAllWordsGraph();
+                this.clearAllKeywords();
                 return;
             }
             this.searchedWords.forEach(id => {
@@ -847,6 +989,8 @@ class BibleWordMap extends HTMLElement {
                 if (p) foundPoints.push(p);
             });
         }
+        
+        this.updateClearBtnVisibility();
         
         if (foundPoints.length === 0) {
             this.errorSpan.style.display = 'flex';
@@ -863,6 +1007,7 @@ class BibleWordMap extends HTMLElement {
             }
         });
 
+        const limit = this.neighborsPerKeyword || 100;
         foundPoints.forEach(primaryPoint => {
             let similarities = this.data2d.map(d => ({
                 point: d,
@@ -871,7 +1016,7 @@ class BibleWordMap extends HTMLElement {
             
             similarities.sort((a, b) => b.sim - a.sim);
             
-            const topWords = similarities.slice(0, 100);
+            const topWords = similarities.slice(0, limit);
             topWords.forEach(s => {
                 if (!topWordsSet.has(s.point.id)) {
                     topWordsSet.set(s.point.id, { point: s.point, maxSim: s.sim, sourceKw: primaryPoint.id });
@@ -957,6 +1102,30 @@ class BibleWordMap extends HTMLElement {
         this.renderActiveWords();
         this.runSimulation();
     }
+    updateClearBtnVisibility() {
+        if (!this.searchClearBtn) return;
+        const hasText = this.searchInput && this.searchInput.value.trim().length > 0;
+        const hasKeywords = this.searchedWords && this.searchedWords.length > 0;
+        if (hasText || hasKeywords) {
+            this.searchClearBtn.classList.add('visible');
+        } else {
+            this.searchClearBtn.classList.remove('visible');
+        }
+    }
+
+    clearAllKeywords() {
+        this.isSearchMode = false;
+        this.searchedWords = [];
+        this.drawerWords = [];
+        if (this.searchInput) this.searchInput.value = '';
+        this.updateClearBtnVisibility();
+        this.renderActiveWords();
+        window.history.replaceState(null, '', window.location.pathname);
+        this.hideRadialMenu();
+        this.hideVersesPanel();
+        this.buildAllWordsGraph();
+    }
+
     formatWord(word, pos) {
         if (pos === 'PROPN' && word.length > 0) {
             return word.charAt(0).toUpperCase() + word.slice(1);
@@ -967,6 +1136,16 @@ class BibleWordMap extends HTMLElement {
     renderActiveWords() {
         const container = this.querySelector('#bwm-active-words');
         if (!container) return;
+        
+        if (this.drawerClearAllBtn) {
+            if (this.drawerWords && this.drawerWords.length > 0) {
+                this.drawerClearAllBtn.classList.add('visible');
+            } else {
+                this.drawerClearAllBtn.classList.remove('visible');
+            }
+        }
+        
+        this.updateClearBtnVisibility();
         
         if (!this.drawerWords || this.drawerWords.length === 0) {
             container.innerHTML = '<div class="bwm-empty-state">No words selected.</div>';
@@ -1157,7 +1336,8 @@ class BibleWordMap extends HTMLElement {
             sim: this.cosineSimilarity(p.v, d.v)
         }));
         similarities.sort((a, b) => b.sim - a.sim);
-        const topWords = similarities.slice(0, 100);
+        const limit = this.neighborsPerKeyword || 100;
+        const topWords = similarities.slice(0, limit);
         
         let queuedNeighbors = [];
         
