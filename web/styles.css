@@ -179,6 +179,30 @@ footer a {
 .info-panel.pinned .info-close {
     display: block;
 }
+
+/* Legend Line Indicators */
+.legend-line {
+    display: inline-block;
+    width: 22px;
+    height: 3px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+.legend-line-direct {
+    background-color: #16a34a;
+}
+.legend-line-indirect {
+    background-color: #94a3b8;
+}
+
+@media (prefers-color-scheme: dark) {
+    .legend-line-direct {
+        background-color: #4ade80;
+    }
+    .legend-line-indirect {
+        background-color: #64748b;
+    }
+}
 .info-close:hover {
     color: var(--text-color);
 }

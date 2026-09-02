@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="color-scheme" content="light dark">
     <title>Semantic Bible Word Map</title>
-    <link rel="stylesheet" href="styles.css?v=5.0.8">
+    <link rel="stylesheet" href="styles.css?v=6.2.3">
     <!-- Load D3.js for high-performance physics and canvas rendering -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="icon" type="image/jpeg" href="favicon.jpg">
@@ -13,30 +13,40 @@
 <body>
     <header style="position: relative; z-index: 10;">
         <div style="display: flex; align-items: center; justify-content: center;">
-            <h1>Semantic Bible Word Map <span style="font-size: 0.5em; color: var(--text-muted); vertical-align: middle;">v6.2.0</span></h1>
+            <h1>Semantic Bible Word Map <span style="font-size: 0.5em; color: var(--text-muted); vertical-align: middle;">v6.3.0</span></h1>
             <div class="info-wrapper">
                 <div class="info-btn" id="info-btn">i</div>
                 <div class="info-panel" id="info-panel">
                     <div class="info-close" id="info-close">&times;</div>
                     Explore the Berean Standard Bible through a semantic lens. Each dot represents a word, and the physical distance between dots indicates how closely related their meanings are based on Biblical usage. 
                     <br><br>
-                    <strong>Colors:</strong><br>
+                    <strong>Word Colors:</strong><br>
                     <span style="color: #4ade80;">■</span> Proper Nouns (Names, Places)<br>
                     <span style="color: #60a5fa;">■</span> Nouns (Objects, Concepts)<br>
                     <span style="color: #f472b6;">■</span> Verbs (Actions)<br>
                     <span style="color: #fbbf24;">■</span> Adjectives & Adverbs<br>
                     <span style="color: #94a3b8;">■</span> Other
+                    <br><br>
+                    <strong>Connection Lines:</strong><br>
+                    <div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
+                        <span class="legend-line legend-line-direct"></span>
+                        <span>Direct Link (single verse linked words)</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
+                        <span class="legend-line legend-line-indirect"></span>
+                        <span>Grey Link (indirect semantic links)</span>
+                    </div>
                 </div>
             </div>
         </div>
     </header>
     <main>
-        <bible-word-map src-2d="data/output/wordmap_2d.json?v=6.2.0" src-verses="data/output/verse_index.json?v=6.2.0"></bible-word-map>
+        <bible-word-map src-2d="data/output/wordmap_2d.json?v=6.3.0" src-verses="data/output/verse_index.json?v=6.3.0"></bible-word-map>
     </main>
     <footer>
         <a href="https://github.com/rotareti/semantic-bible-word-map" target="_blank">View source on GitHub</a> <span style="margin: 0 10px; color: var(--text-muted);">|</span> <i style="color: var(--text-muted);">"Freely you have received; freely give."</i>
     </footer>
-    <script src="bible-word-map.js?v=6.2.0" type="module"></script>
+    <script src="bible-word-map.js?v=6.3.0" type="module"></script>
     <script>
         const btn = document.getElementById('info-btn');
         const panel = document.getElementById('info-panel');

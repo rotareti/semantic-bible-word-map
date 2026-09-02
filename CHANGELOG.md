@@ -1,5 +1,11 @@
 # Changelog
 
+## [6.3.0] - 2026-09-02
+### Added
+- **Left-Side Options Drawer:** Moved the options drawer to the left side directly underneath the hamburger toggle button. The toggle button stays visible and clickable to easily open and close the drawer, alongside click-outside dismissal.
+- **Part of Speech Subtitles on Canvas:** Added dynamic `(pos)` subtitle tags (e.g. `(propn)`, `(verb)`, `(noun)`) underneath word bubbles on the canvas whenever multiple keywords share the same base name.
+- **Connection Line Legend:** Added direct link (green line) and indirect semantic link (grey line) indicators to the information modal with adaptive light and dark mode colors.
+
 ## [6.2.0] - 2026-08-31
 ### Added
 - **Configurable Relationship Density:** Added a slider control in the Options drawer to adjust the number of semantic relationships displayed per keyword (range: 10 to 250, default: 100). Changes update the active graph dynamically in real time.

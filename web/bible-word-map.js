@@ -360,25 +360,33 @@ class BibleWordMap extends HTMLElement {
                 .bwm-drawer-toggle:hover {
                     background: var(--bwm-btn-hover);
                 }
+                .bwm-drawer-toggle.active {
+                    background: var(--bwm-node-hover);
+                    color: #ffffff;
+                    border-color: var(--bwm-node-hover);
+                }
                 .bwm-drawer {
                     position: absolute;
-                    top: 0;
-                    right: -320px;
+                    top: 48px;
+                    bottom: 0;
+                    left: -320px;
                     width: 300px;
-                    height: 100%;
+                    height: auto;
                     background-color: rgba(255, 255, 255, 0.85); /* fallback for older browsers */
                     background-color: color-mix(in srgb, var(--bwm-bg) 85%, transparent);
                     backdrop-filter: blur(12px);
                     -webkit-backdrop-filter: blur(12px);
-                    border-left: 1px solid var(--bwm-border);
-                    box-shadow: -4px 0 15px rgba(0,0,0,0.1);
+                    border: 1px solid var(--bwm-border);
+                    border-left: none;
+                    border-radius: 0 10px 10px 0;
+                    box-shadow: 4px 4px 15px rgba(0,0,0,0.1);
                     z-index: 1000;
-                    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                     display: flex;
                     flex-direction: column;
                 }
                 .bwm-drawer.open {
-                    right: 0;
+                    left: 0;
                 }
                 .bwm-drawer-header {
                     display: flex;
@@ -847,15 +855,18 @@ class BibleWordMap extends HTMLElement {
         this.drawer = this.querySelector('#bwm-drawer');
         this.drawerClose = this.querySelector('#bwm-drawer-close');
         
-        this.drawerToggle.addEventListener('click', () => {
-            this.drawer.classList.add('open');
+        this.drawerToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = this.drawer.classList.toggle('open');
+            this.drawerToggle.classList.toggle('active', isOpen);
         });
         
         this.drawerClose.addEventListener('click', () => {
             this.drawer.classList.remove('open');
+            this.drawerToggle.classList.remove('active');
         });
         
-        // Close radial menu and verses panel when clicking outside
+        // Close radial menu, verses panel, and drawer when clicking outside
         document.addEventListener('click', (e) => {
             let isMenuVisible = this.radialMenuNode !== null;
             let isVersesVisible = this.versesPanel.classList.contains('visible');
@@ -864,6 +875,13 @@ class BibleWordMap extends HTMLElement {
                 if (!this.radialMenu.contains(e.target) && !this.versesPanel.contains(e.target) && !this.canvas.contains(e.target)) {
                     this.hideRadialMenu();
                     this.hideVersesPanel();
+                }
+            }
+            
+            if (this.drawer && this.drawer.classList.contains('open')) {
+                if (!this.drawer.contains(e.target) && !this.drawerToggle.contains(e.target)) {
+                    this.drawer.classList.remove('open');
+                    this.drawerToggle.classList.remove('active');
                 }
             }
         });
@@ -1603,6 +1621,16 @@ class BibleWordMap extends HTMLElement {
         });
         this.ctx.globalAlpha = 1.0;
         
+        let kwWordCounts = {};
+        let nodeWordCounts = {};
+        this.nodes.forEach(n => {
+            let baseW = n.w.toLowerCase();
+            if (n.isKw) {
+                kwWordCounts[baseW] = (kwWordCounts[baseW] || 0) + 1;
+            }
+            nodeWordCounts[baseW] = (nodeWordCounts[baseW] || 0) + 1;
+        });
+
         this.nodes.forEach(n => {
             this.ctx.beginPath();
             
@@ -1668,6 +1696,22 @@ class BibleWordMap extends HTMLElement {
                 
                 this.ctx.fillStyle = this.colors.text;
                 this.ctx.fillText(displayW, 0, yOffset);
+                
+                // If there are multiple keywords or active nodes with the same word, show POS underneath
+                let hasDuplicate = (n.isKw && kwWordCounts[n.w.toLowerCase()] > 1) || (this.isSearchMode && nodeWordCounts[n.w.toLowerCase()] > 1);
+                if (hasDuplicate && n.pos) {
+                    let posText = `(${n.pos.toLowerCase()})`;
+                    let posFontSize = n.isKw ? 11 : 9;
+                    this.ctx.font = `${posFontSize}px ${this.colors.font}`;
+                    let posOffset = yOffset + fontSize + 1;
+                    
+                    this.ctx.lineWidth = 2.5;
+                    this.ctx.strokeStyle = this.colors.bg;
+                    this.ctx.strokeText(posText, 0, posOffset);
+                    
+                    this.ctx.fillStyle = this.colors.nodeDef || '#888888';
+                    this.ctx.fillText(posText, 0, posOffset);
+                }
                 
                 this.ctx.restore();
             }
