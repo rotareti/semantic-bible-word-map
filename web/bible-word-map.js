@@ -848,7 +848,7 @@ class BibleWordMap extends HTMLElement {
                         </div>
                         <div class="bwm-loading-status">
                             <span class="bwm-loading-spinner"></span>
-                            <span>Loading Bible Word Map...</span>
+                            <span id="bwm-loading-text">Loading Bible Word Map...</span>
                         </div>
                     </div>
                 </div>
@@ -868,6 +868,7 @@ class BibleWordMap extends HTMLElement {
         this.ctx = this.canvas.getContext('2d');
         this.tooltip = this.querySelector('.bwm-tooltip');
         this.loading = this.querySelector('.bwm-loading');
+        this.loadingText = this.querySelector('#bwm-loading-text');
         this.loadingCanvas = this.querySelector('.bwm-loading-canvas');
         this.loadingTip = this.querySelector('.bwm-loading-tip');
         this.bookCard = this.querySelector('#bwm-book-card');
@@ -1139,68 +1140,105 @@ class BibleWordMap extends HTMLElement {
     }
 
     async loadData() {
-        if (!this.src2d) return;
-        this.loading.style.display = 'flex';
-        this.startLoadingAnimation();
-        try {
-            const res2d = await fetch(this.src2d);
-            this.data2d = await res2d.json();
-            
-            if (this.srcVerses) {
-                const resV = await fetch(this.srcVerses);
-                const vData = await resV.json();
+        let params = new URLSearchParams(window.location.search);
+        let view = params.get('view');
+        let books = params.get('books');
+        let keywords = params.get('keywords');
+        let isBooksInit = (view === 'books' || Boolean(books));
+
+        if (isBooksInit) {
+            const wordsBtn = document.getElementById('view-mode-words');
+            const booksBtn = document.getElementById('view-mode-books');
+            if (wordsBtn && booksBtn) {
+                wordsBtn.classList.remove('active');
+                booksBtn.classList.add('active');
+            }
+            this.viewMode = 'books';
+            this.showLoading('Loading Biblical Books & Themes...', 'books');
+        } else {
+            this.showLoading('Loading Bible Word Map...', 'words');
+        }
+
+        // Fetch datasets concurrently
+        this.booksPromise = this.srcBooks ? fetch(this.srcBooks).then(r => {
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            return r.json();
+        }).catch(err => {
+            console.warn("Could not load bookmap data", err);
+            return null;
+        }) : Promise.resolve(null);
+
+        this.versesPromise = this.srcVerses ? fetch(this.srcVerses).then(r => {
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            return r.json();
+        }).catch(err => {
+            console.warn("Could not load verses data", err);
+            return null;
+        }) : Promise.resolve(null);
+
+        this.data2dPromise = this.src2d ? fetch(this.src2d).then(r => {
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            return r.json();
+        }).catch(err => {
+            console.error("Could not load wordmap data", err);
+            return null;
+        }) : Promise.resolve(null);
+
+        this.booksPromise.then(data => {
+            if (data) this.booksData = data;
+        });
+
+        this.versesPromise.then(vData => {
+            if (vData) {
                 this.verses = vData.verses;
                 this.wordToVerses = vData.words;
             }
+        });
 
-            if (this.srcBooks) {
-                try {
-                    const resB = await fetch(this.srcBooks);
-                    this.booksData = await resB.json();
-                } catch (bErr) {
-                    console.warn("Could not load bookmap data", bErr);
-                }
-            }
-            
-            let params = new URLSearchParams(window.location.search);
-            let view = params.get('view');
-            let books = params.get('books');
-            let keywords = params.get('keywords');
-            
-            if (view === 'books' || books) {
-                const wordsBtn = document.getElementById('view-mode-words');
-                const booksBtn = document.getElementById('view-mode-books');
-                if (wordsBtn && booksBtn) {
-                    wordsBtn.classList.remove('active');
-                    booksBtn.classList.add('active');
-                }
-                this.setViewMode('books');
+        this.data2dPromise.then(d2d => {
+            if (d2d) this.data2d = d2d;
+        });
+
+        try {
+            if (isBooksInit) {
+                this.booksData = await this.booksPromise;
+                this.hideLoading();
+
+                this.setViewMode('books', true);
                 if (books) {
                     this.searchedBooks = books.split(',').map(b => b.trim().toUpperCase()).filter(b => b);
                     this.drawerBooks = [...this.searchedBooks];
                     this.searchBooks(true);
                 }
-            } else if (keywords) {
-                this.searchedWords = keywords.split(',').map(k => k.trim()).filter(k => k);
-                this.drawerWords = [...this.searchedWords];
-                if (this.searchedWords.length > 0) {
-                    let baseWords = [...new Set(this.searchedWords.map(id => {
-                        let parts = id.split('_');
-                        return this.formatWord(parts[0], parts[1]);
-                    }))];
-                    this.searchInput.value = baseWords.join(" ");
-                    this.searchWord(true);
+            } else {
+                this.data2d = await this.data2dPromise;
+                const vData = await this.versesPromise;
+                if (vData) {
+                    this.verses = vData.verses;
+                    this.wordToVerses = vData.words;
+                }
+                this.hideLoading();
+
+                if (keywords) {
+                    this.searchedWords = keywords.split(',').map(k => k.trim()).filter(k => k);
+                    this.drawerWords = [...this.searchedWords];
+                    if (this.searchedWords.length > 0) {
+                        let baseWords = [...new Set(this.searchedWords.map(id => {
+                            let parts = id.split('_');
+                            return this.formatWord(parts[0], parts[1]);
+                        }))];
+                        this.searchInput.value = baseWords.join(" ");
+                        this.searchWord(true);
+                    } else {
+                        this.buildAllWordsGraph();
+                    }
                 } else {
                     this.buildAllWordsGraph();
                 }
-            } else {
-                this.buildAllWordsGraph();
             }
         } catch (e) {
             console.error("Error loading Bible Word Map data", e);
-        } finally {
-            this.stopLoadingAnimation();
-            this.loading.style.display = 'none';
+            this.hideLoading();
         }
     }
 
@@ -1416,6 +1454,24 @@ class BibleWordMap extends HTMLElement {
         this.hideRadialMenu();
         this.hideVersesPanel();
         this.buildAllWordsGraph();
+    }
+
+    showLoading(text = 'Loading Bible Word Map...', type = 'words') {
+        if (!this.loading) return;
+        if (this.loadingText) {
+            this.loadingText.textContent = text;
+        } else {
+            let el = this.querySelector('#bwm-loading-text') || this.querySelector('.bwm-loading-status span:last-child');
+            if (el) el.textContent = text;
+        }
+        this.loading.style.display = 'flex';
+        this.startLoadingAnimation(type);
+    }
+
+    hideLoading() {
+        if (!this.loading) return;
+        this.stopLoadingAnimation();
+        this.loading.style.display = 'none';
     }
 
     formatWord(word, pos) {
@@ -1922,7 +1978,23 @@ class BibleWordMap extends HTMLElement {
             this.isSearchMode = false;
             window.history.replaceState(null, '', '?view=books');
             this.renderActiveWords();
-            this.buildBooksGraph();
+
+            if (!this.booksData) {
+                this.showLoading('Loading Biblical Books & Themes...', 'books');
+                if (this.booksPromise) {
+                    this.booksPromise.then(data => {
+                        if (data) this.booksData = data;
+                        this.hideLoading();
+                        if (this.viewMode === 'books') {
+                            this.buildBooksGraph();
+                        }
+                    }).catch(() => {
+                        this.hideLoading();
+                    });
+                }
+            } else {
+                this.buildBooksGraph();
+            }
         } else {
             this.searchedWords = [];
             this.drawerWords = [];
@@ -1931,7 +2003,23 @@ class BibleWordMap extends HTMLElement {
             this.isSearchMode = false;
             window.history.replaceState(null, '', window.location.pathname);
             this.renderActiveWords();
-            this.buildAllWordsGraph();
+
+            if (!this.data2d) {
+                this.showLoading('Loading Bible Word Map...', 'words');
+                if (this.data2dPromise) {
+                    this.data2dPromise.then(data => {
+                        if (data) this.data2d = data;
+                        this.hideLoading();
+                        if (this.viewMode === 'words') {
+                            this.buildAllWordsGraph();
+                        }
+                    }).catch(() => {
+                        this.hideLoading();
+                    });
+                }
+            } else {
+                this.buildAllWordsGraph();
+            }
         }
     }
 
@@ -3259,7 +3347,7 @@ class BibleWordMap extends HTMLElement {
         }
     }
 
-    startLoadingAnimation() {
+    startLoadingAnimation(type = 'words') {
         if (!this.loadingCanvas) return;
         this.stopLoadingAnimation();
         
@@ -3276,8 +3364,12 @@ class BibleWordMap extends HTMLElement {
         const cx = width / 2;
         const cy = height / 2;
         
-        // Colors matching the Part-of-Speech palette
-        const colors = ['#4ade80', '#60a5fa', '#f472b6', '#fbbf24', '#94a3b8'];
+        const isBooks = (type === 'books' || this.viewMode === 'books');
+
+        // Colors matching the Part-of-Speech or Book Genre palette
+        const wordsColors = ['#4ade80', '#60a5fa', '#f472b6', '#fbbf24', '#94a3b8'];
+        const booksColors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#ef4444', '#06b6d4', '#e11d48'];
+        const colors = isBooks ? booksColors : wordsColors;
         const numParticles = 36;
         const particles = [];
         
@@ -3294,13 +3386,22 @@ class BibleWordMap extends HTMLElement {
             });
         }
         
-        const tips = [
+        const wordsTips = [
             "Search any word in the Bible",
             "Select a word bubble to learn more",
             "Explore original Greek & Hebrew definitions",
             "View verse links and semantic proximity",
-            "Filter by Old or New Testament"
+            "Filter by Old or New Testament in Options drawer"
         ];
+        const booksTips = [
+            "Explore the 66 biblical books in semantic space",
+            "Click any book to view its distinctive themes and vocabulary",
+            "Search multiple books to compare theology (e.g. James Proverbs)",
+            "Solid green links show direct occurrences in that book",
+            "Dashed gray links show broader theological concepts",
+            "Filter books by genre or testament in the Options drawer"
+        ];
+        const tips = isBooks ? booksTips : wordsTips;
         let tipIdx = 0;
         
         const STATE_FLOAT = 0;

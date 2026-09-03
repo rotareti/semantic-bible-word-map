@@ -37,6 +37,7 @@ jobs:
           # Copy the compiled semantic maps
           cp data/output/wordmap_2d.json _site/data/output/
           cp data/output/verse_index.json _site/data/output/
+          cp data/output/bookmap_2d.json _site/data/output/
           
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4

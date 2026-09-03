@@ -1,5 +1,11 @@
 # Changelog
 
+## [6.5.2] - 2026-09-03
+### Added
+- **Books View Loading Screen & Book Tips:** Added a dedicated loading screen for the Books view with genre-colored floating particle physics and rotating book tips when fetching `bookmap_2d.json`.
+- **Parallel Data Fetching:** Optimized dataset loading to fetch words, verses, and books data in parallel, allowing the Books view to render in milliseconds without waiting for the 34MB wordmap.
+- **GitHub Pages Deployment Workflow:** Added `bookmap_2d.json` to the GitHub Actions workflow so it is automatically bundled and deployed to GitHub Pages.
+
 ## [6.5.1] - 2026-09-03
 ### Fixed
 - **Drawer and URL Reset on Full Book View:** Fixed full canvas reset in Books mode so closing the inspector card, clicking the canvas background, or clearing searches properly empties the active drawer selection and updates the URL cleanly to `?view=books`.
