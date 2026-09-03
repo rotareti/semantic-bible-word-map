@@ -4,7 +4,7 @@ class BibleWordMap extends HTMLElement {
         this.data2d = null;
         this.verses = null;
         this.wordToVerses = null;
-        this.testamentFilter = 'All';
+        this.testamentFilter = 'all';
         this.isSearchMode = false;
         this.searchedWords = [];
         this.nodes = [];
@@ -478,6 +478,35 @@ class BibleWordMap extends HTMLElement {
                     margin-top: 6px;
                     line-height: 1.35;
                 }
+                .bwm-pill-group {
+                    display: flex;
+                    gap: 6px;
+                    margin-top: 10px;
+                    flex-wrap: wrap;
+                }
+                .bwm-pill-btn {
+                    flex: 1 1 calc(50% - 6px);
+                    padding: 7px 8px;
+                    font-size: 0.8em;
+                    font-weight: 500;
+                    border-radius: 8px;
+                    border: 1px solid var(--bwm-border);
+                    background: var(--bwm-btn-bg);
+                    color: var(--bwm-text);
+                    cursor: pointer;
+                    transition: all 0.15s ease;
+                    font-family: var(--bwm-font);
+                    text-align: center;
+                }
+                .bwm-pill-btn:hover {
+                    background: var(--bwm-btn-hover);
+                }
+                .bwm-pill-btn.active {
+                    background: var(--bwm-node-hover);
+                    color: #ffffff;
+                    border-color: var(--bwm-node-hover);
+                    font-weight: 600;
+                }
                 .bwm-active-word-item {
                     display: flex;
                     align-items: center;
@@ -629,6 +658,18 @@ class BibleWordMap extends HTMLElement {
                             </div>
                             <div class="bwm-drawer-hint">Controls how many related words appear around each keyword.</div>
                         </div>
+                        <div class="bwm-drawer-section">
+                            <div class="bwm-drawer-section-header">
+                                <h4>Testament Filter</h4>
+                            </div>
+                            <div class="bwm-pill-group" id="bwm-testament-filter">
+                                <button type="button" class="bwm-pill-btn active" data-testament="all">All</button>
+                                <button type="button" class="bwm-pill-btn" data-testament="ot">Old Testament</button>
+                                <button type="button" class="bwm-pill-btn" data-testament="nt">New Testament</button>
+                                <button type="button" class="bwm-pill-btn" data-testament="both">Both Only</button>
+                            </div>
+                            <div class="bwm-drawer-hint">Highlight words by presence in Old or New Testament.</div>
+                        </div>
                     </div>
                 </div>
                 <div class="bwm-canvas-container">
@@ -726,6 +767,16 @@ class BibleWordMap extends HTMLElement {
                 }
             });
         }
+
+        const testamentPills = this.querySelectorAll('#bwm-testament-filter .bwm-pill-btn');
+        testamentPills.forEach(btn => {
+            btn.addEventListener('click', () => {
+                testamentPills.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.testamentFilter = btn.getAttribute('data-testament') || 'all';
+                this.draw();
+            });
+        });
 
         // Canvas interactivity
         new ResizeObserver(() => this.resize()).observe(this.canvas.parentElement);
@@ -1054,6 +1105,7 @@ class BibleWordMap extends HTMLElement {
             id: s.point.id,
             w: s.point.w,
             pos: s.point.pos,
+            t: s.point.t,
             f: s.point.f,
             sim: s.maxSim,
             sourceKw: s.sourceKw,
@@ -1368,7 +1420,7 @@ class BibleWordMap extends HTMLElement {
                 id: p.id, w: p.w, f: p.f, sim: 1, sourceKw: p.id, isKw: true,
                 x: (Math.random()-0.5)*10, 
                 y: (Math.random()-0.5)*10,
-                v: p.v, normSim: 1, pos: p.pos
+                v: p.v, normSim: 1, pos: p.pos, t: p.t
             };
             this.nodes.push(kwNode);
             this.allSearchNodes.push(kwNode);
@@ -1397,7 +1449,7 @@ class BibleWordMap extends HTMLElement {
                 let neighborNode = {
                     id: s.point.id, w: s.point.w, f: s.point.f, sim: s.sim, 
                     sourceKw: p.id, isKw: false, x: 0, y: 0, v: s.point.v,
-                    normSim: s.sim, pos: s.point.pos
+                    normSim: s.sim, pos: s.point.pos, t: s.point.t
                 };
                 this.allSearchNodes.push(neighborNode);
                 queuedNeighbors.push(neighborNode);
@@ -1535,6 +1587,7 @@ class BibleWordMap extends HTMLElement {
             w: d.w,
             f: d.f,
             pos: d.pos,
+            t: d.t,
             x: d.x,
             y: d.y,
             original: d.original,
@@ -1544,8 +1597,16 @@ class BibleWordMap extends HTMLElement {
         this.draw();
     }
 
+    matchesTestament(t) {
+        if (!this.testamentFilter || this.testamentFilter === 'all') return true;
+        if (this.testamentFilter === 'ot') return t === 'OT' || t === 'Both';
+        if (this.testamentFilter === 'nt') return t === 'NT' || t === 'Both';
+        if (this.testamentFilter === 'both') return t === 'Both';
+        return true;
+    }
+
     draw() {
-        if (!this.ctx) return;
+        if (!this.ctx || !this.data2d) return;
         this.updateColors();
         
         let cw = this.logicalWidth;
@@ -1563,7 +1624,9 @@ class BibleWordMap extends HTMLElement {
         let visibleNodesCount = 0;
         this.nodes.forEach(n => {
             if (n.x >= minX && n.x <= maxX && n.y >= minY && n.y <= maxY) {
-                visibleNodesCount++;
+                if (this.matchesTestament(n.t)) {
+                    visibleNodesCount++;
+                }
             }
         });
         let autoShowLabels = visibleNodesCount < 250;
@@ -1589,12 +1652,19 @@ class BibleWordMap extends HTMLElement {
         this.links.forEach(l => {
             if (l.source.x === undefined || l.target.x === undefined) return;
             
+            let matchSource = this.matchesTestament(l.source.t);
+            let matchTarget = this.matchesTestament(l.target.t);
+            
             // Make links more visible but still subtly faded for less similar words
             if (this.isSearchMode && !l.source.isKw) {
                 let alpha = (l.source.normSim !== undefined && !isNaN(l.source.normSim)) ? l.source.normSim : 0.2;
                 this.ctx.globalAlpha = Math.max(0.25, alpha * 0.8 + 0.2); // Range from 0.25 to 1.0
             } else {
                 this.ctx.globalAlpha = 1.0;
+            }
+            
+            if (!matchSource || !matchTarget) {
+                this.ctx.globalAlpha = Math.min(this.ctx.globalAlpha, 0.05);
             }
             
             let dx = l.target.x - l.source.x;
@@ -1632,6 +1702,8 @@ class BibleWordMap extends HTMLElement {
         });
 
         this.nodes.forEach(n => {
+            let matchesT = this.matchesTestament(n.t) || this.hoveredNode === n;
+            
             this.ctx.beginPath();
             
             let posColor = '#94a3b8'; // default slate-400
@@ -1653,6 +1725,10 @@ class BibleWordMap extends HTMLElement {
                 this.ctx.globalAlpha = 1.0;
             }
             
+            if (!matchesT) {
+                this.ctx.globalAlpha = Math.min(this.ctx.globalAlpha, 0.06);
+            }
+            
             let drawR = n.canvasR;
             if (this.hoveredNode === n) {
                 drawR = n.canvasR * 1.4;
@@ -1660,6 +1736,10 @@ class BibleWordMap extends HTMLElement {
                 this.ctx.shadowColor = posColor;
             } else {
                 this.ctx.shadowBlur = 0;
+            }
+            
+            if (!matchesT) {
+                drawR = drawR * 0.75;
             }
             
             this.ctx.arc(n.x, n.y, drawR, 0, 2 * Math.PI);
@@ -1673,7 +1753,7 @@ class BibleWordMap extends HTMLElement {
             
             this.ctx.globalAlpha = 1.0;
             
-            let showLabel = (this.isSearchMode || n.isKw || autoShowLabels);
+            let showLabel = matchesT && (this.isSearchMode || n.isKw || autoShowLabels);
             if (showLabel) {
                 this.ctx.shadowBlur = 0;
                 
@@ -1921,7 +2001,7 @@ class BibleWordMap extends HTMLElement {
         if (tabsData.length > 0) {
             headerHtml += `<div class="bwm-verses-tabs">`;
             tabsData.forEach((t, i) => {
-                headerHtml += `<div class="bwm-verses-tab ${i === 0 ? 'active' : ''}" data-tab-id="${t.id}">${t.title}</div>`;
+                headerHtml += `<div class="bwm-verses-tab ${i === 0 ? 'active' : ''}" data-tab-id="${t.id}">${t.title} <span style="font-size:0.8em; opacity:0.65;">(${t.verses.length})</span></div>`;
             });
             headerHtml += `</div>`;
         }
@@ -1929,28 +2009,40 @@ class BibleWordMap extends HTMLElement {
         
         let contentHtml = `<div class="bwm-verses-content">`;
         
-        // Helper to format verses list
-        const buildVersesHtml = (vList) => {
-            let limit = 10;
-            let res = vList.slice(0, limit).map(id => {
-                let v = this.verses[id] || '';
-                let [ref, text] = v.split('|');
-                return `<div style="margin: 4px 0; padding: 4px 0; border-bottom: 1px solid var(--bwm-border);"><span style="color:var(--bwm-tooltip-link); font-family: monospace; font-weight:600;">${ref}</span><br><span style="font-size:0.85em; opacity:0.85;">${text || ''}</span></div>`;
-            }).join('');
-            if (vList.length > limit) res += `<div style="font-style:italic; opacity:0.6; margin-top:4px;">...and ${vList.length - limit} more</div>`;
-            return res;
+        const BATCH_SIZE = 30;
+        let tabsState = {};
+
+        const buildVerseItemHtml = (id) => {
+            let v = this.verses[id] || '';
+            let [ref, text] = v.split('|');
+            return `<div style="margin: 4px 0; padding: 4px 0; border-bottom: 1px solid var(--bwm-border);"><span style="color:var(--bwm-tooltip-link); font-family: monospace; font-weight:600;">${ref}</span><br><span style="font-size:0.85em; opacity:0.85;">${text || ''}</span></div>`;
+        };
+
+        const renderInitialBatch = (tabId, vList) => {
+            tabsState[tabId] = {
+                verses: vList,
+                loaded: Math.min(BATCH_SIZE, vList.length)
+            };
+            let initialVerses = vList.slice(0, BATCH_SIZE);
+            let html = initialVerses.map(buildVerseItemHtml).join('');
+            if (vList.length > BATCH_SIZE) {
+                html += `<div class="bwm-verses-status" style="text-align:center; font-size:0.8em; opacity:0.6; padding:8px 0; font-style:italic;">Showing ${BATCH_SIZE} of ${vList.length} verses (scroll for more)</div>`;
+            }
+            return html;
         };
         
         if (tabsData.length > 0) {
             tabsData.forEach((t, i) => {
                 contentHtml += `<div class="bwm-verses-tab-content" id="bwm-tab-content-${t.id}" style="display: ${i === 0 ? 'block' : 'none'};">`;
-                contentHtml += buildVersesHtml(t.verses);
+                contentHtml += renderInitialBatch(t.id, t.verses);
                 contentHtml += `</div>`;
             });
         } else {
             if (myVerses.length > 0) {
-                contentHtml += `<div style="margin-bottom: 8px;"><b style="font-size:0.95em;">Appears in:</b></div>`;
-                contentHtml += buildVersesHtml(myVerses);
+                contentHtml += `<div style="margin-bottom: 8px;"><b style="font-size:0.95em;">Appears in (${myVerses.length} verses):</b></div>`;
+                contentHtml += `<div class="bwm-verses-tab-content" id="bwm-tab-content-main">`;
+                contentHtml += renderInitialBatch('main', myVerses);
+                contentHtml += `</div>`;
             } else {
                 contentHtml += `<div style="font-style: italic; opacity: 0.6;">No verse data available</div>`;
             }
@@ -1959,6 +2051,40 @@ class BibleWordMap extends HTMLElement {
         
         this.versesPanel.innerHTML = headerHtml + contentHtml;
         
+        const loadMoreVerses = (tabId) => {
+            const state = tabsState[tabId];
+            if (!state || state.loaded >= state.verses.length) return;
+            const container = this.versesPanel.querySelector(`#bwm-tab-content-${tabId}`);
+            if (!container) return;
+
+            const nextBatch = state.verses.slice(state.loaded, state.loaded + BATCH_SIZE);
+            state.loaded += nextBatch.length;
+
+            const itemsHtml = nextBatch.map(buildVerseItemHtml).join('');
+            const statusEl = container.querySelector('.bwm-verses-status');
+            if (statusEl) {
+                statusEl.insertAdjacentHTML('beforebegin', itemsHtml);
+                if (state.loaded >= state.verses.length) {
+                    statusEl.remove();
+                } else {
+                    statusEl.textContent = `Showing ${state.loaded} of ${state.verses.length} verses (scroll for more)`;
+                }
+            } else {
+                container.insertAdjacentHTML('beforeend', itemsHtml);
+            }
+        };
+
+        const contentEl = this.versesPanel.querySelector('.bwm-verses-content');
+        if (contentEl) {
+            contentEl.addEventListener('scroll', () => {
+                if (contentEl.scrollTop + contentEl.clientHeight >= contentEl.scrollHeight - 60) {
+                    let activeTab = this.versesPanel.querySelector('.bwm-verses-tab.active');
+                    let currentTabId = activeTab ? activeTab.getAttribute('data-tab-id') : 'main';
+                    loadMoreVerses(currentTabId);
+                }
+            });
+        }
+
         // Setup tabs
         let tabEls = this.versesPanel.querySelectorAll('.bwm-verses-tab');
         tabEls.forEach(tab => {
@@ -1970,11 +2096,11 @@ class BibleWordMap extends HTMLElement {
                 // Activate clicked
                 tab.classList.add('active');
                 let tid = tab.getAttribute('data-tab-id');
-                let contentEl = this.versesPanel.querySelector(`#bwm-tab-content-${tid}`);
-                if (contentEl) contentEl.style.display = 'block';
+                let targetEl = this.versesPanel.querySelector(`#bwm-tab-content-${tid}`);
+                if (targetEl) targetEl.style.display = 'block';
                 
                 // reset scroll
-                this.versesPanel.querySelector('.bwm-verses-content').scrollTop = 0;
+                if (contentEl) contentEl.scrollTop = 0;
             });
         });
         

@@ -1,5 +1,13 @@
 # Changelog
 
+## [6.4.0] - 2026-09-02
+### Added
+- **Testament Filter:** Added Old Testament, New Testament, and Both Only filter controls in the Options drawer to highlight vocabulary by biblical division while dimming out-of-filter nodes and links.
+- **Infinite Scroll Verses Window:** Upgraded the verses popup with progressive infinite scrolling and tab count badges, removing the previous 10-verse cap so users can scroll through all verses for any word or keyword link.
+
+### Fixed
+- Fixed testament property propagation across search and graph construction so testament filtering works properly with active keywords.
+
 ## [6.3.0] - 2026-09-02
 ### Added
 - **Left-Side Options Drawer:** Moved the options drawer to the left side directly underneath the hamburger toggle button. The toggle button stays visible and clickable to easily open and close the drawer, alongside click-outside dismissal.
