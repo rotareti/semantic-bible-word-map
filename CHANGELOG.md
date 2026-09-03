@@ -1,5 +1,18 @@
 # Changelog
 
+## [6.5.1] - 2026-09-03
+### Fixed
+- **Drawer and URL Reset on Full Book View:** Fixed full canvas reset in Books mode so closing the inspector card, clicking the canvas background, or clearing searches properly empties the active drawer selection and updates the URL cleanly to `?view=books`.
+
+## [6.5.0] - 2026-09-03
+### Added
+- **Biblical Books Mode & Multi-Book Search:** Added a Words / Books mode toggle in the header. Searching multiple books (e.g. `James Proverbs`, `1 John 2 Peter`) renders multi-book semantic constellations with inter-book theological links.
+- **Distinctive Book Vocabulary Bubbles:** Characteristic words surrounding each book are now generated directly from each book's distinctive TF-IDF content vocabulary, matching the themes shown in the inspector card.
+- **Book-Filtered Verses Panel:** In Books mode, opening the Verses panel on any word now groups and displays verses from the active book(s) by default (e.g. Jude verses open first), alongside an All Bible Verses tab.
+- **Direct vs Indirect Book Links:** Words with direct occurrences in a book are rendered with solid direct links, while purely semantic context words use dashed indirect links.
+- **Book Inspector Tabs & Sibling Add:** Multi-book constellations feature book tabs in the inspector card, and sibling chips include one-click `[+]` buttons to add theological neighbors to the active map.
+- **Drawer Relationships per Book Slider:** Recomputed book constellations in real time based on the drawer's relationships slider.
+
 ## [6.4.0] - 2026-09-02
 ### Added
 - **Testament Filter:** Added Old Testament, New Testament, and Both Only filter controls in the Options drawer to highlight vocabulary by biblical division while dimming out-of-filter nodes and links.

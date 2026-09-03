@@ -206,6 +206,38 @@ footer a {
 .info-close:hover {
     color: var(--text-color);
 }
+
+/* View Mode Pill Toggle (Words / Books) */
+.view-mode-pill-group {
+    display: inline-flex;
+    background: var(--btn-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 3px;
+    gap: 3px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    user-select: none;
+}
+.view-mode-pill {
+    background: transparent;
+    border: none;
+    padding: 4px 14px;
+    border-radius: 16px;
+    font-size: 0.85em;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+.view-mode-pill:hover {
+    color: var(--text-color);
+}
+.view-mode-pill.active {
+    background: #3b82f6;
+    color: #ffffff;
+    box-shadow: 0 1px 3px rgba(59, 130, 246, 0.35);
+}
+
 @media (max-width: 768px) {
     .info-wrapper {
         right: 10px;

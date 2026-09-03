@@ -1,9 +1,26 @@
+const GENRE_COLORS = {
+    'Law': '#3b82f6',
+    'History': '#10b981',
+    'Wisdom': '#f59e0b',
+    'Major Prophets': '#8b5cf6',
+    'Minor Prophets': '#ec4899',
+    'Gospels': '#ef4444',
+    'Pauline Epistles': '#06b6d4',
+    'General Epistles': '#14b8a6',
+    'Apocalypse': '#e11d48'
+};
+
 class BibleWordMap extends HTMLElement {
     constructor() {
         super();
         this.data2d = null;
         this.verses = null;
         this.wordToVerses = null;
+        this.booksData = null;
+        this.selectedBook = null;
+        this.searchedBooks = [];
+        this.drawerBooks = [];
+        this.viewMode = 'words';
         this.testamentFilter = 'all';
         this.isSearchMode = false;
         this.searchedWords = [];
@@ -618,6 +635,153 @@ class BibleWordMap extends HTMLElement {
                 @keyframes bwm-spin {
                     to { transform: rotate(360deg); }
                 }
+                .bwm-book-card {
+                    position: absolute;
+                    top: 54px;
+                    right: 12px;
+                    width: 320px;
+                    max-width: calc(100% - 24px);
+                    max-height: calc(100% - 70px);
+                    background-color: rgba(255, 255, 255, 0.94);
+                    background-color: color-mix(in srgb, var(--bwm-bg) 94%, transparent);
+                    backdrop-filter: blur(14px);
+                    -webkit-backdrop-filter: blur(14px);
+                    border: 1px solid var(--bwm-border);
+                    border-radius: 12px;
+                    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+                    color: var(--bwm-text);
+                    z-index: 1000;
+                    display: none;
+                    flex-direction: column;
+                    overflow: hidden;
+                    font-size: 0.9em;
+                }
+                .bwm-book-card.visible {
+                    display: flex;
+                }
+                .bwm-book-card-header {
+                    padding: 12px 14px;
+                    border-bottom: 1px solid var(--bwm-border);
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    background: color-mix(in srgb, var(--bwm-bg) 97%, transparent);
+                }
+                .bwm-book-card-close {
+                    background: transparent;
+                    border: none;
+                    font-size: 1.3em;
+                    line-height: 1;
+                    cursor: pointer;
+                    opacity: 0.5;
+                    color: var(--bwm-text);
+                    padding: 2px 4px;
+                }
+                .bwm-book-card-close:hover {
+                    opacity: 1;
+                }
+                .bwm-book-badge {
+                    display: inline-block;
+                    font-size: 0.7em;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    padding: 2px 7px;
+                    border-radius: 10px;
+                    color: #ffffff;
+                    margin-bottom: 4px;
+                }
+                .bwm-book-card-body {
+                    padding: 12px 14px;
+                    overflow-y: auto;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                }
+                .bwm-book-card-title {
+                    margin: 0;
+                    font-size: 1.2em;
+                    font-weight: 700;
+                    color: var(--bwm-text);
+                }
+                .bwm-book-chip-list {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                    margin-top: 6px;
+                }
+                .bwm-book-chip {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    background: color-mix(in srgb, var(--bwm-btn-bg) 90%, var(--bwm-text) 10%);
+                    border: 1px solid var(--bwm-border);
+                    border-radius: 6px;
+                    padding: 3px 8px;
+                    font-size: 0.82em;
+                    cursor: pointer;
+                    color: var(--bwm-text);
+                    transition: background 0.15s, border-color 0.15s;
+                }
+                .bwm-book-chip:hover {
+                    border-color: var(--bwm-node-hover);
+                    background: color-mix(in srgb, var(--bwm-node-hover) 15%, var(--bwm-bg) 85%);
+                }
+                .bwm-book-tabs {
+                    display: flex;
+                    gap: 6px;
+                    padding: 8px 14px;
+                    border-bottom: 1px solid var(--bwm-border);
+                    background: color-mix(in srgb, var(--bwm-bg) 95%, transparent);
+                    overflow-x: auto;
+                    scrollbar-width: thin;
+                }
+                .bwm-book-tab {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                    padding: 4px 9px;
+                    border-radius: 6px;
+                    border: 1px solid var(--bwm-border);
+                    background: transparent;
+                    color: var(--bwm-text);
+                    font-size: 0.82em;
+                    font-weight: 600;
+                    cursor: pointer;
+                    white-space: nowrap;
+                    transition: background 0.15s, border-color 0.15s, color 0.15s;
+                }
+                .bwm-book-tab.active {
+                    color: #ffffff;
+                    border-color: transparent;
+                }
+                .bwm-book-chip-group {
+                    display: inline-flex;
+                    align-items: stretch;
+                    border: 1px solid var(--bwm-border);
+                    border-radius: 6px;
+                    overflow: hidden;
+                    background: color-mix(in srgb, var(--bwm-btn-bg) 90%, var(--bwm-text) 10%);
+                }
+                .bwm-book-chip-group:hover {
+                    border-color: var(--bwm-node-hover);
+                }
+                .bwm-chip-add {
+                    background: color-mix(in srgb, var(--bwm-btn-bg) 75%, var(--bwm-text) 25%);
+                    border: none;
+                    border-left: 1px solid var(--bwm-border);
+                    padding: 0 7px;
+                    cursor: pointer;
+                    color: var(--bwm-text);
+                    font-size: 0.9em;
+                    display: flex;
+                    align-items: center;
+                    transition: background 0.15s;
+                }
+                .bwm-chip-add:hover {
+                    background: var(--bwm-node-hover);
+                    color: #ffffff;
+                }
             </style>
             <div class="bwm-container">
                 <div class="bwm-top-bar">
@@ -641,7 +805,7 @@ class BibleWordMap extends HTMLElement {
                     <div class="bwm-drawer-content">
                         <div class="bwm-drawer-section">
                             <div class="bwm-drawer-section-header">
-                                <h4>Active Words</h4>
+                                <h4 id="bwm-active-heading">Active Words</h4>
                                 <button class="bwm-btn-clear-all" id="bwm-btn-clear-all" type="button" title="Clear all active keywords">Clear All</button>
                             </div>
                             <div id="bwm-active-words">
@@ -650,13 +814,13 @@ class BibleWordMap extends HTMLElement {
                         </div>
                         <div class="bwm-drawer-section">
                             <div class="bwm-drawer-section-header">
-                                <h4>Relationships per Word</h4>
+                                <h4 id="bwm-neighbor-heading">Relationships per Word</h4>
+                                <span id="bwm-neighbor-value">100</span>
                             </div>
                             <div class="bwm-slider-container">
                                 <input type="range" id="bwm-neighbor-slider" min="10" max="250" step="5" value="100">
-                                <span class="bwm-slider-value" id="bwm-neighbor-value">100</span>
                             </div>
-                            <div class="bwm-drawer-hint">Controls how many related words appear around each keyword.</div>
+                            <div class="bwm-drawer-hint" id="bwm-neighbor-hint">Controls how many related words appear around each keyword.</div>
                         </div>
                         <div class="bwm-drawer-section">
                             <div class="bwm-drawer-section-header">
@@ -690,6 +854,7 @@ class BibleWordMap extends HTMLElement {
                 </div>
                 <div class="bwm-radial-menu" id="bwm-radial-menu"></div>
                 <div class="bwm-verses-panel" id="bwm-verses-panel"></div>
+                <div class="bwm-book-card" id="bwm-book-card"></div>
             </div>
         `;
     }
@@ -697,6 +862,7 @@ class BibleWordMap extends HTMLElement {
     connectedCallback() {
         this.src2d = this.getAttribute('src-2d');
         this.srcVerses = this.getAttribute('src-verses');
+        this.srcBooks = this.getAttribute('src-books') || 'data/output/bookmap_2d.json';
         
         this.canvas = this.querySelector('canvas');
         this.ctx = this.canvas.getContext('2d');
@@ -704,6 +870,7 @@ class BibleWordMap extends HTMLElement {
         this.loading = this.querySelector('.bwm-loading');
         this.loadingCanvas = this.querySelector('.bwm-loading-canvas');
         this.loadingTip = this.querySelector('.bwm-loading-tip');
+        this.bookCard = this.querySelector('#bwm-book-card');
         
         this.searchInput = this.querySelector('#bwm-search');
         this.searchClearBtn = this.querySelector('#bwm-search-clear');
@@ -762,8 +929,14 @@ class BibleWordMap extends HTMLElement {
             });
             this.neighborSlider.addEventListener('change', () => {
                 // Dynamically re-compute and update if search mode is active
-                if (this.isSearchMode && this.searchedWords && this.searchedWords.length > 0) {
-                    this.searchWord(true);
+                if (this.viewMode === 'books') {
+                    if (this.isSearchMode && this.searchedBooks && this.searchedBooks.length > 0) {
+                        this.searchBooks(true);
+                    }
+                } else {
+                    if (this.isSearchMode && this.searchedWords && this.searchedWords.length > 0) {
+                        this.searchWord(true);
+                    }
                 }
             });
         }
@@ -979,10 +1152,35 @@ class BibleWordMap extends HTMLElement {
                 this.verses = vData.verses;
                 this.wordToVerses = vData.words;
             }
+
+            if (this.srcBooks) {
+                try {
+                    const resB = await fetch(this.srcBooks);
+                    this.booksData = await resB.json();
+                } catch (bErr) {
+                    console.warn("Could not load bookmap data", bErr);
+                }
+            }
             
             let params = new URLSearchParams(window.location.search);
+            let view = params.get('view');
+            let books = params.get('books');
             let keywords = params.get('keywords');
-            if (keywords) {
+            
+            if (view === 'books' || books) {
+                const wordsBtn = document.getElementById('view-mode-words');
+                const booksBtn = document.getElementById('view-mode-books');
+                if (wordsBtn && booksBtn) {
+                    wordsBtn.classList.remove('active');
+                    booksBtn.classList.add('active');
+                }
+                this.setViewMode('books');
+                if (books) {
+                    this.searchedBooks = books.split(',').map(b => b.trim().toUpperCase()).filter(b => b);
+                    this.drawerBooks = [...this.searchedBooks];
+                    this.searchBooks(true);
+                }
+            } else if (keywords) {
                 this.searchedWords = keywords.split(',').map(k => k.trim()).filter(k => k);
                 this.drawerWords = [...this.searchedWords];
                 if (this.searchedWords.length > 0) {
@@ -1017,9 +1215,25 @@ class BibleWordMap extends HTMLElement {
         return dot / (Math.sqrt(normA) * Math.sqrt(normB));
     }
 
+    getBookVerses(wordId, bookCode) {
+        if (!this.wordToVerses || !this.verses || !wordId || !bookCode) return [];
+        let vIds = this.wordToVerses[wordId] || [];
+        let prefix = bookCode.toUpperCase() + ' ';
+        return vIds.filter(vid => (this.verses[vid] || '').startsWith(prefix));
+    }
+
+    wordAppearsInBook(wordId, bookCode) {
+        return this.getBookVerses(wordId, bookCode).length > 0;
+    }
+
     async searchWord(useExplicitIds = false) {
         this.hoveredNode = null;
         let foundPoints = [];
+        
+        if (this.viewMode === 'books') {
+            this.searchBooks(useExplicitIds);
+            return;
+        }
         
         if (!useExplicitIds) {
             let originalQuery = this.searchInput.value.trim();
@@ -1175,7 +1389,9 @@ class BibleWordMap extends HTMLElement {
     updateClearBtnVisibility() {
         if (!this.searchClearBtn) return;
         const hasText = this.searchInput && this.searchInput.value.trim().length > 0;
-        const hasKeywords = this.searchedWords && this.searchedWords.length > 0;
+        const hasKeywords = (this.viewMode === 'books')
+            ? (this.searchedBooks && this.searchedBooks.length > 0)
+            : (this.searchedWords && this.searchedWords.length > 0);
         if (hasText || hasKeywords) {
             this.searchClearBtn.classList.add('visible');
         } else {
@@ -1184,9 +1400,15 @@ class BibleWordMap extends HTMLElement {
     }
 
     clearAllKeywords() {
+        if (this.viewMode === 'books') {
+            this.resetBooksView();
+            return;
+        }
         this.isSearchMode = false;
         this.searchedWords = [];
         this.drawerWords = [];
+        this.searchedBooks = [];
+        this.drawerBooks = [];
         if (this.searchInput) this.searchInput.value = '';
         this.updateClearBtnVisibility();
         this.renderActiveWords();
@@ -1207,6 +1429,59 @@ class BibleWordMap extends HTMLElement {
         const container = this.querySelector('#bwm-active-words');
         if (!container) return;
         
+        if (this.viewMode === 'books') {
+            if (this.drawerClearAllBtn) {
+                if (this.drawerBooks && this.drawerBooks.length > 0) {
+                    this.drawerClearAllBtn.classList.add('visible');
+                } else {
+                    this.drawerClearAllBtn.classList.remove('visible');
+                }
+            }
+            this.updateClearBtnVisibility();
+
+            if (!this.drawerBooks || this.drawerBooks.length === 0) {
+                container.innerHTML = '<div class="bwm-empty-state">No books selected.</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            this.drawerBooks.forEach(code => {
+                let book = this.booksData ? this.booksData.books.find(b => b.code === code) : null;
+                if (!book) return;
+
+                let item = document.createElement('div');
+                item.className = 'bwm-active-word-item';
+
+                let cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.checked = this.searchedBooks.includes(code);
+                cb.addEventListener('change', () => {
+                    if (cb.checked) {
+                        if (!this.searchedBooks.includes(code)) this.searchedBooks.push(code);
+                    } else {
+                        this.searchedBooks = this.searchedBooks.filter(x => x !== code);
+                    }
+                    if (this.searchedBooks.length === 0) {
+                        this.clearAllKeywords();
+                    } else {
+                        this.searchBooks(true);
+                    }
+                });
+
+                let genreColor = GENRE_COLORS[book.genre] || '#3b82f6';
+                let label = document.createElement('label');
+                label.style.cursor = 'pointer';
+                label.innerHTML = `<strong>${book.name}</strong> <span class="bwm-book-badge" style="background:${genreColor};font-size:0.65em;padding:1px 5px;margin-left:4px;">${book.genre}</span>`;
+
+                label.addEventListener('click', () => { cb.click(); });
+
+                item.appendChild(cb);
+                item.appendChild(label);
+                container.appendChild(item);
+            });
+            return;
+        }
+
         if (this.drawerClearAllBtn) {
             if (this.drawerWords && this.drawerWords.length > 0) {
                 this.drawerClearAllBtn.classList.add('visible');
@@ -1344,8 +1619,11 @@ class BibleWordMap extends HTMLElement {
             batch.forEach(n => {
                 let cw = this.logicalWidth || 800;
                 let ch = this.logicalHeight || 600;
-                n.x = this.transform.invertX(cw/2) + (Math.random() - 0.5) * 10;
-                n.y = this.transform.invertY(ch/2) + (Math.random() - 0.5) * 10;
+                let sourceNode = this.nodes.find(node => node.id === n.sourceKw);
+                let startX = sourceNode ? sourceNode.x : this.transform.invertX(cw/2);
+                let startY = sourceNode ? sourceNode.y : this.transform.invertY(ch/2);
+                n.x = startX + (Math.random() - 0.5) * 12;
+                n.y = startY + (Math.random() - 0.5) * 12;
                 this.nodes.push(n);
                 
                 let nodeLinks = this.allSearchLinks.filter(l => l.source === n.id);
@@ -1597,6 +1875,567 @@ class BibleWordMap extends HTMLElement {
         this.draw();
     }
 
+    setViewMode(mode, forceReset = false) {
+        if (this.viewMode === mode && !forceReset) {
+            if (mode === 'books') {
+                if (this.isSearchMode || (this.searchedBooks && this.searchedBooks.length > 0) || this.selectedBook) {
+                    this.resetBooksView();
+                }
+            } else {
+                if (this.isSearchMode || (this.searchedWords && this.searchedWords.length > 0)) {
+                    this.clearAllKeywords();
+                }
+            }
+            return;
+        }
+
+        this.viewMode = mode;
+        this.hideRadialMenu();
+        this.hideVersesPanel();
+        this.hoveredNode = null;
+        this.selectedBook = null;
+        this.hideBookCard();
+        
+        let activeHeading = this.querySelector('#bwm-active-heading');
+        let neighborHeading = this.querySelector('#bwm-neighbor-heading');
+        let neighborHint = this.querySelector('#bwm-neighbor-hint');
+        
+        if (activeHeading) activeHeading.textContent = (mode === 'books') ? 'Active Books' : 'Active Words';
+        if (neighborHeading) neighborHeading.textContent = (mode === 'books') ? 'Relationships per Book' : 'Relationships per Word';
+        if (neighborHint) neighborHint.textContent = (mode === 'books') 
+            ? 'Controls how many related words appear around each book.' 
+            : 'Controls how many related words appear around each keyword.';
+
+        if (this.searchInput) {
+            this.searchInput.value = '';
+            this.searchInput.placeholder = (mode === 'books') 
+                ? 'Search for books (e.g. James Proverbs, Genesis Exodus)...' 
+                : 'Search for words (e.g. Father Son Spirit)';
+        }
+        this.updateClearBtnVisibility();
+
+        if (mode === 'books') {
+            this.searchedWords = [];
+            this.drawerWords = [];
+            this.searchedBooks = [];
+            this.drawerBooks = [];
+            this.isSearchMode = false;
+            window.history.replaceState(null, '', '?view=books');
+            this.renderActiveWords();
+            this.buildBooksGraph();
+        } else {
+            this.searchedWords = [];
+            this.drawerWords = [];
+            this.searchedBooks = [];
+            this.drawerBooks = [];
+            this.isSearchMode = false;
+            window.history.replaceState(null, '', window.location.pathname);
+            this.renderActiveWords();
+            this.buildAllWordsGraph();
+        }
+    }
+
+    buildBooksGraph() {
+        if (this.simulation) this.simulation.stop();
+        if (this.spawnInterval) {
+            clearInterval(this.spawnInterval);
+            this.spawnInterval = null;
+        }
+        if (!this.booksData || !this.booksData.books) return;
+        
+        this.isSearchMode = false;
+        this.selectedBook = null;
+        this.hideBookCard();
+
+        let cw = this.logicalWidth || 800;
+        let ch = this.logicalHeight || 600;
+
+        this.nodes = this.booksData.books.map(b => ({
+            id: b.code,
+            code: b.code,
+            name: b.name,
+            w: b.name,
+            testament: b.testament,
+            t: b.testament,
+            genre: b.genre,
+            order: b.order,
+            verses: b.verses,
+            total_words: b.total_words,
+            x: b.x * 120,
+            y: b.y * 120,
+            v: b.v,
+            top_words: b.top_words,
+            closest_words: b.closest_words,
+            nearest_books: b.nearest_books,
+            isBook: true,
+            isFocusedBook: false,
+            isPrimaryBook: false
+        }));
+
+        let nodeMap = new Map(this.nodes.map(n => [n.id, n]));
+        this.links = (this.booksData.links || [])
+            .filter(l => nodeMap.has(l.source) && nodeMap.has(l.target))
+            .map(l => ({
+                source: nodeMap.get(l.source),
+                target: nodeMap.get(l.target),
+                sim: l.sim,
+                type: 'book-book'
+            }));
+
+        let minX = d3.min(this.nodes, d => d.x);
+        let maxX = d3.max(this.nodes, d => d.x);
+        let minY = d3.min(this.nodes, d => d.y);
+        let maxY = d3.max(this.nodes, d => d.y);
+
+        let dx = maxX - minX || 1;
+        let dy = maxY - minY || 1;
+        let cx = (minX + maxX) / 2;
+        let cy = (minY + maxY) / 2;
+        let scale = 0.82 / Math.max(dx / cw, dy / ch);
+
+        this.transform = d3.zoomIdentity.translate(cw / 2 - scale * cx, ch / 2 - scale * cy).scale(scale);
+        d3.select(this.canvas).call(this.zoom.transform, this.transform);
+
+        this.draw();
+    }
+
+    parseBookQuery(query) {
+        if (!this.booksData || !this.booksData.books) return [];
+        let originalLower = query.trim().toLowerCase();
+        let remaining = originalLower;
+        remaining = remaining.replace(/[,;+&]+/g, ' ');
+        remaining = remaining.replace(/\b1st\b/g, '1').replace(/\bfirst\b/g, '1');
+        remaining = remaining.replace(/\b2nd\b/g, '2').replace(/\bsecond\b/g, '2');
+        remaining = remaining.replace(/\b3rd\b/g, '3').replace(/\bthird\b/g, '3');
+        remaining = remaining.replace(/\bsong of songs\b/g, 'song of solomon');
+
+        let found = [];
+        let booksByLength = [...this.booksData.books].sort((a, b) => b.name.length - a.name.length);
+
+        for (let b of booksByLength) {
+            let escaped = b.name.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            let namePattern = new RegExp('\\b' + escaped + '\\b', 'g');
+            if (namePattern.test(remaining)) {
+                if (!found.some(fb => fb.code === b.code)) {
+                    found.push(b);
+                }
+                remaining = remaining.replace(namePattern, ' ');
+            }
+        }
+
+        let tokens = remaining.split(/\s+/).filter(t => t.length >= 2);
+        for (let token of tokens) {
+            let matched = this.booksData.books.find(b => 
+                b.code.toLowerCase() === token ||
+                (token.length >= 3 && b.name.toLowerCase().startsWith(token))
+            );
+            if (matched && !found.some(fb => fb.code === matched.code)) {
+                found.push(matched);
+            }
+        }
+
+        found.sort((a, b) => {
+            let posA = originalLower.indexOf(a.name.toLowerCase());
+            if (posA === -1) posA = originalLower.indexOf(a.code.toLowerCase());
+            let posB = originalLower.indexOf(b.name.toLowerCase());
+            if (posB === -1) posB = originalLower.indexOf(b.code.toLowerCase());
+            return (posA !== -1 && posB !== -1) ? (posA - posB) : 0;
+        });
+
+        return found;
+    }
+
+    searchBooks(useExplicitCodes = false) {
+        this.hoveredNode = null;
+        let foundBooks = [];
+
+        if (!useExplicitCodes) {
+            let query = this.searchInput.value.trim();
+            if (!query) {
+                this.clearAllKeywords();
+                return;
+            }
+            foundBooks = this.parseBookQuery(query);
+            if (foundBooks.length === 0) {
+                if (this.errorSpan) {
+                    this.errorSpan.textContent = 'Book not found';
+                    this.errorSpan.style.display = 'inline';
+                    setTimeout(() => { if (this.errorSpan) this.errorSpan.style.display = 'none'; }, 2500);
+                }
+                return;
+            }
+            this.searchedBooks = foundBooks.map(b => b.code);
+            this.drawerBooks = [...this.searchedBooks];
+        } else {
+            if (!this.searchedBooks || this.searchedBooks.length === 0) {
+                this.clearAllKeywords();
+                return;
+            }
+            foundBooks = this.searchedBooks.map(c => this.booksData.books.find(b => b.code === c)).filter(Boolean);
+        }
+
+        if (this.errorSpan) this.errorSpan.style.display = 'none';
+        this.selectedBook = foundBooks[0];
+        this.isSearchMode = true;
+        this.userInteracted = false;
+
+        this.searchInput.value = foundBooks.map(b => b.name).join(", ");
+        this.updateClearBtnVisibility();
+
+        if (this.searchedBooks && this.searchedBooks.length > 0) {
+            window.history.replaceState(null, '', '?view=books&books=' + this.searchedBooks.join(','));
+        }
+
+        this.buildMultiBookConstellation(foundBooks);
+    }
+
+    buildMultiBookConstellation(foundBooks) {
+        if (this.simulation) this.simulation.stop();
+        if (this.spawnInterval) {
+            clearInterval(this.spawnInterval);
+            this.spawnInterval = null;
+        }
+
+        let bookNodes = foundBooks.map(b => ({
+            id: b.code,
+            code: b.code,
+            name: b.name,
+            w: b.name,
+            testament: b.testament,
+            t: b.testament,
+            genre: b.genre,
+            order: b.order,
+            verses: b.verses,
+            total_words: b.total_words,
+            v: b.v,
+            isBook: true,
+            isPrimaryBook: true,
+            isKw: true,
+            top_words: b.top_words,
+            closest_words: b.closest_words,
+            nearest_books: b.nearest_books,
+            x: (Math.random() - 0.5) * 40,
+            y: (Math.random() - 0.5) * 40
+        }));
+
+        let bookLinks = [];
+        for (let i = 0; i < bookNodes.length; i++) {
+            for (let j = i + 1; j < bookNodes.length; j++) {
+                let sim = this.cosineSimilarity(bookNodes[i].v, bookNodes[j].v);
+                bookLinks.push({
+                    source: bookNodes[i].id,
+                    target: bookNodes[j].id,
+                    type: 'book-book',
+                    sim: sim
+                });
+            }
+        }
+
+        let limit = this.neighborsPerKeyword || 100;
+        let topWordsMap = new Map();
+
+        foundBooks.forEach(b => {
+            let topWords = [];
+            if (b.closest_words && b.closest_words.length > 0) {
+                topWords = b.closest_words.slice(0, limit);
+            } else if (this.data2d && this.data2d.length > 0) {
+                let similarities = this.data2d.map(d => ({
+                    ...d,
+                    sim: this.cosineSimilarity(b.v, d.v),
+                    in_book: this.wordAppearsInBook(d.id, b.code)
+                }));
+                similarities.sort((a, b) => {
+                    if (a.in_book !== b.in_book) return a.in_book ? -1 : 1;
+                    return b.sim - a.sim;
+                });
+                topWords = similarities.slice(0, limit);
+            }
+
+            topWords.forEach(w => {
+                let pid = w.id;
+                let sim = (w.sim !== undefined) ? w.sim : 0.8;
+                let inBook = (w.in_book !== undefined) ? Boolean(w.in_book) : this.wordAppearsInBook(pid, b.code);
+                if (!topWordsMap.has(pid)) {
+                    topWordsMap.set(pid, {
+                        point: w,
+                        maxSim: sim,
+                        sourceKw: b.code,
+                        linkedBooks: [{ code: b.code, inBook: inBook }]
+                    });
+                } else {
+                    let existing = topWordsMap.get(pid);
+                    if (!existing.linkedBooks.some(lb => lb.code === b.code)) {
+                        existing.linkedBooks.push({ code: b.code, inBook: inBook });
+                    }
+                    if (sim > existing.maxSim) {
+                        existing.maxSim = sim;
+                        existing.sourceKw = b.code;
+                    }
+                }
+            });
+        });
+
+        let wordNodes = Array.from(topWordsMap.values()).map(s => {
+            let fullPoint = this.data2d ? (this.data2d.find(d => d.id === s.point.id) || s.point) : s.point;
+            let isDirectInAny = s.linkedBooks.some(lb => lb.inBook);
+            return {
+                id: s.point.id,
+                w: s.point.w,
+                pos: s.point.pos,
+                f: s.point.f,
+                t: fullPoint.t || s.point.t,
+                sim: s.maxSim,
+                sourceKw: s.sourceKw,
+                linkedBooks: s.linkedBooks,
+                isBookWord: true,
+                isDirect: isDirectInAny,
+                isKw: false,
+                v: fullPoint.v,
+                original: fullPoint.original
+            };
+        });
+
+        let minSim = d3.min(wordNodes, n => n.sim) || 0;
+        let maxSim = d3.max(wordNodes, n => n.sim) || 1;
+        wordNodes.forEach(n => {
+            n.normSim = (n.sim - minSim) / (maxSim - minSim || 1);
+        });
+
+        let wordLinks = [];
+        wordNodes.forEach(n => {
+            n.linkedBooks.forEach(lb => {
+                wordLinks.push({
+                    source: n.id,
+                    target: lb.code,
+                    type: lb.inBook ? 'direct' : 'indirect',
+                    isDirect: lb.inBook,
+                    sim: n.sim
+                });
+            });
+        });
+
+        this.allSearchNodes = [...bookNodes, ...wordNodes];
+        this.allSearchLinks = [...bookLinks, ...wordLinks];
+
+        this.renderActiveWords();
+
+        // Start simulation with ONLY books, then spawn words in waves
+        this.nodes = [...bookNodes];
+        this.links = [...bookLinks];
+
+        let cw = this.logicalWidth || 800;
+        let ch = this.logicalHeight || 600;
+
+        this.transform = d3.zoomIdentity.translate(cw / 2, ch / 2).scale(1);
+        d3.select(this.canvas).call(this.zoom.transform, this.transform);
+
+        const LCG = d3.randomLcg(42);
+        this.simulation = d3.forceSimulation(this.nodes)
+            .randomSource(LCG)
+            .force("link", d3.forceLink(this.links).id(d => d.id).distance(d => {
+                if (d.type === 'book-book') return Math.max(120, (1 - d.sim) * 500);
+                if (d.isDirect === false || d.type === 'indirect') return 80 + (1 - (d.sim || 0.8)) * 200;
+                return Math.max(35, (1 - (d.sim || 0.8)) * 180);
+            }).strength(d => d.type === 'book-book' ? 1.5 : (d.isDirect ? 0.8 : 0.4)))
+            .force("charge", d3.forceManyBody().strength(d => d.isBook ? -400 : -65))
+            .force("collide", d3.forceCollide().radius(d => d.isBook ? 36 : 14))
+            .force("center", d3.forceCenter(0, 0).strength(0.05))
+            .on("tick", () => {
+                this.updateDynamicZoom();
+                this.draw();
+            });
+
+        this.pendingNodes = [];
+        this.enqueueNodes(wordNodes);
+
+        this.showBookCard(this.selectedBook || foundBooks[0], foundBooks);
+    }
+
+    selectBook(bookNode) {
+        if (!bookNode) return;
+        this.searchedBooks = [bookNode.code];
+        this.drawerBooks = [bookNode.code];
+        this.searchBooks(true);
+    }
+
+    addBook(bookCode) {
+        if (!this.searchedBooks) this.searchedBooks = [];
+        if (!this.drawerBooks) this.drawerBooks = [];
+        if (!this.searchedBooks.includes(bookCode)) {
+            this.searchedBooks.push(bookCode);
+        }
+        if (!this.drawerBooks.includes(bookCode)) {
+            this.drawerBooks.push(bookCode);
+        }
+        this.searchBooks(true);
+    }
+
+    removeBook(bookCode) {
+        if (!this.searchedBooks) return;
+        this.searchedBooks = this.searchedBooks.filter(c => c !== bookCode);
+        if (this.searchedBooks.length === 0) {
+            this.clearAllKeywords();
+        } else {
+            this.searchBooks(true);
+        }
+    }
+
+    resetBooksView() {
+        if (this.simulation) this.simulation.stop();
+        if (this.spawnInterval) {
+            clearInterval(this.spawnInterval);
+            this.spawnInterval = null;
+        }
+        this.searchedBooks = [];
+        this.drawerBooks = [];
+        this.searchedWords = [];
+        this.drawerWords = [];
+        this.selectedBook = null;
+        this.isSearchMode = false;
+        if (this.searchInput) this.searchInput.value = '';
+        this.updateClearBtnVisibility();
+        this.renderActiveWords();
+        this.hideRadialMenu();
+        this.hideVersesPanel();
+        this.hideBookCard();
+        window.history.replaceState(null, '', '?view=books');
+        this.buildBooksGraph();
+    }
+
+    showBookCard(book, allActiveBooks = null) {
+        if (!this.bookCard || !book) return;
+        this.selectedBook = book;
+        let genreColor = GENRE_COLORS[book.genre] || '#3b82f6';
+
+        if (!allActiveBooks && this.searchedBooks && this.searchedBooks.length > 0) {
+            allActiveBooks = this.searchedBooks.map(c => this.booksData ? this.booksData.books.find(b => b.code === c) : null).filter(Boolean);
+        }
+
+        let tabsHtml = '';
+        if (allActiveBooks && allActiveBooks.length > 1) {
+            tabsHtml = `
+                <div class="bwm-book-tabs">
+                    ${allActiveBooks.map(b => {
+                        let activeCls = b.code === book.code ? 'active' : '';
+                        let tabColor = GENRE_COLORS[b.genre] || '#3b82f6';
+                        let style = (b.code === book.code) ? `background: ${tabColor}; border-color: ${tabColor};` : '';
+                        return `<button type="button" class="bwm-book-tab ${activeCls}" data-tab-code="${b.code}" style="${style}"><b>${b.name}</b></button>`;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        let siblingsHtml = (book.nearest_books || []).map(nb => {
+            let isAlreadyActive = this.searchedBooks && this.searchedBooks.includes(nb.code);
+            return `
+                <div class="bwm-book-chip-group">
+                    <button type="button" class="bwm-book-chip" data-book-code="${nb.code}" title="View ${nb.name} details">
+                        <b>${nb.name}</b> <span style="opacity:0.65;font-size:0.85em;">${Math.round(nb.sim * 100)}%</span>
+                    </button>
+                    <button type="button" class="bwm-chip-add" data-toggle-book-code="${nb.code}" title="${isAlreadyActive ? 'Remove from map' : 'Add to map'}">
+                        ${isAlreadyActive ? '&minus;' : '+'}
+                    </button>
+                </div>
+            `;
+        }).join('');
+
+        let topWordsHtml = (book.top_words || []).slice(0, 12).map(tw => {
+            let posColor = '#94a3b8';
+            if (tw.pos === 'PROPN') posColor = '#4ade80';
+            else if (tw.pos === 'NOUN') posColor = '#60a5fa';
+            else if (tw.pos === 'VERB') posColor = '#f472b6';
+            else if (tw.pos === 'ADJ' || tw.pos === 'ADV') posColor = '#fbbf24';
+            return `<span class="bwm-book-chip" style="border-left: 3px solid ${posColor};" title="TF-IDF Score: ${tw.score}"><b>${this.formatWord(tw.w, tw.pos)}</b> <span style="opacity:0.5;font-size:0.8em;">(${tw.pos.toLowerCase()})</span></span>`;
+        }).join('');
+
+        this.bookCard.innerHTML = `
+            ${tabsHtml}
+            <div class="bwm-book-card-header">
+                <div>
+                    <span class="bwm-book-badge" style="background: ${genreColor};">${book.genre}</span>
+                    <span style="font-size: 0.8em; opacity: 0.65; margin-left: 6px;">${book.testament === 'OT' ? 'Old Testament' : 'New Testament'}</span>
+                    <h3 class="bwm-book-card-title">${book.name}</h3>
+                    <div style="font-size: 0.82em; opacity: 0.7; margin-top: 2px;">${book.verses.toLocaleString()} verses &bull; ${book.total_words.toLocaleString()} words</div>
+                </div>
+                <button type="button" class="bwm-book-card-close" id="bwm-book-card-close" title="Show All Books">&times;</button>
+            </div>
+            <div class="bwm-book-card-body">
+                <div>
+                    <div style="font-size: 0.85em; font-weight: 600; opacity: 0.85; margin-bottom: 4px;">Closest Theological Siblings:</div>
+                    <div class="bwm-book-chip-list">
+                        ${siblingsHtml}
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size: 0.85em; font-weight: 600; opacity: 0.85; margin-bottom: 4px;">Top Distinctive Themes:</div>
+                    <div class="bwm-book-chip-list">
+                        ${topWordsHtml}
+                    </div>
+                </div>
+                <div style="font-size: 0.75em; opacity: 0.55; text-align: center; margin-top: 4px; font-style: italic;">
+                    Click canvas background or &times; to show all books
+                </div>
+            </div>
+        `;
+
+        this.bookCard.classList.add('visible');
+
+        let closeBtn = this.bookCard.querySelector('#bwm-book-card-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.resetBooksView();
+            });
+        }
+
+        // Tab click listeners
+        let tabBtns = this.bookCard.querySelectorAll('button[data-tab-code]');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                let code = btn.getAttribute('data-tab-code');
+                let target = this.booksData.books.find(b => b.code === code);
+                if (target) {
+                    this.showBookCard(target, allActiveBooks);
+                }
+            });
+        });
+
+        // Sibling name click listener -> switch / focus that book
+        let chipBtns = this.bookCard.querySelectorAll('button[data-book-code]');
+        chipBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                let targetCode = btn.getAttribute('data-book-code');
+                let targetBook = this.booksData.books.find(b => b.code === targetCode);
+                if (targetBook) {
+                    this.selectBook(targetBook);
+                }
+            });
+        });
+
+        // Add/remove sibling toggle click listener -> adds/removes book to/from map
+        let toggleBtns = this.bookCard.querySelectorAll('button[data-toggle-book-code]');
+        toggleBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                let code = btn.getAttribute('data-toggle-book-code');
+                if (this.searchedBooks && this.searchedBooks.includes(code)) {
+                    this.removeBook(code);
+                } else {
+                    this.addBook(code);
+                }
+            });
+        });
+    }
+
+    hideBookCard() {
+        if (this.bookCard) {
+            this.bookCard.classList.remove('visible');
+            this.bookCard.innerHTML = '';
+        }
+    }
+
     matchesTestament(t) {
         if (!this.testamentFilter || this.testamentFilter === 'all') return true;
         if (this.testamentFilter === 'ot') return t === 'OT' || t === 'Both';
@@ -1606,7 +2445,7 @@ class BibleWordMap extends HTMLElement {
     }
 
     draw() {
-        if (!this.ctx || !this.data2d) return;
+        if (!this.ctx || (!this.data2d && !this.booksData)) return;
         this.updateColors();
         
         let cw = this.logicalWidth;
@@ -1624,13 +2463,12 @@ class BibleWordMap extends HTMLElement {
         let visibleNodesCount = 0;
         this.nodes.forEach(n => {
             if (n.x >= minX && n.x <= maxX && n.y >= minY && n.y <= maxY) {
-                if (this.matchesTestament(n.t)) {
+                if (this.matchesTestament(n.t || n.testament)) {
                     visibleNodesCount++;
                 }
             }
         });
         let autoShowLabels = visibleNodesCount < 250;
-        
         
         this.ctx.save();
         this.ctx.translate(this.transform.x, this.transform.y);
@@ -1639,12 +2477,18 @@ class BibleWordMap extends HTMLElement {
         // Pre-calculate radii for all nodes so we can clip lines to their edges
         this.nodes.forEach(n => {
             let pixelR = 3;
-            if (n.isKw) pixelR = 12;
-            else if (this.isSearchMode) {
+            if (n.isBook) {
+                pixelR = n.isFocusedBook ? 32 : Math.max(14, Math.min(26, Math.sqrt(n.verses) * 0.75));
+            } else if (n.isKw) {
+                pixelR = 12;
+            } else if (n.isBookWord) {
+                pixelR = Math.max(4, Math.min(10, Math.sqrt(n.f || 1) * 0.8));
+            } else if (this.isSearchMode) {
                 let alpha = (n.normSim !== undefined && !isNaN(n.normSim)) ? n.normSim : 0.2;
                 pixelR = 3 + (alpha * 7);
+            } else {
+                pixelR = Math.max(1.5, Math.min(8, Math.log(n.f || 3) * 1.2));
             }
-            else pixelR = Math.max(1.5, Math.min(8, Math.log(n.f || 3) * 1.2));
             
             n.canvasR = pixelR / this.transform.k;
         });
@@ -1652,15 +2496,36 @@ class BibleWordMap extends HTMLElement {
         this.links.forEach(l => {
             if (l.source.x === undefined || l.target.x === undefined) return;
             
-            let matchSource = this.matchesTestament(l.source.t);
-            let matchTarget = this.matchesTestament(l.target.t);
+            let matchSource = this.matchesTestament(l.source.t || l.source.testament);
+            let matchTarget = this.matchesTestament(l.target.t || l.target.testament);
             
-            // Make links more visible but still subtly faded for less similar words
-            if (this.isSearchMode && !l.source.isKw) {
+            let isDirect = l.type === 'direct' || l.isDirect === true;
+            let isDashed = false;
+            
+            if (l.type === 'book-book') {
+                this.ctx.strokeStyle = this.colors.linkIndir;
+                this.ctx.lineWidth = 1.2 / this.transform.k;
+                this.ctx.globalAlpha = 0.25;
+            } else if (this.viewMode === 'books') {
+                if (isDirect) {
+                    this.ctx.strokeStyle = this.colors.linkDir;
+                    this.ctx.lineWidth = 1.4 / this.transform.k;
+                    this.ctx.globalAlpha = 0.55;
+                } else {
+                    this.ctx.strokeStyle = this.colors.linkIndir;
+                    this.ctx.lineWidth = 1.0 / this.transform.k;
+                    this.ctx.globalAlpha = 0.28;
+                    isDashed = true;
+                }
+            } else if (this.isSearchMode && !l.source.isKw) {
                 let alpha = (l.source.normSim !== undefined && !isNaN(l.source.normSim)) ? l.source.normSim : 0.2;
                 this.ctx.globalAlpha = Math.max(0.25, alpha * 0.8 + 0.2); // Range from 0.25 to 1.0
+                this.ctx.strokeStyle = l.type === 'direct' ? this.colors.linkDir : this.colors.linkIndir;
+                this.ctx.lineWidth = l.type === 'direct' ? 1.5 / this.transform.k : 1 / this.transform.k;
             } else {
                 this.ctx.globalAlpha = 1.0;
+                this.ctx.strokeStyle = l.type === 'direct' ? this.colors.linkDir : this.colors.linkIndir;
+                this.ctx.lineWidth = l.type === 'direct' ? 1.5 / this.transform.k : 1 / this.transform.k;
             }
             
             if (!matchSource || !matchTarget) {
@@ -1685,16 +2550,20 @@ class BibleWordMap extends HTMLElement {
                 this.ctx.lineTo(l.target.x, l.target.y);
             }
             
-            this.ctx.strokeStyle = l.type === 'direct' ? this.colors.linkDir : this.colors.linkIndir;
-            this.ctx.lineWidth = l.type === 'direct' ? 1.5 / this.transform.k : 1 / this.transform.k;
+            if (isDashed) {
+                this.ctx.setLineDash([4 / this.transform.k, 4 / this.transform.k]);
+            } else {
+                this.ctx.setLineDash([]);
+            }
             this.ctx.stroke();
+            this.ctx.setLineDash([]);
         });
         this.ctx.globalAlpha = 1.0;
         
         let kwWordCounts = {};
         let nodeWordCounts = {};
         this.nodes.forEach(n => {
-            let baseW = n.w.toLowerCase();
+            let baseW = (n.w || '').toLowerCase();
             if (n.isKw) {
                 kwWordCounts[baseW] = (kwWordCounts[baseW] || 0) + 1;
             }
@@ -1702,12 +2571,14 @@ class BibleWordMap extends HTMLElement {
         });
 
         this.nodes.forEach(n => {
-            let matchesT = this.matchesTestament(n.t) || this.hoveredNode === n;
+            let matchesT = this.matchesTestament(n.t || n.testament) || this.hoveredNode === n || n.isFocusedBook;
             
             this.ctx.beginPath();
             
             let posColor = '#94a3b8'; // default slate-400
-            if (n.pos === 'NOUN') posColor = '#3b82f6'; // blue-500
+            if (n.isBook) {
+                posColor = GENRE_COLORS[n.genre] || '#3b82f6';
+            } else if (n.pos === 'NOUN') posColor = '#3b82f6'; // blue-500
             else if (n.pos === 'VERB') posColor = '#ef4444'; // red-500
             else if (n.pos === 'PROPN') posColor = '#10b981'; // emerald-500
             else if (n.pos === 'ADJ') posColor = '#8b5cf6'; // violet-500
@@ -1717,8 +2588,9 @@ class BibleWordMap extends HTMLElement {
 
             this.ctx.fillStyle = posColor;
             
-            // In search mode, lower similarity words get faded out
-            if (this.isSearchMode && !n.isKw) {
+            if (n.isBook) {
+                this.ctx.globalAlpha = matchesT ? 1.0 : 0.08;
+            } else if (this.isSearchMode && !n.isKw) {
                 let alpha = (n.normSim !== undefined && !isNaN(n.normSim)) ? n.normSim : 0.2;
                 this.ctx.globalAlpha = Math.max(0.4, alpha);
             } else {
@@ -1731,8 +2603,8 @@ class BibleWordMap extends HTMLElement {
             
             let drawR = n.canvasR;
             if (this.hoveredNode === n) {
-                drawR = n.canvasR * 1.4;
-                this.ctx.shadowBlur = 12 / this.transform.k;
+                drawR = n.canvasR * (n.isBook ? 1.2 : 1.4);
+                this.ctx.shadowBlur = (n.isBook ? 16 : 12) / this.transform.k;
                 this.ctx.shadowColor = posColor;
             } else {
                 this.ctx.shadowBlur = 0;
@@ -1745,7 +2617,11 @@ class BibleWordMap extends HTMLElement {
             this.ctx.arc(n.x, n.y, drawR, 0, 2 * Math.PI);
             this.ctx.fill();
             
-            if (n.isKw) {
+            if (n.isBook) {
+                this.ctx.lineWidth = (n.isFocusedBook ? 3.5 : 2) / this.transform.k;
+                this.ctx.strokeStyle = n.isFocusedBook ? '#ffffff' : (this.hoveredNode === n ? this.colors.text : 'rgba(255,255,255,0.6)');
+                this.ctx.stroke();
+            } else if (n.isKw) {
                 this.ctx.lineWidth = 3 / this.transform.k;
                 this.ctx.strokeStyle = this.colors.text;
                 this.ctx.stroke();
@@ -1753,7 +2629,7 @@ class BibleWordMap extends HTMLElement {
             
             this.ctx.globalAlpha = 1.0;
             
-            let showLabel = matchesT && (this.isSearchMode || n.isKw || autoShowLabels);
+            let showLabel = n.isBook || (matchesT && (this.isSearchMode || n.isKw || autoShowLabels || n.isBookWord));
             if (showLabel) {
                 this.ctx.shadowBlur = 0;
                 
@@ -1761,36 +2637,61 @@ class BibleWordMap extends HTMLElement {
                 this.ctx.translate(n.x, n.y);
                 this.ctx.scale(1 / this.transform.k, 1 / this.transform.k);
                 
-                let fontSize = n.isKw ? 14 : 11;
-                this.ctx.font = `${fontSize}px ${this.colors.font}`;
-                this.ctx.textAlign = "center";
-                this.ctx.textBaseline = "top";
-                let currentR = (this.hoveredNode === n) ? n.canvasR * 1.4 : n.canvasR;
-                let yOffset = (currentR * this.transform.k) + 2;
-                
-                // Draw a solid halo background for the text to improve readability over layered lines/dots
-                this.ctx.lineWidth = 3;
-                this.ctx.strokeStyle = this.colors.bg;
-                let displayW = this.formatWord(n.w, n.pos);
-                this.ctx.strokeText(displayW, 0, yOffset);
-                
-                this.ctx.fillStyle = this.colors.text;
-                this.ctx.fillText(displayW, 0, yOffset);
-                
-                // If there are multiple keywords or active nodes with the same word, show POS underneath
-                let hasDuplicate = (n.isKw && kwWordCounts[n.w.toLowerCase()] > 1) || (this.isSearchMode && nodeWordCounts[n.w.toLowerCase()] > 1);
-                if (hasDuplicate && n.pos) {
-                    let posText = `(${n.pos.toLowerCase()})`;
-                    let posFontSize = n.isKw ? 11 : 9;
-                    this.ctx.font = `${posFontSize}px ${this.colors.font}`;
-                    let posOffset = yOffset + fontSize + 1;
+                if (n.isBook) {
+                    let fontSize = n.isFocusedBook ? 15 : 12;
+                    this.ctx.font = `bold ${fontSize}px ${this.colors.font}`;
+                    this.ctx.textAlign = "center";
+                    this.ctx.textBaseline = "top";
+                    let currentR = (this.hoveredNode === n) ? n.canvasR * 1.2 : n.canvasR;
+                    let yOffset = (currentR * this.transform.k) + 3;
                     
+                    this.ctx.lineWidth = 3.5;
+                    this.ctx.strokeStyle = this.colors.bg;
+                    this.ctx.strokeText(n.name, 0, yOffset);
+                    
+                    this.ctx.fillStyle = this.colors.text;
+                    this.ctx.fillText(n.name, 0, yOffset);
+                    
+                    let subFontSize = 9;
+                    this.ctx.font = `${subFontSize}px ${this.colors.font}`;
+                    let subOffset = yOffset + fontSize + 2;
                     this.ctx.lineWidth = 2.5;
                     this.ctx.strokeStyle = this.colors.bg;
-                    this.ctx.strokeText(posText, 0, posOffset);
+                    this.ctx.strokeText(n.genre, 0, subOffset);
+                    this.ctx.fillStyle = this.colors.textMuted || '#888888';
+                    this.ctx.fillText(n.genre, 0, subOffset);
+                } else {
+                    let fontSize = n.isKw ? 14 : 11;
+                    this.ctx.font = `${fontSize}px ${this.colors.font}`;
+                    this.ctx.textAlign = "center";
+                    this.ctx.textBaseline = "top";
+                    let currentR = (this.hoveredNode === n) ? n.canvasR * 1.4 : n.canvasR;
+                    let yOffset = (currentR * this.transform.k) + 2;
                     
-                    this.ctx.fillStyle = this.colors.nodeDef || '#888888';
-                    this.ctx.fillText(posText, 0, posOffset);
+                    // Draw a solid halo background for the text to improve readability over layered lines/dots
+                    this.ctx.lineWidth = 3;
+                    this.ctx.strokeStyle = this.colors.bg;
+                    let displayW = this.formatWord(n.w, n.pos);
+                    this.ctx.strokeText(displayW, 0, yOffset);
+                    
+                    this.ctx.fillStyle = this.colors.text;
+                    this.ctx.fillText(displayW, 0, yOffset);
+                    
+                    // If there are multiple keywords or active nodes with the same word, show POS underneath
+                    let hasDuplicate = (n.isKw && kwWordCounts[n.w.toLowerCase()] > 1) || (this.isSearchMode && nodeWordCounts[n.w.toLowerCase()] > 1);
+                    if (hasDuplicate && n.pos) {
+                        let posText = `(${n.pos.toLowerCase()})`;
+                        let posFontSize = n.isKw ? 11 : 9;
+                        this.ctx.font = `${posFontSize}px ${this.colors.font}`;
+                        let posOffset = yOffset + fontSize + 1;
+                        
+                        this.ctx.lineWidth = 2.5;
+                        this.ctx.strokeStyle = this.colors.bg;
+                        this.ctx.strokeText(posText, 0, posOffset);
+                        
+                        this.ctx.fillStyle = this.colors.nodeDef || '#888888';
+                        this.ctx.fillText(posText, 0, posOffset);
+                    }
                 }
                 
                 this.ctx.restore();
@@ -1836,7 +2737,8 @@ class BibleWordMap extends HTMLElement {
             let dx = n.x - logicalX;
             let dy = n.y - logicalY;
             let dist = Math.sqrt(dx*dx + dy*dy);
-            if (dist < searchRadius && dist < minDist) {
+            let effectiveRadius = n.canvasR ? Math.max(searchRadius, n.canvasR * 1.3) : searchRadius;
+            if (dist < effectiveRadius && dist < minDist) {
                 minDist = dist;
                 closestNode = n;
             }
@@ -1871,6 +2773,37 @@ class BibleWordMap extends HTMLElement {
         let mouseX = e.clientX - rect.left;
         let mouseY = e.clientY - rect.top;
 
+        if (this.viewMode === 'books') {
+            if (this.hoveredNode) {
+                if (this.hoveredNode.isBook) {
+                    if (e.shiftKey) {
+                        this.addBook(this.hoveredNode.code);
+                    } else if (this.isSearchMode && this.searchedBooks && this.searchedBooks.length > 0) {
+                        if (this.radialMenuNode === this.hoveredNode) {
+                            this.hideRadialMenu();
+                        } else {
+                            this.showRadialMenu(this.hoveredNode, mouseX, mouseY);
+                        }
+                    } else {
+                        this.selectBook(this.hoveredNode);
+                    }
+                } else if (this.hoveredNode.isBookWord) {
+                    if (this.radialMenuNode === this.hoveredNode) {
+                        this.hideRadialMenu();
+                    } else {
+                        this.showRadialMenu(this.hoveredNode, mouseX, mouseY);
+                    }
+                }
+            } else {
+                this.hideRadialMenu();
+                this.hideVersesPanel();
+                if (this.isSearchMode || this.selectedBook || (this.searchedBooks && this.searchedBooks.length > 0)) {
+                    this.resetBooksView();
+                }
+            }
+            return;
+        }
+
         if (this.hoveredNode) {
             if (this.radialMenuNode === this.hoveredNode) {
                 this.hideRadialMenu();
@@ -1902,14 +2835,79 @@ class BibleWordMap extends HTMLElement {
         let isAlreadyKw = this.isSearchMode && this.searchedWords && this.searchedWords.includes(node.id);
         let menuItems = [];
         
-        if (isAlreadyKw) {
-            menuItems.push({ icon: '-', label: 'Remove keyword', action: () => { this.hideRadialMenu(); this.removeKeyword(node.id); } });
+        if (this.viewMode === 'books') {
+            if (node.isBook) {
+                let isAlreadyActive = this.searchedBooks && this.searchedBooks.includes(node.code);
+                if (isAlreadyActive && this.searchedBooks.length > 1) {
+                    menuItems.push({
+                        icon: '&minus;',
+                        label: 'Remove book from map',
+                        action: () => {
+                            this.hideRadialMenu();
+                            this.removeBook(node.code);
+                        }
+                    });
+                } else if (!isAlreadyActive) {
+                    menuItems.push({
+                        icon: '+',
+                        label: 'Add book to map',
+                        action: () => {
+                            this.hideRadialMenu();
+                            this.addBook(node.code);
+                        }
+                    });
+                }
+                menuItems.push({
+                    icon: '&#128196;',
+                    label: 'Show Info',
+                    action: () => {
+                        this.hideRadialMenu();
+                        let activeBooks = (this.searchedBooks && this.searchedBooks.length > 0)
+                            ? this.searchedBooks.map(c => this.booksData ? this.booksData.books.find(b => b.code === c) : null).filter(Boolean)
+                            : [node];
+                        this.showBookCard(node, activeBooks);
+                    }
+                });
+                menuItems.push({
+                    icon: '&#128269;',
+                    label: 'Focus this book only',
+                    action: () => {
+                        this.hideRadialMenu();
+                        this.selectBook(node);
+                    }
+                });
+            } else {
+                menuItems.push({
+                    icon: '&#128269;',
+                    label: 'Explore on Word Map',
+                    action: () => {
+                        this.hideRadialMenu();
+                        const wordsBtn = document.getElementById('view-mode-words');
+                        const booksBtn = document.getElementById('view-mode-books');
+                        if (wordsBtn && booksBtn) {
+                            wordsBtn.classList.add('active');
+                            booksBtn.classList.remove('active');
+                        }
+                        this.setViewMode('words');
+                        if (this.searchInput) this.searchInput.value = this.formatWord(node.w, node.pos);
+                        this.searchWord();
+                    }
+                });
+                menuItems.push({ icon: '\u{1F4D6}', label: 'Verses', action: () => { this.hideRadialMenu(); this.showVersesPanel(node, screenX, screenY); } });
+                if (node.original && node.original.length > 0) {
+                    menuItems.push({ icon: '<span style="font-size:0.7em;font-weight:bold;">α/א</span>', label: 'Original Language', action: () => { this.hideRadialMenu(); this.showOriginalLangPanel(node, screenX, screenY); } });
+                }
+            }
         } else {
-            menuItems.push({ icon: '+', label: 'Add keyword', action: () => { this.hideRadialMenu(); this.addKeyword(node.id); } });
-        }
-        menuItems.push({ icon: '\u{1F4D6}', label: 'Verses', action: () => { this.hideRadialMenu(); this.showVersesPanel(node, screenX, screenY); } });
-        if (node.original && node.original.length > 0) {
-            menuItems.push({ icon: '<span style="font-size:0.7em;font-weight:bold;">α/א</span>', label: 'Original Language', action: () => { this.hideRadialMenu(); this.showOriginalLangPanel(node, screenX, screenY); } });
+            if (isAlreadyKw) {
+                menuItems.push({ icon: '-', label: 'Remove keyword', action: () => { this.hideRadialMenu(); this.removeKeyword(node.id); } });
+            } else {
+                menuItems.push({ icon: '+', label: 'Add keyword', action: () => { this.hideRadialMenu(); this.addKeyword(node.id); } });
+            }
+            menuItems.push({ icon: '\u{1F4D6}', label: 'Verses', action: () => { this.hideRadialMenu(); this.showVersesPanel(node, screenX, screenY); } });
+            if (node.original && node.original.length > 0) {
+                menuItems.push({ icon: '<span style="font-size:0.7em;font-weight:bold;">α/א</span>', label: 'Original Language', action: () => { this.hideRadialMenu(); this.showOriginalLangPanel(node, screenX, screenY); } });
+            }
         }
         
         this.radialMenu.innerHTML = '';
@@ -1973,7 +2971,39 @@ class BibleWordMap extends HTMLElement {
         let tabsData = [];
         let myVerses = this.wordToVerses ? (this.wordToVerses[node.id] || []) : [];
         
-        if (this.isSearchMode && this.wordToVerses && this.verses) {
+        if (this.viewMode === 'books') {
+            let activeBooks = (this.searchedBooks && this.searchedBooks.length > 0)
+                ? this.searchedBooks.map(c => this.booksData ? this.booksData.books.find(b => b.code === c) : null).filter(Boolean)
+                : (this.selectedBook ? [this.selectedBook] : []);
+
+            let anyBookHasDirectVerses = false;
+            activeBooks.forEach(book => {
+                let bookVerses = this.getBookVerses(node.id, book.code);
+                if (bookVerses.length > 0) {
+                    anyBookHasDirectVerses = true;
+                    tabsData.push({
+                        id: 'book_' + book.code,
+                        title: book.name,
+                        verses: bookVerses,
+                        isBookTab: true
+                    });
+                }
+            });
+
+            if (myVerses.length > 0) {
+                tabsData.push({
+                    id: 'all_bible_verses',
+                    title: 'All Bible Verses',
+                    verses: myVerses,
+                    isAllTab: true
+                });
+            }
+
+            if (!anyBookHasDirectVerses && activeBooks.length > 0) {
+                let bookNames = activeBooks.map(b => b.name).join(', ');
+                headerHtml += `<div style="padding: 4px 14px; font-size: 0.82em; color: var(--bwm-node-hover); font-style: italic;">Does not appear directly in ${bookNames} (semantic relationship)</div>`;
+            }
+        } else if (this.isSearchMode && this.wordToVerses && this.verses) {
             this.searchedWords.forEach(sw => {
                 if (sw === node.id) return;
                 let swVerses = this.wordToVerses[sw] || [];

@@ -5,20 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="color-scheme" content="light dark">
     <title>Semantic Bible Word Map</title>
-    <link rel="stylesheet" href="styles.css?v=6.2.3">
+    <link rel="stylesheet" href="styles.css?v=6.5.1">
     <!-- Load D3.js for high-performance physics and canvas rendering -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="icon" type="image/jpeg" href="favicon.jpg">
 </head>
 <body>
     <header style="position: relative; z-index: 10;">
-        <div style="display: flex; align-items: center; justify-content: center;">
-            <h1>Semantic Bible Word Map <span style="font-size: 0.5em; color: var(--text-muted); vertical-align: middle;">v6.4.0</span></h1>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap;">
+            <h1>Semantic Bible Word Map <span style="font-size: 0.5em; color: var(--text-muted); vertical-align: middle;">v6.5.1</span></h1>
+            <div class="view-mode-pill-group">
+                <button type="button" class="view-mode-pill active" id="view-mode-words" data-mode="words">Words</button>
+                <button type="button" class="view-mode-pill" id="view-mode-books" data-mode="books">Books</button>
+            </div>
             <div class="info-wrapper">
                 <div class="info-btn" id="info-btn">i</div>
                 <div class="info-panel" id="info-panel">
                     <div class="info-close" id="info-close">&times;</div>
-                    Explore the Berean Standard Bible through a semantic lens. Each dot represents a word, and the physical distance between dots indicates how closely related their meanings are based on Biblical usage. 
+                    Explore the Berean Standard Bible through a semantic lens. Each dot represents a word or biblical book, and the physical distance between dots indicates how closely related their meanings are based on Biblical usage. 
                     <br><br>
                     <strong>Word Colors:</strong><br>
                     <span style="color: #4ade80;">■</span> Proper Nouns (Names, Places)<br>
@@ -26,6 +30,17 @@
                     <span style="color: #f472b6;">■</span> Verbs (Actions)<br>
                     <span style="color: #fbbf24;">■</span> Adjectives & Adverbs<br>
                     <span style="color: #94a3b8;">■</span> Other
+                    <br><br>
+                    <strong>Book Genres:</strong><br>
+                    <span style="color: #3b82f6;">■</span> Law (Pentateuch)<br>
+                    <span style="color: #10b981;">■</span> History<br>
+                    <span style="color: #f59e0b;">■</span> Wisdom & Poetry<br>
+                    <span style="color: #8b5cf6;">■</span> Major Prophets<br>
+                    <span style="color: #ec4899;">■</span> Minor Prophets<br>
+                    <span style="color: #ef4444;">■</span> Gospels<br>
+                    <span style="color: #06b6d4;">■</span> Pauline Epistles<br>
+                    <span style="color: #14b8a6;">■</span> General Epistles<br>
+                    <span style="color: #e11d48;">■</span> Apocalypse
                     <br><br>
                     <strong>Connection Lines:</strong><br>
                     <div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
@@ -41,12 +56,12 @@
         </div>
     </header>
     <main>
-        <bible-word-map src-2d="data/output/wordmap_2d.json?v=6.4.0" src-verses="data/output/verse_index.json?v=6.4.0"></bible-word-map>
+        <bible-word-map src-2d="data/output/wordmap_2d.json?v=6.5.1" src-verses="data/output/verse_index.json?v=6.5.1" src-books="data/output/bookmap_2d.json?v=6.5.1"></bible-word-map>
     </main>
     <footer>
         <a href="https://github.com/rotareti/semantic-bible-word-map" target="_blank">View source on GitHub</a> <span style="margin: 0 10px; color: var(--text-muted);">|</span> <i style="color: var(--text-muted);">"Freely you have received; freely give."</i>
     </footer>
-    <script src="bible-word-map.js?v=6.4.0" type="module"></script>
+    <script src="bible-word-map.js?v=6.5.1" type="module"></script>
     <script>
         const btn = document.getElementById('info-btn');
         const panel = document.getElementById('info-panel');
@@ -66,6 +81,23 @@
         closeBtn.addEventListener('click', () => {
             pinned = false;
             panel.classList.remove('visible', 'pinned');
+        });
+
+        // View Mode Toggle (Words / Books)
+        const wordsBtn = document.getElementById('view-mode-words');
+        const booksBtn = document.getElementById('view-mode-books');
+        const mapEl = document.querySelector('bible-word-map');
+
+        wordsBtn.addEventListener('click', () => {
+            wordsBtn.classList.add('active');
+            booksBtn.classList.remove('active');
+            if (mapEl && mapEl.setViewMode) mapEl.setViewMode('words');
+        });
+
+        booksBtn.addEventListener('click', () => {
+            booksBtn.classList.add('active');
+            wordsBtn.classList.remove('active');
+            if (mapEl && mapEl.setViewMode) mapEl.setViewMode('books');
         });
     </script>
 </body>
