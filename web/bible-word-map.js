@@ -1346,6 +1346,9 @@ class BibleWordMap extends HTMLElement {
         try {
             if (isBooksInit) {
                 this.booksData = await this.booksPromise;
+                if (this.viewMode !== 'books') {
+                    return;
+                }
                 this.hideLoading();
 
                 this.setViewMode('books', true);
@@ -1360,6 +1363,13 @@ class BibleWordMap extends HTMLElement {
                 if (vData) {
                     this.verses = vData.verses;
                     this.wordToVerses = vData.words;
+                }
+
+                if (this.viewMode !== 'words') {
+                    if (this.booksData) {
+                        this.hideLoading();
+                    }
+                    return;
                 }
                 this.hideLoading();
 
@@ -2091,6 +2101,20 @@ class BibleWordMap extends HTMLElement {
         }
 
         this.viewMode = mode;
+
+        // Keep header pills in sync with viewMode
+        const wordsBtn = document.getElementById('view-mode-words');
+        const booksBtn = document.getElementById('view-mode-books');
+        if (wordsBtn && booksBtn) {
+            if (mode === 'books') {
+                booksBtn.classList.add('active');
+                wordsBtn.classList.remove('active');
+            } else {
+                wordsBtn.classList.add('active');
+                booksBtn.classList.remove('active');
+            }
+        }
+
         this.hideRadialMenu();
         this.hideVersesPanel();
         this.hoveredNode = null;
@@ -2130,15 +2154,16 @@ class BibleWordMap extends HTMLElement {
                 if (this.booksPromise) {
                     this.booksPromise.then(data => {
                         if (data) this.booksData = data;
-                        this.hideLoading();
                         if (this.viewMode === 'books') {
+                            this.hideLoading();
                             this.buildBooksGraph();
                         }
                     }).catch(() => {
-                        this.hideLoading();
+                        if (this.viewMode === 'books') this.hideLoading();
                     });
                 }
             } else {
+                this.hideLoading();
                 this.buildBooksGraph();
             }
         } else {
@@ -2155,15 +2180,16 @@ class BibleWordMap extends HTMLElement {
                 if (this.data2dPromise) {
                     this.data2dPromise.then(data => {
                         if (data) this.data2d = data;
-                        this.hideLoading();
                         if (this.viewMode === 'words') {
+                            this.hideLoading();
                             this.buildAllWordsGraph();
                         }
                     }).catch(() => {
-                        this.hideLoading();
+                        if (this.viewMode === 'words') this.hideLoading();
                     });
                 }
             } else {
+                this.hideLoading();
                 this.buildAllWordsGraph();
             }
         }

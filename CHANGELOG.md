@@ -1,5 +1,9 @@
 # Changelog
 
+## [6.5.5] - 2026-09-04
+### Fixed
+- **Mode Switching Async Race Condition:** Fixed an issue where switching to Books while the 34MB words dataset was downloading caused the loading overlay to remain stuck over the Books view, and then overwrote the Books map with words once downloaded. Added viewMode verification in `loadData()` and guaranteed `hideLoading()` calls in `setViewMode()`.
+
 ## [6.5.4] - 2026-09-04
 ### Fixed
 - **Book Info Button Map Spacing:** Nested the Book Info floating button directly inside the canvas map container with balanced padding (14px desktop, 12px mobile) from both the top and right edges of the map, preventing it from resting flush against the top map border.
