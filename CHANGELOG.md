@@ -1,18 +1,14 @@
 # Changelog
 
-## [6.5.5] - 2026-09-04
-### Fixed
-- **Mode Switching Async Race Condition:** Fixed an issue where switching to Books while the 34MB words dataset was downloading caused the loading overlay to remain stuck over the Books view, and then overwrote the Books map with words once downloaded. Added viewMode verification in `loadData()` and guaranteed `hideLoading()` calls in `setViewMode()`.
+## [6.6.0] - 2026-09-04
+### Added
+- **Mobile Book Bottom Sheet:** Transformed the book info window into a responsive bottom sheet popup on mobile (capped at 56vh) with slide animations and drag handle, preserving map visibility.
+- **Card Actions & Balanced Reopen Button:** Added "Explore Map" and "< Show All Books" actions to the book card, along with a floating `[ ℹ Book Info ]` button inside the map container with balanced padding for 1-click reopening.
+- **Radial Menu Book Info Option:** Tapping any active book node on canvas offers a "Book Info & Themes" option (`ℹ`) in the radial menu to reopen book details.
 
-## [6.5.4] - 2026-09-04
 ### Fixed
-- **Book Info Button Map Spacing:** Nested the Book Info floating button directly inside the canvas map container with balanced padding (14px desktop, 12px mobile) from both the top and right edges of the map, preventing it from resting flush against the top map border.
-
-## [6.5.3] - 2026-09-04
-### Fixed
-- **Mobile Book Card Bottom Sheet & Dismissal:** Transformed the book info window into a responsive bottom sheet modal popup on mobile (max-height 56vh) with slide transitions and drag indicator handle, leaving the top 44% of the screen open to view the active book constellation.
-- **Preserved Word Constellation on Card Dismiss:** Closing the book window or tapping the canvas outside now dismisses only the card (`hideBookCard`), allowing full interaction with the active words and links instead of resetting the map.
-- **Card Actions & Radial Menu Re-open:** Added explicit "Explore Map" and "< Show All Books" actions to the card. When the card is dismissed, a floating `[ i Book Info ]` chip appears to reopen it anytime, and clicking the book node provides a "Book Info & Themes" option in its radial menu.
+- **Preserved Word Constellations on Dismiss:** Closing the book card or tapping canvas background now dismisses only the window (`hideBookCard`) without resetting the active book constellation.
+- **View Switching Async Race Condition:** Resolved an issue where switching to Books while the words dataset was downloading left the loading overlay stuck and subsequently overwrote the Books map. Verified active `viewMode` in `loadData()` and guaranteed `hideLoading()` calls in `setViewMode()`.
 
 ## [6.5.2] - 2026-09-03
 ### Added
