@@ -1,5 +1,9 @@
 # Changelog
 
+## [6.5.4] - 2026-09-04
+### Fixed
+- **Book Info Button Map Spacing:** Nested the Book Info floating button directly inside the canvas map container with balanced padding (14px desktop, 12px mobile) from both the top and right edges of the map, preventing it from resting flush against the top map border.
+
 ## [6.5.3] - 2026-09-04
 ### Fixed
 - **Mobile Book Card Bottom Sheet & Dismissal:** Transformed the book info window into a responsive bottom sheet modal popup on mobile (max-height 56vh) with slide transitions and drag indicator handle, leaving the top 44% of the screen open to view the active book constellation.

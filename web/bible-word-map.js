@@ -637,11 +637,11 @@ class BibleWordMap extends HTMLElement {
                 }
                 .bwm-book-card {
                     position: absolute;
-                    top: 54px;
-                    right: 12px;
+                    top: 64px;
+                    right: 14px;
                     width: 320px;
-                    max-width: calc(100% - 24px);
-                    max-height: calc(100% - 70px);
+                    max-width: calc(100% - 28px);
+                    max-height: calc(100% - 78px);
                     background-color: rgba(255, 255, 255, 0.94);
                     background-color: color-mix(in srgb, var(--bwm-bg) 94%, transparent);
                     backdrop-filter: blur(14px);
@@ -822,8 +822,8 @@ class BibleWordMap extends HTMLElement {
                 }
                 .bwm-book-card-reopen {
                     position: absolute;
-                    top: 54px;
-                    right: 12px;
+                    top: 14px;
+                    right: 14px;
                     z-index: 990;
                     display: none;
                     align-items: center;
@@ -897,9 +897,9 @@ class BibleWordMap extends HTMLElement {
                         opacity: 0.8;
                     }
                     .bwm-book-card-reopen {
-                        top: 50px;
-                        right: 8px;
-                        padding: 5px 10px;
+                        top: 12px;
+                        right: 12px;
+                        padding: 6px 11px;
                         font-size: 0.8em;
                     }
                 }
@@ -972,14 +972,14 @@ class BibleWordMap extends HTMLElement {
                             <span id="bwm-loading-text">Loading Bible Word Map...</span>
                         </div>
                     </div>
+                    <button type="button" class="bwm-book-card-reopen" id="bwm-book-card-reopen" style="display: none;" title="View book details">
+                        <span class="bwm-book-card-reopen-icon">i</span>
+                        <span class="bwm-book-card-reopen-text">Book Info</span>
+                    </button>
                 </div>
                 <div class="bwm-radial-menu" id="bwm-radial-menu"></div>
                 <div class="bwm-verses-panel" id="bwm-verses-panel"></div>
                 <div class="bwm-book-card" id="bwm-book-card"></div>
-                <button type="button" class="bwm-book-card-reopen" id="bwm-book-card-reopen" style="display: none;" title="View book details">
-                    <span class="bwm-book-card-reopen-icon">i</span>
-                    <span class="bwm-book-card-reopen-text">Book Info</span>
-                </button>
             </div>
         `;
     }
@@ -1012,6 +1012,9 @@ class BibleWordMap extends HTMLElement {
                     this.showBookCard(target, activeBooks);
                 }
             });
+            this.reopenBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
+            this.reopenBtn.addEventListener('mousedown', (e) => e.stopPropagation());
+            this.reopenBtn.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
         }
         
         this.searchInput = this.querySelector('#bwm-search');
