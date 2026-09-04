@@ -782,6 +782,127 @@ class BibleWordMap extends HTMLElement {
                     background: var(--bwm-node-hover);
                     color: #ffffff;
                 }
+                .bwm-sheet-handle {
+                    display: none;
+                }
+                .bwm-book-card-actions {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: 10px;
+                    margin-top: 4px;
+                    padding-top: 10px;
+                    border-top: 1px solid var(--bwm-border);
+                }
+                .bwm-btn-reset-books,
+                .bwm-btn-dismiss-card {
+                    padding: 6px 12px;
+                    border-radius: 6px;
+                    border: 1px solid var(--bwm-border);
+                    font-size: 0.85em;
+                    cursor: pointer;
+                    transition: all 0.15s ease;
+                }
+                .bwm-btn-reset-books {
+                    background: transparent;
+                    color: var(--bwm-text-muted);
+                }
+                .bwm-btn-reset-books:hover {
+                    color: var(--bwm-text);
+                    background: color-mix(in srgb, var(--bwm-border) 40%, transparent);
+                }
+                .bwm-btn-dismiss-card {
+                    background: var(--bwm-node-hover);
+                    color: #ffffff;
+                    border-color: var(--bwm-node-hover);
+                    font-weight: 600;
+                }
+                .bwm-btn-dismiss-card:hover {
+                    opacity: 0.9;
+                }
+                .bwm-book-card-reopen {
+                    position: absolute;
+                    top: 54px;
+                    right: 12px;
+                    z-index: 990;
+                    display: none;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 6px 13px;
+                    background-color: rgba(255, 255, 255, 0.92);
+                    background-color: color-mix(in srgb, var(--bwm-bg) 92%, transparent);
+                    backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
+                    border: 1px solid var(--bwm-border);
+                    border-radius: 20px;
+                    color: var(--bwm-text);
+                    font-size: 0.85em;
+                    font-weight: 600;
+                    cursor: pointer;
+                    box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+                    transition: all 0.2s ease;
+                }
+                .bwm-book-card-reopen:hover {
+                    background-color: var(--bwm-btn-bg);
+                    transform: translateY(-1px);
+                    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+                }
+                .bwm-book-card-reopen-icon {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 17px;
+                    height: 17px;
+                    border-radius: 50%;
+                    background: var(--bwm-node-hover);
+                    color: #ffffff;
+                    font-size: 0.75em;
+                    font-weight: bold;
+                    font-family: serif;
+                    font-style: italic;
+                }
+
+                @media (max-width: 768px) {
+                    .bwm-book-card {
+                        top: auto;
+                        bottom: 0;
+                        left: 0;
+                        right: 0;
+                        width: 100%;
+                        max-width: 100%;
+                        max-height: 56vh;
+                        border-radius: 16px 16px 0 0;
+                        border-bottom: none;
+                        border-left: none;
+                        border-right: none;
+                        box-shadow: 0 -8px 32px rgba(0,0,0,0.3);
+                        transform: translateY(105%);
+                        opacity: 0;
+                        pointer-events: none;
+                        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+                        display: flex;
+                    }
+                    .bwm-book-card.visible {
+                        transform: translateY(0);
+                        opacity: 1;
+                        pointer-events: auto;
+                    }
+                    .bwm-sheet-handle {
+                        display: block;
+                        width: 36px;
+                        height: 4px;
+                        border-radius: 2px;
+                        background: var(--bwm-border);
+                        margin: 8px auto 0 auto;
+                        opacity: 0.8;
+                    }
+                    .bwm-book-card-reopen {
+                        top: 50px;
+                        right: 8px;
+                        padding: 5px 10px;
+                        font-size: 0.8em;
+                    }
+                }
             </style>
             <div class="bwm-container">
                 <div class="bwm-top-bar">
@@ -855,6 +976,10 @@ class BibleWordMap extends HTMLElement {
                 <div class="bwm-radial-menu" id="bwm-radial-menu"></div>
                 <div class="bwm-verses-panel" id="bwm-verses-panel"></div>
                 <div class="bwm-book-card" id="bwm-book-card"></div>
+                <button type="button" class="bwm-book-card-reopen" id="bwm-book-card-reopen" style="display: none;" title="View book details">
+                    <span class="bwm-book-card-reopen-icon">i</span>
+                    <span class="bwm-book-card-reopen-text">Book Info</span>
+                </button>
             </div>
         `;
     }
@@ -872,6 +997,22 @@ class BibleWordMap extends HTMLElement {
         this.loadingCanvas = this.querySelector('.bwm-loading-canvas');
         this.loadingTip = this.querySelector('.bwm-loading-tip');
         this.bookCard = this.querySelector('#bwm-book-card');
+        this.reopenBtn = this.querySelector('#bwm-book-card-reopen');
+        if (this.reopenBtn) {
+            this.reopenBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                let target = this.selectedBook;
+                if (!target && this.searchedBooks && this.searchedBooks.length > 0 && this.booksData) {
+                    target = this.booksData.books.find(b => b.code === this.searchedBooks[0]);
+                }
+                if (target) {
+                    let activeBooks = (this.searchedBooks && this.searchedBooks.length > 0)
+                        ? this.searchedBooks.map(c => this.booksData ? this.booksData.books.find(b => b.code === c) : null).filter(Boolean)
+                        : [target];
+                    this.showBookCard(target, activeBooks);
+                }
+            });
+        }
         
         this.searchInput = this.querySelector('#bwm-search');
         this.searchClearBtn = this.querySelector('#bwm-search-clear');
@@ -1450,6 +1591,7 @@ class BibleWordMap extends HTMLElement {
         if (this.searchInput) this.searchInput.value = '';
         this.updateClearBtnVisibility();
         this.renderActiveWords();
+        if (this.reopenBtn) this.reopenBtn.style.display = 'none';
         window.history.replaceState(null, '', window.location.pathname);
         this.hideRadialMenu();
         this.hideVersesPanel();
@@ -1951,6 +2093,7 @@ class BibleWordMap extends HTMLElement {
         this.hoveredNode = null;
         this.selectedBook = null;
         this.hideBookCard();
+        if (this.reopenBtn) this.reopenBtn.style.display = 'none';
         
         let activeHeading = this.querySelector('#bwm-active-heading');
         let neighborHeading = this.querySelector('#bwm-neighbor-heading');
@@ -2386,6 +2529,9 @@ class BibleWordMap extends HTMLElement {
         this.hideRadialMenu();
         this.hideVersesPanel();
         this.hideBookCard();
+        if (this.reopenBtn) {
+            this.reopenBtn.style.display = 'none';
+        }
         window.history.replaceState(null, '', '?view=books');
         this.buildBooksGraph();
     }
@@ -2437,6 +2583,7 @@ class BibleWordMap extends HTMLElement {
         }).join('');
 
         this.bookCard.innerHTML = `
+            <div class="bwm-sheet-handle"></div>
             ${tabsHtml}
             <div class="bwm-book-card-header">
                 <div>
@@ -2445,7 +2592,7 @@ class BibleWordMap extends HTMLElement {
                     <h3 class="bwm-book-card-title">${book.name}</h3>
                     <div style="font-size: 0.82em; opacity: 0.7; margin-top: 2px;">${book.verses.toLocaleString()} verses &bull; ${book.total_words.toLocaleString()} words</div>
                 </div>
-                <button type="button" class="bwm-book-card-close" id="bwm-book-card-close" title="Show All Books">&times;</button>
+                <button type="button" class="bwm-book-card-close" id="bwm-book-card-close" title="Dismiss">&times;</button>
             </div>
             <div class="bwm-book-card-body">
                 <div>
@@ -2460,17 +2607,41 @@ class BibleWordMap extends HTMLElement {
                         ${topWordsHtml}
                     </div>
                 </div>
-                <div style="font-size: 0.75em; opacity: 0.55; text-align: center; margin-top: 4px; font-style: italic;">
-                    Click canvas background or &times; to show all books
+                <div class="bwm-book-card-actions">
+                    <button type="button" class="bwm-btn-reset-books" id="bwm-btn-reset-books" title="Return to full 66-book overview">
+                        &larr; Show All Books
+                    </button>
+                    <button type="button" class="bwm-btn-dismiss-card" id="bwm-btn-dismiss-card" title="Explore constellation on map">
+                        Explore Map
+                    </button>
                 </div>
             </div>
         `;
 
+        if (this.reopenBtn) {
+            this.reopenBtn.style.display = 'none';
+        }
         this.bookCard.classList.add('visible');
 
         let closeBtn = this.bookCard.querySelector('#bwm-book-card-close');
         if (closeBtn) {
             closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.hideBookCard();
+            });
+        }
+
+        let dismissBtn = this.bookCard.querySelector('#bwm-btn-dismiss-card');
+        if (dismissBtn) {
+            dismissBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.hideBookCard();
+            });
+        }
+
+        let resetBtn = this.bookCard.querySelector('#bwm-btn-reset-books');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.resetBooksView();
             });
@@ -2520,7 +2691,19 @@ class BibleWordMap extends HTMLElement {
     hideBookCard() {
         if (this.bookCard) {
             this.bookCard.classList.remove('visible');
-            this.bookCard.innerHTML = '';
+        }
+        if (this.reopenBtn) {
+            if (this.isSearchMode && this.searchedBooks && this.searchedBooks.length > 0) {
+                let name = this.selectedBook ? this.selectedBook.name : 'Book';
+                if (this.searchedBooks.length > 1) {
+                    name = `${this.searchedBooks.length} Books`;
+                }
+                let textEl = this.reopenBtn.querySelector('.bwm-book-card-reopen-text');
+                if (textEl) textEl.textContent = `${name} Info`;
+                this.reopenBtn.style.display = 'flex';
+            } else {
+                this.reopenBtn.style.display = 'none';
+            }
         }
     }
 
@@ -2885,8 +3068,8 @@ class BibleWordMap extends HTMLElement {
             } else {
                 this.hideRadialMenu();
                 this.hideVersesPanel();
-                if (this.isSearchMode || this.selectedBook || (this.searchedBooks && this.searchedBooks.length > 0)) {
-                    this.resetBooksView();
+                if (this.bookCard && this.bookCard.classList.contains('visible')) {
+                    this.hideBookCard();
                 }
             }
             return;
@@ -2946,8 +3129,8 @@ class BibleWordMap extends HTMLElement {
                     });
                 }
                 menuItems.push({
-                    icon: '&#128196;',
-                    label: 'Show Info',
+                    icon: '<span style="font-weight:bold;font-family:serif;font-style:italic;font-size:1.1em;">i</span>',
+                    label: 'Book Info & Themes',
                     action: () => {
                         this.hideRadialMenu();
                         let activeBooks = (this.searchedBooks && this.searchedBooks.length > 0)

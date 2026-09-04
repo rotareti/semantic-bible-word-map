@@ -1,5 +1,11 @@
 # Changelog
 
+## [6.5.3] - 2026-09-04
+### Fixed
+- **Mobile Book Card Bottom Sheet & Dismissal:** Transformed the book info window into a responsive bottom sheet modal popup on mobile (max-height 56vh) with slide transitions and drag indicator handle, leaving the top 44% of the screen open to view the active book constellation.
+- **Preserved Word Constellation on Card Dismiss:** Closing the book window or tapping the canvas outside now dismisses only the card (`hideBookCard`), allowing full interaction with the active words and links instead of resetting the map.
+- **Card Actions & Radial Menu Re-open:** Added explicit "Explore Map" and "< Show All Books" actions to the card. When the card is dismissed, a floating `[ i Book Info ]` chip appears to reopen it anytime, and clicking the book node provides a "Book Info & Themes" option in its radial menu.
+
 ## [6.5.2] - 2026-09-03
 ### Added
 - **Books View Loading Screen & Book Tips:** Added a dedicated loading screen for the Books view with genre-colored floating particle physics and rotating book tips when fetching `bookmap_2d.json`.
