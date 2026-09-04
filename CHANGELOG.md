@@ -1,5 +1,13 @@
 # Changelog
 
+## [6.7.0] - 2026-09-04
+### Added
+- **Canon Usage Radial Option:** Added a Canon Usage option (`📊`) to the word radial menu for words on the Word Map and words connected to books on the Book Map.
+- **Canon Usage Modal Window:** Created a modal window displaying total Biblical occurrences and coverage across all 66 books with three analytical tabs:
+  - **By Book Tab:** Visual horizontal bar graph showing word occurrences per book, color-coded by literary genre, with controls to toggle between occurring books and all 66 books, plus canonical and frequency sorting.
+  - **By Literature Tab:** Bar graph aggregating word usage across the 9 standard Biblical literary genres (Law, History, Wisdom & Poetry, Major Prophets, Minor Prophets, Gospels, Pauline Epistles, General Epistles, Apocalypse) with book coverage and percentages.
+  - **OT vs NT Tab:** Dynamic SVG Donut chart displaying total verses and distribution ratio, alongside detailed comparison cards for Old and New Testament occurrences, coverage breadth, and top books.
+
 ## [6.6.0] - 2026-09-04
 ### Added
 - **Mobile Book Bottom Sheet:** Transformed the book info window into a responsive bottom sheet popup on mobile (capped at 56vh) with slide animations and drag handle, preserving map visibility.

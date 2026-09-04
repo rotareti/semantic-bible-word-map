@@ -2,6 +2,7 @@ const GENRE_COLORS = {
     'Law': '#3b82f6',
     'History': '#10b981',
     'Wisdom': '#f59e0b',
+    'Wisdom & Poetry': '#f59e0b',
     'Major Prophets': '#8b5cf6',
     'Minor Prophets': '#ec4899',
     'Gospels': '#ef4444',
@@ -9,6 +10,75 @@ const GENRE_COLORS = {
     'General Epistles': '#14b8a6',
     'Apocalypse': '#e11d48'
 };
+
+const BIBLE_BOOKS = [
+    { order: 1, code: 'GEN', name: 'Genesis', testament: 'OT', genre: 'Law' },
+    { order: 2, code: 'EXO', name: 'Exodus', testament: 'OT', genre: 'Law' },
+    { order: 3, code: 'LEV', name: 'Leviticus', testament: 'OT', genre: 'Law' },
+    { order: 4, code: 'NUM', name: 'Numbers', testament: 'OT', genre: 'Law' },
+    { order: 5, code: 'DEU', name: 'Deuteronomy', testament: 'OT', genre: 'Law' },
+    { order: 6, code: 'JOS', name: 'Joshua', testament: 'OT', genre: 'History' },
+    { order: 7, code: 'JDG', name: 'Judges', testament: 'OT', genre: 'History' },
+    { order: 8, code: 'RUT', name: 'Ruth', testament: 'OT', genre: 'History' },
+    { order: 9, code: '1SA', name: '1 Samuel', testament: 'OT', genre: 'History' },
+    { order: 10, code: '2SA', name: '2 Samuel', testament: 'OT', genre: 'History' },
+    { order: 11, code: '1KI', name: '1 Kings', testament: 'OT', genre: 'History' },
+    { order: 12, code: '2KI', name: '2 Kings', testament: 'OT', genre: 'History' },
+    { order: 13, code: '1CH', name: '1 Chronicles', testament: 'OT', genre: 'History' },
+    { order: 14, code: '2CH', name: '2 Chronicles', testament: 'OT', genre: 'History' },
+    { order: 15, code: 'EZR', name: 'Ezra', testament: 'OT', genre: 'History' },
+    { order: 16, code: 'NEH', name: 'Nehemiah', testament: 'OT', genre: 'History' },
+    { order: 17, code: 'EST', name: 'Esther', testament: 'OT', genre: 'History' },
+    { order: 18, code: 'JOB', name: 'Job', testament: 'OT', genre: 'Wisdom' },
+    { order: 19, code: 'PSA', name: 'Psalms', testament: 'OT', genre: 'Wisdom' },
+    { order: 20, code: 'PRO', name: 'Proverbs', testament: 'OT', genre: 'Wisdom' },
+    { order: 21, code: 'ECC', name: 'Ecclesiastes', testament: 'OT', genre: 'Wisdom' },
+    { order: 22, code: 'SNG', name: 'Song of Solomon', testament: 'OT', genre: 'Wisdom' },
+    { order: 23, code: 'ISA', name: 'Isaiah', testament: 'OT', genre: 'Major Prophets' },
+    { order: 24, code: 'JER', name: 'Jeremiah', testament: 'OT', genre: 'Major Prophets' },
+    { order: 25, code: 'LAM', name: 'Lamentations', testament: 'OT', genre: 'Major Prophets' },
+    { order: 26, code: 'EZK', name: 'Ezekiel', testament: 'OT', genre: 'Major Prophets' },
+    { order: 27, code: 'DAN', name: 'Daniel', testament: 'OT', genre: 'Major Prophets' },
+    { order: 28, code: 'HOS', name: 'Hosea', testament: 'OT', genre: 'Minor Prophets' },
+    { order: 29, code: 'JOL', name: 'Joel', testament: 'OT', genre: 'Minor Prophets' },
+    { order: 30, code: 'AMO', name: 'Amos', testament: 'OT', genre: 'Minor Prophets' },
+    { order: 31, code: 'OBA', name: 'Obadiah', testament: 'OT', genre: 'Minor Prophets' },
+    { order: 32, code: 'JON', name: 'Jonah', testament: 'OT', genre: 'Minor Prophets' },
+    { order: 33, code: 'MIC', name: 'Micah', testament: 'OT', genre: 'Minor Prophets' },
+    { order: 34, code: 'NAM', name: 'Nahum', testament: 'OT', genre: 'Minor Prophets' },
+    { order: 35, code: 'HAB', name: 'Habakkuk', testament: 'OT', genre: 'Minor Prophets' },
+    { order: 36, code: 'ZEP', name: 'Zephaniah', testament: 'OT', genre: 'Minor Prophets' },
+    { order: 37, code: 'HAG', name: 'Haggai', testament: 'OT', genre: 'Minor Prophets' },
+    { order: 38, code: 'ZEC', name: 'Zechariah', testament: 'OT', genre: 'Minor Prophets' },
+    { order: 39, code: 'MAL', name: 'Malachi', testament: 'OT', genre: 'Minor Prophets' },
+    { order: 40, code: 'MAT', name: 'Matthew', testament: 'NT', genre: 'Gospels' },
+    { order: 41, code: 'MRK', name: 'Mark', testament: 'NT', genre: 'Gospels' },
+    { order: 42, code: 'LUK', name: 'Luke', testament: 'NT', genre: 'Gospels' },
+    { order: 43, code: 'JHN', name: 'John', testament: 'NT', genre: 'Gospels' },
+    { order: 44, code: 'ACT', name: 'Acts', testament: 'NT', genre: 'History' },
+    { order: 45, code: 'ROM', name: 'Romans', testament: 'NT', genre: 'Pauline Epistles' },
+    { order: 46, code: '1CO', name: '1 Corinthians', testament: 'NT', genre: 'Pauline Epistles' },
+    { order: 47, code: '2CO', name: '2 Corinthians', testament: 'NT', genre: 'Pauline Epistles' },
+    { order: 48, code: 'GAL', name: 'Galatians', testament: 'NT', genre: 'Pauline Epistles' },
+    { order: 49, code: 'EPH', name: 'Ephesians', testament: 'NT', genre: 'Pauline Epistles' },
+    { order: 50, code: 'PHP', name: 'Philippians', testament: 'NT', genre: 'Pauline Epistles' },
+    { order: 51, code: 'COL', name: 'Colossians', testament: 'NT', genre: 'Pauline Epistles' },
+    { order: 52, code: '1TH', name: '1 Thessalonians', testament: 'NT', genre: 'Pauline Epistles' },
+    { order: 53, code: '2TH', name: '2 Thessalonians', testament: 'NT', genre: 'Pauline Epistles' },
+    { order: 54, code: '1TI', name: '1 Timothy', testament: 'NT', genre: 'Pauline Epistles' },
+    { order: 55, code: '2TI', name: '2 Timothy', testament: 'NT', genre: 'Pauline Epistles' },
+    { order: 56, code: 'TIT', name: 'Titus', testament: 'NT', genre: 'Pauline Epistles' },
+    { order: 57, code: 'PHM', name: 'Philemon', testament: 'NT', genre: 'Pauline Epistles' },
+    { order: 58, code: 'HEB', name: 'Hebrews', testament: 'NT', genre: 'General Epistles' },
+    { order: 59, code: 'JAS', name: 'James', testament: 'NT', genre: 'General Epistles' },
+    { order: 60, code: '1PE', name: '1 Peter', testament: 'NT', genre: 'General Epistles' },
+    { order: 61, code: '2PE', name: '2 Peter', testament: 'NT', genre: 'General Epistles' },
+    { order: 62, code: '1JN', name: '1 John', testament: 'NT', genre: 'General Epistles' },
+    { order: 63, code: '2JN', name: '2 John', testament: 'NT', genre: 'General Epistles' },
+    { order: 64, code: '3JN', name: '3 John', testament: 'NT', genre: 'General Epistles' },
+    { order: 65, code: 'JUD', name: 'Jude', testament: 'NT', genre: 'General Epistles' },
+    { order: 66, code: 'REV', name: 'Revelation', testament: 'NT', genre: 'Apocalypse' }
+];
 
 class BibleWordMap extends HTMLElement {
     constructor() {
@@ -903,6 +973,390 @@ class BibleWordMap extends HTMLElement {
                         font-size: 0.8em;
                     }
                 }
+
+                /* Canon Usage Modal Styles */
+                .bwm-canon-backdrop {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.45);
+                    backdrop-filter: blur(4px);
+                    -webkit-backdrop-filter: blur(4px);
+                    z-index: 10050;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    opacity: 0;
+                    pointer-events: none;
+                    transition: opacity 0.2s ease;
+                }
+                .bwm-canon-backdrop.visible {
+                    opacity: 1;
+                    pointer-events: auto;
+                }
+                .bwm-canon-dialog {
+                    background-color: rgba(255, 255, 255, 0.96);
+                    background-color: color-mix(in srgb, var(--bwm-bg) 96%, transparent);
+                    backdrop-filter: blur(16px);
+                    -webkit-backdrop-filter: blur(16px);
+                    border: 1px solid var(--bwm-border);
+                    border-radius: 14px;
+                    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+                    width: 620px;
+                    max-width: calc(100% - 24px);
+                    max-height: calc(100% - 40px);
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
+                    transform: scale(0.96);
+                    transition: transform 0.2s ease;
+                    box-sizing: border-box;
+                    color: var(--bwm-text);
+                    font-family: var(--bwm-font);
+                }
+                .bwm-canon-backdrop.visible .bwm-canon-dialog {
+                    transform: scale(1);
+                }
+                .bwm-canon-header {
+                    padding: 14px 16px 12px 16px;
+                    border-bottom: 1px solid var(--bwm-border);
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    background: color-mix(in srgb, var(--bwm-bg) 98%, transparent);
+                }
+                .bwm-canon-title-row {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: 12px;
+                }
+                .bwm-canon-title-group {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    flex-wrap: wrap;
+                }
+                .bwm-canon-word {
+                    font-size: 1.25em;
+                    font-weight: 700;
+                    color: var(--bwm-text);
+                }
+                .bwm-canon-pos {
+                    font-size: 0.85em;
+                    color: var(--bwm-text-muted);
+                }
+                .bwm-canon-badge {
+                    background: var(--bwm-node-hover);
+                    color: #ffffff;
+                    padding: 3px 8px;
+                    border-radius: 12px;
+                    font-size: 0.75em;
+                    font-weight: 600;
+                    letter-spacing: 0.2px;
+                }
+                .bwm-canon-subbadge {
+                    background: var(--bwm-badge-bg);
+                    color: var(--bwm-text);
+                    border: 1px solid var(--bwm-border);
+                    padding: 2px 7px;
+                    border-radius: 10px;
+                    font-size: 0.75em;
+                    font-weight: 500;
+                }
+                .bwm-canon-close {
+                    background: transparent;
+                    border: none;
+                    font-size: 1.4em;
+                    line-height: 1;
+                    cursor: pointer;
+                    opacity: 0.55;
+                    color: var(--bwm-text);
+                    padding: 4px;
+                    border-radius: 6px;
+                    transition: opacity 0.15s, background-color 0.15s;
+                }
+                .bwm-canon-close:hover {
+                    opacity: 1;
+                    background: var(--bwm-badge-bg);
+                }
+                .bwm-canon-tabs {
+                    display: flex;
+                    gap: 6px;
+                    border-bottom: 1px solid var(--bwm-border);
+                    padding: 0 16px;
+                    background: color-mix(in srgb, var(--bwm-bg) 95%, transparent);
+                }
+                .bwm-canon-tab-btn {
+                    background: transparent;
+                    border: none;
+                    border-bottom: 2px solid transparent;
+                    padding: 9px 14px;
+                    font-size: 0.88em;
+                    font-weight: 600;
+                    color: var(--bwm-text-muted);
+                    cursor: pointer;
+                    font-family: var(--bwm-font);
+                    transition: color 0.15s, border-color 0.15s;
+                }
+                .bwm-canon-tab-btn:hover {
+                    color: var(--bwm-text);
+                }
+                .bwm-canon-tab-btn.active {
+                    color: var(--bwm-node-hover);
+                    border-bottom-color: var(--bwm-node-hover);
+                }
+                .bwm-canon-body {
+                    padding: 14px 16px;
+                    overflow-y: auto;
+                    flex: 1;
+                    min-height: 0;
+                }
+                .bwm-canon-controls {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: 8px;
+                    margin-bottom: 12px;
+                    flex-wrap: wrap;
+                    font-size: 0.82em;
+                }
+                .bwm-canon-filter-group {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+                .bwm-canon-pill-btn {
+                    background: var(--bwm-btn-bg);
+                    border: 1px solid var(--bwm-border);
+                    color: var(--bwm-text-muted);
+                    padding: 4px 10px;
+                    border-radius: 12px;
+                    cursor: pointer;
+                    font-size: 0.9em;
+                    font-family: var(--bwm-font);
+                    transition: all 0.15s ease;
+                }
+                .bwm-canon-pill-btn:hover {
+                    background: var(--bwm-btn-hover);
+                    color: var(--bwm-text);
+                }
+                .bwm-canon-pill-btn.active {
+                    background: var(--bwm-node-hover);
+                    color: #ffffff;
+                    border-color: var(--bwm-node-hover);
+                    font-weight: 600;
+                }
+                .bwm-canon-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                }
+                .bwm-canon-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    padding: 5px 8px;
+                    border-radius: 6px;
+                    transition: background-color 0.12s ease;
+                }
+                .bwm-canon-row:hover {
+                    background: var(--bwm-badge-bg);
+                }
+                .bwm-canon-row-book {
+                    width: 130px;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: 0.86em;
+                    flex-shrink: 0;
+                }
+                .bwm-canon-row-order {
+                    font-family: monospace;
+                    font-size: 0.8em;
+                    color: var(--bwm-text-muted);
+                    width: 18px;
+                    text-align: right;
+                }
+                .bwm-canon-row-name {
+                    font-weight: 600;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+                .bwm-canon-row-genre-dot {
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 50%;
+                    flex-shrink: 0;
+                }
+                .bwm-canon-row-track {
+                    flex: 1;
+                    height: 14px;
+                    background: var(--bwm-badge-bg);
+                    border-radius: 7px;
+                    overflow: hidden;
+                    position: relative;
+                }
+                .bwm-canon-row-fill {
+                    height: 100%;
+                    border-radius: 7px;
+                    transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                .bwm-canon-row-stats {
+                    width: 85px;
+                    display: flex;
+                    justify-content: flex-end;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: 0.82em;
+                    flex-shrink: 0;
+                    font-variant-numeric: tabular-nums;
+                }
+                .bwm-canon-row-count {
+                    font-weight: 700;
+                    color: var(--bwm-text);
+                }
+                .bwm-canon-row-pct {
+                    color: var(--bwm-text-muted);
+                    font-size: 0.9em;
+                }
+                .bwm-canon-genre-card {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    padding: 8px 10px;
+                    background: var(--bwm-badge-bg);
+                    border: 1px solid var(--bwm-border);
+                    border-radius: 8px;
+                    margin-bottom: 8px;
+                }
+                .bwm-canon-genre-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    font-size: 0.86em;
+                }
+                .bwm-canon-genre-title {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-weight: 600;
+                }
+                .bwm-canon-genre-pill {
+                    padding: 2px 7px;
+                    border-radius: 10px;
+                    font-size: 0.75em;
+                    font-weight: 700;
+                    color: #ffffff;
+                }
+                .bwm-canon-genre-meta {
+                    font-size: 0.82em;
+                    color: var(--bwm-text-muted);
+                }
+                .bwm-canon-genre-bar-wrap {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+                .bwm-canon-genre-track {
+                    flex: 1;
+                    height: 16px;
+                    background: rgba(0, 0, 0, 0.08);
+                    border-radius: 8px;
+                    overflow: hidden;
+                }
+                .bwm-canon-genre-fill {
+                    height: 100%;
+                    border-radius: 8px;
+                    transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                .bwm-canon-genre-stat {
+                    font-size: 0.86em;
+                    font-weight: 700;
+                    min-width: 90px;
+                    text-align: right;
+                    font-variant-numeric: tabular-nums;
+                }
+                .bwm-canon-testament-layout {
+                    display: flex;
+                    gap: 20px;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 10px 0;
+                    flex-wrap: wrap;
+                }
+                .bwm-canon-donut-wrap {
+                    position: relative;
+                    width: 160px;
+                    height: 160px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                }
+                .bwm-canon-cards-col {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    flex: 1;
+                    min-width: 240px;
+                }
+                .bwm-canon-testament-card {
+                    padding: 12px 14px;
+                    border-radius: 10px;
+                    border: 1px solid var(--bwm-border);
+                    background: var(--bwm-badge-bg);
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                }
+                .bwm-canon-testament-head {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+                .bwm-canon-testament-tag {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-weight: 700;
+                    font-size: 0.9em;
+                }
+                .bwm-canon-testament-dot {
+                    width: 10px;
+                    height: 10px;
+                    border-radius: 50%;
+                }
+                .bwm-canon-testament-val {
+                    font-weight: 700;
+                    font-size: 1.05em;
+                    font-variant-numeric: tabular-nums;
+                }
+                .bwm-canon-testament-desc {
+                    font-size: 0.82em;
+                    color: var(--bwm-text-muted);
+                    line-height: 1.4;
+                }
+                @media (max-width: 640px) {
+                    .bwm-canon-backdrop {
+                        align-items: flex-end;
+                    }
+                    .bwm-canon-dialog {
+                        width: 100%;
+                        max-width: 100%;
+                        max-height: 85vh;
+                        border-radius: 16px 16px 0 0;
+                    }
+                    .bwm-canon-row-book {
+                        width: 105px;
+                    }
+                    .bwm-canon-testament-layout {
+                        flex-direction: column;
+                    }
+                }
             </style>
             <div class="bwm-container">
                 <div class="bwm-top-bar">
@@ -980,6 +1434,7 @@ class BibleWordMap extends HTMLElement {
                 <div class="bwm-radial-menu" id="bwm-radial-menu"></div>
                 <div class="bwm-verses-panel" id="bwm-verses-panel"></div>
                 <div class="bwm-book-card" id="bwm-book-card"></div>
+                <div class="bwm-canon-modal" id="bwm-canon-modal" style="display: none;"></div>
             </div>
         `;
     }
@@ -997,6 +1452,7 @@ class BibleWordMap extends HTMLElement {
         this.loadingCanvas = this.querySelector('.bwm-loading-canvas');
         this.loadingTip = this.querySelector('.bwm-loading-tip');
         this.bookCard = this.querySelector('#bwm-book-card');
+        this.canonModal = this.querySelector('#bwm-canon-modal');
         this.reopenBtn = this.querySelector('#bwm-book-card-reopen');
         if (this.reopenBtn) {
             this.reopenBtn.addEventListener('click', (e) => {
@@ -1608,6 +2064,7 @@ class BibleWordMap extends HTMLElement {
         window.history.replaceState(null, '', window.location.pathname);
         this.hideRadialMenu();
         this.hideVersesPanel();
+        this.hideCanonUsageModal();
         this.buildAllWordsGraph();
     }
 
@@ -2117,6 +2574,7 @@ class BibleWordMap extends HTMLElement {
 
         this.hideRadialMenu();
         this.hideVersesPanel();
+        this.hideCanonUsageModal();
         this.hoveredNode = null;
         this.selectedBook = null;
         this.hideBookCard();
@@ -2557,6 +3015,7 @@ class BibleWordMap extends HTMLElement {
         this.renderActiveWords();
         this.hideRadialMenu();
         this.hideVersesPanel();
+        this.hideCanonUsageModal();
         this.hideBookCard();
         if (this.reopenBtn) {
             this.reopenBtn.style.display = 'none';
@@ -3119,6 +3578,7 @@ class BibleWordMap extends HTMLElement {
     showRadialMenu(node, mouseX, mouseY) {
         this.hideRadialMenu();
         this.hideVersesPanel();
+        this.hideCanonUsageModal();
         this.radialMenuNode = node;
         this.hoveredNode = node;
         this.draw();
@@ -3194,6 +3654,14 @@ class BibleWordMap extends HTMLElement {
                     }
                 });
                 menuItems.push({ icon: '\u{1F4D6}', label: 'Verses', action: () => { this.hideRadialMenu(); this.showVersesPanel(node, screenX, screenY); } });
+                menuItems.push({
+                    icon: '&#128202;',
+                    label: 'Canon Usage',
+                    action: () => {
+                        this.hideRadialMenu();
+                        this.showCanonUsageModal(node);
+                    }
+                });
                 if (node.original && node.original.length > 0) {
                     menuItems.push({ icon: '<span style="font-size:0.7em;font-weight:bold;">α/א</span>', label: 'Original Language', action: () => { this.hideRadialMenu(); this.showOriginalLangPanel(node, screenX, screenY); } });
                 }
@@ -3205,13 +3673,21 @@ class BibleWordMap extends HTMLElement {
                 menuItems.push({ icon: '+', label: 'Add keyword', action: () => { this.hideRadialMenu(); this.addKeyword(node.id); } });
             }
             menuItems.push({ icon: '\u{1F4D6}', label: 'Verses', action: () => { this.hideRadialMenu(); this.showVersesPanel(node, screenX, screenY); } });
+            menuItems.push({
+                icon: '&#128202;',
+                label: 'Canon Usage',
+                action: () => {
+                    this.hideRadialMenu();
+                    this.showCanonUsageModal(node);
+                }
+            });
             if (node.original && node.original.length > 0) {
                 menuItems.push({ icon: '<span style="font-size:0.7em;font-weight:bold;">α/א</span>', label: 'Original Language', action: () => { this.hideRadialMenu(); this.showOriginalLangPanel(node, screenX, screenY); } });
             }
         }
         
         this.radialMenu.innerHTML = '';
-        let radius = 45;
+        let radius = menuItems.length >= 5 ? 52 : (menuItems.length >= 4 ? 48 : 45);
         let startAngle = -Math.PI / 2; // start from top
         let angleStep = (2 * Math.PI) / menuItems.length;
         
@@ -3259,6 +3735,7 @@ class BibleWordMap extends HTMLElement {
     }
 
     showVersesPanel(node, anchorX, anchorY) {
+        this.hideCanonUsageModal();
         let displayW = this.formatWord(node.w, node.pos);
         
         let headerHtml = `<div class="bwm-verses-header">`;
@@ -3457,6 +3934,7 @@ class BibleWordMap extends HTMLElement {
         }
     }
     showOriginalLangPanel(node, anchorX, anchorY) {
+        this.hideCanonUsageModal();
         let displayW = this.formatWord(node.w, node.pos);
         
         let headerHtml = `<div class="bwm-verses-header">`;
@@ -3555,6 +4033,456 @@ class BibleWordMap extends HTMLElement {
             closeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.hideVersesPanel();
+            });
+        }
+    }
+
+    hideCanonUsageModal() {
+        if (this.canonEscHandler) {
+            document.removeEventListener('keydown', this.canonEscHandler);
+            this.canonEscHandler = null;
+        }
+        if (this.canonModal) {
+            this.canonModal.classList.remove('visible');
+            this.canonModal.style.display = 'none';
+            this.canonModal.innerHTML = '';
+        }
+        this.canonModalNode = null;
+    }
+
+    async showCanonUsageModal(node) {
+        if (!node) return;
+        this.hideRadialMenu();
+        this.hideVersesPanel();
+        this.canonModalNode = node;
+        
+        if (!this.canonModal) {
+            this.canonModal = this.querySelector('#bwm-canon-modal');
+        }
+        if (!this.canonModal) return;
+
+        let displayW = this.formatWord(node.w, node.pos);
+
+        if (this.canonEscHandler) {
+            document.removeEventListener('keydown', this.canonEscHandler);
+        }
+        this.canonEscHandler = (e) => {
+            if (e.key === 'Escape') {
+                this.hideCanonUsageModal();
+            }
+        };
+        document.addEventListener('keydown', this.canonEscHandler);
+
+        // If verses are still loading, show loading skeleton
+        if (!this.wordToVerses || !this.verses) {
+            this.canonModal.style.display = 'block';
+            this.canonModal.innerHTML = `
+                <div class="bwm-canon-backdrop visible" id="bwm-canon-backdrop">
+                    <div class="bwm-canon-dialog">
+                        <div class="bwm-canon-header">
+                            <div class="bwm-canon-title-row">
+                                <div class="bwm-canon-title-group">
+                                    <span class="bwm-canon-word">${displayW}</span>
+                                    ${node.pos ? `<span class="bwm-canon-pos">(${node.pos.toLowerCase()})</span>` : ''}
+                                </div>
+                                <button type="button" class="bwm-canon-close" id="bwm-canon-close" title="Close window">&times;</button>
+                            </div>
+                        </div>
+                        <div class="bwm-canon-body" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 20px;">
+                            <span class="bwm-loading-spinner" style="width:24px; height:24px; border-width:3px; margin-bottom:12px;"></span>
+                            <div style="font-size:0.9em; color:var(--bwm-text-muted);">Loading canon verse statistics...</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            const closeBtn = this.canonModal.querySelector('#bwm-canon-close');
+            if (closeBtn) closeBtn.addEventListener('click', () => this.hideCanonUsageModal());
+            const backdrop = this.canonModal.querySelector('#bwm-canon-backdrop');
+            if (backdrop) backdrop.addEventListener('click', (e) => {
+                if (e.target === backdrop) this.hideCanonUsageModal();
+            });
+
+            if (this.versesPromise) {
+                const vData = await this.versesPromise;
+                if (vData) {
+                    this.verses = vData.verses;
+                    this.wordToVerses = vData.words;
+                }
+            }
+        }
+
+        if (this.canonModalNode !== node) return;
+
+        let vIds = (this.wordToVerses && this.wordToVerses[node.id]) ? this.wordToVerses[node.id] : [];
+        let totalOccurrences = vIds.length;
+
+        // Count occurrences per book code
+        const bookCounts = {};
+        for (let i = 0; i < vIds.length; i++) {
+            const vid = vIds[i];
+            const vStr = this.verses ? this.verses[vid] : null;
+            if (vStr) {
+                const code = vStr.split(' ')[0];
+                bookCounts[code] = (bookCounts[code] || 0) + 1;
+            }
+        }
+
+        const GENRE_LABELS = {
+            'Law': 'Law (Pentateuch)',
+            'History': 'History',
+            'Wisdom': 'Wisdom & Poetry',
+            'Major Prophets': 'Major Prophets',
+            'Minor Prophets': 'Minor Prophets',
+            'Gospels': 'Gospels',
+            'Pauline Epistles': 'Pauline Epistles',
+            'General Epistles': 'General Epistles',
+            'Apocalypse': 'Apocalypse'
+        };
+        const GENRE_ORDER = [
+            'Law',
+            'History',
+            'Wisdom',
+            'Major Prophets',
+            'Minor Prophets',
+            'Gospels',
+            'Pauline Epistles',
+            'General Epistles',
+            'Apocalypse'
+        ];
+
+        const genreStats = {};
+        GENRE_ORDER.forEach(g => {
+            genreStats[g] = { count: 0, booksTotal: 0, booksWithOcc: 0 };
+        });
+
+        let otCount = 0;
+        let ntCount = 0;
+        let otBooksWithOcc = 0;
+        let ntBooksWithOcc = 0;
+        let otTopBook = null;
+        let ntTopBook = null;
+
+        BIBLE_BOOKS.forEach(b => {
+            const g = b.genre;
+            const c = bookCounts[b.code] || 0;
+            if (genreStats[g]) {
+                genreStats[g].booksTotal++;
+                genreStats[g].count += c;
+                if (c > 0) genreStats[g].booksWithOcc++;
+            }
+            if (b.testament === 'OT') {
+                otCount += c;
+                if (c > 0) {
+                    otBooksWithOcc++;
+                    if (!otTopBook || c > otTopBook.count) otTopBook = { name: b.name, code: b.code, count: c };
+                }
+            } else {
+                ntCount += c;
+                if (c > 0) {
+                    ntBooksWithOcc++;
+                    if (!ntTopBook || c > ntTopBook.count) ntTopBook = { name: b.name, code: b.code, count: c };
+                }
+            }
+        });
+
+        const totalBooksWithOcc = Object.keys(bookCounts).length;
+        let bookFilter = 'occurring';
+        let bookSort = 'canonical';
+
+        const renderBookBars = (filterMode, sortMode) => {
+            let booksToShow = BIBLE_BOOKS.map(b => {
+                const count = bookCounts[b.code] || 0;
+                const pct = totalOccurrences > 0 ? ((count / totalOccurrences) * 100).toFixed(1) : '0.0';
+                return { ...b, count, pct: parseFloat(pct) };
+            });
+
+            if (filterMode === 'occurring') {
+                booksToShow = booksToShow.filter(b => b.count > 0);
+            }
+
+            if (sortMode === 'freq') {
+                booksToShow.sort((a, b) => b.count - a.count || a.order - b.order);
+            } else {
+                booksToShow.sort((a, b) => a.order - b.order);
+            }
+
+            if (booksToShow.length === 0) {
+                return `<div class="bwm-empty-state" style="padding: 24px; text-align: center;">No occurrences found across Biblical books.</div>`;
+            }
+
+            const maxCount = booksToShow.reduce((m, b) => Math.max(m, b.count), 1);
+
+            return booksToShow.map(b => {
+                const widthPct = maxCount > 0 ? Math.max((b.count / maxCount) * 100, b.count > 0 ? 2 : 0) : 0;
+                const color = GENRE_COLORS[b.genre] || '#3b82f6';
+                const isZero = b.count === 0;
+                const opacityStyle = isZero ? 'opacity: 0.45;' : '';
+                return `
+                    <div class="bwm-canon-row" style="${opacityStyle}" title="${b.name} (${b.testament}, ${b.genre}): ${b.count} verse${b.count === 1 ? '' : 's'} (${b.pct}%)">
+                        <div class="bwm-canon-row-book">
+                            <span class="bwm-canon-row-order">${b.order}</span>
+                            <span class="bwm-canon-row-genre-dot" style="background: ${color};"></span>
+                            <span class="bwm-canon-row-name">${b.name}</span>
+                        </div>
+                        <div class="bwm-canon-row-track">
+                            <div class="bwm-canon-row-fill" style="width: ${widthPct}%; background: ${color};"></div>
+                        </div>
+                        <div class="bwm-canon-row-stats">
+                            <span class="bwm-canon-row-count">${b.count}</span>
+                            <span class="bwm-canon-row-pct">${b.pct}%</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        };
+
+        const maxGenreCount = GENRE_ORDER.reduce((m, g) => Math.max(m, genreStats[g].count), 1);
+        const genreHtml = GENRE_ORDER.map(g => {
+            const stats = genreStats[g];
+            const pct = totalOccurrences > 0 ? ((stats.count / totalOccurrences) * 100).toFixed(1) : '0.0';
+            const barWidth = maxGenreCount > 0 ? Math.max((stats.count / maxGenreCount) * 100, stats.count > 0 ? 2 : 0) : 0;
+            const color = GENRE_COLORS[g] || '#3b82f6';
+            const label = GENRE_LABELS[g] || g;
+            const isZero = stats.count === 0;
+            const opacityStyle = isZero ? 'opacity: 0.5;' : '';
+
+            return `
+                <div class="bwm-canon-genre-card" style="${opacityStyle}">
+                    <div class="bwm-canon-genre-header">
+                        <div class="bwm-canon-genre-title">
+                            <span class="bwm-canon-genre-pill" style="background: ${color};">${label}</span>
+                            <span class="bwm-canon-genre-meta">in ${stats.booksWithOcc} of ${stats.booksTotal} books (${((stats.booksWithOcc / stats.booksTotal) * 100).toFixed(0)}%)</span>
+                        </div>
+                        <div class="bwm-canon-genre-stat">
+                            <span>${stats.count}</span>
+                            <span style="font-size:0.85em; font-weight:normal; color:var(--bwm-text-muted); margin-left:4px;">(${pct}%)</span>
+                        </div>
+                    </div>
+                    <div class="bwm-canon-genre-bar-wrap">
+                        <div class="bwm-canon-genre-track">
+                            <div class="bwm-canon-genre-fill" style="width: ${barWidth}%; background: ${color};"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        const r = 58;
+        const C = 2 * Math.PI * r;
+        const otPct = totalOccurrences > 0 ? ((otCount / totalOccurrences) * 100) : 0;
+        const ntPct = totalOccurrences > 0 ? ((ntCount / totalOccurrences) * 100) : 0;
+        const otLen = (otPct / 100) * C;
+        const ntLen = (ntPct / 100) * C;
+
+        let donutSvg = '';
+        if (totalOccurrences === 0) {
+            donutSvg = `
+                <svg width="160" height="160" viewBox="0 0 160 160">
+                    <circle cx="80" cy="80" r="${r}" fill="none" stroke="var(--bwm-border)" stroke-width="20" opacity="0.4" />
+                    <text x="80" y="85" text-anchor="middle" font-size="22" font-weight="700" fill="var(--bwm-text)">0</text>
+                    <text x="80" y="102" text-anchor="middle" font-size="10" fill="var(--bwm-text-muted)" font-weight="600">VERSES</text>
+                </svg>
+            `;
+        } else {
+            donutSvg = `
+                <svg width="160" height="160" viewBox="0 0 160 160">
+                    <circle cx="80" cy="80" r="${r}" fill="none" stroke="var(--bwm-border)" stroke-width="20" opacity="0.2" />
+                    ${otCount > 0 ? `
+                    <circle cx="80" cy="80" r="${r}" fill="none" stroke="#3b82f6" stroke-width="20"
+                            stroke-dasharray="${otLen} ${C}" stroke-dashoffset="0"
+                            transform="rotate(-90 80 80)" />
+                    ` : ''}
+                    ${ntCount > 0 ? `
+                    <circle cx="80" cy="80" r="${r}" fill="none" stroke="#10b981" stroke-width="20"
+                            stroke-dasharray="${ntLen} ${C}" stroke-dashoffset="-${otLen}"
+                            transform="rotate(-90 80 80)" />
+                    ` : ''}
+                    <text x="80" y="84" text-anchor="middle" font-size="22" font-weight="700" fill="var(--bwm-text)">${totalOccurrences}</text>
+                    <text x="80" y="100" text-anchor="middle" font-size="10" fill="var(--bwm-text-muted)" font-weight="600">VERSES</text>
+                </svg>
+            `;
+        }
+
+        let testamentHtml = `
+            <div class="bwm-canon-testament-layout">
+                <div class="bwm-canon-donut-wrap">
+                    ${donutSvg}
+                </div>
+                <div class="bwm-canon-cards-col">
+                    <div class="bwm-canon-testament-card" style="border-left: 4px solid #3b82f6;">
+                        <div class="bwm-canon-testament-head">
+                            <div class="bwm-canon-testament-tag">
+                                <span class="bwm-canon-testament-dot" style="background: #3b82f6;"></span>
+                                <span>Old Testament</span>
+                            </div>
+                            <div class="bwm-canon-testament-val">${otCount} <span style="font-size:0.8em; font-weight:normal; color:var(--bwm-text-muted);">(${otPct.toFixed(1)}%)</span></div>
+                        </div>
+                        <div class="bwm-canon-testament-desc">
+                            Appears in <b>${otBooksWithOcc}</b> of 39 books (${((otBooksWithOcc / 39) * 100).toFixed(0)}%)<br/>
+                            ${otTopBook ? `Top book: <b>${otTopBook.name}</b> (${otTopBook.count} verses)` : 'No occurrences in Old Testament'}
+                        </div>
+                    </div>
+                    <div class="bwm-canon-testament-card" style="border-left: 4px solid #10b981;">
+                        <div class="bwm-canon-testament-head">
+                            <div class="bwm-canon-testament-tag">
+                                <span class="bwm-canon-testament-dot" style="background: #10b981;"></span>
+                                <span>New Testament</span>
+                            </div>
+                            <div class="bwm-canon-testament-val">${ntCount} <span style="font-size:0.8em; font-weight:normal; color:var(--bwm-text-muted);">(${ntPct.toFixed(1)}%)</span></div>
+                        </div>
+                        <div class="bwm-canon-testament-desc">
+                            Appears in <b>${ntBooksWithOcc}</b> of 27 books (${((ntBooksWithOcc / 27) * 100).toFixed(0)}%)<br/>
+                            ${ntTopBook ? `Top book: <b>${ntTopBook.name}</b> (${ntTopBook.count} verses)` : 'No occurrences in New Testament'}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top: 14px; padding: 10px 14px; border-radius: 8px; background: var(--bwm-badge-bg); border: 1px solid var(--bwm-border); font-size: 0.84em; color: var(--bwm-text); line-height: 1.45;">
+                ${otCount > 0 && ntCount === 0 ? '<b>Testament Usage:</b> This term is found exclusively in the Old Testament in this translation index.' : ''}
+                ${ntCount > 0 && otCount === 0 ? '<b>Testament Usage:</b> This term is found exclusively in the New Testament in this translation index.' : ''}
+                ${otCount > 0 && ntCount > 0 ? `<b>Testament Usage:</b> This term spans both testaments, with ${otPct >= ntPct ? 'a concentration in the Old Testament' : 'a concentration in the New Testament'} (${otPct.toFixed(1)}% OT vs ${ntPct.toFixed(1)}% NT).` : ''}
+                ${totalOccurrences === 0 ? '<b>Testament Usage:</b> No verse occurrences recorded.' : ''}
+            </div>
+        `;
+
+        this.canonModal.style.display = 'block';
+        this.canonModal.innerHTML = `
+            <div class="bwm-canon-backdrop visible" id="bwm-canon-backdrop">
+                <div class="bwm-canon-dialog" id="bwm-canon-dialog">
+                    <div class="bwm-canon-header">
+                        <div class="bwm-canon-title-row">
+                            <div class="bwm-canon-title-group">
+                                <span class="bwm-canon-word">${displayW}</span>
+                                ${node.pos ? `<span class="bwm-canon-pos">(${node.pos.toLowerCase()})</span>` : ''}
+                                <span class="bwm-canon-badge">${totalOccurrences} occurrence${totalOccurrences === 1 ? '' : 's'}</span>
+                                <span class="bwm-canon-subbadge">in ${totalBooksWithOcc} of 66 books</span>
+                            </div>
+                            <button type="button" class="bwm-canon-close" id="bwm-canon-close" title="Close window">&times;</button>
+                        </div>
+                    </div>
+                    <div class="bwm-canon-tabs">
+                        <button type="button" class="bwm-canon-tab-btn active" data-tab="book">&#128202; By Book</button>
+                        <button type="button" class="bwm-canon-tab-btn" data-tab="genre">&#128218; By Literature</button>
+                        <button type="button" class="bwm-canon-tab-btn" data-tab="testament">&#9878; OT vs NT</button>
+                    </div>
+                    <div class="bwm-canon-body">
+                        <div class="bwm-canon-pane" id="bwm-canon-pane-book">
+                            <div class="bwm-canon-controls">
+                                <div class="bwm-canon-filter-group">
+                                    <span style="font-weight:600; color:var(--bwm-text-muted); margin-right:4px;">Show:</span>
+                                    <button type="button" class="bwm-canon-pill-btn active" id="bwm-canon-filter-occ">Occurring (${totalBooksWithOcc})</button>
+                                    <button type="button" class="bwm-canon-pill-btn" id="bwm-canon-filter-all">All 66 Books</button>
+                                </div>
+                                <div class="bwm-canon-filter-group">
+                                    <span style="font-weight:600; color:var(--bwm-text-muted); margin-right:4px;">Sort:</span>
+                                    <button type="button" class="bwm-canon-pill-btn active" id="bwm-canon-sort-canon">Canonical</button>
+                                    <button type="button" class="bwm-canon-pill-btn" id="bwm-canon-sort-freq">Frequency</button>
+                                </div>
+                            </div>
+                            <div class="bwm-canon-list" id="bwm-canon-book-list">
+                                ${renderBookBars(bookFilter, bookSort)}
+                            </div>
+                        </div>
+                        <div class="bwm-canon-pane" id="bwm-canon-pane-genre" style="display: none;">
+                            <div style="font-size:0.84em; color:var(--bwm-text-muted); margin-bottom:12px;">
+                                Distribution across 9 standard Biblical literary genres:
+                            </div>
+                            <div class="bwm-canon-genre-list">
+                                ${genreHtml}
+                            </div>
+                        </div>
+                        <div class="bwm-canon-pane" id="bwm-canon-pane-testament" style="display: none;">
+                            ${testamentHtml}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const closeBtn = this.canonModal.querySelector('#bwm-canon-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.hideCanonUsageModal();
+            });
+        }
+
+        const backdrop = this.canonModal.querySelector('#bwm-canon-backdrop');
+        if (backdrop) {
+            backdrop.addEventListener('click', (e) => {
+                if (e.target === backdrop) {
+                    this.hideCanonUsageModal();
+                }
+            });
+        }
+
+        const dialog = this.canonModal.querySelector('#bwm-canon-dialog');
+        if (dialog) {
+            dialog.addEventListener('click', (e) => e.stopPropagation());
+            dialog.addEventListener('pointerdown', (e) => e.stopPropagation());
+            dialog.addEventListener('mousedown', (e) => e.stopPropagation());
+            dialog.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+        }
+
+        const tabBtns = this.canonModal.querySelectorAll('.bwm-canon-tab-btn');
+        const panes = {
+            book: this.canonModal.querySelector('#bwm-canon-pane-book'),
+            genre: this.canonModal.querySelector('#bwm-canon-pane-genre'),
+            testament: this.canonModal.querySelector('#bwm-canon-pane-testament')
+        };
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                tabBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const tab = btn.getAttribute('data-tab');
+                Object.keys(panes).forEach(k => {
+                    if (panes[k]) panes[k].style.display = (k === tab ? 'block' : 'none');
+                });
+            });
+        });
+
+        const btnFilterOcc = this.canonModal.querySelector('#bwm-canon-filter-occ');
+        const btnFilterAll = this.canonModal.querySelector('#bwm-canon-filter-all');
+        const btnSortCanon = this.canonModal.querySelector('#bwm-canon-sort-canon');
+        const btnSortFreq = this.canonModal.querySelector('#bwm-canon-sort-freq');
+        const bookListEl = this.canonModal.querySelector('#bwm-canon-book-list');
+
+        const updateBookList = () => {
+            if (bookListEl) bookListEl.innerHTML = renderBookBars(bookFilter, bookSort);
+        };
+
+        if (btnFilterOcc && btnFilterAll) {
+            btnFilterOcc.addEventListener('click', (e) => {
+                e.stopPropagation();
+                bookFilter = 'occurring';
+                btnFilterOcc.classList.add('active');
+                btnFilterAll.classList.remove('active');
+                updateBookList();
+            });
+            btnFilterAll.addEventListener('click', (e) => {
+                e.stopPropagation();
+                bookFilter = 'all';
+                btnFilterAll.classList.add('active');
+                btnFilterOcc.classList.remove('active');
+                updateBookList();
+            });
+        }
+
+        if (btnSortCanon && btnSortFreq) {
+            btnSortCanon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                bookSort = 'canonical';
+                btnSortCanon.classList.add('active');
+                btnSortFreq.classList.remove('active');
+                updateBookList();
+            });
+            btnSortFreq.addEventListener('click', (e) => {
+                e.stopPropagation();
+                bookSort = 'freq';
+                btnSortFreq.classList.add('active');
+                btnSortCanon.classList.remove('active');
+                updateBookList();
             });
         }
     }
