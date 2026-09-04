@@ -7,6 +7,9 @@
   - **By Book Tab:** Visual horizontal bar graph showing word occurrences per book, color-coded by literary genre, with controls to toggle between occurring books and all 66 books, plus canonical and frequency sorting.
   - **By Literature Tab:** Bar graph aggregating word usage across the 9 standard Biblical literary genres (Law, History, Wisdom & Poetry, Major Prophets, Minor Prophets, Gospels, Pauline Epistles, General Epistles, Apocalypse) with book coverage and percentages.
   - **OT vs NT Tab:** Dynamic SVG Donut chart displaying total verses and distribution ratio, alongside detailed comparison cards for Old and New Testament occurrences, coverage breadth, and top books.
+- **Unified Info Window Design System:** Consolidated styles across Book Info, Verses / Original Language panels, and Canon Usage modals into a shared foundational design system with consistent cards, headers, title groups, badges, tabs, and action pills.
+- **Shared Backdrop Blur & Fade:** Introduced a unified backdrop with subtle dark dimming and blur filter behind active info windows, dismissing open windows on outside tap or Escape key.
+- **Responsive Mobile Bottom Sheet & Overflow Fix:** Unified all info windows on mobile screens into responsive bottom sheets with drag handles and sliding transitions, fixing an issue where the Canon Usage window overflowed the viewport and hid header titles and close buttons.
 
 ## [6.6.0] - 2026-09-04
 ### Added

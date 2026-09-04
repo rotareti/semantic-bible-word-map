@@ -342,92 +342,11 @@ class BibleWordMap extends HTMLElement {
                 .bwm-radial-item:hover .bwm-radial-label {
                     opacity: 1;
                 }
-                .bwm-verses-panel {
-                    position: absolute;
-                    background-color: rgba(255, 255, 255, 0.92);
-                    background-color: color-mix(in srgb, var(--bwm-bg) 92%, transparent);
-                    backdrop-filter: blur(14px);
-                    -webkit-backdrop-filter: blur(14px);
-                    color: var(--bwm-text);
-                    border-radius: 10px;
-                    border: 1px solid var(--bwm-border);
-                    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-                    font-size: 0.9em;
-                    line-height: 1.5;
-                    width: 340px;
-                    max-width: calc(100% - 20px);
-                    max-height: 320px;
-                    display: flex;
-                    flex-direction: column;
-                    overflow: hidden;
-                    z-index: 10001;
-                    pointer-events: auto;
-                    opacity: 0;
-                    transition: opacity 0.15s;
-                }
-                .bwm-verses-header {
-                    padding: 12px 14px 0 14px;
-                    border-bottom: 1px solid var(--bwm-border);
-                    flex-shrink: 0;
-                    background: color-mix(in srgb, var(--bwm-bg) 95%, transparent);
-                }
-                .bwm-verses-title {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 8px;
-                }
-                .bwm-verses-tabs {
-                    display: flex;
-                    gap: 16px;
-                    overflow-x: auto;
-                    scrollbar-width: none;
-                }
-                .bwm-verses-tabs::-webkit-scrollbar {
-                    display: none;
-                }
-                .bwm-verses-tab {
-                    padding: 4px 0px;
-                    cursor: pointer;
-                    opacity: 0.6;
-                    border-bottom: 2px solid transparent;
-                    white-space: nowrap;
-                    font-weight: 600;
-                    font-size: 0.9em;
-                    transition: opacity 0.15s;
-                }
-                .bwm-verses-tab:hover {
-                    opacity: 0.9;
-                }
-                .bwm-verses-tab.active {
-                    opacity: 1;
-                    border-bottom-color: var(--bwm-node-hover);
-                    color: var(--bwm-node-hover);
-                }
                 .bwm-verses-pane {
                     display: none;
                 }
                 .bwm-verses-pane.active {
                     display: block;
-                }
-                .bwm-verses-content {
-                    padding: 12px 14px;
-                    overflow-y: auto;
-                    flex-grow: 1;
-                }
-                .bwm-verses-panel.visible {
-                    opacity: 1;
-                }
-                .bwm-verses-close {
-                    float: right;
-                    cursor: pointer;
-                    font-size: 1.3em;
-                    line-height: 1;
-                    opacity: 0.5;
-                    margin-left: 8px;
-                }
-                .bwm-verses-close:hover {
-                    opacity: 1;
                 }
                 .bwm-drawer-toggle {
                     width: 36px;
@@ -705,80 +624,284 @@ class BibleWordMap extends HTMLElement {
                 @keyframes bwm-spin {
                     to { transform: rotate(360deg); }
                 }
-                .bwm-book-card {
+                /* ==========================================================================
+                   Foundational Info Window Design System (Shared Across All Info Windows)
+                   ========================================================================== */
+
+                /* 1. Backdrop for map blur and fade effect */
+                .bwm-window-backdrop {
                     position: absolute;
-                    top: 64px;
-                    right: 14px;
-                    width: 320px;
-                    max-width: calc(100% - 28px);
-                    max-height: calc(100% - 78px);
-                    background-color: rgba(255, 255, 255, 0.94);
-                    background-color: color-mix(in srgb, var(--bwm-bg) 94%, transparent);
-                    backdrop-filter: blur(14px);
-                    -webkit-backdrop-filter: blur(14px);
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.38);
+                    backdrop-filter: blur(4px);
+                    -webkit-backdrop-filter: blur(4px);
+                    z-index: 10010;
+                    opacity: 0;
+                    pointer-events: none;
+                    transition: opacity 0.2s ease;
+                }
+                .bwm-window-backdrop.visible {
+                    opacity: 1;
+                    pointer-events: auto;
+                }
+
+                /* 2. Base Info Window Card */
+                .bwm-window-card {
+                    background-color: rgba(255, 255, 255, 0.95);
+                    background-color: color-mix(in srgb, var(--bwm-bg) 95%, transparent);
+                    backdrop-filter: blur(16px);
+                    -webkit-backdrop-filter: blur(16px);
                     border: 1px solid var(--bwm-border);
-                    border-radius: 12px;
-                    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+                    border-radius: 14px;
+                    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22), 0 2px 8px rgba(0, 0, 0, 0.08);
                     color: var(--bwm-text);
-                    z-index: 1000;
-                    display: none;
+                    font-family: var(--bwm-font);
+                    display: flex;
                     flex-direction: column;
                     overflow: hidden;
-                    font-size: 0.9em;
+                    box-sizing: border-box;
                 }
-                .bwm-book-card.visible {
-                    display: flex;
+
+                /* 3. Mobile Bottom Sheet Handle */
+                .bwm-sheet-handle {
+                    display: none;
                 }
-                .bwm-book-card-header {
-                    padding: 12px 14px;
+
+                /* 4. Shared Header */
+                .bwm-window-header {
+                    padding: 12px 16px;
                     border-bottom: 1px solid var(--bwm-border);
+                    background: color-mix(in srgb, var(--bwm-bg) 98%, transparent);
+                    flex-shrink: 0;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                    box-sizing: border-box;
+                }
+                .bwm-window-header-top {
                     display: flex;
                     justify-content: space-between;
                     align-items: flex-start;
-                    background: color-mix(in srgb, var(--bwm-bg) 97%, transparent);
-                }
-                .bwm-book-card-close {
-                    background: transparent;
-                    border: none;
-                    font-size: 1.3em;
-                    line-height: 1;
-                    cursor: pointer;
-                    opacity: 0.5;
-                    color: var(--bwm-text);
-                    padding: 2px 4px;
-                }
-                .bwm-book-card-close:hover {
-                    opacity: 1;
-                }
-                .bwm-book-badge {
-                    display: inline-block;
-                    font-size: 0.7em;
-                    font-weight: 700;
-                    text-transform: uppercase;
-                    letter-spacing: 0.5px;
-                    padding: 2px 7px;
-                    border-radius: 10px;
-                    color: #ffffff;
-                    margin-bottom: 4px;
-                }
-                .bwm-book-card-body {
-                    padding: 12px 14px;
-                    overflow-y: auto;
-                    display: flex;
-                    flex-direction: column;
                     gap: 12px;
                 }
-                .bwm-book-card-title {
+                .bwm-window-title-group {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    flex-wrap: wrap;
+                    min-width: 0;
+                }
+                .bwm-window-title {
                     margin: 0;
                     font-size: 1.2em;
                     font-weight: 700;
                     color: var(--bwm-text);
+                    line-height: 1.25;
                 }
+                .bwm-window-subtitle {
+                    font-size: 0.82em;
+                    color: var(--bwm-text-muted);
+                    margin-top: 2px;
+                    line-height: 1.35;
+                }
+                .bwm-window-subtitle-inline {
+                    font-size: 0.84em;
+                    color: var(--bwm-text-muted);
+                }
+
+                /* 5. Shared Badges */
+                .bwm-window-badge {
+                    display: inline-flex;
+                    align-items: center;
+                    font-size: 0.74em;
+                    font-weight: 700;
+                    letter-spacing: 0.3px;
+                    padding: 2px 8px;
+                    border-radius: 12px;
+                    color: #ffffff;
+                    background: var(--bwm-node-hover);
+                }
+                .bwm-window-badge-muted {
+                    display: inline-flex;
+                    align-items: center;
+                    font-size: 0.74em;
+                    font-weight: 500;
+                    background: var(--bwm-badge-bg);
+                    color: var(--bwm-text);
+                    border: 1px solid var(--bwm-border);
+                    padding: 2px 7px;
+                    border-radius: 10px;
+                }
+
+                /* 6. Shared Close Button */
+                .bwm-window-close {
+                    background: transparent;
+                    border: none;
+                    font-size: 1.4em;
+                    line-height: 1;
+                    cursor: pointer;
+                    opacity: 0.55;
+                    color: var(--bwm-text);
+                    padding: 3px 6px;
+                    border-radius: 6px;
+                    flex-shrink: 0;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: opacity 0.15s, background-color 0.15s;
+                }
+                .bwm-window-close:hover {
+                    opacity: 1;
+                    background: var(--bwm-badge-bg);
+                }
+
+                /* 7. Shared Tabs Bar */
+                .bwm-window-tabs {
+                    display: flex;
+                    gap: 6px;
+                    padding: 0 16px;
+                    border-bottom: 1px solid var(--bwm-border);
+                    background: color-mix(in srgb, var(--bwm-bg) 95%, transparent);
+                    overflow-x: auto;
+                    scrollbar-width: none;
+                    flex-shrink: 0;
+                }
+                .bwm-window-tabs::-webkit-scrollbar {
+                    display: none;
+                }
+                .bwm-window-tab {
+                    background: transparent;
+                    border: none;
+                    border-bottom: 2px solid transparent;
+                    padding: 9px 12px;
+                    font-size: 0.86em;
+                    font-weight: 600;
+                    color: var(--bwm-text-muted);
+                    cursor: pointer;
+                    white-space: nowrap;
+                    font-family: var(--bwm-font);
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    transition: color 0.15s, border-color 0.15s;
+                }
+                .bwm-window-tab:hover {
+                    color: var(--bwm-text);
+                }
+                .bwm-window-tab.active {
+                    color: var(--bwm-node-hover);
+                    border-bottom-color: var(--bwm-node-hover);
+                }
+
+                /* 8. Shared Body Area */
+                .bwm-window-body {
+                    padding: 14px 16px;
+                    overflow-y: auto;
+                    flex: 1;
+                    min-height: 0;
+                    scrollbar-width: thin;
+                    scrollbar-color: var(--bwm-border) transparent;
+                    -webkit-overflow-scrolling: touch;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                }
+
+                /* 9. Shared Pill Filters and Action Buttons */
+                .bwm-window-pill {
+                    background: var(--bwm-btn-bg);
+                    border: 1px solid var(--bwm-border);
+                    color: var(--bwm-text-muted);
+                    padding: 5px 12px;
+                    border-radius: 12px;
+                    cursor: pointer;
+                    font-size: 0.85em;
+                    font-family: var(--bwm-font);
+                    font-weight: 500;
+                    transition: all 0.15s ease;
+                }
+                .bwm-window-pill:hover {
+                    background: var(--bwm-btn-hover);
+                    color: var(--bwm-text);
+                }
+                .bwm-window-pill.active {
+                    background: var(--bwm-node-hover);
+                    color: #ffffff;
+                    border-color: var(--bwm-node-hover);
+                    font-weight: 600;
+                }
+
+                /* Window Specific Desktop Positioning */
+                .bwm-book-card {
+                    position: absolute;
+                    top: 64px;
+                    right: 14px;
+                    width: 340px;
+                    max-width: calc(100% - 28px);
+                    max-height: calc(100% - 78px);
+                    z-index: 10020;
+                    display: none;
+                }
+                .bwm-book-card.visible {
+                    display: flex;
+                }
+
+                .bwm-verses-panel {
+                    position: absolute;
+                    width: 380px;
+                    max-width: calc(100% - 28px);
+                    max-height: 440px;
+                    z-index: 10020;
+                    pointer-events: auto;
+                    display: none;
+                    opacity: 0;
+                    transition: opacity 0.15s ease;
+                }
+                .bwm-verses-panel.visible {
+                    display: flex;
+                    opacity: 1;
+                }
+
+                .bwm-canon-modal {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    z-index: 10030;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    opacity: 0;
+                    pointer-events: none;
+                    transition: opacity 0.2s ease;
+                }
+                .bwm-canon-modal.visible {
+                    opacity: 1;
+                    pointer-events: auto;
+                }
+                .bwm-canon-dialog {
+                    width: 620px;
+                    max-width: calc(100% - 28px);
+                    max-height: calc(100% - 40px);
+                    transform: scale(0.96);
+                    transition: transform 0.2s ease;
+                }
+                .bwm-canon-modal.visible .bwm-canon-dialog {
+                    transform: scale(1);
+                }
+
+                /* Book Card Internal Elements */
                 .bwm-book-chip-list {
                     display: flex;
                     flex-wrap: wrap;
                     gap: 6px;
-                    margin-top: 6px;
+                    margin-top: 4px;
                 }
                 .bwm-book-chip {
                     display: inline-flex;
@@ -796,34 +919,6 @@ class BibleWordMap extends HTMLElement {
                 .bwm-book-chip:hover {
                     border-color: var(--bwm-node-hover);
                     background: color-mix(in srgb, var(--bwm-node-hover) 15%, var(--bwm-bg) 85%);
-                }
-                .bwm-book-tabs {
-                    display: flex;
-                    gap: 6px;
-                    padding: 8px 14px;
-                    border-bottom: 1px solid var(--bwm-border);
-                    background: color-mix(in srgb, var(--bwm-bg) 95%, transparent);
-                    overflow-x: auto;
-                    scrollbar-width: thin;
-                }
-                .bwm-book-tab {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 5px;
-                    padding: 4px 9px;
-                    border-radius: 6px;
-                    border: 1px solid var(--bwm-border);
-                    background: transparent;
-                    color: var(--bwm-text);
-                    font-size: 0.82em;
-                    font-weight: 600;
-                    cursor: pointer;
-                    white-space: nowrap;
-                    transition: background 0.15s, border-color 0.15s, color 0.15s;
-                }
-                .bwm-book-tab.active {
-                    color: #ffffff;
-                    border-color: transparent;
                 }
                 .bwm-book-chip-group {
                     display: inline-flex;
@@ -852,9 +947,6 @@ class BibleWordMap extends HTMLElement {
                     background: var(--bwm-node-hover);
                     color: #ffffff;
                 }
-                .bwm-sheet-handle {
-                    display: none;
-                }
                 .bwm-book-card-actions {
                     display: flex;
                     justify-content: space-between;
@@ -863,32 +955,7 @@ class BibleWordMap extends HTMLElement {
                     margin-top: 4px;
                     padding-top: 10px;
                     border-top: 1px solid var(--bwm-border);
-                }
-                .bwm-btn-reset-books,
-                .bwm-btn-dismiss-card {
-                    padding: 6px 12px;
-                    border-radius: 6px;
-                    border: 1px solid var(--bwm-border);
-                    font-size: 0.85em;
-                    cursor: pointer;
-                    transition: all 0.15s ease;
-                }
-                .bwm-btn-reset-books {
-                    background: transparent;
-                    color: var(--bwm-text-muted);
-                }
-                .bwm-btn-reset-books:hover {
-                    color: var(--bwm-text);
-                    background: color-mix(in srgb, var(--bwm-border) 40%, transparent);
-                }
-                .bwm-btn-dismiss-card {
-                    background: var(--bwm-node-hover);
-                    color: #ffffff;
-                    border-color: var(--bwm-node-hover);
-                    font-weight: 600;
-                }
-                .bwm-btn-dismiss-card:hover {
-                    opacity: 0.9;
+                    flex-shrink: 0;
                 }
                 .bwm-book-card-reopen {
                     position: absolute;
@@ -932,188 +999,13 @@ class BibleWordMap extends HTMLElement {
                     font-style: italic;
                 }
 
-                @media (max-width: 768px) {
-                    .bwm-book-card {
-                        top: auto;
-                        bottom: 0;
-                        left: 0;
-                        right: 0;
-                        width: 100%;
-                        max-width: 100%;
-                        max-height: 56vh;
-                        border-radius: 16px 16px 0 0;
-                        border-bottom: none;
-                        border-left: none;
-                        border-right: none;
-                        box-shadow: 0 -8px 32px rgba(0,0,0,0.3);
-                        transform: translateY(105%);
-                        opacity: 0;
-                        pointer-events: none;
-                        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
-                        display: flex;
-                    }
-                    .bwm-book-card.visible {
-                        transform: translateY(0);
-                        opacity: 1;
-                        pointer-events: auto;
-                    }
-                    .bwm-sheet-handle {
-                        display: block;
-                        width: 36px;
-                        height: 4px;
-                        border-radius: 2px;
-                        background: var(--bwm-border);
-                        margin: 8px auto 0 auto;
-                        opacity: 0.8;
-                    }
-                    .bwm-book-card-reopen {
-                        top: 12px;
-                        right: 12px;
-                        padding: 6px 11px;
-                        font-size: 0.8em;
-                    }
+                /* Verses Internal Elements */
+                .bwm-verses-content {
+                    line-height: 1.5;
+                    display: block;
                 }
 
-                /* Canon Usage Modal Styles */
-                .bwm-canon-backdrop {
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: rgba(0, 0, 0, 0.45);
-                    backdrop-filter: blur(4px);
-                    -webkit-backdrop-filter: blur(4px);
-                    z-index: 10050;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    opacity: 0;
-                    pointer-events: none;
-                    transition: opacity 0.2s ease;
-                }
-                .bwm-canon-backdrop.visible {
-                    opacity: 1;
-                    pointer-events: auto;
-                }
-                .bwm-canon-dialog {
-                    background-color: rgba(255, 255, 255, 0.96);
-                    background-color: color-mix(in srgb, var(--bwm-bg) 96%, transparent);
-                    backdrop-filter: blur(16px);
-                    -webkit-backdrop-filter: blur(16px);
-                    border: 1px solid var(--bwm-border);
-                    border-radius: 14px;
-                    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
-                    width: 620px;
-                    max-width: calc(100% - 24px);
-                    max-height: calc(100% - 40px);
-                    display: flex;
-                    flex-direction: column;
-                    overflow: hidden;
-                    transform: scale(0.96);
-                    transition: transform 0.2s ease;
-                    box-sizing: border-box;
-                    color: var(--bwm-text);
-                    font-family: var(--bwm-font);
-                }
-                .bwm-canon-backdrop.visible .bwm-canon-dialog {
-                    transform: scale(1);
-                }
-                .bwm-canon-header {
-                    padding: 14px 16px 12px 16px;
-                    border-bottom: 1px solid var(--bwm-border);
-                    display: flex;
-                    flex-direction: column;
-                    gap: 10px;
-                    background: color-mix(in srgb, var(--bwm-bg) 98%, transparent);
-                }
-                .bwm-canon-title-row {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    gap: 12px;
-                }
-                .bwm-canon-title-group {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    flex-wrap: wrap;
-                }
-                .bwm-canon-word {
-                    font-size: 1.25em;
-                    font-weight: 700;
-                    color: var(--bwm-text);
-                }
-                .bwm-canon-pos {
-                    font-size: 0.85em;
-                    color: var(--bwm-text-muted);
-                }
-                .bwm-canon-badge {
-                    background: var(--bwm-node-hover);
-                    color: #ffffff;
-                    padding: 3px 8px;
-                    border-radius: 12px;
-                    font-size: 0.75em;
-                    font-weight: 600;
-                    letter-spacing: 0.2px;
-                }
-                .bwm-canon-subbadge {
-                    background: var(--bwm-badge-bg);
-                    color: var(--bwm-text);
-                    border: 1px solid var(--bwm-border);
-                    padding: 2px 7px;
-                    border-radius: 10px;
-                    font-size: 0.75em;
-                    font-weight: 500;
-                }
-                .bwm-canon-close {
-                    background: transparent;
-                    border: none;
-                    font-size: 1.4em;
-                    line-height: 1;
-                    cursor: pointer;
-                    opacity: 0.55;
-                    color: var(--bwm-text);
-                    padding: 4px;
-                    border-radius: 6px;
-                    transition: opacity 0.15s, background-color 0.15s;
-                }
-                .bwm-canon-close:hover {
-                    opacity: 1;
-                    background: var(--bwm-badge-bg);
-                }
-                .bwm-canon-tabs {
-                    display: flex;
-                    gap: 6px;
-                    border-bottom: 1px solid var(--bwm-border);
-                    padding: 0 16px;
-                    background: color-mix(in srgb, var(--bwm-bg) 95%, transparent);
-                }
-                .bwm-canon-tab-btn {
-                    background: transparent;
-                    border: none;
-                    border-bottom: 2px solid transparent;
-                    padding: 9px 14px;
-                    font-size: 0.88em;
-                    font-weight: 600;
-                    color: var(--bwm-text-muted);
-                    cursor: pointer;
-                    font-family: var(--bwm-font);
-                    transition: color 0.15s, border-color 0.15s;
-                }
-                .bwm-canon-tab-btn:hover {
-                    color: var(--bwm-text);
-                }
-                .bwm-canon-tab-btn.active {
-                    color: var(--bwm-node-hover);
-                    border-bottom-color: var(--bwm-node-hover);
-                }
-                .bwm-canon-body {
-                    padding: 14px 16px;
-                    overflow-y: auto;
-                    flex: 1;
-                    min-height: 0;
-                }
+                /* Canon Usage Internal Elements */
                 .bwm-canon-controls {
                     display: flex;
                     justify-content: space-between;
@@ -1127,27 +1019,6 @@ class BibleWordMap extends HTMLElement {
                     display: flex;
                     align-items: center;
                     gap: 6px;
-                }
-                .bwm-canon-pill-btn {
-                    background: var(--bwm-btn-bg);
-                    border: 1px solid var(--bwm-border);
-                    color: var(--bwm-text-muted);
-                    padding: 4px 10px;
-                    border-radius: 12px;
-                    cursor: pointer;
-                    font-size: 0.9em;
-                    font-family: var(--bwm-font);
-                    transition: all 0.15s ease;
-                }
-                .bwm-canon-pill-btn:hover {
-                    background: var(--bwm-btn-hover);
-                    color: var(--bwm-text);
-                }
-                .bwm-canon-pill-btn.active {
-                    background: var(--bwm-node-hover);
-                    color: #ffffff;
-                    border-color: var(--bwm-node-hover);
-                    font-weight: 600;
                 }
                 .bwm-canon-list {
                     display: flex;
@@ -1340,19 +1211,66 @@ class BibleWordMap extends HTMLElement {
                     color: var(--bwm-text-muted);
                     line-height: 1.4;
                 }
-                @media (max-width: 640px) {
-                    .bwm-canon-backdrop {
-                        align-items: flex-end;
+
+                /* Mobile Bottom Sheet Unification Across ALL Windows */
+                @media (max-width: 768px) {
+                    .bwm-sheet-handle {
+                        display: block;
+                        width: 38px;
+                        height: 4px;
+                        border-radius: 2px;
+                        background: var(--bwm-border);
+                        margin: 8px auto 4px auto;
+                        opacity: 0.8;
+                        flex-shrink: 0;
                     }
-                    .bwm-canon-dialog {
-                        width: 100%;
-                        max-width: 100%;
-                        max-height: 85vh;
-                        border-radius: 16px 16px 0 0;
+
+                    .bwm-book-card,
+                    .bwm-verses-panel,
+                    .bwm-canon-modal .bwm-canon-dialog {
+                        position: absolute !important;
+                        top: auto !important;
+                        bottom: 0 !important;
+                        left: 0 !important;
+                        right: 0 !important;
+                        width: 100% !important;
+                        max-width: 100% !important;
+                        max-height: min(78vh, calc(100% - 16px)) !important;
+                        height: auto !important;
+                        border-radius: 16px 16px 0 0 !important;
+                        border-bottom: none !important;
+                        border-left: none !important;
+                        border-right: none !important;
+                        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35) !important;
+                        transform: translateY(105%) !important;
+                        opacity: 0 !important;
+                        pointer-events: none !important;
+                        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease !important;
                     }
+
+                    .bwm-book-card.visible,
+                    .bwm-verses-panel.visible,
+                    .bwm-canon-modal.visible .bwm-canon-dialog {
+                        transform: translateY(0) !important;
+                        opacity: 1 !important;
+                        pointer-events: auto !important;
+                    }
+
+                    .bwm-canon-modal {
+                        align-items: flex-end !important;
+                    }
+
+                    .bwm-book-card-reopen {
+                        top: 12px;
+                        right: 12px;
+                        padding: 6px 11px;
+                        font-size: 0.8em;
+                    }
+
                     .bwm-canon-row-book {
                         width: 105px;
                     }
+
                     .bwm-canon-testament-layout {
                         flex-direction: column;
                     }
@@ -1432,9 +1350,10 @@ class BibleWordMap extends HTMLElement {
                     </button>
                 </div>
                 <div class="bwm-radial-menu" id="bwm-radial-menu"></div>
-                <div class="bwm-verses-panel" id="bwm-verses-panel"></div>
-                <div class="bwm-book-card" id="bwm-book-card"></div>
-                <div class="bwm-canon-modal" id="bwm-canon-modal" style="display: none;"></div>
+                <div class="bwm-window-backdrop" id="bwm-window-backdrop"></div>
+                <div class="bwm-verses-panel bwm-window-card" id="bwm-verses-panel"></div>
+                <div class="bwm-book-card bwm-window-card" id="bwm-book-card"></div>
+                <div class="bwm-canon-modal" id="bwm-canon-modal"></div>
             </div>
         `;
     }
@@ -1453,6 +1372,31 @@ class BibleWordMap extends HTMLElement {
         this.loadingTip = this.querySelector('.bwm-loading-tip');
         this.bookCard = this.querySelector('#bwm-book-card');
         this.canonModal = this.querySelector('#bwm-canon-modal');
+        this.windowBackdrop = this.querySelector('#bwm-window-backdrop');
+        if (this.windowBackdrop) {
+            this.windowBackdrop.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.closeActiveInfoWindows();
+            });
+            this.windowBackdrop.addEventListener('touchstart', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                this.closeActiveInfoWindows();
+            }, { passive: false });
+        }
+        if (this.canonModal) {
+            this.canonModal.addEventListener('click', (e) => {
+                if (e.target === this.canonModal) {
+                    this.hideCanonUsageModal();
+                }
+            });
+        }
+        if (this.bookCard) {
+            this.bookCard.addEventListener('click', (e) => e.stopPropagation());
+            this.bookCard.addEventListener('pointerdown', (e) => e.stopPropagation());
+            this.bookCard.addEventListener('mousedown', (e) => e.stopPropagation());
+            this.bookCard.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+        }
         this.reopenBtn = this.querySelector('#bwm-book-card-reopen');
         if (this.reopenBtn) {
             this.reopenBtn.addEventListener('click', (e) => {
@@ -1580,6 +1524,19 @@ class BibleWordMap extends HTMLElement {
         
         this.radialMenu = this.querySelector('#bwm-radial-menu');
         this.versesPanel = this.querySelector('#bwm-verses-panel');
+        if (this.versesPanel) {
+            this.versesPanel.addEventListener('click', (e) => e.stopPropagation());
+            this.versesPanel.addEventListener('pointerdown', (e) => e.stopPropagation());
+            this.versesPanel.addEventListener('mousedown', (e) => e.stopPropagation());
+            this.versesPanel.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+        }
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (this.closeActiveInfoWindows()) {
+                    e.stopPropagation();
+                }
+            }
+        });
         this.radialMenuNode = null;
         this.canvas.addEventListener('touchstart', (e) => {
             this.isTouch = true;
@@ -3024,8 +2981,40 @@ class BibleWordMap extends HTMLElement {
         this.buildBooksGraph();
     }
 
+    closeActiveInfoWindows() {
+        let closedAny = false;
+        if (this.canonModal && this.canonModal.classList.contains('visible')) {
+            this.hideCanonUsageModal();
+            closedAny = true;
+        }
+        if (this.versesPanel && this.versesPanel.classList.contains('visible')) {
+            this.hideVersesPanel();
+            closedAny = true;
+        }
+        if (this.bookCard && this.bookCard.classList.contains('visible')) {
+            this.hideBookCard();
+            closedAny = true;
+        }
+        this.updateBackdrop();
+        return closedAny;
+    }
+
+    updateBackdrop() {
+        if (!this.windowBackdrop) return;
+        let isAnyVisible = (this.canonModal && this.canonModal.classList.contains('visible')) ||
+                           (this.versesPanel && this.versesPanel.classList.contains('visible')) ||
+                           (this.bookCard && this.bookCard.classList.contains('visible'));
+        if (isAnyVisible) {
+            this.windowBackdrop.classList.add('visible');
+        } else {
+            this.windowBackdrop.classList.remove('visible');
+        }
+    }
+
     showBookCard(book, allActiveBooks = null) {
         if (!this.bookCard || !book) return;
+        this.hideCanonUsageModal();
+        this.hideVersesPanel();
         this.selectedBook = book;
         let genreColor = GENRE_COLORS[book.genre] || '#3b82f6';
 
@@ -3036,12 +3025,12 @@ class BibleWordMap extends HTMLElement {
         let tabsHtml = '';
         if (allActiveBooks && allActiveBooks.length > 1) {
             tabsHtml = `
-                <div class="bwm-book-tabs">
+                <div class="bwm-window-tabs bwm-book-tabs">
                     ${allActiveBooks.map(b => {
                         let activeCls = b.code === book.code ? 'active' : '';
                         let tabColor = GENRE_COLORS[b.genre] || '#3b82f6';
-                        let style = (b.code === book.code) ? `background: ${tabColor}; border-color: ${tabColor};` : '';
-                        return `<button type="button" class="bwm-book-tab ${activeCls}" data-tab-code="${b.code}" style="${style}"><b>${b.name}</b></button>`;
+                        let style = (b.code === book.code) ? `border-bottom-color: ${tabColor}; color: ${tabColor};` : '';
+                        return `<button type="button" class="bwm-window-tab bwm-book-tab ${activeCls}" data-tab-code="${b.code}" style="${style}"><b>${b.name}</b></button>`;
                     }).join('')}
                 </div>
             `;
@@ -3073,16 +3062,20 @@ class BibleWordMap extends HTMLElement {
         this.bookCard.innerHTML = `
             <div class="bwm-sheet-handle"></div>
             ${tabsHtml}
-            <div class="bwm-book-card-header">
-                <div>
-                    <span class="bwm-book-badge" style="background: ${genreColor};">${book.genre}</span>
-                    <span style="font-size: 0.8em; opacity: 0.65; margin-left: 6px;">${book.testament === 'OT' ? 'Old Testament' : 'New Testament'}</span>
-                    <h3 class="bwm-book-card-title">${book.name}</h3>
-                    <div style="font-size: 0.82em; opacity: 0.7; margin-top: 2px;">${book.verses.toLocaleString()} verses &bull; ${book.total_words.toLocaleString()} words</div>
+            <div class="bwm-window-header">
+                <div class="bwm-window-header-top">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                            <span class="bwm-window-badge" style="background: ${genreColor};">${book.genre}</span>
+                            <span class="bwm-window-subtitle-inline">${book.testament === 'OT' ? 'Old Testament' : 'New Testament'}</span>
+                        </div>
+                        <h3 class="bwm-window-title">${book.name}</h3>
+                        <div class="bwm-window-subtitle">${book.verses.toLocaleString()} verses &bull; ${book.total_words.toLocaleString()} words</div>
+                    </div>
+                    <button type="button" class="bwm-window-close" id="bwm-book-card-close" title="Dismiss">&times;</button>
                 </div>
-                <button type="button" class="bwm-book-card-close" id="bwm-book-card-close" title="Dismiss">&times;</button>
             </div>
-            <div class="bwm-book-card-body">
+            <div class="bwm-window-body">
                 <div>
                     <div style="font-size: 0.85em; font-weight: 600; opacity: 0.85; margin-bottom: 4px;">Closest Theological Siblings:</div>
                     <div class="bwm-book-chip-list">
@@ -3096,10 +3089,10 @@ class BibleWordMap extends HTMLElement {
                     </div>
                 </div>
                 <div class="bwm-book-card-actions">
-                    <button type="button" class="bwm-btn-reset-books" id="bwm-btn-reset-books" title="Return to full 66-book overview">
+                    <button type="button" class="bwm-window-pill" id="bwm-btn-reset-books" title="Return to full 66-book overview">
                         &larr; Show All Books
                     </button>
-                    <button type="button" class="bwm-btn-dismiss-card" id="bwm-btn-dismiss-card" title="Explore constellation on map">
+                    <button type="button" class="bwm-window-pill active" id="bwm-btn-dismiss-card" title="Explore constellation on map">
                         Explore Map
                     </button>
                 </div>
@@ -3110,6 +3103,7 @@ class BibleWordMap extends HTMLElement {
             this.reopenBtn.style.display = 'none';
         }
         this.bookCard.classList.add('visible');
+        this.updateBackdrop();
 
         let closeBtn = this.bookCard.querySelector('#bwm-book-card-close');
         if (closeBtn) {
@@ -3193,6 +3187,7 @@ class BibleWordMap extends HTMLElement {
                 this.reopenBtn.style.display = 'none';
             }
         }
+        this.updateBackdrop();
     }
 
     matchesTestament(t) {
@@ -3730,19 +3725,29 @@ class BibleWordMap extends HTMLElement {
     }
 
     hideVersesPanel() {
-        this.versesPanel.classList.remove('visible');
-        this.versesPanel.innerHTML = '';
+        if (this.versesPanel) {
+            this.versesPanel.classList.remove('visible');
+            this.versesPanel.innerHTML = '';
+            this.versesPanel.style.left = '';
+            this.versesPanel.style.top = '';
+        }
+        this.updateBackdrop();
     }
 
     showVersesPanel(node, anchorX, anchorY) {
         this.hideCanonUsageModal();
+        if (this.bookCard && window.innerWidth <= 768) {
+            this.hideBookCard();
+        }
         let displayW = this.formatWord(node.w, node.pos);
         
-        let headerHtml = `<div class="bwm-verses-header">`;
-        headerHtml += `<div class="bwm-verses-title">`;
-        headerHtml += `<div><b style="font-size:1.05em;">${displayW}</b>`;
-        if (node.pos) headerHtml += ` <span style="font-size:0.8em; opacity:0.6;">(${node.pos.toLowerCase()})</span>`;
-        headerHtml += `</div><span class="bwm-verses-close" id="bwm-verses-close">&times;</span>`;
+        let headerHtml = `<div class="bwm-sheet-handle"></div>`;
+        headerHtml += `<div class="bwm-window-header">`;
+        headerHtml += `<div class="bwm-window-header-top">`;
+        headerHtml += `<div class="bwm-window-title-group">`;
+        headerHtml += `<h3 class="bwm-window-title">${displayW}</h3>`;
+        if (node.pos) headerHtml += ` <span class="bwm-window-subtitle-inline">(${node.pos.toLowerCase()})</span>`;
+        headerHtml += `</div><button type="button" class="bwm-window-close" id="bwm-verses-close" title="Close window">&times;</button>`;
         headerHtml += `</div>`;
         
         let tabsData = [];
@@ -3778,7 +3783,7 @@ class BibleWordMap extends HTMLElement {
 
             if (!anyBookHasDirectVerses && activeBooks.length > 0) {
                 let bookNames = activeBooks.map(b => b.name).join(', ');
-                headerHtml += `<div style="padding: 4px 14px; font-size: 0.82em; color: var(--bwm-node-hover); font-style: italic;">Does not appear directly in ${bookNames} (semantic relationship)</div>`;
+                headerHtml += `<div style="padding: 2px 0 0 0; font-size: 0.82em; color: var(--bwm-node-hover); font-style: italic;">Does not appear directly in ${bookNames} (semantic relationship)</div>`;
             }
         } else if (this.isSearchMode && this.wordToVerses && this.verses) {
             this.searchedWords.forEach(sw => {
@@ -3805,16 +3810,17 @@ class BibleWordMap extends HTMLElement {
             tabsData.sort((a, b) => b.sim - a.sim);
         }
         
+        headerHtml += `</div>`; // end header
+        
         if (tabsData.length > 0) {
-            headerHtml += `<div class="bwm-verses-tabs">`;
+            headerHtml += `<div class="bwm-window-tabs">`;
             tabsData.forEach((t, i) => {
-                headerHtml += `<div class="bwm-verses-tab ${i === 0 ? 'active' : ''}" data-tab-id="${t.id}">${t.title} <span style="font-size:0.8em; opacity:0.65;">(${t.verses.length})</span></div>`;
+                headerHtml += `<button type="button" class="bwm-window-tab ${i === 0 ? 'active' : ''}" data-tab-id="${t.id}">${t.title} <span style="font-size:0.8em; opacity:0.65;">(${t.verses.length})</span></button>`;
             });
             headerHtml += `</div>`;
         }
-        headerHtml += `</div>`; // end header
         
-        let contentHtml = `<div class="bwm-verses-content">`;
+        let contentHtml = `<div class="bwm-window-body bwm-verses-content">`;
         
         const BATCH_SIZE = 30;
         let tabsState = {};
@@ -3885,7 +3891,7 @@ class BibleWordMap extends HTMLElement {
         if (contentEl) {
             contentEl.addEventListener('scroll', () => {
                 if (contentEl.scrollTop + contentEl.clientHeight >= contentEl.scrollHeight - 60) {
-                    let activeTab = this.versesPanel.querySelector('.bwm-verses-tab.active');
+                    let activeTab = this.versesPanel.querySelector('.bwm-window-tab.active');
                     let currentTabId = activeTab ? activeTab.getAttribute('data-tab-id') : 'main';
                     loadMoreVerses(currentTabId);
                 }
@@ -3893,12 +3899,12 @@ class BibleWordMap extends HTMLElement {
         }
 
         // Setup tabs
-        let tabEls = this.versesPanel.querySelectorAll('.bwm-verses-tab');
+        let tabEls = this.versesPanel.querySelectorAll('.bwm-window-tab');
         tabEls.forEach(tab => {
             tab.addEventListener('click', (e) => {
                 e.stopPropagation();
                 // Deactivate all
-                this.versesPanel.querySelectorAll('.bwm-verses-tab').forEach(t => t.classList.remove('active'));
+                this.versesPanel.querySelectorAll('.bwm-window-tab').forEach(t => t.classList.remove('active'));
                 this.versesPanel.querySelectorAll('.bwm-verses-tab-content').forEach(c => c.style.display = 'none');
                 // Activate clicked
                 tab.classList.add('active');
@@ -3911,38 +3917,50 @@ class BibleWordMap extends HTMLElement {
             });
         });
         
-        // Position near anchor
-        let containerRect = this.canvas.parentElement.getBoundingClientRect();
-        let px = anchorX + 50;
-        let py = anchorY - 50;
-        if (px + 340 > containerRect.width) px = anchorX - 360;
-        if (px < 5) px = 5;
-        if (py < 5) py = 5;
-        if (py + 300 > containerRect.height) py = containerRect.height - 310;
+        // Position near anchor on desktop
+        if (window.innerWidth <= 768) {
+            this.versesPanel.style.left = '';
+            this.versesPanel.style.top = '';
+        } else {
+            let containerRect = this.canvas.parentElement.getBoundingClientRect();
+            let px = anchorX + 50;
+            let py = anchorY - 50;
+            if (px + 380 > containerRect.width) px = anchorX - 400;
+            if (px < 10) px = 10;
+            if (py < 10) py = 10;
+            if (py + 440 > containerRect.height) py = Math.max(10, containerRect.height - 450);
+            this.versesPanel.style.left = px + 'px';
+            this.versesPanel.style.top = py + 'px';
+        }
         
-        this.versesPanel.style.left = px + 'px';
-        this.versesPanel.style.top = py + 'px';
         this.versesPanel.classList.add('visible');
+        this.updateBackdrop();
         
         let closeBtn = this.versesPanel.querySelector('#bwm-verses-close');
         if (closeBtn) {
             closeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                this.versesPanel.classList.remove('visible');
-                this.versesPanel.innerHTML = '';
+                this.hideVersesPanel();
             });
         }
     }
+
     showOriginalLangPanel(node, anchorX, anchorY) {
         this.hideCanonUsageModal();
+        if (this.bookCard && window.innerWidth <= 768) {
+            this.hideBookCard();
+        }
         let displayW = this.formatWord(node.w, node.pos);
         
-        let headerHtml = `<div class="bwm-verses-header">`;
-        headerHtml += `<div class="bwm-verses-title">`;
-        headerHtml += `<div><b style="font-size:1.05em;">${displayW}</b>`;
-        if (node.pos) headerHtml += ` <span style="font-size:0.8em; opacity:0.6;">(${node.pos.toLowerCase()})</span>`;
-        headerHtml += `</div><span class="bwm-verses-close" id="bwm-verses-close">&times;</span>`;
+        let headerHtml = `<div class="bwm-sheet-handle"></div>`;
+        headerHtml += `<div class="bwm-window-header">`;
+        headerHtml += `<div class="bwm-window-header-top">`;
+        headerHtml += `<div class="bwm-window-title-group">`;
+        headerHtml += `<h3 class="bwm-window-title">${displayW}</h3>`;
+        headerHtml += `<span class="bwm-window-subtitle-inline">Original Language${node.pos ? ` (${node.pos.toLowerCase()})` : ''}</span>`;
+        headerHtml += `</div><button type="button" class="bwm-window-close" id="bwm-verses-close" title="Close window">&times;</button>`;
         headerHtml += `</div>`;
+        headerHtml += `</div>`; // end header
         
         let tabsData = [];
         if (node.original && node.original.length > 0) {
@@ -3957,16 +3975,15 @@ class BibleWordMap extends HTMLElement {
         }
         
         if (tabsData.length > 1) {
-            headerHtml += `<div class="bwm-verses-tabs">`;
+            headerHtml += `<div class="bwm-window-tabs">`;
             tabsData.forEach(t => {
                 let activeCls = t.isActive ? ' active' : '';
-                headerHtml += `<div class="bwm-verses-tab${activeCls}" data-target="${t.id}">${t.label}</div>`;
+                headerHtml += `<button type="button" class="bwm-window-tab${activeCls}" data-target="${t.id}">${t.label}</button>`;
             });
             headerHtml += `</div>`;
         }
-        headerHtml += `</div>`; // end header
         
-        let contentHtml = `<div class="bwm-verses-content">`;
+        let contentHtml = `<div class="bwm-window-body bwm-verses-content">`;
         if (tabsData.length === 0) {
             contentHtml += `<div style="font-style: italic; opacity: 0.6; padding: 15px;">No original language data available.</div>`;
         } else {
@@ -4000,7 +4017,7 @@ class BibleWordMap extends HTMLElement {
         
         this.versesPanel.innerHTML = headerHtml + contentHtml;
         
-        let tabEls = this.versesPanel.querySelectorAll('.bwm-verses-tab');
+        let tabEls = this.versesPanel.querySelectorAll('.bwm-window-tab');
         tabEls.forEach(tab => {
             tab.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -4014,19 +4031,24 @@ class BibleWordMap extends HTMLElement {
             });
         });
         
-        // Position near anchor
-        let containerRect = this.canvas.parentElement.getBoundingClientRect();
-        let px = anchorX + 50;
-        let py = anchorY - 50;
-        if (px + 340 > containerRect.width) px = anchorX - 360;
-        if (px < 5) px = 5;
-        if (py < 5) py = 5;
-        if (py + 300 > containerRect.height) py = containerRect.height - 310;
-        if (py < 5) py = 5;
+        // Position near anchor on desktop
+        if (window.innerWidth <= 768) {
+            this.versesPanel.style.left = '';
+            this.versesPanel.style.top = '';
+        } else {
+            let containerRect = this.canvas.parentElement.getBoundingClientRect();
+            let px = anchorX + 50;
+            let py = anchorY - 50;
+            if (px + 380 > containerRect.width) px = anchorX - 400;
+            if (px < 10) px = 10;
+            if (py < 10) py = 10;
+            if (py + 440 > containerRect.height) py = Math.max(10, containerRect.height - 450);
+            this.versesPanel.style.left = px + 'px';
+            this.versesPanel.style.top = py + 'px';
+        }
         
-        this.versesPanel.style.left = px + 'px';
-        this.versesPanel.style.top = py + 'px';
         this.versesPanel.classList.add('visible');
+        this.updateBackdrop();
         
         let closeBtn = this.versesPanel.querySelector('#bwm-verses-close');
         if (closeBtn) {
@@ -4044,16 +4066,19 @@ class BibleWordMap extends HTMLElement {
         }
         if (this.canonModal) {
             this.canonModal.classList.remove('visible');
-            this.canonModal.style.display = 'none';
             this.canonModal.innerHTML = '';
         }
         this.canonModalNode = null;
+        this.updateBackdrop();
     }
 
     async showCanonUsageModal(node) {
         if (!node) return;
         this.hideRadialMenu();
         this.hideVersesPanel();
+        if (this.bookCard && window.innerWidth <= 768) {
+            this.hideBookCard();
+        }
         this.canonModalNode = node;
         
         if (!this.canonModal) {
@@ -4075,32 +4100,28 @@ class BibleWordMap extends HTMLElement {
 
         // If verses are still loading, show loading skeleton
         if (!this.wordToVerses || !this.verses) {
-            this.canonModal.style.display = 'block';
             this.canonModal.innerHTML = `
-                <div class="bwm-canon-backdrop visible" id="bwm-canon-backdrop">
-                    <div class="bwm-canon-dialog">
-                        <div class="bwm-canon-header">
-                            <div class="bwm-canon-title-row">
-                                <div class="bwm-canon-title-group">
-                                    <span class="bwm-canon-word">${displayW}</span>
-                                    ${node.pos ? `<span class="bwm-canon-pos">(${node.pos.toLowerCase()})</span>` : ''}
-                                </div>
-                                <button type="button" class="bwm-canon-close" id="bwm-canon-close" title="Close window">&times;</button>
+                <div class="bwm-window-card bwm-canon-dialog" id="bwm-canon-dialog">
+                    <div class="bwm-sheet-handle"></div>
+                    <div class="bwm-window-header">
+                        <div class="bwm-window-header-top">
+                            <div class="bwm-window-title-group">
+                                <h3 class="bwm-window-title">${displayW}</h3>
+                                ${node.pos ? `<span class="bwm-window-subtitle-inline">(${node.pos.toLowerCase()})</span>` : ''}
                             </div>
+                            <button type="button" class="bwm-window-close" id="bwm-canon-close" title="Close window">&times;</button>
                         </div>
-                        <div class="bwm-canon-body" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 20px;">
-                            <span class="bwm-loading-spinner" style="width:24px; height:24px; border-width:3px; margin-bottom:12px;"></span>
-                            <div style="font-size:0.9em; color:var(--bwm-text-muted);">Loading canon verse statistics...</div>
-                        </div>
+                    </div>
+                    <div class="bwm-window-body" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 20px;">
+                        <span class="bwm-loading-spinner" style="width:24px; height:24px; border-width:3px; margin-bottom:12px;"></span>
+                        <div style="font-size:0.9em; color:var(--bwm-text-muted);">Loading canon verse statistics...</div>
                     </div>
                 </div>
             `;
+            this.canonModal.classList.add('visible');
+            this.updateBackdrop();
             const closeBtn = this.canonModal.querySelector('#bwm-canon-close');
             if (closeBtn) closeBtn.addEventListener('click', () => this.hideCanonUsageModal());
-            const backdrop = this.canonModal.querySelector('#bwm-canon-backdrop');
-            if (backdrop) backdrop.addEventListener('click', (e) => {
-                if (e.target === backdrop) this.hideCanonUsageModal();
-            });
 
             if (this.versesPromise) {
                 const vData = await this.versesPromise;
@@ -4345,74 +4366,66 @@ class BibleWordMap extends HTMLElement {
             </div>
         `;
 
-        this.canonModal.style.display = 'block';
         this.canonModal.innerHTML = `
-            <div class="bwm-canon-backdrop visible" id="bwm-canon-backdrop">
-                <div class="bwm-canon-dialog" id="bwm-canon-dialog">
-                    <div class="bwm-canon-header">
-                        <div class="bwm-canon-title-row">
-                            <div class="bwm-canon-title-group">
-                                <span class="bwm-canon-word">${displayW}</span>
-                                ${node.pos ? `<span class="bwm-canon-pos">(${node.pos.toLowerCase()})</span>` : ''}
-                                <span class="bwm-canon-badge">${totalOccurrences} occurrence${totalOccurrences === 1 ? '' : 's'}</span>
-                                <span class="bwm-canon-subbadge">in ${totalBooksWithOcc} of 66 books</span>
+            <div class="bwm-window-card bwm-canon-dialog" id="bwm-canon-dialog">
+                <div class="bwm-sheet-handle"></div>
+                <div class="bwm-window-header">
+                    <div class="bwm-window-header-top">
+                        <div class="bwm-window-title-group">
+                            <h3 class="bwm-window-title">${displayW}</h3>
+                            ${node.pos ? `<span class="bwm-window-subtitle-inline">(${node.pos.toLowerCase()})</span>` : ''}
+                            <span class="bwm-window-badge">${totalOccurrences} occurrence${totalOccurrences === 1 ? '' : 's'}</span>
+                            <span class="bwm-window-badge-muted">in ${totalBooksWithOcc} of 66 books</span>
+                        </div>
+                        <button type="button" class="bwm-window-close" id="bwm-canon-close" title="Close window">&times;</button>
+                    </div>
+                </div>
+                <div class="bwm-window-tabs">
+                    <button type="button" class="bwm-window-tab bwm-canon-tab-btn active" data-tab="book">&#128202; By Book</button>
+                    <button type="button" class="bwm-window-tab bwm-canon-tab-btn" data-tab="genre">&#128218; By Literature</button>
+                    <button type="button" class="bwm-window-tab bwm-canon-tab-btn" data-tab="testament">&#9878; OT vs NT</button>
+                </div>
+                <div class="bwm-window-body">
+                    <div class="bwm-canon-pane" id="bwm-canon-pane-book">
+                        <div class="bwm-canon-controls">
+                            <div class="bwm-canon-filter-group">
+                                <span style="font-weight:600; color:var(--bwm-text-muted); margin-right:4px;">Show:</span>
+                                <button type="button" class="bwm-window-pill bwm-canon-pill-btn active" id="bwm-canon-filter-occ">Occurring (${totalBooksWithOcc})</button>
+                                <button type="button" class="bwm-window-pill bwm-canon-pill-btn" id="bwm-canon-filter-all">All 66 Books</button>
                             </div>
-                            <button type="button" class="bwm-canon-close" id="bwm-canon-close" title="Close window">&times;</button>
+                            <div class="bwm-canon-filter-group">
+                                <span style="font-weight:600; color:var(--bwm-text-muted); margin-right:4px;">Sort:</span>
+                                <button type="button" class="bwm-window-pill bwm-canon-pill-btn active" id="bwm-canon-sort-canon">Canonical</button>
+                                <button type="button" class="bwm-window-pill bwm-canon-pill-btn" id="bwm-canon-sort-freq">Frequency</button>
+                            </div>
+                        </div>
+                        <div class="bwm-canon-list" id="bwm-canon-book-list">
+                            ${renderBookBars(bookFilter, bookSort)}
                         </div>
                     </div>
-                    <div class="bwm-canon-tabs">
-                        <button type="button" class="bwm-canon-tab-btn active" data-tab="book">&#128202; By Book</button>
-                        <button type="button" class="bwm-canon-tab-btn" data-tab="genre">&#128218; By Literature</button>
-                        <button type="button" class="bwm-canon-tab-btn" data-tab="testament">&#9878; OT vs NT</button>
+                    <div class="bwm-canon-pane" id="bwm-canon-pane-genre" style="display: none;">
+                        <div style="font-size:0.84em; color:var(--bwm-text-muted); margin-bottom:12px;">
+                            Distribution across 9 standard Biblical literary genres:
+                        </div>
+                        <div class="bwm-canon-genre-list">
+                            ${genreHtml}
+                        </div>
                     </div>
-                    <div class="bwm-canon-body">
-                        <div class="bwm-canon-pane" id="bwm-canon-pane-book">
-                            <div class="bwm-canon-controls">
-                                <div class="bwm-canon-filter-group">
-                                    <span style="font-weight:600; color:var(--bwm-text-muted); margin-right:4px;">Show:</span>
-                                    <button type="button" class="bwm-canon-pill-btn active" id="bwm-canon-filter-occ">Occurring (${totalBooksWithOcc})</button>
-                                    <button type="button" class="bwm-canon-pill-btn" id="bwm-canon-filter-all">All 66 Books</button>
-                                </div>
-                                <div class="bwm-canon-filter-group">
-                                    <span style="font-weight:600; color:var(--bwm-text-muted); margin-right:4px;">Sort:</span>
-                                    <button type="button" class="bwm-canon-pill-btn active" id="bwm-canon-sort-canon">Canonical</button>
-                                    <button type="button" class="bwm-canon-pill-btn" id="bwm-canon-sort-freq">Frequency</button>
-                                </div>
-                            </div>
-                            <div class="bwm-canon-list" id="bwm-canon-book-list">
-                                ${renderBookBars(bookFilter, bookSort)}
-                            </div>
-                        </div>
-                        <div class="bwm-canon-pane" id="bwm-canon-pane-genre" style="display: none;">
-                            <div style="font-size:0.84em; color:var(--bwm-text-muted); margin-bottom:12px;">
-                                Distribution across 9 standard Biblical literary genres:
-                            </div>
-                            <div class="bwm-canon-genre-list">
-                                ${genreHtml}
-                            </div>
-                        </div>
-                        <div class="bwm-canon-pane" id="bwm-canon-pane-testament" style="display: none;">
-                            ${testamentHtml}
-                        </div>
+                    <div class="bwm-canon-pane" id="bwm-canon-pane-testament" style="display: none;">
+                        ${testamentHtml}
                     </div>
                 </div>
             </div>
         `;
+
+        this.canonModal.classList.add('visible');
+        this.updateBackdrop();
 
         const closeBtn = this.canonModal.querySelector('#bwm-canon-close');
         if (closeBtn) {
             closeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.hideCanonUsageModal();
-            });
-        }
-
-        const backdrop = this.canonModal.querySelector('#bwm-canon-backdrop');
-        if (backdrop) {
-            backdrop.addEventListener('click', (e) => {
-                if (e.target === backdrop) {
-                    this.hideCanonUsageModal();
-                }
             });
         }
 
@@ -4424,7 +4437,7 @@ class BibleWordMap extends HTMLElement {
             dialog.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
         }
 
-        const tabBtns = this.canonModal.querySelectorAll('.bwm-canon-tab-btn');
+        const tabBtns = this.canonModal.querySelectorAll('.bwm-window-tab');
         const panes = {
             book: this.canonModal.querySelector('#bwm-canon-pane-book'),
             genre: this.canonModal.querySelector('#bwm-canon-pane-genre'),
