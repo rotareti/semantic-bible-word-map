@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="color-scheme" content="light dark">
     <title>Semantic Bible Word Map</title>
-    <link rel="stylesheet" href="styles.css?v=6.8.0">
+    <link rel="stylesheet" href="styles.css?v=6.9.0">
     <!-- Load D3.js for high-performance physics and canvas rendering -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="icon" type="image/jpeg" href="favicon.jpg">
@@ -13,16 +13,17 @@
 <body>
     <header style="position: relative; z-index: 10;">
         <div style="display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap;">
-            <h1>Semantic Bible Word Map <span style="font-size: 0.5em; color: var(--text-muted); vertical-align: middle;">v6.8.0</span></h1>
+            <h1>Semantic Bible Word Map <span style="font-size: 0.5em; color: var(--text-muted); vertical-align: middle;">v6.9.0</span></h1>
             <div class="view-mode-pill-group">
                 <button type="button" class="view-mode-pill active" id="view-mode-words" data-mode="words">Words</button>
                 <button type="button" class="view-mode-pill" id="view-mode-books" data-mode="books">Books</button>
+                <button type="button" class="view-mode-pill" id="view-mode-verses" data-mode="verses">Verses</button>
             </div>
             <div class="info-wrapper">
                 <div class="info-btn" id="info-btn">i</div>
                 <div class="info-panel" id="info-panel">
                     <div class="info-close" id="info-close">&times;</div>
-                    Explore the Berean Standard Bible through a semantic lens. Each dot represents a word or biblical book, and the physical distance between dots indicates how closely related their meanings are based on Biblical usage. 
+                    Explore the Berean Standard Bible through a semantic lens. Each dot represents a word, biblical book, or verse centroid, and physical distance indicates semantic proximity based on biblical usage.
                     <br><br>
                     <strong>Word Colors:</strong><br>
                     <span style="color: #4ade80;">■</span> Proper Nouns (Names, Places)<br>
@@ -31,7 +32,7 @@
                     <span style="color: #fbbf24;">■</span> Adjectives & Adverbs<br>
                     <span style="color: #94a3b8;">■</span> Other
                     <br><br>
-                    <strong>Book Genres:</strong><br>
+                    <strong>Book & Verse Genres:</strong><br>
                     <span style="color: #3b82f6;">■</span> Law (Pentateuch)<br>
                     <span style="color: #10b981;">■</span> History<br>
                     <span style="color: #f59e0b;">■</span> Wisdom & Poetry<br>
@@ -45,7 +46,7 @@
                     <strong>Connection Lines:</strong><br>
                     <div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
                         <span class="legend-line legend-line-direct"></span>
-                        <span>Direct Link (single verse linked words)</span>
+                        <span>Direct Link (single verse linked words / word constellation)</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
                         <span class="legend-line legend-line-indirect"></span>
@@ -56,12 +57,12 @@
         </div>
     </header>
     <main>
-        <bible-word-map src-2d="data/output/wordmap_2d.json?v=6.8.0" src-verses="data/output/verse_index.json?v=6.8.0" src-books="data/output/bookmap_2d.json?v=6.8.0"></bible-word-map>
+        <bible-word-map src-2d="data/output/wordmap_2d.json?v=6.9.0" src-verses="data/output/verse_index.json?v=6.9.0" src-books="data/output/bookmap_2d.json?v=6.9.0" src-versemap="data/output/versemap_2d.json?v=6.9.0"></bible-word-map>
     </main>
     <footer>
         <a href="https://github.com/rotareti/semantic-bible-word-map" target="_blank">View source on GitHub</a> <span style="margin: 0 10px; color: var(--text-muted);">|</span> <i style="color: var(--text-muted);">"Freely you have received; freely give."</i>
     </footer>
-    <script src="bible-word-map.js?v=6.8.0" type="module"></script>
+    <script src="bible-word-map.js?v=6.9.0" type="module"></script>
     <script>
         const btn = document.getElementById('info-btn');
         const panel = document.getElementById('info-panel');
@@ -83,22 +84,38 @@
             panel.classList.remove('visible', 'pinned');
         });
 
-        // View Mode Toggle (Words / Books)
+        // View Mode Toggle (Words / Books / Verses)
         const wordsBtn = document.getElementById('view-mode-words');
         const booksBtn = document.getElementById('view-mode-books');
+        const versesBtn = document.getElementById('view-mode-verses');
         const mapEl = document.querySelector('bible-word-map');
 
-        wordsBtn.addEventListener('click', () => {
-            wordsBtn.classList.add('active');
-            booksBtn.classList.remove('active');
-            if (mapEl && mapEl.setViewMode) mapEl.setViewMode('words');
-        });
+        function setModePills(activeBtn) {
+            [wordsBtn, booksBtn, versesBtn].forEach(b => {
+                if (b) b.classList.toggle('active', b === activeBtn);
+            });
+        }
 
-        booksBtn.addEventListener('click', () => {
-            booksBtn.classList.add('active');
-            wordsBtn.classList.remove('active');
-            if (mapEl && mapEl.setViewMode) mapEl.setViewMode('books');
-        });
+        if (wordsBtn) {
+            wordsBtn.addEventListener('click', () => {
+                setModePills(wordsBtn);
+                if (mapEl && mapEl.setViewMode) mapEl.setViewMode('words');
+            });
+        }
+
+        if (booksBtn) {
+            booksBtn.addEventListener('click', () => {
+                setModePills(booksBtn);
+                if (mapEl && mapEl.setViewMode) mapEl.setViewMode('books');
+            });
+        }
+
+        if (versesBtn) {
+            versesBtn.addEventListener('click', () => {
+                setModePills(versesBtn);
+                if (mapEl && mapEl.setViewMode) mapEl.setViewMode('verses');
+            });
+        }
     </script>
 </body>
 </html>

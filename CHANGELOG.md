@@ -1,5 +1,18 @@
 # Changelog
 
+## [6.9.0] - 2026-09-04
+### Added
+- **Biblical Verses Mode:** Introduced a third exploratory mode alongside Words and Books, mapping all 30,969 biblical verses into continuous semantic space via high-dimensional verse centroids.
+- **Unbiased Vector Cross-References:** Generated purely mathematical biblical cross-references computed from 100-dimensional cosine similarities, surfacing organic lexical and theological links across the canon free from human editorial bias.
+- **Dual-View Canvas Architecture:** Added interactive mode switching on the canvas between:
+  - **Cross-References Network:** Visualizes target verses linked to their top cosine cross-reference sister verses across Scripture.
+  - **Word Constellation:** Unpacks any verse into its constituent content words (`NOUN`, `VERB`, `PROPN`, `ADJ`), allowing immediate exploration of the underlying vocabulary.
+- **Lightweight Native Verse Query Parser:** Implemented a zero-dependency parser in JavaScript supporting standard citations (`John 1:1`), shorthand aliases (`Jn 1:1`, `Jhn 1 1`, `1 jn 3 16`), verse ranges (`Gen 1:1-3`), chapter defaults (`John 1`), and multi-verse comparisons (`Genesis 1:1, John 1:1`).
+- **Verse Inspector Card & Bottom Sheet:** Added a dedicated verse details window displaying full verse texts, top 10 semantic cross-references with similarity percentages and preview snippets, constituent vocabulary chips, quick focus actions, and additive comparison toggles.
+- **Landmark Overview Map:** Configured 36 landmark biblical verses spanning all canonical genres to provide an instant interactive overview when entering Verses mode without an active search.
+- **Architecture Documentation:** Authored comprehensive technical documentation under `docs/02-unbiased-verse-cross-references.md` and `docs/03-book-centroids-and-thematic-embeddings.md` detailing IVF weighting, centroid vector mathematics, TF-IDF scoring, and projection dynamics.
+- **GitHub Pages Deployment Support:** Updated the automated deployment workflow to bundle and deploy `versemap_2d.json` alongside existing datasets.
+
 ## [6.8.0] - 2026-09-04
 ### Added
 - **Canon Usage Density Metrics:** Added a density analysis option to the Canon Usage inspector tab, calculating word occurrences relative to book length (occurrences per 1,000 words).
