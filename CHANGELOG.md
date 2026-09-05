@@ -11,6 +11,9 @@
 - **Crisp Map Clarity:** Removed background dimming and map blur completely across both mobile and desktop modes, ensuring the semantic map remains sharp, interactive, and pannable while inspecting terms.
 - **Unified Visual Design System:** Harmonized styling across Book Info, Verses, Original Language, and Canon Usage panels into a shared design foundation with consistent headers, badges, tabs, and action pills.
 
+### Fixed
+- **Mobile Viewport Overflow:** Prevented info windows from overflowing mobile viewports, ensuring headers, drag handles, and close buttons remain fully accessible.
+
 ## [6.6.0] - 2026-09-04
 ### Added
 - **Mobile Book Bottom Sheet:** Transformed the book info window into a responsive bottom sheet popup on mobile (capped at 56vh) with slide animations and drag handle, preserving map visibility.
