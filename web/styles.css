@@ -233,9 +233,9 @@ footer a {
     color: var(--text-color);
 }
 .view-mode-pill.active {
-    background: #3b82f6;
+    background: #2563eb;
     color: #ffffff;
-    box-shadow: 0 1px 3px rgba(59, 130, 246, 0.35);
+    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.35);
 }
 
 @media (max-width: 768px) {

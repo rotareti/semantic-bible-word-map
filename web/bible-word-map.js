@@ -209,6 +209,8 @@ class BibleWordMap extends HTMLElement {
         this.tooltipTimeout = null;
         this.simulation = null;
         this.neighborsPerKeyword = 100;
+        this.verseRefsPerVerse = 8;
+        this.verseWordsPerVerse = 6;
         
         this.innerHTML = `
             <style>
@@ -1293,7 +1295,7 @@ class BibleWordMap extends HTMLElement {
                 .bwm-verse-mode-floater {
                     position: absolute;
                     top: 14px;
-                    right: 14px;
+                    left: 14px;
                     z-index: 15;
                     display: flex;
                     gap: 6px;
@@ -1429,6 +1431,25 @@ class BibleWordMap extends HTMLElement {
                         right: 12px;
                         padding: 6px 11px;
                         font-size: 0.8em;
+                    }
+
+                    .bwm-book-card-reopen-text {
+                        max-width: 110px;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+                    }
+
+                    .bwm-verse-mode-floater {
+                        top: 12px;
+                        left: 12px;
+                        padding: 3px;
+                        gap: 4px;
+                    }
+
+                    .bwm-verse-mode-floater .bwm-window-pill {
+                        padding: 4px 8px;
+                        font-size: 0.78em;
                     }
 
                     .bwm-canon-row-book {
@@ -1669,8 +1690,23 @@ class BibleWordMap extends HTMLElement {
         if (this.neighborSlider) {
             this.neighborSlider.addEventListener('input', (e) => {
                 const val = parseInt(e.target.value, 10);
-                this.neighborsPerKeyword = val;
+                if (this.viewMode === 'verses') {
+                    if (this.verseViewMode === 'words') {
+                        this.verseWordsPerVerse = val;
+                    } else {
+                        this.verseRefsPerVerse = val;
+                    }
+                } else {
+                    this.neighborsPerKeyword = val;
+                }
                 if (this.neighborValue) this.neighborValue.textContent = val;
+
+                if (this.viewMode === 'verses' && this.isSearchMode && this.searchedVerses && this.searchedVerses.length > 0) {
+                    clearTimeout(this._verseSliderTimeout);
+                    this._verseSliderTimeout = setTimeout(() => {
+                        this.searchVerses(true);
+                    }, 50);
+                }
             });
             this.neighborSlider.addEventListener('change', () => {
                 // Dynamically re-compute and update if search mode is active
@@ -1941,6 +1977,8 @@ class BibleWordMap extends HTMLElement {
             }
             this.showLoading('Loading Bible Word Map...', 'words');
         }
+
+        this.updateNeighborSlider();
 
         // Fetch datasets concurrently
         this.booksPromise = this.srcBooks ? fetch(this.srcBooks).then(r => {
@@ -2893,16 +2931,8 @@ class BibleWordMap extends HTMLElement {
         if (this.verseModeFloater) this.verseModeFloater.style.display = (mode === 'verses') ? 'flex' : 'none';
         
         let activeHeading = this.querySelector('#bwm-active-heading');
-        let neighborHeading = this.querySelector('#bwm-neighbor-heading');
-        let neighborHint = this.querySelector('#bwm-neighbor-hint');
-        
         if (activeHeading) activeHeading.textContent = (mode === 'verses') ? 'Active Verses' : ((mode === 'books') ? 'Active Books' : 'Active Words');
-        if (neighborHeading) neighborHeading.textContent = (mode === 'verses') ? 'Connections per Verse' : ((mode === 'books') ? 'Relationships per Book' : 'Relationships per Word');
-        if (neighborHint) neighborHint.textContent = (mode === 'verses')
-            ? 'Controls how many cross-references or words appear around each verse.'
-            : ((mode === 'books') 
-                ? 'Controls how many related words appear around each book.' 
-                : 'Controls how many related words appear around each keyword.');
+        this.updateNeighborSlider();
 
         if (this.searchInput) {
             this.searchInput.value = '';
@@ -3581,6 +3611,52 @@ class BibleWordMap extends HTMLElement {
         this.updateBackdrop();
     }
 
+    updateNeighborSlider() {
+        if (!this.neighborSlider) return;
+        const heading = this.querySelector('#bwm-neighbor-heading');
+        const hint = this.querySelector('#bwm-neighbor-hint');
+
+        if (this.viewMode === 'verses') {
+            if (this.verseViewMode === 'words') {
+                if (heading) heading.textContent = 'Word Connections per Verse';
+                if (hint) hint.textContent = 'Controls how many constituent content words appear around each verse.';
+                this.neighborSlider.min = '1';
+                this.neighborSlider.max = '12';
+                this.neighborSlider.step = '1';
+                const val = this.verseWordsPerVerse || 6;
+                this.neighborSlider.value = val;
+                if (this.neighborValue) this.neighborValue.textContent = val;
+            } else {
+                if (heading) heading.textContent = 'Verse Connections per Verse';
+                if (hint) hint.textContent = 'Controls how many cross-reference verses link to each verse.';
+                this.neighborSlider.min = '1';
+                this.neighborSlider.max = '16';
+                this.neighborSlider.step = '1';
+                const val = this.verseRefsPerVerse || 8;
+                this.neighborSlider.value = val;
+                if (this.neighborValue) this.neighborValue.textContent = val;
+            }
+        } else if (this.viewMode === 'books') {
+            if (heading) heading.textContent = 'Relationships per Book';
+            if (hint) hint.textContent = 'Controls how many related words appear around each book.';
+            this.neighborSlider.min = '10';
+            this.neighborSlider.max = '250';
+            this.neighborSlider.step = '5';
+            const val = this.neighborsPerKeyword || 100;
+            this.neighborSlider.value = val;
+            if (this.neighborValue) this.neighborValue.textContent = val;
+        } else {
+            if (heading) heading.textContent = 'Relationships per Word';
+            if (hint) hint.textContent = 'Controls how many related words appear around each keyword.';
+            this.neighborSlider.min = '10';
+            this.neighborSlider.max = '250';
+            this.neighborSlider.step = '5';
+            const val = this.neighborsPerKeyword || 100;
+            this.neighborSlider.value = val;
+            if (this.neighborValue) this.neighborValue.textContent = val;
+        }
+    }
+
     setVerseViewMode(submode) {
         if (this.verseViewMode === submode) return;
         this.verseViewMode = submode;
@@ -3590,6 +3666,7 @@ class BibleWordMap extends HTMLElement {
             btnRefs.classList.toggle('active', submode === 'refs');
             btnWords.classList.toggle('active', submode === 'words');
         }
+        this.updateNeighborSlider();
         if (this.isSearchMode && this.searchedVerses && this.searchedVerses.length > 0) {
             let records = this.searchedVerses.map(ref => this.versemapLookup ? this.versemapLookup.get(ref) : null).filter(Boolean);
             this.buildVersesConstellation(records);
@@ -3818,7 +3895,7 @@ class BibleWordMap extends HTMLElement {
         let primaryIds = new Set(primaryNodes.map(n => n.id));
 
         if (this.verseViewMode === 'refs') {
-            let limit = this.neighborsPerKeyword || 8;
+            let limit = this.verseRefsPerVerse || 8;
             let crossrefMap = new Map();
             let crossrefLinks = [];
 
@@ -3930,8 +4007,9 @@ class BibleWordMap extends HTMLElement {
             let wordMap = new Map();
             let wordLinks = [];
 
+            let wordLimit = this.verseWordsPerVerse || 6;
             foundVerses.forEach(v => {
-                let topWords = (v.w || []).slice(0, 15);
+                let topWords = (v.w || []).slice(0, wordLimit);
                 topWords.forEach(wId => {
                     let [w, pos] = wId.split('_');
                     let fullPoint = this.data2d ? this.data2d.find(d => d.id === wId) : null;
@@ -4032,7 +4110,7 @@ class BibleWordMap extends HTMLElement {
 
         let verseText = this.verseTextMap ? (this.verseTextMap.get(verse.id) || '') : '';
 
-        let crossrefsHtml = (verse.r || []).slice(0, 10).map(cr => {
+        let crossrefsHtml = (verse.r || []).slice(0, 12).map(cr => {
             let crFormatted = formatVerseRef(cr.id);
             let crGenre = getVerseGenre(cr.id);
             let crGenreColor = GENRE_COLORS[crGenre] || '#3b82f6';

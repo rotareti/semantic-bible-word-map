@@ -1,5 +1,15 @@
 # Changelog
 
+## [6.9.1] - 2026-09-04
+### Added
+- **Dynamic Connections Slider in Verses Mode:** The Options drawer slider now dynamically controls verse connectivity. In verse-verse (`refs`) mode, it scales cross-reference connections per verse from 1 to 16 (default 8). In verse-word (`words`) mode, it scales constituent content words from 1 to 12 (default 6).
+- **Live Debounced Slider Feedback:** Moving the slider in verse mode updates the active constellation in real time without lag.
+- **Top-16 Cross-Reference Dataset:** Expanded the verse centroid generation pipeline to calculate and store up to 16 semantic cross-references and up to 12 constituent content words per verse.
+
+### Fixed
+- **Verse Info Button Layout Collision:** Repositioned the canvas submode toggle (`[ 🔗 Cross-References | ✦ Words ]`) to the top-left corner, completely resolving overlap with the top-right `[ 📖 Verse Info ]` reopen button on both desktop and mobile screens.
+- **Title Bar Mode Pill Blue Color:** Harmonized the active blue styling of the `Words | Books | Verses` header toggle to `#2563eb`, matching the Options drawer and right inspector drawer.
+
 ## [6.9.0] - 2026-09-04
 ### Added
 - **Biblical Verses Mode:** Introduced a third exploratory mode alongside Words and Books, mapping all 30,969 biblical verses into continuous semantic space via high-dimensional verse centroids.

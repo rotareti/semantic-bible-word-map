@@ -94,15 +94,15 @@ def main():
             coords_2d.append((0.0, 0.0))
 
         content_candidates.sort(key=lambda item: item[1], reverse=True)
-        top_content_words.append([item[0] for item in content_candidates[:6]])
+        top_content_words.append([item[0] for item in content_candidates[:12]])
 
     # 4. Batch compute top cross-references using matrix multiplication
-    print("Computing top-8 semantic cross-references for all verses...")
+    print("Computing top-16 semantic cross-references for all verses...")
     cross_references = [[] for _ in range(total_verses)]
     batch_size = 2000
     num_batches = (total_verses + batch_size - 1) // batch_size
 
-    K = 8 # Number of cross-references per verse
+    K = 16 # Number of cross-references per verse
 
     for b_idx in range(num_batches):
         start_i = b_idx * batch_size
