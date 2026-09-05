@@ -1,5 +1,9 @@
 # Changelog
 
+## [7.1.1] - 2026-09-05
+### Changed
+- **Shortened Page Title:** Simplified the application page title and header branding from "Semantic Bible Word Map" to "Semantic Bible Map" to reflect its comprehensive coverage across words, verses, and books.
+
 ## [7.1.0] - 2026-09-05
 ### Added
 - **Expanded Top-32 Cross-Reference Dataset:** Regenerated `versemap_2d.json` using the centroid generation pipeline to calculate and store up to 32 high-confidence semantic cross-references per verse across all 30,969 verses of Scripture.
