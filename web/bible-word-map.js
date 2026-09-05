@@ -1611,6 +1611,9 @@ class BibleWordMap extends HTMLElement {
                 if (!target && this.searchedVerses && this.searchedVerses.length > 0 && this.versemapLookup) {
                     target = this.versemapLookup.get(this.searchedVerses[0]);
                 }
+                if (target && this.versemapLookup && this.versemapLookup.has(target.id)) {
+                    target = this.versemapLookup.get(target.id);
+                }
                 if (target) {
                     let activeVerses = (this.searchedVerses && this.searchedVerses.length > 0)
                         ? this.searchedVerses.map(vId => this.versemapLookup ? this.versemapLookup.get(vId) : null).filter(Boolean)
@@ -4078,6 +4081,9 @@ class BibleWordMap extends HTMLElement {
 
     showVerseCard(verse, allActiveVerses = null) {
         if (!this.verseCard || !verse) return;
+        if (this.versemapLookup && this.versemapLookup.has(verse.id)) {
+            verse = this.versemapLookup.get(verse.id);
+        }
         this.hideWordInspector();
         this.hideBookCard();
         this.hideRadialMenu();
@@ -4110,7 +4116,8 @@ class BibleWordMap extends HTMLElement {
 
         let verseText = this.verseTextMap ? (this.verseTextMap.get(verse.id) || '') : '';
 
-        let crossrefsHtml = (verse.r || []).slice(0, 12).map(cr => {
+        let crossrefsList = Array.isArray(verse.r) ? verse.r : [];
+        let crossrefsHtml = crossrefsList.slice(0, 12).map(cr => {
             let crFormatted = formatVerseRef(cr.id);
             let crGenre = getVerseGenre(cr.id);
             let crGenreColor = GENRE_COLORS[crGenre] || '#3b82f6';
@@ -4137,7 +4144,8 @@ class BibleWordMap extends HTMLElement {
             `;
         }).join('');
 
-        let wordsHtml = (verse.w || []).map(wId => {
+        let wordList = Array.isArray(verse.words) ? verse.words : (Array.isArray(verse.w) ? verse.w : []);
+        let wordsHtml = wordList.map(wId => {
             let [w, pos] = wId.split('_');
             let posColor = '#94a3b8';
             if (pos === 'PROPN') posColor = '#4ade80';
@@ -4711,7 +4719,7 @@ class BibleWordMap extends HTMLElement {
                         this.addVerse(this.hoveredNode.id);
                     } else if (this.isSearchMode && this.searchedVerses && this.searchedVerses.length > 0) {
                         if (isDesktop) {
-                            let targetVerse = this.hoveredNode;
+                            let targetVerse = this.versemapLookup ? (this.versemapLookup.get(this.hoveredNode.id) || this.hoveredNode) : this.hoveredNode;
                             let activeVerses = (this.searchedVerses && this.searchedVerses.length > 0)
                                 ? this.searchedVerses.map(vId => this.versemapLookup ? this.versemapLookup.get(vId) : null).filter(Boolean)
                                 : [targetVerse];
@@ -4866,7 +4874,8 @@ class BibleWordMap extends HTMLElement {
                         let activeVerses = (this.searchedVerses && this.searchedVerses.length > 0)
                             ? this.searchedVerses.map(vId => this.versemapLookup ? this.versemapLookup.get(vId) : null).filter(Boolean)
                             : [node];
-                        this.showVerseCard(node, activeVerses);
+                        let targetVerse = this.versemapLookup ? (this.versemapLookup.get(node.id) || node) : node;
+                        this.showVerseCard(targetVerse, activeVerses);
                     }
                 });
                 menuItems.push({

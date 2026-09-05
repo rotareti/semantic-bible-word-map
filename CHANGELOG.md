@@ -7,6 +7,7 @@
 - **Top-16 Cross-Reference Dataset:** Expanded the verse centroid generation pipeline to calculate and store up to 16 semantic cross-references and up to 12 constituent content words per verse.
 
 ### Fixed
+- **Cross-Reference Verse Node Click TypeError:** Fixed an issue where clicking a cross-reference verse node passed a canvas node with a label string `node.w` instead of the raw dataset record to `showVerseCard`, causing `(intermediate value).map is not a function`. Now automatically resolves pristine records from the dataset lookup and guards array properties.
 - **Verse Info Button Layout Collision:** Repositioned the canvas submode toggle (`[ 🔗 Cross-References | ✦ Words ]`) to the top-left corner, completely resolving overlap with the top-right `[ 📖 Verse Info ]` reopen button on both desktop and mobile screens.
 - **Title Bar Mode Pill Blue Color:** Harmonized the active blue styling of the `Words | Books | Verses` header toggle to `#2563eb`, matching the Options drawer and right inspector drawer.
 
