@@ -5,6 +5,7 @@
 - **Dynamic Connections Slider in Verses Mode:** The Options drawer slider now dynamically controls verse connectivity. In verse-verse (`refs`) mode, it scales cross-reference connections per verse from 1 to 16 (default 8). In verse-word (`words`) mode, it scales constituent content words from 1 to 12 (default 6).
 - **Live Debounced Slider Feedback:** Moving the slider in verse mode updates the active constellation in real time without lag.
 - **Top-16 Cross-Reference Dataset:** Expanded the verse centroid generation pipeline to calculate and store up to 16 semantic cross-references and up to 12 constituent content words per verse.
+- **Selected Verse Add / Remove Action:** Added an interactive `[ + Add to Map ]` / `[ − Remove from Map ]` toggle in both the header and footer actions of the Verse Info panel, allowing users to directly add or remove any inspected cross-linked verse from the active constellation.
 
 ### Fixed
 - **Cross-Reference Verse Node Click TypeError:** Fixed an issue where clicking a cross-reference verse node passed a canvas node with a label string `node.w` instead of the raw dataset record to `showVerseCard`, causing `(intermediate value).map is not a function`. Now automatically resolves pristine records from the dataset lookup and guards array properties.

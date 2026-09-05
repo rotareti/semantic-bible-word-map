@@ -3773,7 +3773,11 @@ class BibleWordMap extends HTMLElement {
         let records = foundVerses.map(ref => this.versemapLookup ? this.versemapLookup.get(ref) : null).filter(Boolean);
         if (records.length === 0) return;
 
-        this.selectedVerse = records[0];
+        if (!this.selectedVerse || !records.some(r => r.id === this.selectedVerse.id)) {
+            this.selectedVerse = records[0];
+        } else {
+            this.selectedVerse = records.find(r => r.id === this.selectedVerse.id);
+        }
         this.isSearchMode = true;
         this.userInteracted = false;
 
@@ -4156,6 +4160,8 @@ class BibleWordMap extends HTMLElement {
             return `<span class="bwm-book-chip" style="border-left: 3px solid ${posColor};" title="Constituent content word"><b>${displayW}</b> <span style="opacity:0.5;font-size:0.8em;">(${pos ? pos.toLowerCase() : ''})</span></span>`;
         }).join('');
 
+        let isAlreadyActive = Boolean(this.searchedVerses && this.searchedVerses.includes(verse.id));
+
         this.verseCard.innerHTML = `
             <div class="bwm-sheet-handle"></div>
             ${tabsHtml}
@@ -4168,7 +4174,12 @@ class BibleWordMap extends HTMLElement {
                         </div>
                         <h3 class="bwm-window-title">${formattedRef}</h3>
                     </div>
-                    <button type="button" class="bwm-window-close" id="bwm-verse-card-close" title="Dismiss">&times;</button>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <button type="button" class="bwm-window-pill ${isAlreadyActive ? '' : 'active'}" id="bwm-btn-toggle-active-verse" title="${isAlreadyActive ? 'Remove this verse from map' : 'Add this verse to map'}" style="font-size: 0.8em; padding: 4px 10px; display: inline-flex; align-items: center; gap: 4px;">
+                            ${isAlreadyActive ? '&minus; Remove from Map' : '+ Add to Map'}
+                        </button>
+                        <button type="button" class="bwm-window-close" id="bwm-verse-card-close" title="Dismiss">&times;</button>
+                    </div>
                 </div>
             </div>
             <div class="bwm-window-body">
@@ -4190,6 +4201,9 @@ class BibleWordMap extends HTMLElement {
                     <button type="button" class="bwm-window-pill" id="bwm-btn-reset-verses" title="Return to landmark overview">
                         &larr; Landmark Overview
                     </button>
+                    <button type="button" class="bwm-window-pill ${isAlreadyActive ? '' : 'active'}" id="bwm-btn-toggle-active-verse-footer" title="${isAlreadyActive ? 'Remove from map' : 'Add to map'}">
+                        ${isAlreadyActive ? '&minus; Remove from Map' : '+ Add to Map'}
+                    </button>
                     <button type="button" class="bwm-window-pill active" id="bwm-btn-dismiss-verse-card" title="Explore constellation on map">
                         Explore Map
                     </button>
@@ -4207,6 +4221,21 @@ class BibleWordMap extends HTMLElement {
 
         let closeBtn = this.verseCard.querySelector('#bwm-verse-card-close');
         if (closeBtn) closeBtn.addEventListener('click', (e) => { e.stopPropagation(); this.hideVerseCard(); });
+
+        const toggleActiveVerse = (e) => {
+            e.stopPropagation();
+            if (this.searchedVerses && this.searchedVerses.includes(verse.id)) {
+                this.removeVerse(verse.id);
+            } else {
+                this.addVerse(verse.id);
+            }
+        };
+
+        let toggleHeaderBtn = this.verseCard.querySelector('#bwm-btn-toggle-active-verse');
+        if (toggleHeaderBtn) toggleHeaderBtn.addEventListener('click', toggleActiveVerse);
+
+        let toggleFooterBtn = this.verseCard.querySelector('#bwm-btn-toggle-active-verse-footer');
+        if (toggleFooterBtn) toggleFooterBtn.addEventListener('click', toggleActiveVerse);
 
         let dismissBtn = this.verseCard.querySelector('#bwm-btn-dismiss-verse-card');
         if (dismissBtn) dismissBtn.addEventListener('click', (e) => { e.stopPropagation(); this.hideVerseCard(); });
@@ -4285,15 +4314,23 @@ class BibleWordMap extends HTMLElement {
         if (!this.drawerVerses.includes(ref)) {
             this.drawerVerses.push(ref);
         }
+        if (this.versemapLookup && this.versemapLookup.has(ref)) {
+            this.selectedVerse = this.versemapLookup.get(ref);
+        }
         this.searchVerses(true);
     }
 
     removeVerse(ref) {
         if (!this.searchedVerses) return;
         this.searchedVerses = this.searchedVerses.filter(r => r !== ref);
+        this.drawerVerses = this.drawerVerses.filter(r => r !== ref);
         if (this.searchedVerses.length === 0) {
             this.clearAllKeywords();
         } else {
+            if (this.selectedVerse && this.selectedVerse.id === ref) {
+                let remaining = this.searchedVerses.map(id => this.versemapLookup ? this.versemapLookup.get(id) : null).filter(Boolean);
+                this.selectedVerse = remaining.length > 0 ? remaining[0] : null;
+            }
             this.searchVerses(true);
         }
     }
