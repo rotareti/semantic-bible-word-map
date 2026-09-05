@@ -7,7 +7,7 @@
   - **By Book:** Horizontal occurrence bars per book, color-coded by literary genre, with filters for occurring versus all 66 books and canonical or frequency sorting.
   - **By Literature:** Aggregated statistics across the 9 Biblical literary genres (Law, History, Wisdom & Poetry, Major Prophets, Minor Prophets, Gospels, Pauline Epistles, General Epistles, Apocalypse) with book coverage and percentages.
   - **OT vs NT:** Dynamic SVG Donut chart displaying total verse occurrences and testament proportions, accompanied by detailed comparative breakdown cards.
-- **Mobile Touch Radial Menu & Bottom Sheets:** Retained the touch-optimized radial menu on mobile viewports while displaying info cards as responsive bottom sheets with drag handles and smooth slide transitions.
+- **Mobile Touch Radial Menu & Swipe-to-Dismiss Bottom Sheets:** Retained the touch-optimized radial menu on mobile viewports while displaying info cards as responsive bottom sheets with drag handles, velocity-sensitive downward swipe-to-dismiss gestures, and smooth slide transitions.
 - **Crisp Map Clarity:** Removed background dimming and map blur completely across both mobile and desktop modes, ensuring the semantic map remains sharp, interactive, and pannable while inspecting terms.
 - **Unified Visual Design System:** Harmonized styling across Book Info, Verses, Original Language, and Canon Usage panels into a shared design foundation with consistent headers, badges, tabs, and action pills.
 

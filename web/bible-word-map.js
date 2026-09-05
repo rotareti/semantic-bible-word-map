@@ -1178,13 +1178,30 @@ class BibleWordMap extends HTMLElement {
                 @media (max-width: 768px) {
                     .bwm-sheet-handle {
                         display: block;
-                        width: 38px;
-                        height: 4px;
-                        border-radius: 2px;
+                        width: 44px;
+                        height: 5px;
+                        border-radius: 3px;
                         background: var(--bwm-border);
-                        margin: 8px auto 4px auto;
-                        opacity: 0.8;
+                        margin: 10px auto 4px auto;
+                        opacity: 0.85;
                         flex-shrink: 0;
+                        cursor: grab;
+                        position: relative;
+                        touch-action: none;
+                        transition: background-color 0.15s, opacity 0.15s;
+                    }
+                    .bwm-sheet-handle::before {
+                        content: '';
+                        position: absolute;
+                        top: -12px;
+                        bottom: -12px;
+                        left: -24px;
+                        right: -24px;
+                    }
+                    .bwm-sheet-handle:active {
+                        cursor: grabbing;
+                        opacity: 1;
+                        background: var(--bwm-node-hover);
                     }
 
                     .bwm-window-card {
@@ -1202,16 +1219,16 @@ class BibleWordMap extends HTMLElement {
                         border-left: none !important;
                         border-right: none !important;
                         box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35) !important;
-                        transform: translateY(105%) !important;
-                        opacity: 0 !important;
-                        pointer-events: none !important;
-                        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease !important;
+                        transform: translateY(105%);
+                        opacity: 0;
+                        pointer-events: none;
+                        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
                     }
 
                     .bwm-window-card.visible {
-                        transform: translateY(0) !important;
-                        opacity: 1 !important;
-                        pointer-events: auto !important;
+                        transform: translateY(0);
+                        opacity: 1;
+                        pointer-events: auto;
                     }
 
                     .bwm-book-card-reopen {
@@ -1328,13 +1345,13 @@ class BibleWordMap extends HTMLElement {
             this.wordCard.addEventListener('click', (e) => e.stopPropagation());
             this.wordCard.addEventListener('pointerdown', (e) => e.stopPropagation());
             this.wordCard.addEventListener('mousedown', (e) => e.stopPropagation());
-            this.wordCard.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+            this.setupMobileSwipeToDismiss(this.wordCard, () => this.hideWordInspector());
         }
         if (this.bookCard) {
             this.bookCard.addEventListener('click', (e) => e.stopPropagation());
             this.bookCard.addEventListener('pointerdown', (e) => e.stopPropagation());
             this.bookCard.addEventListener('mousedown', (e) => e.stopPropagation());
-            this.bookCard.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+            this.setupMobileSwipeToDismiss(this.bookCard, () => this.hideBookCard());
         }
         this.reopenBtn = this.querySelector('#bwm-book-card-reopen');
         if (this.reopenBtn) {
@@ -3028,6 +3045,9 @@ class BibleWordMap extends HTMLElement {
         if (this.reopenBtn) {
             this.reopenBtn.style.display = 'none';
         }
+        this.bookCard.style.transform = '';
+        this.bookCard.style.transition = '';
+        this.bookCard.style.opacity = '';
         this.bookCard.classList.add('visible');
         this.updateBackdrop();
 
@@ -3099,6 +3119,9 @@ class BibleWordMap extends HTMLElement {
     hideBookCard() {
         if (this.bookCard) {
             this.bookCard.classList.remove('visible');
+            this.bookCard.style.transform = '';
+            this.bookCard.style.transition = '';
+            this.bookCard.style.opacity = '';
         }
         if (this.reopenBtn) {
             if (this.isSearchMode && this.searchedBooks && this.searchedBooks.length > 0) {
@@ -3676,9 +3699,169 @@ class BibleWordMap extends HTMLElement {
         this.draw();
     }
 
+    setupMobileSwipeToDismiss(card, onClose) {
+        if (!card) return;
+
+        let startY = 0;
+        let startX = 0;
+        let currentY = 0;
+        let startTime = 0;
+        let isDragging = false;
+        let canDrag = false;
+        let scrollEl = null;
+
+        const onTouchMove = (e) => {
+            if (!e.touches || e.touches.length === 0) return;
+            const touch = e.touches[0];
+            currentY = touch.clientY;
+            const dy = currentY - startY;
+            const dx = touch.clientX - startX;
+
+            if (!isDragging) {
+                if (scrollEl && scrollEl.scrollTop > 0) {
+                    canDrag = false;
+                }
+                if (canDrag && dy > 8 && Math.abs(dy) > Math.abs(dx) * 1.15) {
+                    isDragging = true;
+                    card.style.transition = 'none';
+                }
+            }
+
+            if (isDragging) {
+                if (e.cancelable) e.preventDefault();
+                e.stopPropagation();
+                if (dy > 0) {
+                    card.style.transform = `translateY(${dy}px)`;
+                } else {
+                    card.style.transform = `translateY(${dy * 0.2}px)`;
+                }
+            }
+        };
+
+        const onTouchEnd = (e) => {
+            window.removeEventListener('touchmove', onTouchMove, { capture: true });
+            window.removeEventListener('touchend', onTouchEnd, { capture: true });
+            window.removeEventListener('touchcancel', onTouchEnd, { capture: true });
+
+            if (!isDragging) return;
+            isDragging = false;
+            e.stopPropagation();
+
+            card.style.transition = 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease';
+
+            const dy = currentY - startY;
+            const elapsed = Math.max(1, performance.now() - startTime);
+            const vy = dy / elapsed;
+
+            if (dy > 70 || (dy > 25 && vy > 0.35)) {
+                card.style.transform = 'translateY(105%)';
+                card.style.opacity = '0';
+                setTimeout(() => {
+                    card.style.transform = '';
+                    card.style.transition = '';
+                    card.style.opacity = '';
+                    onClose();
+                }, 220);
+            } else {
+                card.style.transform = 'translateY(0)';
+                setTimeout(() => {
+                    card.style.transform = '';
+                    card.style.transition = '';
+                }, 240);
+            }
+        };
+
+        card.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+            if (window.innerWidth > 768) return;
+            if (!e.touches || e.touches.length === 0) return;
+
+            const touch = e.touches[0];
+            startY = touch.clientY;
+            startX = touch.clientX;
+            currentY = startY;
+            startTime = performance.now();
+            isDragging = false;
+
+            scrollEl = touch.target.closest('.bwm-window-body, .bwm-verses-body, .bwm-canon-list, .bwm-book-chip-list');
+            if (scrollEl) {
+                canDrag = (scrollEl.scrollTop <= 0);
+            } else {
+                canDrag = true;
+            }
+
+            window.addEventListener('touchmove', onTouchMove, { capture: true, passive: false });
+            window.addEventListener('touchend', onTouchEnd, { capture: true });
+            window.addEventListener('touchcancel', onTouchEnd, { capture: true });
+        }, { passive: true });
+
+        // Also support mouse drag on handle or header when window is mobile width
+        card.addEventListener('mousedown', (e) => {
+            if (window.innerWidth > 768) return;
+            if (e.button !== 0) return;
+            const handleOrHeader = e.target.closest('.bwm-sheet-handle, .bwm-window-header');
+            if (!handleOrHeader) return;
+            if (e.target.closest('button, input, a, .bwm-window-tab, .bwm-window-pill')) return;
+
+            e.stopPropagation();
+            startY = e.clientY;
+            currentY = startY;
+            startTime = performance.now();
+            isDragging = true;
+            card.style.transition = 'none';
+
+            const onMouseMove = (me) => {
+                me.stopPropagation();
+                me.preventDefault();
+                currentY = me.clientY;
+                const dy = currentY - startY;
+                if (dy > 0) {
+                    card.style.transform = `translateY(${dy}px)`;
+                } else {
+                    card.style.transform = `translateY(${dy * 0.2}px)`;
+                }
+            };
+
+            const onMouseUp = (me) => {
+                window.removeEventListener('mousemove', onMouseMove, { capture: true });
+                window.removeEventListener('mouseup', onMouseUp, { capture: true });
+                me.stopPropagation();
+                isDragging = false;
+
+                card.style.transition = 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease';
+                const dy = currentY - startY;
+                const elapsed = Math.max(1, performance.now() - startTime);
+                const vy = dy / elapsed;
+
+                if (dy > 70 || (dy > 25 && vy > 0.35)) {
+                    card.style.transform = 'translateY(105%)';
+                    card.style.opacity = '0';
+                    setTimeout(() => {
+                        card.style.transform = '';
+                        card.style.transition = '';
+                        card.style.opacity = '';
+                        onClose();
+                    }, 220);
+                } else {
+                    card.style.transform = 'translateY(0)';
+                    setTimeout(() => {
+                        card.style.transform = '';
+                        card.style.transition = '';
+                    }, 240);
+                }
+            };
+
+            window.addEventListener('mousemove', onMouseMove, { capture: true });
+            window.addEventListener('mouseup', onMouseUp, { capture: true });
+        });
+    }
+
     hideWordInspector() {
         if (this.wordCard) {
             this.wordCard.classList.remove('visible');
+            this.wordCard.style.transform = '';
+            this.wordCard.style.transition = '';
+            this.wordCard.style.opacity = '';
             this.wordCard.innerHTML = '';
         }
         this.inspectorNode = null;
@@ -4175,6 +4358,9 @@ class BibleWordMap extends HTMLElement {
             `;
         }
 
+        this.wordCard.style.transform = '';
+        this.wordCard.style.transition = '';
+        this.wordCard.style.opacity = '';
         this.wordCard.innerHTML = headerHtml + versesPaneHtml + origPaneHtml + canonPaneHtml;
         this.wordCard.classList.add('visible');
 
