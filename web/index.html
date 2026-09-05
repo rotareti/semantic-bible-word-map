@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="color-scheme" content="light dark">
     <title>Semantic Bible Word Map</title>
-    <link rel="stylesheet" href="styles.css?v=6.9.1">
+    <link rel="stylesheet" href="styles.css?v=7.0.0">
     <!-- Load D3.js for high-performance physics and canvas rendering -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="icon" type="image/jpeg" href="favicon.jpg">
@@ -13,11 +13,11 @@
 <body>
     <header style="position: relative; z-index: 10;">
         <div style="display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap;">
-            <h1>Semantic Bible Word Map <span style="font-size: 0.5em; color: var(--text-muted); vertical-align: middle;">v6.9.1</span></h1>
+            <h1>Semantic Bible Word Map <span style="font-size: 0.5em; color: var(--text-muted); vertical-align: middle;">v7.0.0</span></h1>
             <div class="view-mode-pill-group">
                 <button type="button" class="view-mode-pill active" id="view-mode-words" data-mode="words">Words</button>
-                <button type="button" class="view-mode-pill" id="view-mode-books" data-mode="books">Books</button>
                 <button type="button" class="view-mode-pill" id="view-mode-verses" data-mode="verses">Verses</button>
+                <button type="button" class="view-mode-pill" id="view-mode-books" data-mode="books">Books</button>
             </div>
             <div class="info-wrapper">
                 <div class="info-btn" id="info-btn">i</div>
@@ -57,12 +57,12 @@
         </div>
     </header>
     <main>
-        <bible-word-map src-2d="data/output/wordmap_2d.json?v=6.9.1" src-verses="data/output/verse_index.json?v=6.9.1" src-books="data/output/bookmap_2d.json?v=6.9.1" src-versemap="data/output/versemap_2d.json?v=6.9.1"></bible-word-map>
+        <bible-word-map src-2d="data/output/wordmap_2d.json?v=7.0.0" src-verses="data/output/verse_index.json?v=7.0.0" src-books="data/output/bookmap_2d.json?v=7.0.0" src-versemap="data/output/versemap_2d.json?v=7.0.0"></bible-word-map>
     </main>
     <footer>
         <a href="https://github.com/rotareti/semantic-bible-word-map" target="_blank">View source on GitHub</a> <span style="margin: 0 10px; color: var(--text-muted);">|</span> <i style="color: var(--text-muted);">"Freely you have received; freely give."</i>
     </footer>
-    <script src="bible-word-map.js?v=6.9.1" type="module"></script>
+    <script src="bible-word-map.js?v=7.0.0" type="module"></script>
     <script>
         const btn = document.getElementById('info-btn');
         const panel = document.getElementById('info-panel');
@@ -84,14 +84,14 @@
             panel.classList.remove('visible', 'pinned');
         });
 
-        // View Mode Toggle (Words / Books / Verses)
+        // View Mode Toggle (Words / Verses / Books)
         const wordsBtn = document.getElementById('view-mode-words');
-        const booksBtn = document.getElementById('view-mode-books');
         const versesBtn = document.getElementById('view-mode-verses');
+        const booksBtn = document.getElementById('view-mode-books');
         const mapEl = document.querySelector('bible-word-map');
 
         function setModePills(activeBtn) {
-            [wordsBtn, booksBtn, versesBtn].forEach(b => {
+            [wordsBtn, versesBtn, booksBtn].forEach(b => {
                 if (b) b.classList.toggle('active', b === activeBtn);
             });
         }
@@ -103,17 +103,17 @@
             });
         }
 
-        if (booksBtn) {
-            booksBtn.addEventListener('click', () => {
-                setModePills(booksBtn);
-                if (mapEl && mapEl.setViewMode) mapEl.setViewMode('books');
-            });
-        }
-
         if (versesBtn) {
             versesBtn.addEventListener('click', () => {
                 setModePills(versesBtn);
                 if (mapEl && mapEl.setViewMode) mapEl.setViewMode('verses');
+            });
+        }
+
+        if (booksBtn) {
+            booksBtn.addEventListener('click', () => {
+                setModePills(booksBtn);
+                if (mapEl && mapEl.setViewMode) mapEl.setViewMode('books');
             });
         }
     </script>

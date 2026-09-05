@@ -1,5 +1,13 @@
 # Changelog
 
+## [7.0.0] - 2026-09-04
+### Changed
+- **Options Drawer Verse Mode Toggle:** Relocated the Cross-References (`🔗`) and Words (`✦`) submode selector into the left Options drawer under "Verse Connections Mode". This removes canvas clutter, prevents floating controls from being covered by the Options panel on desktop, and completely eliminates layout conflicts with the top-right Verse Info button on mobile.
+- **Top Navigation Pill Ordering:** Reordered the view mode pills in the top navigation bar to "Words, Verses, Books" (was "Words, Books, Verses") for a natural progression from individual vocabulary words to canonical verse centroids and overarching book themes.
+
+### Fixed
+- **GitHub Pages Static Asset Packaging:** Updated the GitHub Actions deployment workflow to strip the copied symlink in `_site/data` before creating the `_site/data/output/` directory, ensuring `wordmap_2d.json`, `verse_index.json`, `bookmap_2d.json`, and `versemap_2d.json` are packaged directly into the distribution artifact and served properly.
+
 ## [6.9.1] - 2026-09-04
 ### Added
 - **Dynamic Connections Slider in Verses Mode:** The Options drawer slider now dynamically controls verse connectivity. In verse-verse (`refs`) mode, it scales cross-reference connections per verse from 1 to 16 (default 8). In verse-word (`words`) mode, it scales constituent content words from 1 to 12 (default 6).

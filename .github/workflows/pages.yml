@@ -32,6 +32,8 @@ jobs:
           mkdir -p _site
           # Copy the web frontend files to the root of the site
           cp -r web/* _site/
+          # Remove symlink copied from web/data so real files can be stored
+          rm -rf _site/data
           # Ensure the data directory structure exists
           mkdir -p _site/data/output
           # Copy the compiled semantic maps

@@ -1291,20 +1291,6 @@ class BibleWordMap extends HTMLElement {
                     line-height: 1.4;
                 }
 
-                /* Verse Mode Controls and Inspector */
-                .bwm-verse-mode-floater {
-                    position: absolute;
-                    top: 14px;
-                    left: 14px;
-                    z-index: 15;
-                    display: flex;
-                    gap: 6px;
-                    background: var(--bwm-bg);
-                    padding: 4px;
-                    border-radius: 16px;
-                    border: 1px solid var(--bwm-border);
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-                }
                 .bwm-verse-text-box {
                     font-size: 0.95em;
                     line-height: 1.55;
@@ -1440,18 +1426,6 @@ class BibleWordMap extends HTMLElement {
                         white-space: nowrap;
                     }
 
-                    .bwm-verse-mode-floater {
-                        top: 12px;
-                        left: 12px;
-                        padding: 3px;
-                        gap: 4px;
-                    }
-
-                    .bwm-verse-mode-floater .bwm-window-pill {
-                        padding: 4px 8px;
-                        font-size: 0.78em;
-                    }
-
                     .bwm-canon-row-book {
                         width: 105px;
                     }
@@ -1489,6 +1463,16 @@ class BibleWordMap extends HTMLElement {
                             <div id="bwm-active-words">
                                 <div class="bwm-empty-state">No words selected.</div>
                             </div>
+                        </div>
+                        <div class="bwm-drawer-section" id="bwm-verse-mode-section" style="display: none;">
+                            <div class="bwm-drawer-section-header">
+                                <h4>Verse Connections Mode</h4>
+                            </div>
+                            <div class="bwm-pill-group" id="bwm-verse-mode-filter">
+                                <button type="button" class="bwm-pill-btn active" id="bwm-btn-mode-refs" data-submode="refs" title="View semantic cross-reference network">🔗 Cross-References</button>
+                                <button type="button" class="bwm-pill-btn" id="bwm-btn-mode-words" data-submode="words" title="View constituent word constellation">✦ Words</button>
+                            </div>
+                            <div class="bwm-drawer-hint" id="bwm-verse-mode-hint">Toggle between verse cross-references and constituent words.</div>
                         </div>
                         <div class="bwm-drawer-section">
                             <div class="bwm-drawer-section-header">
@@ -1537,10 +1521,6 @@ class BibleWordMap extends HTMLElement {
                         <span class="bwm-book-card-reopen-icon">📖</span>
                         <span class="bwm-book-card-reopen-text">Verse Info</span>
                     </button>
-                    <div class="bwm-verse-mode-floater" id="bwm-verse-mode-floater" style="display: none;">
-                        <button type="button" class="bwm-window-pill active" id="bwm-btn-mode-refs" title="View semantic cross-reference network">🔗 Cross-References</button>
-                        <button type="button" class="bwm-window-pill" id="bwm-btn-mode-words" title="View constituent word constellation">✦ Words</button>
-                    </div>
                 </div>
                 <div class="bwm-radial-menu" id="bwm-radial-menu"></div>
                 <div class="bwm-window-card bwm-word-card" id="bwm-word-card"></div>
@@ -1625,7 +1605,7 @@ class BibleWordMap extends HTMLElement {
             this.verseReopenBtn.addEventListener('mousedown', (e) => e.stopPropagation());
             this.verseReopenBtn.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
         }
-        this.verseModeFloater = this.querySelector('#bwm-verse-mode-floater');
+        this.verseModeSection = this.querySelector('#bwm-verse-mode-section');
         const btnModeRefs = this.querySelector('#bwm-btn-mode-refs');
         const btnModeWords = this.querySelector('#bwm-btn-mode-words');
         if (btnModeRefs) {
@@ -1899,9 +1879,8 @@ class BibleWordMap extends HTMLElement {
                 let insideCanvas = this.canvas && this.canvas.contains(e.target);
                 let insideReopen = this.reopenBtn && this.reopenBtn.contains(e.target);
                 let insideVerseReopen = this.verseReopenBtn && this.verseReopenBtn.contains(e.target);
-                let insideFloater = this.verseModeFloater && this.verseModeFloater.contains(e.target);
                 
-                if (!insideWord && !insideBook && !insideVerse && !insideMenu && !insideCanvas && !insideReopen && !insideVerseReopen && !insideFloater) {
+                if (!insideWord && !insideBook && !insideVerse && !insideMenu && !insideCanvas && !insideReopen && !insideVerseReopen) {
                     this.hideRadialMenu();
                     this.closeActiveInfoWindows();
                 }
@@ -2931,7 +2910,17 @@ class BibleWordMap extends HTMLElement {
         this.hideVerseCard();
         if (this.reopenBtn) this.reopenBtn.style.display = 'none';
         if (this.verseReopenBtn) this.verseReopenBtn.style.display = 'none';
-        if (this.verseModeFloater) this.verseModeFloater.style.display = (mode === 'verses') ? 'flex' : 'none';
+        if (this.verseModeSection) {
+            this.verseModeSection.style.display = (mode === 'verses') ? 'block' : 'none';
+            if (mode === 'verses') {
+                const btnRefs = this.querySelector('#bwm-btn-mode-refs');
+                const btnWords = this.querySelector('#bwm-btn-mode-words');
+                if (btnRefs && btnWords) {
+                    btnRefs.classList.toggle('active', this.verseViewMode === 'refs');
+                    btnWords.classList.toggle('active', this.verseViewMode === 'words');
+                }
+            }
+        }
         
         let activeHeading = this.querySelector('#bwm-active-heading');
         if (activeHeading) activeHeading.textContent = (mode === 'verses') ? 'Active Verses' : ((mode === 'books') ? 'Active Books' : 'Active Words');
