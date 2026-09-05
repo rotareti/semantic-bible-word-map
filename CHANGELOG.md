@@ -1,5 +1,10 @@
 # Changelog
 
+## [7.1.3] - 2026-09-05
+### Changed
+- **Renamed Page to Semantic Bible:** Streamlined the page title and header branding from "Semantic Bible Map" to "Semantic Bible".
+- **Single-Line Header Layout:** Consolidated the title, version badge, mode selector ("Words, Verses, Books"), and info button onto a single compact line to maximize vertical canvas real estate for the map across all viewports.
+
 ## [7.1.2] - 2026-09-05
 ### Fixed
 - **Mobile Info Window Bottom Sheet & Swipe-to-Dismiss:** Redesigned the Map Guide and Legend info panel on mobile viewports into a responsive, scrollable bottom sheet matching the styling of other inspector windows. Equipped the sheet with an accessible drag handle, top-right close button, and intuitive swipe-down-to-dismiss touch gestures.
