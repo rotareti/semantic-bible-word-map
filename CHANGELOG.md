@@ -1,5 +1,9 @@
 # Changelog
 
+## [7.1.5] - 2026-09-05
+### Added
+- **Title Click Landscape Reset:** Clicking the title words "Semantic Bible" in the header resets the current view back to its full landscape overview, clearing any active searches, keywords, or open inspector cards without changing the active view mode (Words, Verses, or Books).
+
 ## [7.1.4] - 2026-09-05
 ### Fixed
 - **Duplicate Identifier in Script:** Resolved a JavaScript syntax error caused by a duplicate declaration of `mapEl` in `index.html`. This fixes an issue where the error prevented script execution, restoring proper functionality to the Info button and the view mode selector.

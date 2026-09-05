@@ -2340,6 +2340,10 @@ class BibleWordMap extends HTMLElement {
         this.hideVersesPanel();
         this.hideCanonUsageModal();
         this.hideVerseCard();
+        this.hideWordInspector();
+        this.hideBookCard();
+        this.inspectorNode = null;
+        this.hoveredNode = null;
         this.buildAllWordsGraph();
     }
 
@@ -2870,6 +2874,17 @@ class BibleWordMap extends HTMLElement {
         this.draw();
     }
 
+    resetCurrentView() {
+        this.closeActiveInfoWindows();
+        if (this.viewMode === 'books') {
+            this.resetBooksView();
+        } else if (this.viewMode === 'verses') {
+            this.resetVersesView();
+        } else {
+            this.clearAllKeywords();
+        }
+    }
+
     setViewMode(mode, forceReset = false) {
         if (this.viewMode === mode && !forceReset) {
             if (mode === 'books') {
@@ -3390,8 +3405,15 @@ class BibleWordMap extends HTMLElement {
         this.hideVersesPanel();
         this.hideCanonUsageModal();
         this.hideBookCard();
+        this.hideWordInspector();
+        this.hideVerseCard();
+        this.inspectorNode = null;
+        this.hoveredNode = null;
         if (this.reopenBtn) {
             this.reopenBtn.style.display = 'none';
+        }
+        if (this.verseReopenBtn) {
+            this.verseReopenBtn.style.display = 'none';
         }
         window.history.replaceState(null, '', '?view=books');
         this.buildBooksGraph();
@@ -4345,7 +4367,12 @@ class BibleWordMap extends HTMLElement {
         this.hideVersesPanel();
         this.hideCanonUsageModal();
         this.hideVerseCard();
+        this.hideWordInspector();
+        this.hideBookCard();
+        this.inspectorNode = null;
+        this.hoveredNode = null;
         if (this.verseReopenBtn) this.verseReopenBtn.style.display = 'none';
+        if (this.reopenBtn) this.reopenBtn.style.display = 'none';
         window.history.replaceState(null, '', '?view=verses');
         this.buildVersesGraph();
     }

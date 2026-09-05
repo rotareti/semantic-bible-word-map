@@ -71,11 +71,39 @@ h1 {
     flex-shrink: 0;
 }
 
+.header-title-text {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.header-title-text:hover {
+    color: #2563eb;
+}
+
+@media (prefers-color-scheme: dark) {
+    .header-title-text:hover {
+        color: #60a5fa;
+    }
+}
+
+.header-title-text:active {
+    opacity: 0.75;
+}
+
+.header-title-text:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
 .header-version {
     font-size: 0.55em;
     color: var(--text-muted);
     font-weight: 500;
     vertical-align: middle;
+    cursor: default;
+    user-select: none;
 }
 
 main {
