@@ -1,5 +1,11 @@
 # Changelog
 
+## [7.1.0] - 2026-09-05
+### Added
+- **Expanded Top-32 Cross-Reference Dataset:** Regenerated `versemap_2d.json` using the centroid generation pipeline to calculate and store up to 32 high-confidence semantic cross-references per verse across all 30,969 verses of Scripture.
+- **Extended Verse Connections Slider (up to 32):** Increased the maximum selectable cross-reference limit in the Options drawer slider from 16 to 32, with the default connection count increased from 8 to 16.
+- **Enhanced Verse Inspector Cards:** Expanded the Verse Info panel to display up to 16 top semantic cross-references with cosine similarity percentages and preview snippets.
+
 ## [7.0.0] - 2026-09-04
 ### Changed
 - **Options Drawer Verse Mode Toggle:** Relocated the Cross-References (`🔗`) and Words (`✦`) submode selector into the left Options drawer under "Verse Connections Mode". This removes canvas clutter, prevents floating controls from being covered by the Options panel on desktop, and completely eliminates layout conflicts with the top-right Verse Info button on mobile.

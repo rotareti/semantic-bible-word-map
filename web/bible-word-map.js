@@ -209,7 +209,7 @@ class BibleWordMap extends HTMLElement {
         this.tooltipTimeout = null;
         this.simulation = null;
         this.neighborsPerKeyword = 100;
-        this.verseRefsPerVerse = 8;
+        this.verseRefsPerVerse = 16;
         this.verseWordsPerVerse = 6;
         
         this.innerHTML = `
@@ -3622,9 +3622,9 @@ class BibleWordMap extends HTMLElement {
                 if (heading) heading.textContent = 'Verse Connections per Verse';
                 if (hint) hint.textContent = 'Controls how many cross-reference verses link to each verse.';
                 this.neighborSlider.min = '1';
-                this.neighborSlider.max = '16';
+                this.neighborSlider.max = '32';
                 this.neighborSlider.step = '1';
-                const val = this.verseRefsPerVerse || 8;
+                const val = this.verseRefsPerVerse || 16;
                 this.neighborSlider.value = val;
                 if (this.neighborValue) this.neighborValue.textContent = val;
             }
@@ -3891,7 +3891,7 @@ class BibleWordMap extends HTMLElement {
         let primaryIds = new Set(primaryNodes.map(n => n.id));
 
         if (this.verseViewMode === 'refs') {
-            let limit = this.verseRefsPerVerse || 8;
+            let limit = this.verseRefsPerVerse || 16;
             let crossrefMap = new Map();
             let crossrefLinks = [];
 
@@ -4110,7 +4110,7 @@ class BibleWordMap extends HTMLElement {
         let verseText = this.verseTextMap ? (this.verseTextMap.get(verse.id) || '') : '';
 
         let crossrefsList = Array.isArray(verse.r) ? verse.r : [];
-        let crossrefsHtml = crossrefsList.slice(0, 12).map(cr => {
+        let crossrefsHtml = crossrefsList.slice(0, 16).map(cr => {
             let crFormatted = formatVerseRef(cr.id);
             let crGenre = getVerseGenre(cr.id);
             let crGenreColor = GENRE_COLORS[crGenre] || '#3b82f6';
