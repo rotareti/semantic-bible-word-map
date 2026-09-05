@@ -1,5 +1,9 @@
 # Changelog
 
+## [7.1.4] - 2026-09-05
+### Fixed
+- **Duplicate Identifier in Script:** Resolved a JavaScript syntax error caused by a duplicate declaration of `mapEl` in `index.html`. This fixes an issue where the error prevented script execution, restoring proper functionality to the Info button and the view mode selector.
+
 ## [7.1.3] - 2026-09-05
 ### Changed
 - **Renamed Page to Semantic Bible:** Streamlined the page title and header branding from "Semantic Bible Map" to "Semantic Bible".
