@@ -2,14 +2,14 @@
 
 ## [6.7.0] - 2026-09-04
 ### Added
-- **Canon Usage Radial Option:** Added a Canon Usage option (`📊`) to the word radial menu for words on the Word Map and words connected to books on the Book Map.
-- **Canon Usage Modal Window:** Created a modal window displaying total Biblical occurrences and coverage across all 66 books with three analytical tabs:
-  - **By Book Tab:** Visual horizontal bar graph showing word occurrences per book, color-coded by literary genre, with controls to toggle between occurring books and all 66 books, plus canonical and frequency sorting.
-  - **By Literature Tab:** Bar graph aggregating word usage across the 9 standard Biblical literary genres (Law, History, Wisdom & Poetry, Major Prophets, Minor Prophets, Gospels, Pauline Epistles, General Epistles, Apocalypse) with book coverage and percentages.
-  - **OT vs NT Tab:** Dynamic SVG Donut chart displaying total verses and distribution ratio, alongside detailed comparison cards for Old and New Testament occurrences, coverage breadth, and top books.
-- **Unified Info Window Design System:** Consolidated styles across Book Info, Verses / Original Language panels, and Canon Usage modals into a shared foundational design system with consistent cards, headers, title groups, badges, tabs, and action pills.
-- **Shared Backdrop Blur & Fade:** Introduced a unified backdrop with subtle dark dimming and blur filter behind active info windows, dismissing open windows on outside tap or Escape key.
-- **Responsive Mobile Bottom Sheet & Overflow Fix:** Unified all info windows on mobile screens into responsive bottom sheets with drag handles and sliding transitions, fixing an issue where the Canon Usage window overflowed the viewport and hid header titles and close buttons.
+- **Desktop Right Drawer Inspector:** On desktop screens, clicking any word node directly slides out a consolidated right inspector drawer, replacing floating popups with an integrated tabbed interface featuring Verses, Original Language, and Canon Usage, along with quick keyword toggle and word explore actions.
+- **Canon Usage Analysis Suite:** Integrated comprehensive usage metrics across all 66 Biblical books with three specialized views:
+  - **By Book:** Horizontal occurrence bars per book, color-coded by literary genre, with filters for occurring versus all 66 books and canonical or frequency sorting.
+  - **By Literature:** Aggregated statistics across the 9 Biblical literary genres (Law, History, Wisdom & Poetry, Major Prophets, Minor Prophets, Gospels, Pauline Epistles, General Epistles, Apocalypse) with book coverage and percentages.
+  - **OT vs NT:** Dynamic SVG Donut chart displaying total verse occurrences and testament proportions, accompanied by detailed comparative breakdown cards.
+- **Mobile Touch Radial Menu & Bottom Sheets:** Retained the touch-optimized radial menu on mobile viewports while displaying info cards as responsive bottom sheets with drag handles and smooth slide transitions.
+- **Crisp Map Clarity:** Removed background dimming and map blur completely across both mobile and desktop modes, ensuring the semantic map remains sharp, interactive, and pannable while inspecting terms.
+- **Unified Visual Design System:** Harmonized styling across Book Info, Verses, Original Language, and Canon Usage panels into a shared design foundation with consistent headers, badges, tabs, and action pills.
 
 ## [6.6.0] - 2026-09-04
 ### Added
