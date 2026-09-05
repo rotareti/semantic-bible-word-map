@@ -12,72 +12,72 @@ const GENRE_COLORS = {
 };
 
 const BIBLE_BOOKS = [
-    { order: 1, code: 'GEN', name: 'Genesis', testament: 'OT', genre: 'Law' },
-    { order: 2, code: 'EXO', name: 'Exodus', testament: 'OT', genre: 'Law' },
-    { order: 3, code: 'LEV', name: 'Leviticus', testament: 'OT', genre: 'Law' },
-    { order: 4, code: 'NUM', name: 'Numbers', testament: 'OT', genre: 'Law' },
-    { order: 5, code: 'DEU', name: 'Deuteronomy', testament: 'OT', genre: 'Law' },
-    { order: 6, code: 'JOS', name: 'Joshua', testament: 'OT', genre: 'History' },
-    { order: 7, code: 'JDG', name: 'Judges', testament: 'OT', genre: 'History' },
-    { order: 8, code: 'RUT', name: 'Ruth', testament: 'OT', genre: 'History' },
-    { order: 9, code: '1SA', name: '1 Samuel', testament: 'OT', genre: 'History' },
-    { order: 10, code: '2SA', name: '2 Samuel', testament: 'OT', genre: 'History' },
-    { order: 11, code: '1KI', name: '1 Kings', testament: 'OT', genre: 'History' },
-    { order: 12, code: '2KI', name: '2 Kings', testament: 'OT', genre: 'History' },
-    { order: 13, code: '1CH', name: '1 Chronicles', testament: 'OT', genre: 'History' },
-    { order: 14, code: '2CH', name: '2 Chronicles', testament: 'OT', genre: 'History' },
-    { order: 15, code: 'EZR', name: 'Ezra', testament: 'OT', genre: 'History' },
-    { order: 16, code: 'NEH', name: 'Nehemiah', testament: 'OT', genre: 'History' },
-    { order: 17, code: 'EST', name: 'Esther', testament: 'OT', genre: 'History' },
-    { order: 18, code: 'JOB', name: 'Job', testament: 'OT', genre: 'Wisdom' },
-    { order: 19, code: 'PSA', name: 'Psalms', testament: 'OT', genre: 'Wisdom' },
-    { order: 20, code: 'PRO', name: 'Proverbs', testament: 'OT', genre: 'Wisdom' },
-    { order: 21, code: 'ECC', name: 'Ecclesiastes', testament: 'OT', genre: 'Wisdom' },
-    { order: 22, code: 'SNG', name: 'Song of Solomon', testament: 'OT', genre: 'Wisdom' },
-    { order: 23, code: 'ISA', name: 'Isaiah', testament: 'OT', genre: 'Major Prophets' },
-    { order: 24, code: 'JER', name: 'Jeremiah', testament: 'OT', genre: 'Major Prophets' },
-    { order: 25, code: 'LAM', name: 'Lamentations', testament: 'OT', genre: 'Major Prophets' },
-    { order: 26, code: 'EZK', name: 'Ezekiel', testament: 'OT', genre: 'Major Prophets' },
-    { order: 27, code: 'DAN', name: 'Daniel', testament: 'OT', genre: 'Major Prophets' },
-    { order: 28, code: 'HOS', name: 'Hosea', testament: 'OT', genre: 'Minor Prophets' },
-    { order: 29, code: 'JOL', name: 'Joel', testament: 'OT', genre: 'Minor Prophets' },
-    { order: 30, code: 'AMO', name: 'Amos', testament: 'OT', genre: 'Minor Prophets' },
-    { order: 31, code: 'OBA', name: 'Obadiah', testament: 'OT', genre: 'Minor Prophets' },
-    { order: 32, code: 'JON', name: 'Jonah', testament: 'OT', genre: 'Minor Prophets' },
-    { order: 33, code: 'MIC', name: 'Micah', testament: 'OT', genre: 'Minor Prophets' },
-    { order: 34, code: 'NAM', name: 'Nahum', testament: 'OT', genre: 'Minor Prophets' },
-    { order: 35, code: 'HAB', name: 'Habakkuk', testament: 'OT', genre: 'Minor Prophets' },
-    { order: 36, code: 'ZEP', name: 'Zephaniah', testament: 'OT', genre: 'Minor Prophets' },
-    { order: 37, code: 'HAG', name: 'Haggai', testament: 'OT', genre: 'Minor Prophets' },
-    { order: 38, code: 'ZEC', name: 'Zechariah', testament: 'OT', genre: 'Minor Prophets' },
-    { order: 39, code: 'MAL', name: 'Malachi', testament: 'OT', genre: 'Minor Prophets' },
-    { order: 40, code: 'MAT', name: 'Matthew', testament: 'NT', genre: 'Gospels' },
-    { order: 41, code: 'MRK', name: 'Mark', testament: 'NT', genre: 'Gospels' },
-    { order: 42, code: 'LUK', name: 'Luke', testament: 'NT', genre: 'Gospels' },
-    { order: 43, code: 'JHN', name: 'John', testament: 'NT', genre: 'Gospels' },
-    { order: 44, code: 'ACT', name: 'Acts', testament: 'NT', genre: 'History' },
-    { order: 45, code: 'ROM', name: 'Romans', testament: 'NT', genre: 'Pauline Epistles' },
-    { order: 46, code: '1CO', name: '1 Corinthians', testament: 'NT', genre: 'Pauline Epistles' },
-    { order: 47, code: '2CO', name: '2 Corinthians', testament: 'NT', genre: 'Pauline Epistles' },
-    { order: 48, code: 'GAL', name: 'Galatians', testament: 'NT', genre: 'Pauline Epistles' },
-    { order: 49, code: 'EPH', name: 'Ephesians', testament: 'NT', genre: 'Pauline Epistles' },
-    { order: 50, code: 'PHP', name: 'Philippians', testament: 'NT', genre: 'Pauline Epistles' },
-    { order: 51, code: 'COL', name: 'Colossians', testament: 'NT', genre: 'Pauline Epistles' },
-    { order: 52, code: '1TH', name: '1 Thessalonians', testament: 'NT', genre: 'Pauline Epistles' },
-    { order: 53, code: '2TH', name: '2 Thessalonians', testament: 'NT', genre: 'Pauline Epistles' },
-    { order: 54, code: '1TI', name: '1 Timothy', testament: 'NT', genre: 'Pauline Epistles' },
-    { order: 55, code: '2TI', name: '2 Timothy', testament: 'NT', genre: 'Pauline Epistles' },
-    { order: 56, code: 'TIT', name: 'Titus', testament: 'NT', genre: 'Pauline Epistles' },
-    { order: 57, code: 'PHM', name: 'Philemon', testament: 'NT', genre: 'Pauline Epistles' },
-    { order: 58, code: 'HEB', name: 'Hebrews', testament: 'NT', genre: 'General Epistles' },
-    { order: 59, code: 'JAS', name: 'James', testament: 'NT', genre: 'General Epistles' },
-    { order: 60, code: '1PE', name: '1 Peter', testament: 'NT', genre: 'General Epistles' },
-    { order: 61, code: '2PE', name: '2 Peter', testament: 'NT', genre: 'General Epistles' },
-    { order: 62, code: '1JN', name: '1 John', testament: 'NT', genre: 'General Epistles' },
-    { order: 63, code: '2JN', name: '2 John', testament: 'NT', genre: 'General Epistles' },
-    { order: 64, code: '3JN', name: '3 John', testament: 'NT', genre: 'General Epistles' },
-    { order: 65, code: 'JUD', name: 'Jude', testament: 'NT', genre: 'General Epistles' },
-    { order: 66, code: 'REV', name: 'Revelation', testament: 'NT', genre: 'Apocalypse' }
+    { order: 1, code: 'GEN', name: 'Genesis', testament: 'OT', genre: 'Law', words: 28527 },
+    { order: 2, code: 'EXO', name: 'Exodus', testament: 'OT', genre: 'Law', words: 23193 },
+    { order: 3, code: 'LEV', name: 'Leviticus', testament: 'OT', genre: 'Law', words: 17182 },
+    { order: 4, code: 'NUM', name: 'Numbers', testament: 'OT', genre: 'Law', words: 22837 },
+    { order: 5, code: 'DEU', name: 'Deuteronomy', testament: 'OT', genre: 'Law', words: 20274 },
+    { order: 6, code: 'JOS', name: 'Joshua', testament: 'OT', genre: 'History', words: 12693 },
+    { order: 7, code: 'JDG', name: 'Judges', testament: 'OT', genre: 'History', words: 13396 },
+    { order: 8, code: 'RUT', name: 'Ruth', testament: 'OT', genre: 'History', words: 1951 },
+    { order: 9, code: '1SA', name: '1 Samuel', testament: 'OT', genre: 'History', words: 18159 },
+    { order: 10, code: '2SA', name: '2 Samuel', testament: 'OT', genre: 'History', words: 14900 },
+    { order: 11, code: '1KI', name: '1 Kings', testament: 'OT', genre: 'History', words: 17647 },
+    { order: 12, code: '2KI', name: '2 Kings', testament: 'OT', genre: 'History', words: 16779 },
+    { order: 13, code: '1CH', name: '1 Chronicles', testament: 'OT', genre: 'History', words: 13875 },
+    { order: 14, code: '2CH', name: '2 Chronicles', testament: 'OT', genre: 'History', words: 18348 },
+    { order: 15, code: 'EZR', name: 'Ezra', testament: 'OT', genre: 'History', words: 4842 },
+    { order: 16, code: 'NEH', name: 'Nehemiah', testament: 'OT', genre: 'History', words: 7103 },
+    { order: 17, code: 'EST', name: 'Esther', testament: 'OT', genre: 'History', words: 3895 },
+    { order: 18, code: 'JOB', name: 'Job', testament: 'OT', genre: 'Wisdom', words: 14176 },
+    { order: 19, code: 'PSA', name: 'Psalms', testament: 'OT', genre: 'Wisdom', words: 33049 },
+    { order: 20, code: 'PRO', name: 'Proverbs', testament: 'OT', genre: 'Wisdom', words: 12029 },
+    { order: 21, code: 'ECC', name: 'Ecclesiastes', testament: 'OT', genre: 'Wisdom', words: 4131 },
+    { order: 22, code: 'SNG', name: 'Song of Solomon', testament: 'OT', genre: 'Wisdom', words: 1982 },
+    { order: 23, code: 'ISA', name: 'Isaiah', testament: 'OT', genre: 'Major Prophets', words: 26055 },
+    { order: 24, code: 'JER', name: 'Jeremiah', testament: 'OT', genre: 'Major Prophets', words: 30695 },
+    { order: 25, code: 'LAM', name: 'Lamentations', testament: 'OT', genre: 'Major Prophets', words: 2635 },
+    { order: 26, code: 'EZK', name: 'Ezekiel', testament: 'OT', genre: 'Major Prophets', words: 27358 },
+    { order: 27, code: 'DAN', name: 'Daniel', testament: 'OT', genre: 'Major Prophets', words: 8297 },
+    { order: 28, code: 'HOS', name: 'Hosea', testament: 'OT', genre: 'Minor Prophets', words: 3855 },
+    { order: 29, code: 'JOL', name: 'Joel', testament: 'OT', genre: 'Minor Prophets', words: 1421 },
+    { order: 30, code: 'AMO', name: 'Amos', testament: 'OT', genre: 'Minor Prophets', words: 3089 },
+    { order: 31, code: 'OBA', name: 'Obadiah', testament: 'OT', genre: 'Minor Prophets', words: 446 },
+    { order: 32, code: 'JON', name: 'Jonah', testament: 'OT', genre: 'Minor Prophets', words: 1015 },
+    { order: 33, code: 'MIC', name: 'Micah', testament: 'OT', genre: 'Minor Prophets', words: 2246 },
+    { order: 34, code: 'NAM', name: 'Nahum', testament: 'OT', genre: 'Minor Prophets', words: 888 },
+    { order: 35, code: 'HAB', name: 'Habakkuk', testament: 'OT', genre: 'Minor Prophets', words: 1085 },
+    { order: 36, code: 'ZEP', name: 'Zephaniah', testament: 'OT', genre: 'Minor Prophets', words: 1144 },
+    { order: 37, code: 'HAG', name: 'Haggai', testament: 'OT', genre: 'Minor Prophets', words: 789 },
+    { order: 38, code: 'ZEC', name: 'Zechariah', testament: 'OT', genre: 'Minor Prophets', words: 4399 },
+    { order: 39, code: 'MAL', name: 'Malachi', testament: 'OT', genre: 'Minor Prophets', words: 1331 },
+    { order: 40, code: 'MAT', name: 'Matthew', testament: 'NT', genre: 'Gospels', words: 18572 },
+    { order: 41, code: 'MRK', name: 'Mark', testament: 'NT', genre: 'Gospels', words: 11836 },
+    { order: 42, code: 'LUK', name: 'Luke', testament: 'NT', genre: 'Gospels', words: 20048 },
+    { order: 43, code: 'JHN', name: 'John', testament: 'NT', genre: 'Gospels', words: 15288 },
+    { order: 44, code: 'ACT', name: 'Acts', testament: 'NT', genre: 'History', words: 19137 },
+    { order: 45, code: 'ROM', name: 'Romans', testament: 'NT', genre: 'Pauline Epistles', words: 7528 },
+    { order: 46, code: '1CO', name: '1 Corinthians', testament: 'NT', genre: 'Pauline Epistles', words: 7299 },
+    { order: 47, code: '2CO', name: '2 Corinthians', testament: 'NT', genre: 'Pauline Epistles', words: 4751 },
+    { order: 48, code: 'GAL', name: 'Galatians', testament: 'NT', genre: 'Pauline Epistles', words: 2558 },
+    { order: 49, code: 'EPH', name: 'Ephesians', testament: 'NT', genre: 'Pauline Epistles', words: 2561 },
+    { order: 50, code: 'PHP', name: 'Philippians', testament: 'NT', genre: 'Pauline Epistles', words: 1836 },
+    { order: 51, code: 'COL', name: 'Colossians', testament: 'NT', genre: 'Pauline Epistles', words: 1680 },
+    { order: 52, code: '1TH', name: '1 Thessalonians', testament: 'NT', genre: 'Pauline Epistles', words: 1574 },
+    { order: 53, code: '2TH', name: '2 Thessalonians', testament: 'NT', genre: 'Pauline Epistles', words: 890 },
+    { order: 54, code: '1TI', name: '1 Timothy', testament: 'NT', genre: 'Pauline Epistles', words: 1984 },
+    { order: 55, code: '2TI', name: '2 Timothy', testament: 'NT', genre: 'Pauline Epistles', words: 1386 },
+    { order: 56, code: 'TIT', name: 'Titus', testament: 'NT', genre: 'Pauline Epistles', words: 806 },
+    { order: 57, code: 'PHM', name: 'Philemon', testament: 'NT', genre: 'Pauline Epistles', words: 393 },
+    { order: 58, code: 'HEB', name: 'Hebrews', testament: 'NT', genre: 'General Epistles', words: 5737 },
+    { order: 59, code: 'JAS', name: 'James', testament: 'NT', genre: 'General Epistles', words: 1895 },
+    { order: 60, code: '1PE', name: '1 Peter', testament: 'NT', genre: 'General Epistles', words: 1969 },
+    { order: 61, code: '2PE', name: '2 Peter', testament: 'NT', genre: 'General Epistles', words: 1292 },
+    { order: 62, code: '1JN', name: '1 John', testament: 'NT', genre: 'General Epistles', words: 1874 },
+    { order: 63, code: '2JN', name: '2 John', testament: 'NT', genre: 'General Epistles', words: 245 },
+    { order: 64, code: '3JN', name: '3 John', testament: 'NT', genre: 'General Epistles', words: 271 },
+    { order: 65, code: 'JUD', name: 'Jude', testament: 'NT', genre: 'General Epistles', words: 518 },
+    { order: 66, code: 'REV', name: 'Revelation', testament: 'NT', genre: 'Apocalypse', words: 8719 }
 ];
 
 class BibleWordMap extends HTMLElement {
@@ -972,7 +972,7 @@ class BibleWordMap extends HTMLElement {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    gap: 8px;
+                    gap: 8px 10px;
                     margin-bottom: 12px;
                     flex-wrap: wrap;
                     font-size: 0.82em;
@@ -980,7 +980,12 @@ class BibleWordMap extends HTMLElement {
                 .bwm-canon-filter-group {
                     display: flex;
                     align-items: center;
-                    gap: 6px;
+                    gap: 5px;
+                }
+                .bwm-canon-pill-btn {
+                    padding: 3px 9px;
+                    font-size: 0.88em;
+                    border-radius: 10px;
                 }
                 .bwm-canon-list {
                     display: flex;
@@ -1039,14 +1044,16 @@ class BibleWordMap extends HTMLElement {
                     transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
                 }
                 .bwm-canon-row-stats {
-                    width: 85px;
+                    min-width: 90px;
+                    width: auto;
                     display: flex;
                     justify-content: flex-end;
                     align-items: center;
-                    gap: 6px;
+                    gap: 4px;
                     font-size: 0.82em;
                     flex-shrink: 0;
                     font-variant-numeric: tabular-nums;
+                    white-space: nowrap;
                 }
                 .bwm-canon-row-count {
                     font-weight: 700;
@@ -4180,11 +4187,13 @@ class BibleWordMap extends HTMLElement {
 
             const genreStats = {};
             GENRE_ORDER.forEach(g => {
-                genreStats[g] = { count: 0, booksTotal: 0, booksWithOcc: 0 };
+                genreStats[g] = { count: 0, booksTotal: 0, booksWithOcc: 0, wordsTotal: 0 };
             });
 
             let otCount = 0;
             let ntCount = 0;
+            let otWordsTotal = 0;
+            let ntWordsTotal = 0;
             let otBooksWithOcc = 0;
             let ntBooksWithOcc = 0;
             let otTopBook = null;
@@ -4193,19 +4202,23 @@ class BibleWordMap extends HTMLElement {
             BIBLE_BOOKS.forEach(b => {
                 const g = b.genre;
                 const c = bookCounts[b.code] || 0;
+                const w = b.words || 0;
                 if (genreStats[g]) {
                     genreStats[g].booksTotal++;
                     genreStats[g].count += c;
+                    genreStats[g].wordsTotal += w;
                     if (c > 0) genreStats[g].booksWithOcc++;
                 }
                 if (b.testament === 'OT') {
                     otCount += c;
+                    otWordsTotal += w;
                     if (c > 0) {
                         otBooksWithOcc++;
                         if (!otTopBook || c > otTopBook.count) otTopBook = { name: b.name, code: b.code, count: c };
                     }
                 } else {
                     ntCount += c;
+                    ntWordsTotal += w;
                     if (c > 0) {
                         ntBooksWithOcc++;
                         if (!ntTopBook || c > ntTopBook.count) ntTopBook = { name: b.name, code: b.code, count: c };
@@ -4213,16 +4226,11 @@ class BibleWordMap extends HTMLElement {
                 }
             });
 
-            let maxBookOcc = 0;
-            BIBLE_BOOKS.forEach(b => {
-                const c = bookCounts[b.code] || 0;
-                if (c > maxBookOcc) maxBookOcc = c;
-            });
-
             let genreHtml = GENRE_ORDER.map(g => {
                 const st = genreStats[g];
                 const pct = totalOccurrences > 0 ? ((st.count / totalOccurrences) * 100).toFixed(1) : '0.0';
                 const barPct = totalOccurrences > 0 ? ((st.count / totalOccurrences) * 100).toFixed(1) : '0';
+                const gDensity = st.wordsTotal > 0 ? ((st.count / st.wordsTotal) * 1000).toFixed(2) : '0.00';
                 const color = GENRE_COLORS[g] || '#3b82f6';
                 return `
                     <div class="bwm-canon-genre-card">
@@ -4231,7 +4239,7 @@ class BibleWordMap extends HTMLElement {
                                 <span class="bwm-canon-genre-pill" style="background:${color};">${g}</span>
                                 <span>${GENRE_LABELS[g] || g}</span>
                             </div>
-                            <div class="bwm-canon-genre-meta">${st.booksWithOcc} of ${st.booksTotal} books</div>
+                            <div class="bwm-canon-genre-meta">${st.booksWithOcc} of ${st.booksTotal} books &bull; ${gDensity} / 1k words</div>
                         </div>
                         <div class="bwm-canon-genre-bar-wrap">
                             <div class="bwm-canon-genre-track">
@@ -4245,6 +4253,8 @@ class BibleWordMap extends HTMLElement {
 
             const otPct = totalOccurrences > 0 ? (otCount / totalOccurrences) * 100 : 0;
             const ntPct = totalOccurrences > 0 ? (ntCount / totalOccurrences) * 100 : 0;
+            const otDensity = otWordsTotal > 0 ? ((otCount / otWordsTotal) * 1000).toFixed(2) : '0.00';
+            const ntDensity = ntWordsTotal > 0 ? ((ntCount / ntWordsTotal) * 1000).toFixed(2) : '0.00';
             const circumference = 2 * Math.PI * 40;
             const otDash = (otPct / 100) * circumference;
             const ntDash = (ntPct / 100) * circumference;
@@ -4270,38 +4280,82 @@ class BibleWordMap extends HTMLElement {
                                 <span class="bwm-canon-testament-tag"><span class="bwm-canon-testament-dot" style="background:#3b82f6;"></span>Old Testament</span>
                                 <span class="bwm-canon-testament-val">${otCount} <span style="font-weight:normal; font-size:0.85em; color:var(--bwm-text-muted);">(${otPct.toFixed(1)}%)</span></span>
                             </div>
-                            <div class="bwm-canon-testament-desc">Found in ${otBooksWithOcc} of 39 books${otTopBook ? ` &bull; Most frequent in <b>${otTopBook.name}</b> (${otTopBook.count})` : ''}</div>
+                            <div class="bwm-canon-testament-desc">Found in ${otBooksWithOcc} of 39 books &bull; ${otDensity} / 1k words${otTopBook ? ` &bull; Most frequent in <b>${otTopBook.name}</b> (${otTopBook.count})` : ''}</div>
                         </div>
                         <div class="bwm-canon-testament-card">
                             <div class="bwm-canon-testament-head">
                                 <span class="bwm-canon-testament-tag"><span class="bwm-canon-testament-dot" style="background:#10b981;"></span>New Testament</span>
                                 <span class="bwm-canon-testament-val">${ntCount} <span style="font-weight:normal; font-size:0.85em; color:var(--bwm-text-muted);">(${ntPct.toFixed(1)}%)</span></span>
                             </div>
-                            <div class="bwm-canon-testament-desc">Found in ${ntBooksWithOcc} of 27 books${ntTopBook ? ` &bull; Most frequent in <b>${ntTopBook.name}</b> (${ntTopBook.count})` : ''}</div>
+                            <div class="bwm-canon-testament-desc">Found in ${ntBooksWithOcc} of 27 books &bull; ${ntDensity} / 1k words${ntTopBook ? ` &bull; Most frequent in <b>${ntTopBook.name}</b> (${ntTopBook.count})` : ''}</div>
                         </div>
                     </div>
                 </div>
                 <div style="margin-top: 14px; padding: 10px 14px; border-radius: 8px; background: var(--bwm-badge-bg); border: 1px solid var(--bwm-border); font-size: 0.84em; color: var(--bwm-text); line-height: 1.45;">
-                    ${otCount > 0 && ntCount === 0 ? '<b>Testament Usage:</b> This term is found exclusively in the Old Testament in this translation index.' : ''}
-                    ${ntCount > 0 && otCount === 0 ? '<b>Testament Usage:</b> This term is found exclusively in the New Testament in this translation index.' : ''}
-                    ${otCount > 0 && ntCount > 0 ? `<b>Testament Usage:</b> This term spans both testaments, with ${otPct >= ntPct ? 'a concentration in the Old Testament' : 'a concentration in the New Testament'} (${otPct.toFixed(1)}% OT vs ${ntPct.toFixed(1)}% NT).` : ''}
+                    ${otCount > 0 && ntCount === 0 ? `<b>Testament Usage:</b> This term is found exclusively in the Old Testament in this translation index (${otDensity} occurrences per 1k words).` : ''}
+                    ${ntCount > 0 && otCount === 0 ? `<b>Testament Usage:</b> This term is found exclusively in the New Testament in this translation index (${ntDensity} occurrences per 1k words).` : ''}
+                    ${otCount > 0 && ntCount > 0 ? `<b>Testament Usage:</b> This term spans both testaments (${otPct.toFixed(1)}% OT vs ${ntPct.toFixed(1)}% NT). Relative to text volume, usage density is ${parseFloat(otDensity) >= parseFloat(ntDensity) ? `higher in the Old Testament (${otDensity} vs ${ntDensity} per 1k words)` : `higher in the New Testament (${ntDensity} vs ${otDensity} per 1k words)`}.` : ''}
                     ${totalOccurrences === 0 ? '<b>Testament Usage:</b> No verse occurrences recorded.' : ''}
                 </div>
             `;
 
-            renderBookBars = (filter, sort) => {
-                let list = BIBLE_BOOKS.map((b, idx) => ({ ...b, order: idx + 1, count: bookCounts[b.code] || 0 }));
+            renderBookBars = (filter, sort, metric) => {
+                let list = BIBLE_BOOKS.map((b, idx) => {
+                    const count = bookCounts[b.code] || 0;
+                    const words = b.words || 1;
+                    const density = (count / words) * 1000;
+                    return {
+                        ...b,
+                        order: idx + 1,
+                        count,
+                        words,
+                        density
+                    };
+                });
                 if (filter === 'occ') list = list.filter(b => b.count > 0);
-                if (sort === 'freq') list.sort((a, b) => b.count - a.count || a.order - b.order);
-                else list.sort((a, b) => a.order - b.order);
+
+                if (sort === 'rank') {
+                    if (metric === 'density') {
+                        list.sort((a, b) => b.density - a.density || b.count - a.count || a.order - b.order);
+                    } else {
+                        list.sort((a, b) => b.count - a.count || b.density - a.density || a.order - b.order);
+                    }
+                } else {
+                    list.sort((a, b) => a.order - b.order);
+                }
 
                 if (list.length === 0) {
                     return `<div style="text-align:center; padding:30px 10px; color:var(--bwm-text-muted); font-style:italic;">No book occurrences found.</div>`;
                 }
+
+                let maxVal = 1;
+                if (metric === 'density') {
+                    maxVal = Math.max(...list.map(b => b.density), 0);
+                } else {
+                    maxVal = Math.max(...list.map(b => b.count), 0);
+                }
+
                 return list.map(b => {
                     const color = GENRE_COLORS[b.genre] || '#3b82f6';
-                    const pctOfWord = totalOccurrences > 0 ? ((b.count / totalOccurrences) * 100).toFixed(1) : '0';
-                    const barPct = maxBookOcc > 0 ? ((b.count / maxBookOcc) * 100).toFixed(1) : '0';
+                    let barPct = '0';
+                    let statHtml = '';
+
+                    if (metric === 'density') {
+                        barPct = maxVal > 0 ? ((b.density / maxVal) * 100).toFixed(1) : '0';
+                        const densityStr = b.density >= 10 ? b.density.toFixed(1) : b.density.toFixed(2);
+                        statHtml = `
+                            <span class="bwm-canon-row-count" title="${b.density.toFixed(2)} per 1k words (${b.count} in ${b.words.toLocaleString()} words)">${densityStr}</span>
+                            <span class="bwm-canon-row-pct">/1k (${b.count})</span>
+                        `;
+                    } else {
+                        barPct = maxVal > 0 ? ((b.count / maxVal) * 100).toFixed(1) : '0';
+                        const pctOfWord = totalOccurrences > 0 ? ((b.count / totalOccurrences) * 100).toFixed(1) : '0';
+                        statHtml = `
+                            <span class="bwm-canon-row-count" title="${b.count} occurrences">${b.count}</span>
+                            <span class="bwm-canon-row-pct">(${pctOfWord}%)</span>
+                        `;
+                    }
+
                     return `
                         <div class="bwm-canon-row">
                             <div class="bwm-canon-row-book">
@@ -4313,8 +4367,7 @@ class BibleWordMap extends HTMLElement {
                                 <div class="bwm-canon-row-fill" style="width:${barPct}%; background:${color};"></div>
                             </div>
                             <div class="bwm-canon-row-stats">
-                                <span class="bwm-canon-row-count">${b.count}</span>
-                                <span class="bwm-canon-row-pct">(${pctOfWord}%)</span>
+                                ${statHtml}
                             </div>
                         </div>
                     `;
@@ -4332,15 +4385,23 @@ class BibleWordMap extends HTMLElement {
                         <div class="bwm-canon-pane-sub" id="bwm-canon-pane-book">
                             <div class="bwm-canon-controls">
                                 <div class="bwm-canon-filter-group">
-                                    <span style="font-weight:600; color:var(--bwm-text-muted); margin-right:4px;">Show:</span>
-                                    <button type="button" class="bwm-window-pill bwm-canon-pill-btn active" id="bwm-canon-filter-occ">Occurring (${totalBooksWithOcc})</button>
-                                    <button type="button" class="bwm-window-pill bwm-canon-pill-btn" id="bwm-canon-filter-all">All 66 Books</button>
+                                    <span style="font-weight:600; color:var(--bwm-text-muted); margin-right:2px;">Metric:</span>
+                                    <button type="button" class="bwm-window-pill bwm-canon-pill-btn active" id="bwm-canon-metric-count">Count</button>
+                                    <button type="button" class="bwm-window-pill bwm-canon-pill-btn" id="bwm-canon-metric-density">Density</button>
                                 </div>
                                 <div class="bwm-canon-filter-group">
-                                    <span style="font-weight:600; color:var(--bwm-text-muted); margin-right:4px;">Sort:</span>
-                                    <button type="button" class="bwm-window-pill bwm-canon-pill-btn active" id="bwm-canon-sort-canon">Canonical</button>
-                                    <button type="button" class="bwm-window-pill bwm-canon-pill-btn" id="bwm-canon-sort-freq">Frequency</button>
+                                    <span style="font-weight:600; color:var(--bwm-text-muted); margin-right:2px;">Show:</span>
+                                    <button type="button" class="bwm-window-pill bwm-canon-pill-btn active" id="bwm-canon-filter-occ">Occurring (${totalBooksWithOcc})</button>
+                                    <button type="button" class="bwm-window-pill bwm-canon-pill-btn" id="bwm-canon-filter-all">All 66</button>
                                 </div>
+                                <div class="bwm-canon-filter-group">
+                                    <span style="font-weight:600; color:var(--bwm-text-muted); margin-right:2px;">Sort:</span>
+                                    <button type="button" class="bwm-window-pill bwm-canon-pill-btn active" id="bwm-canon-sort-canon">Canonical</button>
+                                    <button type="button" class="bwm-window-pill bwm-canon-pill-btn" id="bwm-canon-sort-rank">Highest</button>
+                                </div>
+                            </div>
+                            <div id="bwm-canon-density-hint" style="display: none; font-size: 0.78em; color: var(--bwm-text-muted); margin-top: -6px; margin-bottom: 10px; font-style: italic;">
+                                Density: Occurrences per 1,000 words in each book.
                             </div>
                             <div class="bwm-canon-list" id="bwm-canon-book-list"></div>
                         </div>
@@ -4489,9 +4550,11 @@ class BibleWordMap extends HTMLElement {
         if (renderBookBars) {
             let canonBookFilter = 'occ';
             let canonBookSort = 'canon';
+            let canonBookMetric = 'count';
             const bookListEl = this.wordCard.querySelector('#bwm-canon-book-list');
+            const densityHintEl = this.wordCard.querySelector('#bwm-canon-density-hint');
             if (bookListEl) {
-                bookListEl.innerHTML = renderBookBars(canonBookFilter, canonBookSort);
+                bookListEl.innerHTML = renderBookBars(canonBookFilter, canonBookSort, canonBookMetric);
             }
 
             const canonSubtabs = this.wordCard.querySelectorAll('.bwm-canon-subtabs .bwm-window-pill');
@@ -4512,41 +4575,75 @@ class BibleWordMap extends HTMLElement {
                 });
             });
 
+            const btnMetricCount = this.wordCard.querySelector('#bwm-canon-metric-count');
+            const btnMetricDensity = this.wordCard.querySelector('#bwm-canon-metric-density');
             const btnFilterOcc = this.wordCard.querySelector('#bwm-canon-filter-occ');
             const btnFilterAll = this.wordCard.querySelector('#bwm-canon-filter-all');
             const btnSortCanon = this.wordCard.querySelector('#bwm-canon-sort-canon');
-            const btnSortFreq = this.wordCard.querySelector('#bwm-canon-sort-freq');
+            const btnSortRank = this.wordCard.querySelector('#bwm-canon-sort-rank');
 
-            if (btnFilterOcc && btnFilterAll && bookListEl) {
+            const refreshBookList = () => {
+                if (bookListEl) {
+                    bookListEl.innerHTML = renderBookBars(canonBookFilter, canonBookSort, canonBookMetric);
+                }
+            };
+
+            if (btnMetricCount && btnMetricDensity) {
+                btnMetricCount.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (canonBookMetric === 'count') return;
+                    canonBookMetric = 'count';
+                    btnMetricCount.classList.add('active');
+                    btnMetricDensity.classList.remove('active');
+                    if (densityHintEl) densityHintEl.style.display = 'none';
+                    refreshBookList();
+                });
+                btnMetricDensity.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (canonBookMetric === 'density') return;
+                    canonBookMetric = 'density';
+                    btnMetricDensity.classList.add('active');
+                    btnMetricCount.classList.remove('active');
+                    if (densityHintEl) densityHintEl.style.display = 'block';
+                    refreshBookList();
+                });
+            }
+
+            if (btnFilterOcc && btnFilterAll) {
                 btnFilterOcc.addEventListener('click', (e) => {
                     e.stopPropagation();
+                    if (canonBookFilter === 'occ') return;
                     canonBookFilter = 'occ';
                     btnFilterOcc.classList.add('active');
                     btnFilterAll.classList.remove('active');
-                    bookListEl.innerHTML = renderBookBars(canonBookFilter, canonBookSort);
+                    refreshBookList();
                 });
                 btnFilterAll.addEventListener('click', (e) => {
                     e.stopPropagation();
+                    if (canonBookFilter === 'all') return;
                     canonBookFilter = 'all';
                     btnFilterAll.classList.add('active');
                     btnFilterOcc.classList.remove('active');
-                    bookListEl.innerHTML = renderBookBars(canonBookFilter, canonBookSort);
+                    refreshBookList();
                 });
             }
-            if (btnSortCanon && btnSortFreq && bookListEl) {
+
+            if (btnSortCanon && btnSortRank) {
                 btnSortCanon.addEventListener('click', (e) => {
                     e.stopPropagation();
+                    if (canonBookSort === 'canon') return;
                     canonBookSort = 'canon';
                     btnSortCanon.classList.add('active');
-                    btnSortFreq.classList.remove('active');
-                    bookListEl.innerHTML = renderBookBars(canonBookFilter, canonBookSort);
+                    btnSortRank.classList.remove('active');
+                    refreshBookList();
                 });
-                btnSortFreq.addEventListener('click', (e) => {
+                btnSortRank.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    canonBookSort = 'freq';
-                    btnSortFreq.classList.add('active');
+                    if (canonBookSort === 'rank') return;
+                    canonBookSort = 'rank';
+                    btnSortRank.classList.add('active');
                     btnSortCanon.classList.remove('active');
-                    bookListEl.innerHTML = renderBookBars(canonBookFilter, canonBookSort);
+                    refreshBookList();
                 });
             }
         }

@@ -1,5 +1,14 @@
 # Changelog
 
+## [6.8.0] - 2026-09-04
+### Added
+- **Canon Usage Density Metrics:** Added a density analysis option to the Canon Usage inspector tab, calculating word occurrences relative to book length (occurrences per 1,000 words).
+- **Metric Toggle (Count vs Density):** Provided a dedicated `Metric: [Count] [Density]` control group in the By Book view, dynamically switching between raw occurrence frequencies and proportional text density.
+- **Proportional Density Bar Scaling:** Bar charts scale dynamically to the highest-density book when Density mode is active, highlighting books like Jude or Titus where short text length produces high topical concentration despite low raw counts.
+- **Dual Sorting Support:** Enabled Canonical and Highest (Ranked) sorting for both Count and Density metrics, letting users quickly identify the most concentrated books for any term.
+- **Genre and Testament Density Analytics:** Extended density calculations to the By Literature panel (showing occurrences per 1,000 words across all 9 genres) and the OT vs NT panel (displaying volume-relative testament density comparisons).
+- **Exact Book Word Count Database:** Embedded exact translation word counts directly into the 66-book canon registry, ensuring immediate density calculations without additional network requests.
+
 ## [6.7.0] - 2026-09-04
 ### Added
 - **Desktop Right Drawer Inspector:** On desktop screens, clicking any word node directly slides out a consolidated right inspector drawer, replacing floating popups with an integrated tabbed interface featuring Verses, Original Language, and Canon Usage, along with quick keyword toggle and word explore actions.
