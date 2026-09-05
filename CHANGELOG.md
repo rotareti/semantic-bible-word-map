@@ -1,5 +1,9 @@
 # Changelog
 
+## [7.1.2] - 2026-09-05
+### Fixed
+- **Mobile Info Window Bottom Sheet & Swipe-to-Dismiss:** Redesigned the Map Guide and Legend info panel on mobile viewports into a responsive, scrollable bottom sheet matching the styling of other inspector windows. Equipped the sheet with an accessible drag handle, top-right close button, and intuitive swipe-down-to-dismiss touch gestures.
+
 ## [7.1.1] - 2026-09-05
 ### Changed
 - **Shortened Page Title:** Simplified the application page title and header branding from "Semantic Bible Word Map" to "Semantic Bible Map" to reflect its comprehensive coverage across words, verses, and books.

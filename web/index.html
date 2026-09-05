@@ -5,84 +5,211 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="color-scheme" content="light dark">
     <title>Semantic Bible Map</title>
-    <link rel="stylesheet" href="styles.css?v=7.1.1">
+    <link rel="stylesheet" href="styles.css?v=7.1.2">
     <!-- Load D3.js for high-performance physics and canvas rendering -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="icon" type="image/jpeg" href="favicon.jpg">
 </head>
 <body>
-    <header style="position: relative; z-index: 10;">
+    <header style="position: relative; z-index: 20000;">
         <div style="display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap;">
-            <h1>Semantic Bible Map <span style="font-size: 0.5em; color: var(--text-muted); vertical-align: middle;">v7.1.1</span></h1>
+            <h1>Semantic Bible Map <span style="font-size: 0.5em; color: var(--text-muted); vertical-align: middle;">v7.1.2</span></h1>
             <div class="view-mode-pill-group">
                 <button type="button" class="view-mode-pill active" id="view-mode-words" data-mode="words">Words</button>
                 <button type="button" class="view-mode-pill" id="view-mode-verses" data-mode="verses">Verses</button>
                 <button type="button" class="view-mode-pill" id="view-mode-books" data-mode="books">Books</button>
             </div>
             <div class="info-wrapper">
-                <div class="info-btn" id="info-btn">i</div>
+                <div class="info-btn" id="info-btn" title="Map Guide & Legend">i</div>
                 <div class="info-panel" id="info-panel">
+                    <div class="info-sheet-handle" id="info-sheet-handle"></div>
                     <div class="info-close" id="info-close">&times;</div>
-                    Explore the Berean Standard Bible through a semantic lens. Each dot represents a word, biblical book, or verse centroid, and physical distance indicates semantic proximity based on biblical usage.
-                    <br><br>
-                    <strong>Word Colors:</strong><br>
-                    <span style="color: #4ade80;">■</span> Proper Nouns (Names, Places)<br>
-                    <span style="color: #60a5fa;">■</span> Nouns (Objects, Concepts)<br>
-                    <span style="color: #f472b6;">■</span> Verbs (Actions)<br>
-                    <span style="color: #fbbf24;">■</span> Adjectives & Adverbs<br>
-                    <span style="color: #94a3b8;">■</span> Other
-                    <br><br>
-                    <strong>Book & Verse Genres:</strong><br>
-                    <span style="color: #3b82f6;">■</span> Law (Pentateuch)<br>
-                    <span style="color: #10b981;">■</span> History<br>
-                    <span style="color: #f59e0b;">■</span> Wisdom & Poetry<br>
-                    <span style="color: #8b5cf6;">■</span> Major Prophets<br>
-                    <span style="color: #ec4899;">■</span> Minor Prophets<br>
-                    <span style="color: #ef4444;">■</span> Gospels<br>
-                    <span style="color: #06b6d4;">■</span> Pauline Epistles<br>
-                    <span style="color: #14b8a6;">■</span> General Epistles<br>
-                    <span style="color: #e11d48;">■</span> Apocalypse
-                    <br><br>
-                    <strong>Connection Lines:</strong><br>
-                    <div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
-                        <span class="legend-line legend-line-direct"></span>
-                        <span>Direct Link (single verse linked words / word constellation)</span>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
-                        <span class="legend-line legend-line-indirect"></span>
-                        <span>Grey Link (indirect semantic links)</span>
+                    <div class="info-body" id="info-body">
+                        <div style="font-size: 1.05em; font-weight: 700; margin-bottom: 8px; color: var(--heading-color);">Map Guide & Legend</div>
+                        Explore the Berean Standard Bible through a semantic lens. Each dot represents a word, biblical book, or verse centroid, and physical distance indicates semantic proximity based on biblical usage.
+                        <br><br>
+                        <strong>Word Colors:</strong><br>
+                        <span style="color: #4ade80;">■</span> Proper Nouns (Names, Places)<br>
+                        <span style="color: #60a5fa;">■</span> Nouns (Objects, Concepts)<br>
+                        <span style="color: #f472b6;">■</span> Verbs (Actions)<br>
+                        <span style="color: #fbbf24;">■</span> Adjectives & Adverbs<br>
+                        <span style="color: #94a3b8;">■</span> Other
+                        <br><br>
+                        <strong>Book & Verse Genres:</strong><br>
+                        <span style="color: #3b82f6;">■</span> Law (Pentateuch)<br>
+                        <span style="color: #10b981;">■</span> History<br>
+                        <span style="color: #f59e0b;">■</span> Wisdom & Poetry<br>
+                        <span style="color: #8b5cf6;">■</span> Major Prophets<br>
+                        <span style="color: #ec4899;">■</span> Minor Prophets<br>
+                        <span style="color: #ef4444;">■</span> Gospels<br>
+                        <span style="color: #06b6d4;">■</span> Pauline Epistles<br>
+                        <span style="color: #14b8a6;">■</span> General Epistles<br>
+                        <span style="color: #e11d48;">■</span> Apocalypse
+                        <br><br>
+                        <strong>Connection Lines:</strong><br>
+                        <div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
+                            <span class="legend-line legend-line-direct"></span>
+                            <span>Direct Link (single verse linked words / word constellation)</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
+                            <span class="legend-line legend-line-indirect"></span>
+                            <span>Grey Link (indirect semantic links)</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </header>
     <main>
-        <bible-word-map src-2d="data/output/wordmap_2d.json?v=7.1.1" src-verses="data/output/verse_index.json?v=7.1.1" src-books="data/output/bookmap_2d.json?v=7.1.1" src-versemap="data/output/versemap_2d.json?v=7.1.1"></bible-word-map>
+        <bible-word-map src-2d="data/output/wordmap_2d.json?v=7.1.2" src-verses="data/output/verse_index.json?v=7.1.2" src-books="data/output/bookmap_2d.json?v=7.1.2" src-versemap="data/output/versemap_2d.json?v=7.1.2"></bible-word-map>
     </main>
     <footer>
         <a href="https://github.com/rotareti/semantic-bible-word-map" target="_blank">View source on GitHub</a> <span style="margin: 0 10px; color: var(--text-muted); vertical-align: middle;">|</span> <i style="color: var(--text-muted);">"Freely you have received; freely give."</i>
     </footer>
-    <script src="bible-word-map.js?v=7.1.1" type="module"></script>
+    <script src="bible-word-map.js?v=7.1.2" type="module"></script>
     <script>
         const btn = document.getElementById('info-btn');
         const panel = document.getElementById('info-panel');
         const closeBtn = document.getElementById('info-close');
+        const infoBody = document.getElementById('info-body');
+        const mapEl = document.querySelector('bible-word-map');
         let pinned = false;
 
-        btn.addEventListener('mouseenter', () => { if (!pinned) panel.classList.add('visible'); });
-        btn.addEventListener('mouseleave', () => { if (!pinned) panel.classList.remove('visible'); });
-        btn.addEventListener('click', () => {
-            pinned = !pinned;
-            if (pinned) {
-                panel.classList.add('visible', 'pinned');
-            } else {
-                panel.classList.remove('visible', 'pinned');
+        function openInfoPanel() {
+            pinned = true;
+            if (mapEl && mapEl.closeActiveInfoWindows) {
+                mapEl.closeActiveInfoWindows();
             }
-        });
-        closeBtn.addEventListener('click', () => {
+            panel.style.transform = '';
+            panel.style.transition = '';
+            panel.style.opacity = '';
+            panel.classList.add('visible', 'pinned');
+            if (infoBody) infoBody.scrollTop = 0;
+        }
+
+        function closeInfoPanel() {
             pinned = false;
             panel.classList.remove('visible', 'pinned');
+            panel.style.transform = '';
+            panel.style.transition = '';
+            panel.style.opacity = '';
+        }
+
+        btn.addEventListener('mouseenter', () => { 
+            if (window.innerWidth > 768 && !pinned) panel.classList.add('visible'); 
         });
+        btn.addEventListener('mouseleave', () => { 
+            if (window.innerWidth > 768 && !pinned) panel.classList.remove('visible'); 
+        });
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (panel.classList.contains('visible')) {
+                closeInfoPanel();
+            } else {
+                openInfoPanel();
+            }
+        });
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeInfoPanel();
+        });
+
+        // Close when clicking outside panel
+        document.addEventListener('click', (e) => {
+            if (panel.classList.contains('visible')) {
+                if (!panel.contains(e.target) && !btn.contains(e.target)) {
+                    closeInfoPanel();
+                }
+            }
+        });
+
+        // Mobile Swipe-to-Dismiss Gesture
+        let startY = 0;
+        let startX = 0;
+        let currentY = 0;
+        let startTime = 0;
+        let isDragging = false;
+        let canDrag = false;
+
+        const onTouchMove = (e) => {
+            if (!e.touches || e.touches.length === 0) return;
+            const touch = e.touches[0];
+            currentY = touch.clientY;
+            const dy = currentY - startY;
+            const dx = touch.clientX - startX;
+
+            if (!isDragging) {
+                if (infoBody && infoBody.scrollTop > 0) {
+                    canDrag = false;
+                }
+                if (canDrag && dy > 8 && Math.abs(dy) > Math.abs(dx) * 1.15) {
+                    isDragging = true;
+                    panel.style.transition = 'none';
+                }
+            }
+
+            if (isDragging) {
+                if (e.cancelable) e.preventDefault();
+                e.stopPropagation();
+                if (dy > 0) {
+                    panel.style.transform = `translateY(${dy}px)`;
+                } else {
+                    panel.style.transform = `translateY(${dy * 0.2}px)`;
+                }
+            }
+        };
+
+        const onTouchEnd = (e) => {
+            window.removeEventListener('touchmove', onTouchMove, { capture: true });
+            window.removeEventListener('touchend', onTouchEnd, { capture: true });
+            window.removeEventListener('touchcancel', onTouchEnd, { capture: true });
+
+            if (!isDragging) return;
+            isDragging = false;
+            e.stopPropagation();
+
+            panel.style.transition = 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease';
+
+            const dy = currentY - startY;
+            const elapsed = Math.max(1, performance.now() - startTime);
+            const vy = dy / elapsed;
+
+            if (dy > 70 || (dy > 25 && vy > 0.35)) {
+                panel.style.transform = 'translateY(105%)';
+                panel.style.opacity = '0';
+                setTimeout(() => {
+                    closeInfoPanel();
+                }, 220);
+            } else {
+                panel.style.transform = 'translateY(0)';
+                setTimeout(() => {
+                    panel.style.transition = '';
+                }, 240);
+            }
+        };
+
+        panel.addEventListener('touchstart', (e) => {
+            if (window.innerWidth > 768) return;
+            if (!e.touches || e.touches.length === 0) return;
+
+            const touch = e.touches[0];
+            startY = touch.clientY;
+            startX = touch.clientX;
+            currentY = startY;
+            startTime = performance.now();
+            isDragging = false;
+
+            const targetInBody = touch.target.closest('#info-body');
+            if (targetInBody) {
+                canDrag = (infoBody.scrollTop <= 0);
+            } else {
+                canDrag = true;
+            }
+
+            window.addEventListener('touchmove', onTouchMove, { capture: true, passive: false });
+            window.addEventListener('touchend', onTouchEnd, { capture: true });
+            window.addEventListener('touchcancel', onTouchEnd, { capture: true });
+        }, { passive: true });
 
         // View Mode Toggle (Words / Verses / Books)
         const wordsBtn = document.getElementById('view-mode-words');
