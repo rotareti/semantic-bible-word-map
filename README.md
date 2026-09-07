@@ -83,4 +83,7 @@ The `<bible-word-map>` element styles itself but can be configured using CSS var
 
 This project was made possible by the following open datasets:
 * **[Berean Standard Bible (BSB)](https://berean.bible/)**: Used for the English text and Interlinear mapping tables.
+* **[Septuaginta (LXX, Rahlfs 1935)](https://github.com/eliranwong/LXX-Rahlfs-1935)**: Alfred Rahlfs 1935 edition of the Greek Septuagint, based on CATSS / CCAT morphological tagging and lemmatization (IOSCS / University of Pennsylvania).
+* **[STEPBible TBESG Lexicon](https://github.com/STEPBible/STEPBible-Data)**: Translators Brief Lexicon of Extended Strong's for Greek, providing concise English glosses and morphological classifications (Tyndale House Cambridge, CC BY 4.0).
+* **[SBL Greek New Testament (SBLGNT)](https://sblgnt.com/)**: Edited by Michael W. Holmes and published by the Society of Biblical Literature and Logos Bible Software (CC BY 4.0).
 * **[OpenScriptures Strong's Dictionary](https://github.com/openscriptures/strongs)**: Used for the original language definitions (Licensed under CC-BY 4.0).
