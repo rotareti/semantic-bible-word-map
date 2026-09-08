@@ -1476,6 +1476,16 @@ class BibleWordMap extends HTMLElement {
                         </div>
                         <div class="bwm-drawer-section">
                             <div class="bwm-drawer-section-header">
+                                <h4>Semantic Foundation</h4>
+                            </div>
+                            <div class="bwm-pill-group" id="bwm-foundation-filter">
+                                <button type="button" class="bwm-pill-btn active" id="bwm-btn-foundation-lxx" data-foundation="lxx" title="Greek Septuagint &amp; New Testament">LXX (Greek)</button>
+                                <button type="button" class="bwm-pill-btn" id="bwm-btn-foundation-bsb" data-foundation="bsb" title="Berean Standard Bible English">BSB (English)</button>
+                            </div>
+                            <div class="bwm-drawer-hint" id="bwm-foundation-hint">Switch underlying semantic training between Greek Septuagint/NT and BSB English.</div>
+                        </div>
+                        <div class="bwm-drawer-section">
+                            <div class="bwm-drawer-section-header">
                                 <h4 id="bwm-neighbor-heading">Relationships per Word</h4>
                                 <span id="bwm-neighbor-value">100</span>
                             </div>
@@ -1531,10 +1541,22 @@ class BibleWordMap extends HTMLElement {
     }
 
     connectedCallback() {
-        this.src2d = this.getAttribute('src-2d');
-        this.srcVerses = this.getAttribute('src-verses');
-        this.srcBooks = this.getAttribute('src-books') || 'data/output/bookmap_2d.json';
-        this.srcVersemap = this.getAttribute('src-versemap') || 'data/output/versemap_2d.json';
+        let urlParams = new URLSearchParams(window.location.search);
+        let baseParam = (urlParams.get('base') || urlParams.get('foundation') || this.getAttribute('foundation') || 'lxx').toLowerCase();
+        this.foundation = (baseParam === 'bsb') ? 'bsb' : 'lxx';
+
+        const vParam = '?v=7.1.5';
+        if (this.foundation === 'bsb') {
+            this.src2d = this.getAttribute('src-2d-bsb') || this.getAttribute('src-2d') || ('data/output/wordmap_2d.json' + vParam);
+            this.srcVerses = this.getAttribute('src-verses-bsb') || this.getAttribute('src-verses') || ('data/output/verse_index.json' + vParam);
+            this.srcBooks = this.getAttribute('src-books-bsb') || this.getAttribute('src-books') || ('data/output/bookmap_2d.json' + vParam);
+            this.srcVersemap = this.getAttribute('src-versemap-bsb') || this.getAttribute('src-versemap') || ('data/output/versemap_2d.json' + vParam);
+        } else {
+            this.src2d = this.getAttribute('src-2d') || ('data/output/wordmap_2d_lxx.json' + vParam);
+            this.srcVerses = this.getAttribute('src-verses') || ('data/output/verse_index_lxx.json' + vParam);
+            this.srcBooks = this.getAttribute('src-books') || ('data/output/bookmap_2d_lxx.json' + vParam);
+            this.srcVersemap = this.getAttribute('src-versemap') || ('data/output/versemap_2d_lxx.json' + vParam);
+        }
         
         this.canvas = this.querySelector('canvas');
         this.ctx = this.canvas.getContext('2d');
@@ -1707,6 +1729,27 @@ class BibleWordMap extends HTMLElement {
                     }
                 }
             });
+        }
+
+        const foundationPills = this.querySelectorAll('#bwm-foundation-filter .bwm-pill-btn');
+        foundationPills.forEach(btn => {
+            btn.addEventListener('click', () => {
+                let f = btn.getAttribute('data-foundation');
+                if (f && f !== this.foundation) {
+                    this.setSemanticFoundation(f, true);
+                }
+            });
+        });
+        const lxxPill = this.querySelector('#bwm-btn-foundation-lxx');
+        const bsbPill = this.querySelector('#bwm-btn-foundation-bsb');
+        if (lxxPill && bsbPill) {
+            if (this.foundation === 'bsb') {
+                lxxPill.classList.remove('active');
+                bsbPill.classList.add('active');
+            } else {
+                lxxPill.classList.add('active');
+                bsbPill.classList.remove('active');
+            }
         }
 
         const testamentPills = this.querySelectorAll('#bwm-testament-filter .bwm-pill-btn');
@@ -1928,8 +1971,9 @@ class BibleWordMap extends HTMLElement {
         let books = params.get('books');
         let verses = params.get('verses');
         let keywords = params.get('keywords');
-        let isVersesInit = (view === 'verses' || Boolean(verses));
-        let isBooksInit = !isVersesInit && (view === 'books' || Boolean(books));
+        let currentMode = this.viewMode || view || (verses ? 'verses' : (books ? 'books' : 'words'));
+        let isVersesInit = (currentMode === 'verses' || view === 'verses' || Boolean(verses));
+        let isBooksInit = !isVersesInit && (currentMode === 'books' || view === 'books' || Boolean(books));
 
         const wordsBtn = document.getElementById('view-mode-words');
         const booksBtn = document.getElementById('view-mode-books');
@@ -2016,9 +2060,12 @@ class BibleWordMap extends HTMLElement {
         });
 
         this.versemapPromise.then(data => {
-            if (data && data.verses) {
-                this.versemapData = data;
-                this.versemapLookup = new Map(data.verses.map(v => [v.id, v]));
+            if (data) {
+                let versesList = data.verses || (Array.isArray(data) ? data : null);
+                if (versesList) {
+                    this.versemapData = data.verses ? data : { count: versesList.length, verses: versesList };
+                    this.versemapLookup = new Map(versesList.map(v => [v.id, v]));
+                }
             }
         });
 
@@ -2029,8 +2076,9 @@ class BibleWordMap extends HTMLElement {
         try {
             if (isVersesInit) {
                 this.versemapData = await this.versemapPromise;
-                if (this.versemapData && this.versemapData.verses) {
-                    this.versemapLookup = new Map(this.versemapData.verses.map(v => [v.id, v]));
+                if (this.versemapData) {
+                    let versesList = this.versemapData.verses || (Array.isArray(this.versemapData) ? this.versemapData : []);
+                    this.versemapLookup = new Map(versesList.map(v => [v.id, v]));
                 }
                 const vData = await this.versesPromise;
                 if (vData && vData.verses) {
@@ -2050,7 +2098,9 @@ class BibleWordMap extends HTMLElement {
                 this.hideLoading();
 
                 this.setViewMode('verses', true);
-                if (verses) {
+                if (this.searchedVerses && this.searchedVerses.length > 0) {
+                    this.searchVerses(true);
+                } else if (verses) {
                     let parsed = this.parseVerseQuery(verses);
                     if (parsed.length > 0) {
                         this.searchedVerses = parsed;
@@ -2070,10 +2120,14 @@ class BibleWordMap extends HTMLElement {
                 this.hideLoading();
 
                 this.setViewMode('books', true);
-                if (books) {
+                if (this.searchedBooks && this.searchedBooks.length > 0) {
+                    this.searchBooks(true);
+                } else if (books) {
                     this.searchedBooks = books.split(',').map(b => b.trim().toUpperCase()).filter(b => b);
                     this.drawerBooks = [...this.searchedBooks];
                     this.searchBooks(true);
+                } else {
+                    this.buildBooksGraph();
                 }
             } else {
                 this.data2d = await this.data2dPromise;
@@ -2091,13 +2145,20 @@ class BibleWordMap extends HTMLElement {
                 }
                 this.hideLoading();
 
-                if (keywords) {
+                if (this.searchedWords && this.searchedWords.length > 0) {
+                    let baseWords = [...new Set(this.searchedWords.map(id => {
+                        let { word, pos } = this.parseWordId(id);
+                        return this.formatWord(word, pos);
+                    }))];
+                    this.searchInput.value = baseWords.join(" ");
+                    this.searchWord(true);
+                } else if (keywords) {
                     this.searchedWords = keywords.split(',').map(k => k.trim()).filter(k => k);
                     this.drawerWords = [...this.searchedWords];
                     if (this.searchedWords.length > 0) {
                         let baseWords = [...new Set(this.searchedWords.map(id => {
-                            let parts = id.split('_');
-                            return this.formatWord(parts[0], parts[1]);
+                            let { word, pos } = this.parseWordId(id);
+                            return this.formatWord(word, pos);
                         }))];
                         this.searchInput.value = baseWords.join(" ");
                         this.searchWord(true);
@@ -2157,23 +2218,49 @@ class BibleWordMap extends HTMLElement {
                 return;
             }
 
-            let words = query.toLowerCase().split(/[\s,]+/).filter(w => w);
+            const findMatchesForToken = (token) => {
+                let idMatch = this.data2d.filter(d => d.id.toLowerCase() === token);
+                if (idMatch.length > 0) return idMatch;
+
+                let wordMatch = this.data2d.filter(d => d.w.toLowerCase() === token);
+                if (wordMatch.length > 0) return wordMatch;
+
+                let glossPartMatch = this.data2d.filter(d => d.w.toLowerCase().split(/[\s-]+/).includes(token));
+                if (glossPartMatch.length > 0) return glossPartMatch;
+
+                let origMatch = this.data2d.filter(d => {
+                    if (!d.original || !Array.isArray(d.original)) return false;
+                    return d.original.some(o => {
+                        if (o.lemma && o.lemma.toLowerCase() === token) return true;
+                        if (o.translit && o.translit.toLowerCase() === token) return true;
+                        if (o.strongs) {
+                            let sLow = o.strongs.toLowerCase();
+                            if (sLow === token || sLow === 'g' + token || sLow === 'h' + token) return true;
+                        }
+                        return false;
+                    });
+                });
+                if (origMatch.length > 0) return origMatch;
+
+                return [];
+            };
+
             this.searchedWords = [];
-            
-            for (let w of words) {
-                let exactMatch = this.data2d.filter(d => d.id.toLowerCase() === w);
-                if (exactMatch.length > 0) {
-                    foundPoints.push(...exactMatch);
-                    this.searchedWords.push(...exactMatch.map(p => p.id));
-                    continue;
-                }
-                
-                let matchingPoints = this.data2d.filter(d => d.w.toLowerCase() === w);
-                if (matchingPoints.length > 0) {
-                    foundPoints.push(...matchingPoints);
-                    this.searchedWords.push(...matchingPoints.map(p => p.id));
+            let phraseMatches = findMatchesForToken(query);
+            if (phraseMatches.length > 0) {
+                foundPoints.push(...phraseMatches);
+                this.searchedWords.push(...phraseMatches.map(p => p.id));
+            } else {
+                let words = query.split(/[\s,]+/).filter(w => w);
+                for (let w of words) {
+                    let matches = findMatchesForToken(w);
+                    if (matches.length > 0) {
+                        foundPoints.push(...matches);
+                        this.searchedWords.push(...matches.map(p => p.id));
+                    }
                 }
             }
+            this.searchedWords = [...new Set(this.searchedWords)];
             this.drawerWords = [...this.searchedWords];
         } else {
             // Use explicit IDs already set in this.searchedWords
@@ -2181,10 +2268,25 @@ class BibleWordMap extends HTMLElement {
                 this.clearAllKeywords();
                 return;
             }
+            let resolvedIds = [];
             this.searchedWords.forEach(id => {
                 let p = this.data2d.find(d => d.id === id);
-                if (p) foundPoints.push(p);
+                if (!p) {
+                    let parsed = this.parseWordId(id);
+                    let matches = this.data2d.filter(d => d.w.toLowerCase() === parsed.word.toLowerCase());
+                    if (parsed.pos) {
+                        let posMatches = matches.filter(d => d.pos === parsed.pos);
+                        if (posMatches.length > 0) matches = posMatches;
+                    }
+                    if (matches.length > 0) p = matches[0];
+                }
+                if (p) {
+                    foundPoints.push(p);
+                    resolvedIds.push(p.id);
+                }
             });
+            this.searchedWords = [...new Set(resolvedIds)];
+            this.drawerWords = [...this.searchedWords];
         }
         
         this.updateClearBtnVisibility();
@@ -2288,13 +2390,13 @@ class BibleWordMap extends HTMLElement {
         this.userInteracted = false;
         
         let baseWords = [...new Set(this.searchedWords.map(id => {
-            let parts = id.split('_');
-            return this.formatWord(parts[0], parts[1]);
+            let { word, pos } = this.parseWordId(id);
+            return this.formatWord(word, pos);
         }))];
         this.searchInput.value = baseWords.join(" ");
         
         if (this.searchedWords && this.searchedWords.length > 0) {
-            window.history.replaceState(null, '', '?keywords=' + this.searchedWords.join(','));
+            this.updateUrl({ keywords: this.searchedWords.join(',') });
         }
         
         this.renderActiveWords();
@@ -2335,7 +2437,7 @@ class BibleWordMap extends HTMLElement {
         this.renderActiveWords();
         if (this.reopenBtn) this.reopenBtn.style.display = 'none';
         if (this.verseReopenBtn) this.verseReopenBtn.style.display = 'none';
-        window.history.replaceState(null, '', window.location.pathname);
+        this.updateUrl({});
         this.hideRadialMenu();
         this.hideVersesPanel();
         this.hideCanonUsageModal();
@@ -2363,6 +2465,107 @@ class BibleWordMap extends HTMLElement {
         if (!this.loading) return;
         this.stopLoadingAnimation();
         this.loading.style.display = 'none';
+    }
+
+    parseWordId(id) {
+        if (!id) return { word: '', pos: '', strongs: '' };
+        if (this.data2d) {
+            let found = this.data2d.find(d => d.id === id);
+            if (found) {
+                let st = '';
+                if (found.original && found.original.length > 0 && found.original[0].strongs) {
+                    st = found.original[0].strongs;
+                }
+                return {
+                    word: found.w,
+                    pos: found.pos,
+                    strongs: st
+                };
+            }
+        }
+        let parts = id.split('_');
+        if (parts.length >= 3 && /^([GH]\d+|L\d+)/i.test(parts[parts.length - 2])) {
+            let pos = parts[parts.length - 1];
+            let strongs = parts[parts.length - 2];
+            let word = parts.slice(0, parts.length - 2).join(' ');
+            return { word, pos, strongs };
+        } else if (parts.length >= 2) {
+            let pos = parts[parts.length - 1];
+            let word = parts.slice(0, parts.length - 1).join(' ');
+            return { word, pos, strongs: '' };
+        }
+        return { word: id, pos: '', strongs: '' };
+    }
+
+    updateUrl(paramsObj = {}) {
+        try {
+            let url = new URL(window.location.href);
+            url.search = '';
+            if (this.foundation === 'bsb') {
+                url.searchParams.set('base', 'bsb');
+            }
+            for (let [k, v] of Object.entries(paramsObj)) {
+                if (v !== null && v !== undefined && v !== '') {
+                    url.searchParams.set(k, v);
+                }
+            }
+            let searchStr = url.search ? url.search : '';
+            window.history.replaceState(null, '', url.pathname + searchStr);
+        } catch (e) {}
+    }
+
+    setSemanticFoundation(foundation, reload = true) {
+        if (this.foundation === foundation && !reload) return;
+        this.foundation = foundation;
+
+        const lxxPill = this.querySelector('#bwm-btn-foundation-lxx');
+        const bsbPill = this.querySelector('#bwm-btn-foundation-bsb');
+        if (lxxPill && bsbPill) {
+            if (foundation === 'bsb') {
+                lxxPill.classList.remove('active');
+                bsbPill.classList.add('active');
+            } else {
+                lxxPill.classList.add('active');
+                bsbPill.classList.remove('active');
+            }
+        }
+
+        const vParam = '?v=7.1.5';
+        if (foundation === 'bsb') {
+            this.src2d = this.getAttribute('src-2d-bsb') || this.getAttribute('src-2d') || ('data/output/wordmap_2d.json' + vParam);
+            this.srcVerses = this.getAttribute('src-verses-bsb') || this.getAttribute('src-verses') || ('data/output/verse_index.json' + vParam);
+            this.srcBooks = this.getAttribute('src-books-bsb') || this.getAttribute('src-books') || ('data/output/bookmap_2d.json' + vParam);
+            this.srcVersemap = this.getAttribute('src-versemap-bsb') || this.getAttribute('src-versemap') || ('data/output/versemap_2d.json' + vParam);
+        } else {
+            this.src2d = this.getAttribute('src-2d') || ('data/output/wordmap_2d_lxx.json' + vParam);
+            this.srcVerses = this.getAttribute('src-verses') || ('data/output/verse_index_lxx.json' + vParam);
+            this.srcBooks = this.getAttribute('src-books') || ('data/output/bookmap_2d_lxx.json' + vParam);
+            this.srcVersemap = this.getAttribute('src-versemap') || ('data/output/versemap_2d_lxx.json' + vParam);
+        }
+
+        if (this.viewMode === 'verses') {
+            this.updateUrl({ view: 'verses', verses: (this.searchedVerses && this.searchedVerses.length > 0) ? this.searchedVerses.join(',') : undefined });
+        } else if (this.viewMode === 'books') {
+            this.updateUrl({ view: 'books', books: (this.searchedBooks && this.searchedBooks.length > 0) ? this.searchedBooks.join(',') : undefined });
+        } else {
+            this.updateUrl({ keywords: (this.searchedWords && this.searchedWords.length > 0) ? this.searchedWords.join(',') : undefined });
+        }
+
+        if (reload) {
+            this.data2d = null;
+            this.verses = null;
+            this.wordToVerses = null;
+            this.booksData = null;
+            this.versemapData = null;
+            this.versemapLookup = new Map();
+            this.verseTextMap.clear();
+
+            if (this.closeActiveInfoWindows) {
+                this.closeActiveInfoWindows();
+            }
+
+            this.loadData();
+        }
     }
 
     formatWord(word, pos) {
@@ -2498,7 +2701,7 @@ class BibleWordMap extends HTMLElement {
         
         container.innerHTML = '';
         this.drawerWords.forEach(id => {
-            let [w, pos] = id.split('_');
+            let { word: w, pos, strongs } = this.parseWordId(id);
             let item = document.createElement('div');
             item.className = 'bwm-active-word-item';
             
@@ -2512,9 +2715,9 @@ class BibleWordMap extends HTMLElement {
                     this.searchedWords = this.searchedWords.filter(x => x !== id);
                 }
                 // Trigger a re-search with the remaining explicit IDs
-                let baseWords = [...new Set(this.searchedWords.map(id => {
-                    let parts = id.split('_');
-                    return this.formatWord(parts[0], parts[1]);
+                let baseWords = [...new Set(this.searchedWords.map(wid => {
+                    let { word: bw, pos: bp } = this.parseWordId(wid);
+                    return this.formatWord(bw, bp);
                 }))];
                 this.searchInput.value = baseWords.join(" ");
                 this.searchWord(true); // pass flag to indicate explicit IDs
@@ -2523,7 +2726,8 @@ class BibleWordMap extends HTMLElement {
             let label = document.createElement('label');
             label.style.cursor = 'pointer';
             let displayW = this.formatWord(w, pos);
-            label.innerHTML = `<strong>${displayW}</strong> <span style="color:#888;font-size:0.85em;">(${pos})</span>`;
+            let badge = strongs ? `(${strongs} ${pos})` : `(${pos})`;
+            label.innerHTML = `<strong>${displayW}</strong> <span style="color:#888;font-size:0.85em;">${badge}</span>`;
             
             // Allow clicking label to toggle checkbox
             label.addEventListener('click', () => { cb.click(); });
@@ -2641,8 +2845,8 @@ class BibleWordMap extends HTMLElement {
         
         this.searchedWords = this.searchedWords.filter(x => x !== oldWord);
         let baseWords = [...new Set(this.searchedWords.map(id => {
-            let parts = id.split('_');
-            return this.formatWord(parts[0], parts[1]);
+            let { word, pos } = this.parseWordId(id);
+            return this.formatWord(word, pos);
         }))];
         this.searchInput.value = baseWords.join(" ");
         this.searchWord(true);
@@ -2650,8 +2854,8 @@ class BibleWordMap extends HTMLElement {
 
     async addKeyword(newWord) {
         if (!this.isSearchMode) {
-            let parts = newWord.split('_');
-            this.searchInput.value = this.formatWord(parts[0], parts[1]);
+            let { word, pos } = this.parseWordId(newWord);
+            this.searchInput.value = this.formatWord(word, pos);
             this.searchWord();
             return;
         }
@@ -2666,13 +2870,13 @@ class BibleWordMap extends HTMLElement {
         if (!this.drawerWords.includes(newWord)) this.drawerWords.push(newWord);
         
         let baseWords = [...new Set(this.searchedWords.map(id => {
-            let parts = id.split('_');
-            return this.formatWord(parts[0], parts[1]);
+            let { word, pos } = this.parseWordId(id);
+            return this.formatWord(word, pos);
         }))];
         this.searchInput.value = baseWords.join(" ");
         
         if (this.searchedWords && this.searchedWords.length > 0) {
-            window.history.replaceState(null, '', '?keywords=' + this.searchedWords.join(','));
+            this.updateUrl({ keywords: this.searchedWords.join(',') });
         }
         
         this.renderActiveWords();
@@ -2959,7 +3163,7 @@ class BibleWordMap extends HTMLElement {
             this.searchedVerses = [];
             this.drawerVerses = [];
             this.isSearchMode = false;
-            window.history.replaceState(null, '', '?view=verses');
+            this.updateUrl({ view: 'verses' });
             this.renderActiveWords();
 
             if (!this.versemapLookup) {
@@ -2990,7 +3194,7 @@ class BibleWordMap extends HTMLElement {
             this.searchedVerses = [];
             this.drawerVerses = [];
             this.isSearchMode = false;
-            window.history.replaceState(null, '', '?view=books');
+            this.updateUrl({ view: 'books' });
             this.renderActiveWords();
 
             if (!this.booksData) {
@@ -3018,7 +3222,7 @@ class BibleWordMap extends HTMLElement {
             this.searchedVerses = [];
             this.drawerVerses = [];
             this.isSearchMode = false;
-            window.history.replaceState(null, '', window.location.pathname);
+            this.updateUrl({});
             this.renderActiveWords();
 
             if (!this.data2d) {
@@ -3189,7 +3393,7 @@ class BibleWordMap extends HTMLElement {
         this.updateClearBtnVisibility();
 
         if (this.searchedBooks && this.searchedBooks.length > 0) {
-            window.history.replaceState(null, '', '?view=books&books=' + this.searchedBooks.join(','));
+            this.updateUrl({ view: 'books', books: this.searchedBooks.join(',') });
         }
 
         this.buildMultiBookConstellation(foundBooks);
@@ -3415,7 +3619,7 @@ class BibleWordMap extends HTMLElement {
         if (this.verseReopenBtn) {
             this.verseReopenBtn.style.display = 'none';
         }
-        window.history.replaceState(null, '', '?view=books');
+        this.updateUrl({ view: 'books' });
         this.buildBooksGraph();
     }
 
@@ -3796,7 +4000,7 @@ class BibleWordMap extends HTMLElement {
         this.updateClearBtnVisibility();
 
         if (this.searchedVerses && this.searchedVerses.length > 0) {
-            window.history.replaceState(null, '', '?view=verses&verses=' + this.searchedVerses.join(','));
+            this.updateUrl({ view: 'verses', verses: this.searchedVerses.join(',') });
         }
 
         this.buildVersesConstellation(records);
@@ -4029,8 +4233,9 @@ class BibleWordMap extends HTMLElement {
             foundVerses.forEach(v => {
                 let topWords = (v.w || []).slice(0, wordLimit);
                 topWords.forEach(wId => {
-                    let [w, pos] = wId.split('_');
+                    let { word: w, pos } = this.parseWordId(wId);
                     let fullPoint = this.data2d ? this.data2d.find(d => d.id === wId) : null;
+                    if (fullPoint) { w = fullPoint.w; pos = fullPoint.pos; }
                     if (!wordMap.has(wId)) {
                         wordMap.set(wId, {
                             id: wId,
@@ -4161,7 +4366,7 @@ class BibleWordMap extends HTMLElement {
 
         let wordList = Array.isArray(verse.words) ? verse.words : (Array.isArray(verse.w) ? verse.w : []);
         let wordsHtml = wordList.map(wId => {
-            let [w, pos] = wId.split('_');
+            let { word: w, pos } = this.parseWordId(wId);
             let posColor = '#94a3b8';
             if (pos === 'PROPN') posColor = '#4ade80';
             else if (pos === 'NOUN') posColor = '#60a5fa';
@@ -4373,7 +4578,7 @@ class BibleWordMap extends HTMLElement {
         this.hoveredNode = null;
         if (this.verseReopenBtn) this.verseReopenBtn.style.display = 'none';
         if (this.reopenBtn) this.reopenBtn.style.display = 'none';
-        window.history.replaceState(null, '', '?view=verses');
+        this.updateUrl({ view: 'verses' });
         this.buildVersesGraph();
     }
 
@@ -5345,15 +5550,32 @@ class BibleWordMap extends HTMLElement {
             `;
         }
 
+        let origHeaderLine = '';
+        if (node.original && Array.isArray(node.original) && node.original.length > 0) {
+            let prim = node.original[0];
+            if (prim.lemma) {
+                origHeaderLine = `
+                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: 0.95em;">
+                        <span style="font-family: serif; font-size: 1.25em; font-weight: 600; color: var(--bwm-node-hover, #60a5fa);">${prim.lemma}</span>
+                        ${prim.translit ? `<span style="font-style: italic; opacity: 0.8; font-size: 0.9em;">${prim.translit}</span>` : ''}
+                        ${prim.strongs ? `<span style="background: var(--bwm-badge-bg); border: 1px solid var(--bwm-border); padding: 1px 5px; border-radius: 4px; font-family: monospace; font-size: 0.8em; opacity: 0.85;">${prim.strongs}</span>` : ''}
+                    </div>
+                `;
+            }
+        }
+
         let headerHtml = `
             <div class="bwm-sheet-handle"></div>
             <div class="bwm-window-header">
                 <div class="bwm-window-header-top">
                     <div class="bwm-window-title-group">
-                        <h3 class="bwm-window-title">${displayW}</h3>
-                        ${node.pos ? `<span class="bwm-window-subtitle-inline">(${node.pos.toLowerCase()})</span>` : ''}
-                        <span class="bwm-window-badge" id="bwm-word-occ-badge">${occBadgeText}</span>
-                        ${booksBadgeText ? `<span class="bwm-window-badge-muted" id="bwm-word-books-badge">${booksBadgeText}</span>` : ''}
+                        <div style="display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;">
+                            <h3 class="bwm-window-title" style="margin: 0;">${displayW}</h3>
+                            ${node.pos ? `<span class="bwm-window-subtitle-inline">(${node.pos.toLowerCase()})</span>` : ''}
+                            <span class="bwm-window-badge" id="bwm-word-occ-badge">${occBadgeText}</span>
+                            ${booksBadgeText ? `<span class="bwm-window-badge-muted" id="bwm-word-books-badge">${booksBadgeText}</span>` : ''}
+                        </div>
+                        ${origHeaderLine}
                     </div>
                     <div style="display:flex; align-items:center; gap:8px;">
                         ${actionBtnHtml}
@@ -5447,9 +5669,9 @@ class BibleWordMap extends HTMLElement {
                         let kwNode = this.nodes.find(n => n.id === sw);
                         let sim = kwNode ? this.cosineSimilarity(node.v, kwNode.v) : 0;
                         
-                        let parts = sw.split('_');
-                        let formattedSw = parts.length > 1 ? this.formatWord(parts[0], parts[1]) : parts[0];
-                        if (parts.length > 1) formattedSw += ` (${parts[1].toLowerCase()})`;
+                        let { word: swWord, pos: swPos } = this.parseWordId(sw);
+                        let formattedSw = swPos ? this.formatWord(swWord, swPos) : swWord;
+                        if (swPos) formattedSw += ` (${swPos.toLowerCase()})`;
                         
                         tabsData.push({
                             id: sw,

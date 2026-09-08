@@ -14,6 +14,11 @@ RESOURCES = [
         "name": "Septuaginta Rahlfs 1935 Morphological Dataset (CATSS/CCAT)",
         "url": "https://raw.githubusercontent.com/eliranwong/LXX-Rahlfs-1935/master/11_end-users_files/MyBible/Bibles/LXX_final_main.csv",
         "path": os.path.join(RAW_DIR, "lxx_final_main.csv")
+    },
+    {
+        "name": "LXX Lexicon and English Glosses",
+        "url": "https://raw.githubusercontent.com/eliranwong/LXX-Rahlfs-1935/master/11_end-users_files/LXX_lexicon_formatted_for_UniqueBibleAppPlus.csv",
+        "path": os.path.join(RAW_DIR, "lxx_lexicon.csv")
     }
 ]
 
