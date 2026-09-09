@@ -230,42 +230,91 @@ def main():
 
     book_vectors = np.array(book_vectors)
 
-    print("Running UMAP 2D projection on 66 Greek book centroids...")
-    reducer = umap.UMAP(
-        n_components=2,
-        random_state=42,
-        n_neighbors=15,
-        min_dist=0.3,
-        metric='cosine'
-    )
-    coords_2d = reducer.fit_transform(book_vectors)
-
-    # Compute inter-book cosine similarities
-    print("Computing inter-book nearest neighbors...")
+    # 5. 2D Dimensionality Reduction via Classical MDS on Cosine Distance Matrix
+    print("Computing 2D coordinates for Greek book map via Multidimensional Scaling...")
+    n = len(book_records)
     sim_matrix = np.dot(book_vectors, book_vectors.T)
+    # Cosine distance d = max(0.0, 1.0 - sim)
+    D2 = np.maximum(0.0, 1.0 - sim_matrix) ** 2
 
-    links = []
+    row_means = D2.mean(axis=1, keepdims=True)
+    col_means = D2.mean(axis=0, keepdims=True)
+    total_mean = float(D2.mean())
+
+    B = -0.5 * (D2 - row_means - col_means + total_mean)
+
+    def power_eigen(mat, iters=200):
+        v = np.ones(n) / math.sqrt(n)
+        for _ in range(iters):
+            v_next = mat.dot(v)
+            norm = np.linalg.norm(v_next)
+            if norm == 0:
+                break
+            v = v_next / norm
+        lam = float(v.dot(mat.dot(v)))
+        return lam, v
+
+    lam1, v1 = power_eigen(B)
+    B_deflated = B - lam1 * np.outer(v1, v1)
+    lam2, v2 = power_eigen(B_deflated)
+
+    s1 = math.sqrt(max(0.0001, lam1))
+    s2 = math.sqrt(max(0.0001, lam2))
+
+    raw_x = v1 * s1
+    raw_y = v2 * s2
+
+    max_range = max(float(np.max(np.abs(raw_x))), float(np.max(np.abs(raw_y)))) or 1.0
+    target_scale = 8.0 / max_range
+
     for i, b in enumerate(book_records):
-        b['x'] = round(float(coords_2d[i][0]), 3)
-        b['y'] = round(float(coords_2d[i][1]), 3)
+        b['x'] = round(float(raw_x[i] * target_scale), 3)
+        b['y'] = round(float(raw_y[i] * target_scale), 3)
 
         sim_scores = []
         for j, other in enumerate(book_records):
             if i != j:
                 score = float(sim_matrix[i, j])
                 sim_scores.append((other['code'], other['name'], score))
-                if i < j and score >= 0.70:
-                    links.append({
-                        "source": b['code'],
-                        "target": other['code'],
-                        "sim": round(score, 3)
-                    })
 
         sim_scores.sort(key=lambda item: item[2], reverse=True)
         b['nearest_books'] = [
             {"code": item[0], "name": item[1], "sim": round(item[2], 3)}
             for item in sim_scores[:6]
         ]
+
+    # 6. Generate links between books (connect each book to its top 2 closest neighbors)
+    links_set = set()
+    links = []
+    for b in book_records:
+        for nb in b['nearest_books'][:2]:
+            t_code = nb["code"]
+            edge_key = tuple(sorted([b['code'], t_code]))
+            if edge_key not in links_set:
+                links_set.add(edge_key)
+                links.append({
+                    "source": edge_key[0],
+                    "target": edge_key[1],
+                    "sim": nb["sim"]
+                })
+
+    # Ensure top cross-testament bridge links connect OT and NT
+    ot_nt_pairs = []
+    for i, b in enumerate(book_records):
+        for j, other in enumerate(book_records):
+            if i < j and b['testament'] != other['testament']:
+                ot_nt_pairs.append((b['code'], other['code'], float(sim_matrix[i, j])))
+    ot_nt_pairs.sort(key=lambda x: x[2], reverse=True)
+
+    for b1, b2, sim in ot_nt_pairs[:5]:
+        edge_key = tuple(sorted([b1, b2]))
+        if edge_key not in links_set:
+            links_set.add(edge_key)
+            links.append({
+                "source": edge_key[0],
+                "target": edge_key[1],
+                "sim": round(sim, 3)
+            })
 
     output_data = {
         "books": book_records,

@@ -194,6 +194,8 @@ class BibleWordMap extends HTMLElement {
         this.versemapData = null;
         this.versemapLookup = new Map();
         this.verseTextMap = new Map();
+        this.verseGreekMap = new Map();
+        this.showGreekOriginal = true;
         this.verseViewMode = 'refs';
         this.searchedVerses = [];
         this.selectedVerse = null;
@@ -1301,6 +1303,36 @@ class BibleWordMap extends HTMLElement {
                     border-radius: 6px;
                     margin-bottom: 14px;
                 }
+                .bwm-verse-text-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 6px;
+                }
+                .bwm-verse-english-text {
+                    line-height: 1.55;
+                }
+                .bwm-verse-greek-box {
+                    margin-top: 10px;
+                    padding-top: 10px;
+                    border-top: 1px dashed var(--bwm-border);
+                    font-family: 'Times New Roman', 'Gentium Plus', serif;
+                    font-size: 1.05em;
+                    line-height: 1.5;
+                    color: var(--bwm-text-muted);
+                }
+                .bwm-verse-greek-label {
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    font-size: 0.68em;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    margin-bottom: 4px;
+                    opacity: 0.65;
+                }
+                .bwm-verse-greek-text {
+                    font-style: normal;
+                }
                 .bwm-crossref-list {
                     display: flex;
                     flex-direction: column;
@@ -2050,10 +2082,12 @@ class BibleWordMap extends HTMLElement {
                 if (vData.verses && !this.verseTextMap.size) {
                     for (let i = 0; i < vData.verses.length; i++) {
                         let str = vData.verses[i];
-                        let pipeIdx = str.indexOf('|');
-                        if (pipeIdx !== -1) {
-                            this.verseTextMap.set(str.slice(0, pipeIdx), str.slice(pipeIdx + 1));
-                        }
+                        let parts = str.split('|');
+                        let ref = parts[0];
+                        let en = parts[1] || '';
+                        let el = parts[2] || '';
+                        this.verseTextMap.set(ref, en);
+                        if (el) this.verseGreekMap.set(ref, el);
                     }
                 }
             }
@@ -2086,10 +2120,12 @@ class BibleWordMap extends HTMLElement {
                     this.wordToVerses = vData.words;
                     for (let i = 0; i < vData.verses.length; i++) {
                         let str = vData.verses[i];
-                        let pipeIdx = str.indexOf('|');
-                        if (pipeIdx !== -1) {
-                            this.verseTextMap.set(str.slice(0, pipeIdx), str.slice(pipeIdx + 1));
-                        }
+                        let parts = str.split('|');
+                        let ref = parts[0];
+                        let en = parts[1] || '';
+                        let el = parts[2] || '';
+                        this.verseTextMap.set(ref, en);
+                        if (el) this.verseGreekMap.set(ref, el);
                     }
                 }
                 if (this.viewMode !== 'verses') {
@@ -2559,6 +2595,7 @@ class BibleWordMap extends HTMLElement {
             this.versemapData = null;
             this.versemapLookup = new Map();
             this.verseTextMap.clear();
+            this.verseGreekMap.clear();
 
             if (this.closeActiveInfoWindows) {
                 this.closeActiveInfoWindows();
@@ -4335,6 +4372,7 @@ class BibleWordMap extends HTMLElement {
         }
 
         let verseText = this.verseTextMap ? (this.verseTextMap.get(verse.id) || '') : '';
+        let greekText = this.verseGreekMap ? (this.verseGreekMap.get(verse.id) || '') : '';
 
         let crossrefsList = Array.isArray(verse.r) ? verse.r : [];
         let crossrefsHtml = crossrefsList.slice(0, 16).map(cr => {
@@ -4399,7 +4437,19 @@ class BibleWordMap extends HTMLElement {
                 </div>
             </div>
             <div class="bwm-window-body">
-                ${verseText ? `<div class="bwm-verse-text-box">${verseText}</div>` : ''}
+                ${verseText ? `
+                <div class="bwm-verse-text-box">
+                    <div class="bwm-verse-text-header">
+                        <span style="font-size:0.7em; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; opacity:0.65;">English Translation</span>
+                        ${greekText ? `<button type="button" class="bwm-window-pill ${this.showGreekOriginal ? 'active' : ''}" id="bwm-btn-toggle-greek" style="font-size:0.7em; padding:2px 8px; cursor:pointer;" title="Toggle Greek original text">&#128220; Greek Original</button>` : ''}
+                    </div>
+                    <div class="bwm-verse-english-text">${verseText}</div>
+                    ${greekText ? `
+                    <div class="bwm-verse-greek-box" id="bwm-verse-greek-box" style="display: ${this.showGreekOriginal ? 'block' : 'none'};">
+                        <div class="bwm-verse-greek-label">Septuagint / Greek NT</div>
+                        <div class="bwm-verse-greek-text">${greekText}</div>
+                    </div>` : ''}
+                </div>` : ''}
                 <div>
                     <div style="font-size: 0.85em; font-weight: 600; opacity: 0.85; margin-bottom: 6px;">Top Semantic Cross-References:</div>
                     <div class="bwm-crossref-list">
@@ -4452,6 +4502,22 @@ class BibleWordMap extends HTMLElement {
 
         let toggleFooterBtn = this.verseCard.querySelector('#bwm-btn-toggle-active-verse-footer');
         if (toggleFooterBtn) toggleFooterBtn.addEventListener('click', toggleActiveVerse);
+
+        let toggleGreekBtn = this.verseCard.querySelector('#bwm-btn-toggle-greek');
+        let greekBox = this.verseCard.querySelector('#bwm-verse-greek-box');
+        if (toggleGreekBtn && greekBox) {
+            toggleGreekBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.showGreekOriginal = !this.showGreekOriginal;
+                if (this.showGreekOriginal) {
+                    toggleGreekBtn.classList.add('active');
+                    greekBox.style.display = 'block';
+                } else {
+                    toggleGreekBtn.classList.remove('active');
+                    greekBox.style.display = 'none';
+                }
+            });
+        }
 
         let dismissBtn = this.verseCard.querySelector('#bwm-btn-dismiss-verse-card');
         if (dismissBtn) dismissBtn.addEventListener('click', (e) => { e.stopPropagation(); this.hideVerseCard(); });
@@ -5597,8 +5663,15 @@ class BibleWordMap extends HTMLElement {
 
         const buildVerseItemHtml = (id) => {
             let v = this.verses[id] || '';
-            let [ref, text] = v.split('|');
-            return `<div style="margin: 4px 0; padding: 4px 0; border-bottom: 1px solid var(--bwm-border);"><span style="color:var(--bwm-tooltip-link); font-family: monospace; font-weight:600;">${ref}</span><br><span style="font-size:0.85em; opacity:0.85;">${text || ''}</span></div>`;
+            let parts = v.split('|');
+            let ref = parts[0];
+            let english = parts[1] || '';
+            let greek = parts[2] || '';
+            return `<div style="margin: 4px 0; padding: 6px 0; border-bottom: 1px solid var(--bwm-border);">
+                <span style="color:var(--bwm-tooltip-link); font-family: monospace; font-weight:600;">${ref}</span><br>
+                <span style="font-size:0.85em; opacity:0.95; line-height:1.4; display:inline-block; margin-top:2px;">${english}</span>
+                ${greek ? `<br><span style="font-size:0.8em; opacity:0.65; font-family: 'Times New Roman', 'Gentium Plus', serif; line-height:1.4; display:inline-block; margin-top:2px;">${greek}</span>` : ''}
+            </div>`;
         };
 
         const renderInitialBatch = (tabId, vList) => {

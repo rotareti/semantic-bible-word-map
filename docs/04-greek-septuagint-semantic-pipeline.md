@@ -97,7 +97,7 @@ Top-32 cross-references are computed via matrix dot product between normalized 1
 $$\text{sim}(v_i, v_j) = \mathbf{c}_{v_i} \cdot \mathbf{c}_{v_j}$$
 
 ### Book Centroids in Greek Vector Space
-Composite 100-dimensional book vectors for each of the 66 canonical books are computed from the Greek vocabulary distributions using sublinear term frequency and smoothed inverse book frequency.
+Composite 100-dimensional book vectors for each of the 66 canonical books are computed from the Greek vocabulary distributions using sublinear term frequency and smoothed inverse book frequency. Dimensionality reduction to 2D is performed using Classical Multidimensional Scaling (MDS) on the cosine distance matrix, maintaining global continuity across the Old and New Testaments without artificial clustering gaps. Nearest-neighbor links and top cross-testament semantic bridges connect the canonical corpus into an interconnected continuum.
 
 ## 6. Frontend Switching Architecture
 
