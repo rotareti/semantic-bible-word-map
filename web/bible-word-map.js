@@ -1574,10 +1574,10 @@ class BibleWordMap extends HTMLElement {
 
     connectedCallback() {
         let urlParams = new URLSearchParams(window.location.search);
-        let baseParam = (urlParams.get('base') || urlParams.get('foundation') || this.getAttribute('foundation') || 'lxx').toLowerCase();
+        let baseParam = (urlParams.get('canon') || urlParams.get('base') || urlParams.get('foundation') || this.getAttribute('foundation') || 'lxx').toLowerCase();
         this.foundation = (baseParam === 'bsb') ? 'bsb' : 'lxx';
 
-        const vParam = '?v=7.1.5';
+        const vParam = '?v=7.1.6';
         if (this.foundation === 'bsb') {
             this.src2d = this.getAttribute('src-2d-bsb') || this.getAttribute('src-2d') || ('data/output/wordmap_2d.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-bsb') || this.getAttribute('src-verses') || ('data/output/verse_index.json' + vParam);
@@ -2003,6 +2003,12 @@ class BibleWordMap extends HTMLElement {
         let books = params.get('books');
         let verses = params.get('verses');
         let keywords = params.get('keywords');
+        this.updateUrl({
+            view: view || undefined,
+            books: books || undefined,
+            verses: verses || undefined,
+            keywords: keywords || undefined
+        });
         let currentMode = this.viewMode || view || (verses ? 'verses' : (books ? 'books' : 'words'));
         let isVersesInit = (currentMode === 'verses' || view === 'verses' || Boolean(verses));
         let isBooksInit = !isVersesInit && (currentMode === 'books' || view === 'books' || Boolean(books));
@@ -2537,10 +2543,10 @@ class BibleWordMap extends HTMLElement {
         try {
             let url = new URL(window.location.href);
             url.search = '';
-            if (this.foundation === 'bsb') {
-                url.searchParams.set('base', 'bsb');
-            }
+            let canon = paramsObj.canon || this.foundation || 'lxx';
+            url.searchParams.set('canon', canon);
             for (let [k, v] of Object.entries(paramsObj)) {
+                if (k === 'canon') continue;
                 if (v !== null && v !== undefined && v !== '') {
                     url.searchParams.set(k, v);
                 }
@@ -2566,7 +2572,7 @@ class BibleWordMap extends HTMLElement {
             }
         }
 
-        const vParam = '?v=7.1.5';
+        const vParam = '?v=7.1.6';
         if (foundation === 'bsb') {
             this.src2d = this.getAttribute('src-2d-bsb') || this.getAttribute('src-2d') || ('data/output/wordmap_2d.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-bsb') || this.getAttribute('src-verses') || ('data/output/verse_index.json' + vParam);

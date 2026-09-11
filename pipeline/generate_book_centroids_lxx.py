@@ -125,6 +125,17 @@ def main():
         book_idf[wid] = math.log((1.0 + total_books) / (1.0 + df)) + 1.0
 
     CONTENT_POS = {'NOUN', 'VERB', 'PROPN', 'ADJ', 'ADV'}
+    STOPWORDS = {
+        'if', 'and', 'but', 'for', 'or', 'nor', 'lest', 'so', 'then', 'yet', 'also',
+        'not', 'no', 'as', 'than', 'when', 'where', 'how', 'why', 'what', 'who', 'whom',
+        'which', 'that', 'this', 'these', 'those', 'you', 'i', 'me', 'my', 'we', 'us',
+        'our', 'he', 'him', 'his', 'she', 'her', 'it', 'its', 'they', 'them', 'their',
+        'themself', 'themselves', 'myself', 'yourself', 'himself', 'herself', 'justas',
+        'notanymore', 'whither', 'fromthere'
+    }
+
+    def is_content_word(wd):
+        return wd['pos'] in CONTENT_POS and wd['w'].lower() not in STOPWORDS
 
     book_vectors = []
     book_records = []
@@ -147,7 +158,7 @@ def main():
             centroid += weight * vec
             total_weight += weight
 
-            if wd['pos'] in CONTENT_POS:
+            if is_content_word(wd):
                 scored_words.append({
                     "id": wid,
                     "w": wd['w'],
@@ -173,7 +184,7 @@ def main():
         in_book_items = []
         for wid, cnt in counts.items():
             wd = word_dict[wid]
-            if wd['pos'] not in CONTENT_POS:
+            if not is_content_word(wd):
                 continue
             tf = 1.0 + math.log(cnt)
             sc = tf * book_idf.get(wid, 1.0)
@@ -196,7 +207,7 @@ def main():
             existing_ids = {item["id"] for item in closest_words}
             semantic_candidates = []
             for wid, wd in word_dict.items():
-                if wid in existing_ids or wd['pos'] not in CONTENT_POS:
+                if wid in existing_ids or not is_content_word(wd):
                     continue
                 sim = float(np.dot(norm_centroid, wd['v']))
                 semantic_candidates.append({

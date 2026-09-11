@@ -53,6 +53,14 @@ def main():
     verse_meta = []
 
     CONTENT_POS = {'NOUN', 'VERB', 'PROPN', 'ADJ', 'ADV'}
+    STOPWORDS = {
+        'if', 'and', 'but', 'for', 'or', 'nor', 'lest', 'so', 'then', 'yet', 'also',
+        'not', 'no', 'as', 'than', 'when', 'where', 'how', 'why', 'what', 'who', 'whom',
+        'which', 'that', 'this', 'these', 'those', 'you', 'i', 'me', 'my', 'we', 'us',
+        'our', 'he', 'him', 'his', 'she', 'her', 'it', 'its', 'they', 'them', 'their',
+        'themself', 'themselves', 'myself', 'yourself', 'himself', 'herself', 'justas',
+        'notanymore', 'whither', 'fromthere'
+    }
 
     for vi, raw_v in enumerate(raw_verses):
         ref, _ = raw_v.split('|', 1)
@@ -80,7 +88,7 @@ def main():
             weighted_x += wt * wd['x']
             weighted_y += wt * wd['y']
             total_weight += wt
-            if wd['pos'] in CONTENT_POS:
+            if wd['pos'] in CONTENT_POS and wd['w'].lower() not in STOPWORDS:
                 content_candidates.append((wid, wt))
 
         norm = np.linalg.norm(vec)

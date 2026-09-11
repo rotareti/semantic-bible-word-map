@@ -71,6 +71,10 @@ def map_morph_to_pos(morph_tag):
         return "PRON"
     if m.startswith("LXX.I"):
         return "INTJ"
+    if m.startswith("LXX.X"):
+        return "PART"
+    if m.startswith("LXX.M"):
+        return "NUM"
     return "NOUN"
 
 def map_parsing_to_pos(parsing_str):
@@ -94,7 +98,7 @@ def map_parsing_to_pos(parsing_str):
     if "CONJUNCTION" in p:
         return "CCONJ"
     if "PARTICLE" in p or "INTPRTCL" in p:
-        return "ADV"
+        return "PART"
     if "ARTICLE" in p:
         return "DET"
     if "INTERJECTION" in p:
