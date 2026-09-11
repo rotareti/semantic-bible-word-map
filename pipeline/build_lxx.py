@@ -65,8 +65,10 @@ def map_morph_to_pos(morph_tag):
         return "ADP"
     if m.startswith("LXX.C"):
         return "CCONJ"
+    if m.startswith("LXX.RA"):
+        return "DET"
     if m.startswith("LXX.R"):
-        return "DET" if "A" in m else "PRON"
+        return "PRON"
     if m.startswith("LXX.I"):
         return "INTJ"
     return "NOUN"
@@ -77,22 +79,24 @@ def map_parsing_to_pos(parsing_str):
     p = parsing_str.upper()
     if "PROPER" in p:
         return "PROPN"
+    if "PRONOUN" in p:
+        return "PRON"
     if "NOUN" in p:
         return "NOUN"
+    if "ADVERB" in p:
+        return "ADV"
     if "VERB" in p:
         return "VERB"
     if "ADJECTIVE" in p:
         return "ADJ"
-    if "ADVERB" in p:
-        return "ADV"
     if "PREPOSITION" in p:
         return "ADP"
     if "CONJUNCTION" in p:
         return "CCONJ"
+    if "PARTICLE" in p or "INTPRTCL" in p:
+        return "ADV"
     if "ARTICLE" in p:
         return "DET"
-    if "PRONOUN" in p:
-        return "PRON"
     if "INTERJECTION" in p:
         return "INTJ"
     return "NOUN"
