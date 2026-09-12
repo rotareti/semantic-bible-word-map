@@ -64,8 +64,15 @@ def main():
         m = meta.get(w_id, {})
         v_rounded = [round(float(val), 3) for val in vectors[i]]
 
-        clean_w = m.get("w", w_id.split('_')[0])
-        pos_tag = m.get("pos", w_id.rsplit('_', 1)[-1])
+        parts = w_id.split('_')
+        if len(parts) >= 3 and (parts[-2].startswith('G') or parts[-2].startswith('L')):
+            fallback_w = " ".join(parts[:-2])
+        elif len(parts) >= 2:
+            fallback_w = " ".join(parts[:-1])
+        else:
+            fallback_w = w_id
+        clean_w = m.get("w", fallback_w)
+        pos_tag = m.get("pos", parts[-1])
 
         orig_entry = {
             "lemma": m.get("lemma", ""),

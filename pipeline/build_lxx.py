@@ -28,10 +28,22 @@ NT_BOOK_NAMES = {
     "1 John": "1JN", "2 John": "2JN", "3 John": "3JN", "Jude": "JUD", "Revelation": "REV"
 }
 
+PHRASE_GLOSS_MAP = {
+    'one who baptizes': 'baptist',
+    'one who bleaches': 'launderer',
+    'one who goes before to show the way': 'guide',
+    'one who exacts interest': 'moneylender',
+    'one who delivers oracles': 'medium',
+    'one that takes bribes': 'bribe-taker',
+    'one that receives bribes': 'bribe-receiver',
+}
+
 def clean_gloss(raw_gloss):
     if not raw_gloss:
         return ""
     g = re.sub(r'\(.*?\)', '', raw_gloss).strip()
+    if g.startswith('[') and g.endswith(']'):
+        g = g[1:-1].strip()
     parts = [p.strip() for p in re.split(r'[:;,]', g) if p.strip()]
     if not parts:
         return raw_gloss.strip()
@@ -42,6 +54,13 @@ def clean_gloss(raw_gloss):
             first_choice = slash_parts[0]
     if first_choice.lower().startswith('to ') and len(first_choice) > 3:
         first_choice = first_choice[3:].strip()
+    
+    clean_lower = first_choice.lower().strip()
+    if clean_lower in PHRASE_GLOSS_MAP:
+        return PHRASE_GLOSS_MAP[clean_lower]
+    if clean_lower.startswith('one who baptiz'):
+        return 'baptist'
+
     words = first_choice.split()
     if len(words) > 3:
         first_choice = " ".join(words[:3])
@@ -114,13 +133,19 @@ def main():
                 parts = line.strip().split('\t')
                 if len(parts) >= 7:
                     s_id = parts[0].strip()
-                    tbesg[s_id] = {
-                        "strongs": s_id,
-                        "lemma": parts[3].strip(),
-                        "translit": parts[4].strip(),
-                        "gloss": clean_gloss(parts[6].strip()),
-                        "def": (parts[7].strip() if len(parts) > 7 else parts[6].strip()).replace('\u2014', '--')
-                    }
+                    lemma_raw = parts[3].strip()
+                    gloss_raw = parts[6].strip()
+                    # Skip bracketed unnamed sub-entries like [unnamed], [mother-in-law of Peter]
+                    if lemma_raw == '[unnamed]' or (gloss_raw.startswith('[') and gloss_raw.endswith(']')):
+                        continue
+                    if s_id not in tbesg:
+                        tbesg[s_id] = {
+                            "strongs": s_id,
+                            "lemma": lemma_raw,
+                            "translit": parts[4].strip(),
+                            "gloss": clean_gloss(gloss_raw),
+                            "def": (parts[7].strip() if len(parts) > 7 else gloss_raw).replace('\u2014', '--')
+                        }
 
     lxx_to_g = {}
     lxx_lex = {}
@@ -198,13 +223,16 @@ def main():
             gloss = surface_word.lower()
             def_text = surface_word
 
-        clean_w = re.sub(r'[^a-zA-Z0-9]', '', gloss) or "word"
-        token_id = f"{clean_w}_{strongs}_{pos}"
+        # Clean display word preserving spaces (e.g. "settle accounts", "burnt offering")
+        display_w = re.sub(r'\s+', ' ', re.sub(r'[^a-zA-Z0-9\s-]', '', gloss)).strip().lower() or "word"
+        # Whitespace-safe token slug for Word2Vec training files (spaces become underscores)
+        token_slug = re.sub(r'[^a-zA-Z0-9_]', '', re.sub(r'[\s-]+', '_', display_w)) or "word"
+        token_id = f"{token_slug}_{strongs}_{pos}"
 
         if token_id not in word_meta:
             word_meta[token_id] = {
                 "id": token_id,
-                "w": clean_w,
+                "w": display_w,
                 "pos": pos,
                 "strongs": strongs,
                 "lemma": lemma,

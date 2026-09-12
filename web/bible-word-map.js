@@ -1577,7 +1577,7 @@ class BibleWordMap extends HTMLElement {
         let baseParam = (urlParams.get('canon') || urlParams.get('base') || urlParams.get('foundation') || this.getAttribute('foundation') || 'lxx').toLowerCase();
         this.foundation = (baseParam === 'bsb') ? 'bsb' : 'lxx';
 
-        const vParam = '?v=7.1.6';
+        const vParam = '?v=7.1.7';
         if (this.foundation === 'bsb') {
             this.src2d = this.getAttribute('src-2d-bsb') || this.getAttribute('src-2d') || ('data/output/wordmap_2d.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-bsb') || this.getAttribute('src-verses') || ('data/output/verse_index.json' + vParam);
@@ -2572,7 +2572,7 @@ class BibleWordMap extends HTMLElement {
             }
         }
 
-        const vParam = '?v=7.1.6';
+        const vParam = '?v=7.1.7';
         if (foundation === 'bsb') {
             this.src2d = this.getAttribute('src-2d-bsb') || this.getAttribute('src-2d') || ('data/output/wordmap_2d.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-bsb') || this.getAttribute('src-verses') || ('data/output/verse_index.json' + vParam);
@@ -2612,8 +2612,9 @@ class BibleWordMap extends HTMLElement {
     }
 
     formatWord(word, pos) {
+        if (!word) return '';
         if (pos === 'PROPN' && word.length > 0) {
-            return word.charAt(0).toUpperCase() + word.slice(1);
+            return word.split(' ').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
         }
         return word;
     }
