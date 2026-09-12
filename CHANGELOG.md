@@ -1,5 +1,33 @@
 # Changelog
 
+## [8.0.0] - 2026-09-11
+### Added
+- **Greek Septuagint (LXX) & New Testament Semantic Foundation:**
+  - Introduced complete dual-foundation support enabling exploration of Scripture in either Berean Standard Bible (BSB) English or original biblical Greek (Alfred Rahlfs 1935 Septuagint for the Old Testament and SBL Greek New Testament).
+  - Trained 100-dimensional Skip-gram embeddings across 30,907 biblical verses in original Greek, paired with concise English glosses and morphological classifications from the STEPBible TBESG lexicon.
+  - Generated full 2D semantic projections (`wordmap_2d_lxx.json`), verse centroids with unbiased cosine cross-references (`versemap_2d_lxx.json`), and book centroids (`bookmap_2d_lxx.json`).
+  - Aligned Septuagint verses with Sir Lancelot Brenton's 1851 English translation for bilingual verse reading and lexical inspection.
+- **Canon URL Synchronization:**
+  - Added URL parameter synchronization (`canon=bsb` and `canon=lxx`), enabling direct deep-linking and bookmark sharing into either translation foundation across Words, Verses, and Books views.
+- **GitHub Pages Deployment Workflow for Dual Canons:**
+  - Updated the automated GitHub Pages deployment workflow to package both BSB and LXX datasets into distribution artifacts.
+
+### Changed
+- **Default Translation Foundation:**
+  - Preserved Berean Standard Bible (BSB) English as the default foundation while enabling seamless 1-click toggling to the Septuagint (LXX) via the Options drawer.
+- **Natural Phrase Spacing for Multi-Word Glosses:**
+  - Preserved natural whitespace and hyphens for multi-word lexical definitions (e.g., "settle accounts", "burnt offering", "high priest", "tax collector"), replacing concatenated strings.
+- **Title-Cased Proper Nouns:**
+  - Enhanced name formatting to capitalize each constituent word of multi-word Proper Nouns.
+
+### Fixed
+- **Lexicon Entry Overwrites for Key Biblical Figures:**
+  - Corrected the TBESG lexicon ingestion loop to ignore unnamed contextual sub-entries (such as `[mother-in-law of Peter]` or `[father of Lazarus]`), ensuring primary definitions for Peter, Lazarus, Barnabas, Zebedee, Herodias, and Caiaphas remain authentic and pristine.
+- **Grammatical Stopword Filtering in Book & Verse Clusters:**
+  - Reclassified Greek particles (`lxx.X` in CATSS and `PARTICLE`/`INTPRTCL` in NT parsing) to `PART` and excluded grammatical particles (e.g., "if", "not", "no", "then", "as") from book and verse top/closest content clusters.
+- **Specific Term Alignment:**
+  - Mapped verbose definition phrases such as "one who baptizes" directly to "baptist" for clear, idiomatic biblical terminology.
+
 ## [7.1.5] - 2026-09-05
 ### Added
 - **Title Click Landscape Reset:** Clicking the title words "Semantic Bible" in the header resets the current view back to its full landscape overview, clearing any active searches, keywords, or open inspector cards without changing the active view mode (Words, Verses, or Books).

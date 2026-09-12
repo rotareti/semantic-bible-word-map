@@ -1511,8 +1511,8 @@ class BibleWordMap extends HTMLElement {
                                 <h4>Semantic Foundation</h4>
                             </div>
                             <div class="bwm-pill-group" id="bwm-foundation-filter">
-                                <button type="button" class="bwm-pill-btn active" id="bwm-btn-foundation-lxx" data-foundation="lxx" title="Greek Septuagint &amp; New Testament">LXX (Greek)</button>
-                                <button type="button" class="bwm-pill-btn" id="bwm-btn-foundation-bsb" data-foundation="bsb" title="Berean Standard Bible English">BSB (English)</button>
+                                <button type="button" class="bwm-pill-btn" id="bwm-btn-foundation-lxx" data-foundation="lxx" title="Greek Septuagint &amp; New Testament">LXX (Greek)</button>
+                                <button type="button" class="bwm-pill-btn active" id="bwm-btn-foundation-bsb" data-foundation="bsb" title="Berean Standard Bible English">BSB (English)</button>
                             </div>
                             <div class="bwm-drawer-hint" id="bwm-foundation-hint">Switch underlying semantic training between Greek Septuagint/NT and BSB English.</div>
                         </div>
@@ -1574,20 +1574,20 @@ class BibleWordMap extends HTMLElement {
 
     connectedCallback() {
         let urlParams = new URLSearchParams(window.location.search);
-        let baseParam = (urlParams.get('canon') || urlParams.get('base') || urlParams.get('foundation') || this.getAttribute('foundation') || 'lxx').toLowerCase();
-        this.foundation = (baseParam === 'bsb') ? 'bsb' : 'lxx';
+        let baseParam = (urlParams.get('canon') || urlParams.get('base') || urlParams.get('foundation') || this.getAttribute('foundation') || 'bsb').toLowerCase();
+        this.foundation = (baseParam === 'lxx') ? 'lxx' : 'bsb';
 
-        const vParam = '?v=7.1.7';
-        if (this.foundation === 'bsb') {
+        const vParam = '?v=8.0.0';
+        if (this.foundation === 'lxx') {
+            this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
+            this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
+            this.srcBooks = this.getAttribute('src-books-lxx') || ('data/output/bookmap_2d_lxx.json' + vParam);
+            this.srcVersemap = this.getAttribute('src-versemap-lxx') || ('data/output/versemap_2d_lxx.json' + vParam);
+        } else {
             this.src2d = this.getAttribute('src-2d-bsb') || this.getAttribute('src-2d') || ('data/output/wordmap_2d.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-bsb') || this.getAttribute('src-verses') || ('data/output/verse_index.json' + vParam);
             this.srcBooks = this.getAttribute('src-books-bsb') || this.getAttribute('src-books') || ('data/output/bookmap_2d.json' + vParam);
             this.srcVersemap = this.getAttribute('src-versemap-bsb') || this.getAttribute('src-versemap') || ('data/output/versemap_2d.json' + vParam);
-        } else {
-            this.src2d = this.getAttribute('src-2d') || ('data/output/wordmap_2d_lxx.json' + vParam);
-            this.srcVerses = this.getAttribute('src-verses') || ('data/output/verse_index_lxx.json' + vParam);
-            this.srcBooks = this.getAttribute('src-books') || ('data/output/bookmap_2d_lxx.json' + vParam);
-            this.srcVersemap = this.getAttribute('src-versemap') || ('data/output/versemap_2d_lxx.json' + vParam);
         }
         
         this.canvas = this.querySelector('canvas');
@@ -2543,7 +2543,7 @@ class BibleWordMap extends HTMLElement {
         try {
             let url = new URL(window.location.href);
             url.search = '';
-            let canon = paramsObj.canon || this.foundation || 'lxx';
+            let canon = paramsObj.canon || this.foundation || 'bsb';
             url.searchParams.set('canon', canon);
             for (let [k, v] of Object.entries(paramsObj)) {
                 if (k === 'canon') continue;
@@ -2572,17 +2572,17 @@ class BibleWordMap extends HTMLElement {
             }
         }
 
-        const vParam = '?v=7.1.7';
-        if (foundation === 'bsb') {
+        const vParam = '?v=8.0.0';
+        if (foundation === 'lxx') {
+            this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
+            this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
+            this.srcBooks = this.getAttribute('src-books-lxx') || ('data/output/bookmap_2d_lxx.json' + vParam);
+            this.srcVersemap = this.getAttribute('src-versemap-lxx') || ('data/output/versemap_2d_lxx.json' + vParam);
+        } else {
             this.src2d = this.getAttribute('src-2d-bsb') || this.getAttribute('src-2d') || ('data/output/wordmap_2d.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-bsb') || this.getAttribute('src-verses') || ('data/output/verse_index.json' + vParam);
             this.srcBooks = this.getAttribute('src-books-bsb') || this.getAttribute('src-books') || ('data/output/bookmap_2d.json' + vParam);
             this.srcVersemap = this.getAttribute('src-versemap-bsb') || this.getAttribute('src-versemap') || ('data/output/versemap_2d.json' + vParam);
-        } else {
-            this.src2d = this.getAttribute('src-2d') || ('data/output/wordmap_2d_lxx.json' + vParam);
-            this.srcVerses = this.getAttribute('src-verses') || ('data/output/verse_index_lxx.json' + vParam);
-            this.srcBooks = this.getAttribute('src-books') || ('data/output/bookmap_2d_lxx.json' + vParam);
-            this.srcVersemap = this.getAttribute('src-versemap') || ('data/output/versemap_2d_lxx.json' + vParam);
         }
 
         if (this.viewMode === 'verses') {
