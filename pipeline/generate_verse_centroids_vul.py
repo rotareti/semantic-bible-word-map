@@ -102,9 +102,9 @@ def main():
         content_candidates.sort(key=lambda item: item[1], reverse=True)
         top_content_words.append([item[0] for item in content_candidates[:12]])
 
-    # Batch compute top-32 cross-references using matrix multiplication
-    print("Computing top-32 semantic cross-references for all verses...")
-    TOP_K = 32
+    # Batch compute top-16 cross-references using matrix multiplication
+    print("Computing top-16 semantic cross-references for all verses...")
+    TOP_K = 16
     BATCH_SIZE = 1000
     all_refs = [None] * total_verses
 
@@ -126,10 +126,10 @@ def main():
                 score = float(sim_matrix[i, target_idx])
                 if score > 0.15:
                     target_ref = verse_meta[target_idx][0]
-                    refs_for_verse.append({
-                        "id": target_ref,
-                        "sim": round(score, 3)
-                    })
+                    refs_for_verse.append([
+                        target_ref,
+                        round(score, 3)
+                    ])
             all_refs[global_idx] = refs_for_verse
 
     print("Assembling final verse dataset...")
@@ -142,9 +142,6 @@ def main():
 
         output_records.append({
             "id": ref,
-            "b": b_code,
-            "c": c_num,
-            "v": v_num,
             "x": cx,
             "y": cy,
             "w": c_words,

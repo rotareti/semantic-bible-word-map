@@ -254,7 +254,7 @@ def main():
             "verses": book_verse_counts[b_code],
             "total_words": book_total_words[b_code],
             "top_words": top_words,
-            "closest_words": closest_words,
+            "closest_words": [],
             "v": [round(float(val), 3) for val in norm_centroid]
         })
 

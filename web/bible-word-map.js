@@ -358,6 +358,29 @@ function getVerseTestament(ref) {
     return b ? b.testament : 'NT';
 }
 
+function getNeighborId(cr) {
+    if (!cr) return null;
+    return Array.isArray(cr) ? cr[0] : cr.id;
+}
+
+function getNeighborSim(cr) {
+    if (!cr) return 0;
+    return Array.isArray(cr) ? (cr[1] !== undefined ? cr[1] : 0) : (cr.sim !== undefined ? cr.sim : 0);
+}
+
+function parseVerseMeta(v) {
+    if (!v) return { b: '', c: 0, v: 0 };
+    if (v.b !== undefined && v.c !== undefined && v.v !== undefined) {
+        return { b: v.b, c: v.c, v: v.v };
+    }
+    let parts = (v.id || '').split(' ');
+    let b = parts[0] || '';
+    let cv = (parts[1] || '').split(':');
+    let c = parseInt(cv[0], 10) || 0;
+    let verseNum = parseInt(cv[1], 10) || 0;
+    return { b, c, v: verseNum };
+}
+
 class BibleWordMap extends HTMLElement {
     constructor() {
         super();
@@ -4390,6 +4413,7 @@ class BibleWordMap extends HTMLElement {
 
         this.nodes = landmarkIds.map(id => {
             let v = this.versemapLookup.get(id);
+            let meta = parseVerseMeta(v);
             let genre = getVerseGenre(id);
             let testament = getVerseTestament(id);
             return {
@@ -4397,9 +4421,9 @@ class BibleWordMap extends HTMLElement {
                 ref: v.id,
                 formattedRef: formatVerseRef(v.id),
                 w: formatVerseRef(v.id),
-                b: v.b,
-                c: v.c,
-                v: v.v,
+                b: meta.b,
+                c: meta.c,
+                v: meta.v,
                 genre: genre,
                 testament: testament,
                 t: testament,
@@ -4420,12 +4444,14 @@ class BibleWordMap extends HTMLElement {
 
         this.nodes.forEach(n => {
             (n.r || []).forEach(cr => {
-                if (landmarkSet.has(cr.id) && n.id < cr.id && nodeMap.has(cr.id)) {
+                let crId = getNeighborId(cr);
+                let crSim = getNeighborSim(cr);
+                if (landmarkSet.has(crId) && n.id < crId && nodeMap.has(crId)) {
                     this.links.push({
                         source: n,
-                        target: nodeMap.get(cr.id),
+                        target: nodeMap.get(crId),
                         type: 'verse-crossref',
-                        sim: cr.sim
+                        sim: crSim
                     });
                 }
             });
@@ -4456,27 +4482,30 @@ class BibleWordMap extends HTMLElement {
         }
         if (!foundVerses || foundVerses.length === 0) return;
 
-        let primaryNodes = foundVerses.map(v => ({
-            id: v.id,
-            ref: v.id,
-            formattedRef: formatVerseRef(v.id),
-            w: formatVerseRef(v.id),
-            b: v.b,
-            c: v.c,
-            v: v.v,
-            genre: getVerseGenre(v.id),
-            testament: getVerseTestament(v.id),
-            t: getVerseTestament(v.id),
-            x: (Math.random() - 0.5) * 40,
-            y: (Math.random() - 0.5) * 40,
-            isVerse: true,
-            isFocusedVerse: true,
-            isKw: true,
-            sim: 1.0,
-            normSim: 1.0,
-            r: v.r,
-            words: v.w
-        }));
+        let primaryNodes = foundVerses.map(v => {
+            let meta = parseVerseMeta(v);
+            return {
+                id: v.id,
+                ref: v.id,
+                formattedRef: formatVerseRef(v.id),
+                w: formatVerseRef(v.id),
+                b: meta.b,
+                c: meta.c,
+                v: meta.v,
+                genre: getVerseGenre(v.id),
+                testament: getVerseTestament(v.id),
+                t: getVerseTestament(v.id),
+                x: (Math.random() - 0.5) * 40,
+                y: (Math.random() - 0.5) * 40,
+                isVerse: true,
+                isFocusedVerse: true,
+                isKw: true,
+                sim: 1.0,
+                normSim: 1.0,
+                r: v.r,
+                words: v.w
+            };
+        });
 
         let primaryIds = new Set(primaryNodes.map(n => n.id));
 
@@ -4490,8 +4519,8 @@ class BibleWordMap extends HTMLElement {
                 for (let j = i + 1; j < primaryNodes.length; j++) {
                     let n1 = primaryNodes[i];
                     let n2 = primaryNodes[j];
-                    let cr = (n1.r || []).find(r => r.id === n2.id);
-                    let sim = cr ? cr.sim : 0.7;
+                    let cr = (n1.r || []).find(r => getNeighborId(r) === n2.id);
+                    let sim = cr ? getNeighborSim(cr) : 0.7;
                     crossrefLinks.push({
                         source: n1.id,
                         target: n2.id,
@@ -4505,37 +4534,40 @@ class BibleWordMap extends HTMLElement {
             foundVerses.forEach(v => {
                 let topRefs = (v.r || []).slice(0, limit);
                 topRefs.forEach(cr => {
-                    if (primaryIds.has(cr.id)) return;
-                    let crRecord = this.versemapLookup ? this.versemapLookup.get(cr.id) : null;
+                    let crId = getNeighborId(cr);
+                    let crSim = getNeighborSim(cr);
+                    if (!crId || primaryIds.has(crId)) return;
+                    let crRecord = this.versemapLookup ? this.versemapLookup.get(crId) : null;
                     if (!crRecord) return;
 
-                    if (!crossrefMap.has(cr.id)) {
-                        crossrefMap.set(cr.id, {
+                    if (!crossrefMap.has(crId)) {
+                        crossrefMap.set(crId, {
                             record: crRecord,
-                            maxSim: cr.sim,
+                            maxSim: crSim,
                             sourceVerse: v.id,
                             linkedVerses: [v.id]
                         });
                     } else {
-                        let item = crossrefMap.get(cr.id);
+                        let item = crossrefMap.get(crId);
                         if (!item.linkedVerses.includes(v.id)) item.linkedVerses.push(v.id);
-                        if (cr.sim > item.maxSim) {
-                            item.maxSim = cr.sim;
+                        if (crSim > item.maxSim) {
+                            item.maxSim = crSim;
                             item.sourceVerse = v.id;
                         }
                     }
 
                     crossrefLinks.push({
-                        source: cr.id,
+                        source: crId,
                         target: v.id,
                         type: 'verse-crossref',
-                        sim: cr.sim
+                        sim: crSim
                     });
                 });
             });
 
             let crossrefNodes = Array.from(crossrefMap.values()).map(item => {
                 let v = item.record;
+                let meta = parseVerseMeta(v);
                 let genre = getVerseGenre(v.id);
                 let testament = getVerseTestament(v.id);
                 return {
@@ -4543,9 +4575,9 @@ class BibleWordMap extends HTMLElement {
                     ref: v.id,
                     formattedRef: formatVerseRef(v.id),
                     w: formatVerseRef(v.id),
-                    b: v.b,
-                    c: v.c,
-                    v: v.v,
+                    b: meta.b,
+                    c: meta.c,
+                    v: meta.v,
                     genre: genre,
                     testament: testament,
                     t: testament,
@@ -4703,23 +4735,25 @@ class BibleWordMap extends HTMLElement {
 
         let crossrefsList = Array.isArray(verse.r) ? verse.r : [];
         let crossrefsHtml = crossrefsList.slice(0, 16).map(cr => {
-            let crFormatted = formatVerseRef(cr.id);
-            let crGenre = getVerseGenre(cr.id);
+            let crId = getNeighborId(cr);
+            let crSim = getNeighborSim(cr);
+            let crFormatted = formatVerseRef(crId);
+            let crGenre = getVerseGenre(crId);
             let crGenreColor = GENRE_COLORS[crGenre] || '#3b82f6';
-            let crText = this.verseTextMap ? (this.verseTextMap.get(cr.id) || '') : '';
+            let crText = this.verseTextMap ? (this.verseTextMap.get(crId) || '') : '';
             let snippet = crText.length > 110 ? crText.slice(0, 107) + '...' : crText;
-            let pct = Math.round((cr.sim || 0.8) * 100);
-            let isAlreadyActive = this.searchedVerses && this.searchedVerses.includes(cr.id);
+            let pct = Math.round((crSim || 0.8) * 100);
+            let isAlreadyActive = this.searchedVerses && this.searchedVerses.includes(crId);
             return `
                 <div class="bwm-crossref-card">
                     <div class="bwm-crossref-head">
                         <div class="bwm-crossref-title-wrap">
-                            <span class="bwm-crossref-ref" data-focus-verse="${cr.id}" title="Focus this verse">${crFormatted}</span>
+                            <span class="bwm-crossref-ref" data-focus-verse="${crId}" title="Focus this verse">${crFormatted}</span>
                             <span class="bwm-book-badge" style="background:${crGenreColor};font-size:0.65em;padding:1px 5px;">${crGenre}</span>
                         </div>
                         <div style="display:flex;align-items:center;gap:6px;">
                             <span class="bwm-crossref-badge" title="100D Vector Cosine Similarity">${pct}% match</span>
-                            <button type="button" class="bwm-chip-add" data-toggle-verse="${cr.id}" title="${isAlreadyActive ? 'Remove from map' : 'Add to map'}">
+                            <button type="button" class="bwm-chip-add" data-toggle-verse="${crId}" title="${isAlreadyActive ? 'Remove from map' : 'Add to map'}">
                                 ${isAlreadyActive ? '&minus;' : '+'}
                             </button>
                         </div>

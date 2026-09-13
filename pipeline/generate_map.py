@@ -153,7 +153,7 @@ if __name__ == '__main__':
         if node['id'] in english_to_strongs:
             originals = list(english_to_strongs[node['id']].values())
             originals.sort(key=lambda x: x['count'], reverse=True)
-            node['original'] = originals
+            node['original'] = originals[:5]
             
     print("Saving map to data/output/...")
     with open('data/output/wordmap_2d.json', 'w', encoding='utf-8') as f:

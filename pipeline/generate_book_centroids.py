@@ -303,7 +303,7 @@ def main():
             "y": round(raw_y[i] * target_scale, 3),
             "v": book_centroids[b_code],
             "top_words": book_distinctive_words[b_code],
-            "closest_words": book_closest_words[b_code],
+            "closest_words": [],
             "nearest_books": book_nearest[b_code]
         }
         output_books.append(node)

@@ -97,12 +97,12 @@ def main():
         top_content_words.append([item[0] for item in content_candidates[:12]])
 
     # 4. Batch compute top cross-references using matrix multiplication
-    print("Computing top-32 semantic cross-references for all verses...")
+    print("Computing top-16 semantic cross-references for all verses...")
     cross_references = [[] for _ in range(total_verses)]
     batch_size = 2000
     num_batches = (total_verses + batch_size - 1) // batch_size
 
-    K = 32 # Number of cross-references per verse
+    K = 16 # Number of cross-references per verse
 
     for b_idx in range(num_batches):
         start_i = b_idx * batch_size
@@ -126,10 +126,10 @@ def main():
             for target_idx in sorted_top_k:
                 score = float(sim_scores[row_idx, target_idx])
                 if score > 0.35: # Meaningful semantic correlation threshold
-                    refs.append({
-                        "id": verse_meta[target_idx][0],
-                        "sim": round(score, 3)
-                    })
+                    refs.append([
+                        verse_meta[target_idx][0],
+                        round(score, 3)
+                    ])
             cross_references[vi] = refs
 
         if (b_idx + 1) % 4 == 0 or (b_idx + 1) == num_batches:
@@ -143,9 +143,6 @@ def main():
         vx, vy = coords_2d[vi]
         verse_records.append({
             "id": ref,
-            "b": b_code,
-            "c": c_num,
-            "v": v_num,
             "x": vx,
             "y": vy,
             "w": top_content_words[vi],
