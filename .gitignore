@@ -13,3 +13,7 @@ pipeline/__pycache__/
 data/output/*_raw*.json
 .DS_Store
 web/data
+
+# Research findings (kept local until ready for publication)
+docs/findings/
+pipeline/generate_findings_pdf.js

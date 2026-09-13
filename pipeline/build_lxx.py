@@ -14,9 +14,11 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 OT_BOOK_CODES = {
     10: "GEN", 20: "EXO", 30: "LEV", 40: "NUM", 50: "DEU", 60: "JOS", 70: "JDG", 80: "RUT",
     90: "1SA", 100: "2SA", 110: "1KI", 120: "2KI", 130: "1CH", 140: "2CH", 150: "EZR", 160: "NEH",
-    190: "EST", 220: "JOB", 230: "PSA", 240: "PRO", 250: "ECC", 260: "SNG", 290: "ISA", 300: "JER",
-    310: "LAM", 330: "EZK", 340: "DAN", 350: "HOS", 360: "JOL", 370: "AMO", 380: "OBA", 390: "JON",
-    400: "MIC", 410: "NAM", 420: "HAB", 430: "ZEP", 440: "HAG", 450: "ZEC", 460: "MAL"
+    165: "1ES", 170: "TOB", 180: "JDT", 190: "EST", 220: "JOB", 230: "PSA", 232: "PSS", 240: "PRO",
+    250: "ECC", 260: "SNG", 270: "WIS", 280: "SIR", 290: "ISA", 300: "JER", 310: "LAM", 315: "LJE",
+    320: "BAR", 325: "SUS", 330: "EZK", 340: "DAN", 345: "BEL", 350: "HOS", 360: "JOL", 370: "AMO",
+    380: "OBA", 390: "JON", 400: "MIC", 410: "NAM", 420: "HAB", 430: "ZEP", 440: "HAG", 450: "ZEC",
+    460: "MAL", 462: "1MA", 464: "2MA", 466: "3MA", 467: "4MA", 800: "ODA"
 }
 
 NT_BOOK_NAMES = {
@@ -265,6 +267,7 @@ def main():
             # Tokens in LXX row: surface_word<S>...<m>...
             tokens = raw_text.split()
             verse_surface_words = []
+            verse_gloss_words = []
             verse_tagged_tokens = []
             words_in_verse = set()
 
@@ -282,6 +285,7 @@ def main():
 
                 token_id = get_token_info(strongs_matches, surface, pos)
                 verse_surface_words.append(surface)
+                verse_gloss_words.append(word_meta[token_id]["w"])
                 verse_tagged_tokens.append(token_id)
                 words_in_verse.add(token_id)
                 word_counts[token_id] += 1
@@ -290,9 +294,10 @@ def main():
                 continue
 
             verse_text = " ".join(verse_surface_words).replace('\u2014', '--')
+            verse_gloss = " ".join(verse_gloss_words).replace('\u2014', '--')
             verse_ref = f"{b_code} {c_num}:{v_num}"
             verse_idx = len(verses)
-            verses.append(f"{verse_ref}|{verse_text}")
+            verses.append(f"{verse_ref}|{verse_gloss}|{verse_text}")
 
             for wid in words_in_verse:
                 word_to_verse[wid].append(verse_idx)

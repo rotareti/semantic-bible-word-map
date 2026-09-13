@@ -14,7 +14,10 @@ BRENTON_MAP = {
     'ECC': 'ECC', 'SNG': 'SNG', 'ISA': 'ISA', 'JER': 'JER', 'LAM': 'LAM',
     'EZK': 'EZK', 'DAN': 'DAN', 'DAG': 'DAN', 'HOS': 'HOS', 'JOL': 'JOL',
     'AMO': 'AMO', 'OBA': 'OBA', 'JON': 'JON', 'MIC': 'MIC', 'NAM': 'NAM',
-    'HAB': 'HAB', 'ZEP': 'ZEP', 'HAG': 'HAG', 'ZEC': 'ZEC', 'MAL': 'MAL'
+    'HAB': 'HAB', 'ZEP': 'ZEP', 'HAG': 'HAG', 'ZEC': 'ZEC', 'MAL': 'MAL',
+    '1ES': '1ES', 'TOB': 'TOB', 'JDT': 'JDT', 'WIS': 'WIS', 'SIR': 'SIR',
+    'BAR': 'BAR', 'LJE': 'LJE', 'SUS': 'SUS', 'BEL': 'BEL',
+    '1MA': '1MA', '2MA': '2MA', '3MA': '3MA', '4MA': '4MA', 'MAN': 'MAN'
 }
 
 def load_brenton_verses():
@@ -67,6 +70,10 @@ def load_brenton_verses():
                 elif curr_v is not None and not line.startswith('\\'):
                     curr_text.append(line)
             flush(curr_c, curr_v, curr_text)
+
+    for v in range(1, 16):
+        if f'MAN 1:{v}' in brenton_verses:
+            brenton_verses[f'ODA 12:{v}'] = brenton_verses[f'MAN 1:{v}']
 
     print(f"Loaded {len(brenton_verses)} Brenton verses.")
     return brenton_verses
@@ -154,8 +161,10 @@ def main():
             parts = entry.split('|')
             ref = parts[0]
             if len(parts) >= 3:
+                existing_en = parts[1]
                 greek = parts[2]
             else:
+                existing_en = ''
                 greek = parts[1] if len(parts) > 1 else ''
 
             b_code = ref.split()[0]
@@ -170,6 +179,9 @@ def main():
                 en = bsb[ref]
 
             if en:
+                matched_en_count += 1
+            elif existing_en and existing_en != greek:
+                en = existing_en
                 matched_en_count += 1
             else:
                 en = greek

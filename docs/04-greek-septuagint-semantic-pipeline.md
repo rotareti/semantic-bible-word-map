@@ -17,8 +17,8 @@ By training our embeddings on a unified Koine Greek corpus spanning both the Old
 
 ### Old Testament: Alfred Rahlfs 1935 Septuagint (LXX)
 - **Source**: The Alfred Rahlfs 1935 edition of the Septuagint, digitized by the Computer Assisted Tools for Septuagint Studies (CATSS / CCAT) project and curated with morphological tagging and Strong's numbers (as compiled in `eliranwong/LXX-Rahlfs-1935`).
-- **Canon Scope**: The 39 canonical books matching the Protestant Old Testament (`GEN` through `MAL`), comprising 22,966 verses. Deuterocanonical / Apocryphal additions are excluded from the core graph to maintain exact 1-to-1 parity with our 66-book canonical system.
-- **Versification Alignment**: Verses are aligned to standard canonical chapter and verse numbering (`GEN 1:1` ... `MAL 4:6`).
+- **Canon Scope**: The complete 54-book Septuagint Old Testament, including both the 39 Protocanonical books and the 15 Deuterocanonical / Apocryphal books (1 Esdras, Tobit, Judith, Esther with additions, 1--4 Maccabees, Wisdom of Solomon, Sirach, Baruch, Letter of Jeremiah, Susanna, Bel and the Dragon, Psalms of Solomon, Odes). Comprises 28,861 verses.
+- **Versification Alignment**: Verses are aligned to Septuagint and standard chapter/verse references with English translations supplied primarily by Sir Lancelot Brenton (1844) and direct interlinear glosses.
 
 ### New Testament: Nestle-Aland / SBL Greek New Testament
 - **Source**: The Nestle-Aland (NA27/28) / SBLGNT base Greek text, tagged with Strong's Greek numbers, exact verse references, and grammatical parsing (from `bsb_tables.tsv` and Tyndale House / STEPBible `TAGNT`).
@@ -97,15 +97,25 @@ Top-32 cross-references are computed via matrix dot product between normalized 1
 $$\text{sim}(v_i, v_j) = \mathbf{c}_{v_i} \cdot \mathbf{c}_{v_j}$$
 
 ### Book Centroids in Greek Vector Space
-Composite 100-dimensional book vectors for each of the 66 canonical books are computed from the Greek vocabulary distributions using sublinear term frequency and smoothed inverse book frequency. Dimensionality reduction to 2D is performed using Classical Multidimensional Scaling (MDS) on the cosine distance matrix, maintaining global continuity across the Old and New Testaments without artificial clustering gaps. Nearest-neighbor links and top cross-testament semantic bridges connect the canonical corpus into an interconnected continuum.
+Composite 100-dimensional book vectors for all 81 canonical books (54 Old Testament books including 15 Deuterocanonical books + 27 New Testament books) are computed from the Greek vocabulary distributions using sublinear term frequency and smoothed inverse book frequency. Dimensionality reduction to 2D is performed using Classical Multidimensional Scaling (MDS) on the cosine distance matrix, maintaining global continuity across the Old and New Testaments without artificial clustering gaps. Nearest-neighbor links and top cross-testament semantic bridges connect the canonical corpus into an interconnected continuum.
 
-## 6. Frontend Switching Architecture
+## 6. Frontend Switching and Fallback Architecture
 
 In the Options drawer on the left:
-- Add a **Semantic Foundation** selector:
-  - `[ LXX (Septuagint Greek) ]` (default)
-  - `[ BSB (Berean English) ]`
-- Switching the foundation reloads the dataset attributes without changing the current view mode (`words`, `verses`, or `books`):
+- **Semantic Foundation** selector:
+  - `[ BSB (Berean English) ]` (Default on main branch)
+  - `[ LXX (Septuagint Greek) ]` (81 books, unified Greek vector space)
+- Switching the foundation reloads the dataset attributes while preserving the active view mode (`words`, `verses`, or `books`):
   - LXX: `wordmap_2d_lxx.json`, `verse_index_lxx.json`, `versemap_2d_lxx.json`, `bookmap_2d_lxx.json`
   - BSB: `wordmap_2d.json`, `verse_index.json`, `versemap_2d.json`, `bookmap_2d.json`
-- Supports URL query parameter: `?base=lxx` (default) vs `?base=bsb`.
+- Supports URL query parameter: `?canon=lxx` vs `?canon=bsb` (with backward compatibility for `?base=`).
+
+### Cross-Canon Fallback & Graceful Degradation
+To prevent broken URL states when navigating or sharing links across different canons:
+1. **Book Selection Fallback**:
+   - If a user switches from LXX to BSB while viewing a book exclusive to the LXX (such as `TOB`, `SIR`, or `1MA`), or visits a URL like `canon=bsb&book=tobit`, the application detects that no matched books exist in the target canon. It gracefully clears the URL query parameter and drops back to the full canonical book map.
+   - For multi-book queries (e.g., `books=GEN,TOB`), the application filters out invalid books, keeps valid books (`GEN`), and updates the URL accordingly.
+2. **Verse Selection Fallback**:
+   - If a user switches canons while viewing a verse reference nonexistent in the target canon (e.g., `TOB 1:1` in BSB), the application clears the `verses` parameter and falls back to the full verse map.
+3. **Word Selection Fallback**:
+   - When switching canons, the application resolves active words across vocabularies by English gloss or lemma text. If a word or concept does not exist in the target canon, it notifies the user, clears the `keywords` URL parameter, and returns to the full landscape word map.

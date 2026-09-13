@@ -1,6 +1,7 @@
 const GENRE_COLORS = {
     'Law': '#3b82f6',
     'History': '#10b981',
+    'Deuterocanon': '#a855f7',
     'Wisdom': '#f59e0b',
     'Wisdom & Poetry': '#f59e0b',
     'Major Prophets': '#8b5cf6',
@@ -11,7 +12,7 @@ const GENRE_COLORS = {
     'Apocalypse': '#e11d48'
 };
 
-const BIBLE_BOOKS = [
+const BIBLE_BOOKS_BSB = [
     { order: 1, code: 'GEN', name: 'Genesis', testament: 'OT', genre: 'Law', words: 28527 },
     { order: 2, code: 'EXO', name: 'Exodus', testament: 'OT', genre: 'Law', words: 23193 },
     { order: 3, code: 'LEV', name: 'Leviticus', testament: 'OT', genre: 'Law', words: 17182 },
@@ -80,6 +81,167 @@ const BIBLE_BOOKS = [
     { order: 66, code: 'REV', name: 'Revelation', testament: 'NT', genre: 'Apocalypse', words: 8719 }
 ];
 
+const BIBLE_BOOKS_LXX = [
+    { order: 1, code: 'GEN', name: 'Genesis', testament: 'OT', genre: 'Law', words: 32568 },
+    { order: 2, code: 'EXO', name: 'Exodus', testament: 'OT', genre: 'Law', words: 24816 },
+    { order: 3, code: 'LEV', name: 'Leviticus', testament: 'OT', genre: 'Law', words: 19082 },
+    { order: 4, code: 'NUM', name: 'Numbers', testament: 'OT', genre: 'Law', words: 25059 },
+    { order: 5, code: 'DEU', name: 'Deuteronomy', testament: 'OT', genre: 'Law', words: 22990 },
+    { order: 6, code: 'JOS', name: 'Joshua', testament: 'OT', genre: 'History', words: 14896 },
+    { order: 7, code: 'JDG', name: 'Judges', testament: 'OT', genre: 'History', words: 15580 },
+    { order: 8, code: 'RUT', name: 'Ruth', testament: 'OT', genre: 'History', words: 2072 },
+    { order: 9, code: '1SA', name: '1 Samuel', testament: 'OT', genre: 'History', words: 20131 },
+    { order: 10, code: '2SA', name: '2 Samuel', testament: 'OT', genre: 'History', words: 17927 },
+    { order: 11, code: '1KI', name: '1 Kings', testament: 'OT', genre: 'History', words: 20803 },
+    { order: 12, code: '2KI', name: '2 Kings', testament: 'OT', genre: 'History', words: 18853 },
+    { order: 13, code: '1CH', name: '1 Chronicles', testament: 'OT', genre: 'History', words: 16244 },
+    { order: 14, code: '2CH', name: '2 Chronicles', testament: 'OT', genre: 'History', words: 21353 },
+    { order: 15, code: '1ES', name: '1 Esdras', testament: 'OT', genre: 'Deuterocanon', words: 8994 },
+    { order: 16, code: 'EZR', name: 'Ezra', testament: 'OT', genre: 'History', words: 5586 },
+    { order: 17, code: 'NEH', name: 'Nehemiah', testament: 'OT', genre: 'History', words: 7676 },
+    { order: 18, code: 'TOB', name: 'Tobit', testament: 'OT', genre: 'Deuterocanon', words: 5503 },
+    { order: 19, code: 'JDT', name: 'Judith', testament: 'OT', genre: 'Deuterocanon', words: 9174 },
+    { order: 20, code: 'EST', name: 'Esther', testament: 'OT', genre: 'History', words: 5843 },
+    { order: 21, code: '1MA', name: '1 Maccabees', testament: 'OT', genre: 'Deuterocanon', words: 18292 },
+    { order: 22, code: '2MA', name: '2 Maccabees', testament: 'OT', genre: 'Deuterocanon', words: 11917 },
+    { order: 23, code: '3MA', name: '3 Maccabees', testament: 'OT', genre: 'Deuterocanon', words: 5110 },
+    { order: 24, code: '4MA', name: '4 Maccabees', testament: 'OT', genre: 'Deuterocanon', words: 7859 },
+    { order: 25, code: 'JOB', name: 'Job', testament: 'OT', genre: 'Wisdom', words: 13561 },
+    { order: 26, code: 'PSA', name: 'Psalms', testament: 'OT', genre: 'Wisdom', words: 34964 },
+    { order: 27, code: 'ODA', name: 'Odes', testament: 'OT', genre: 'Deuterocanon', words: 4186 },
+    { order: 28, code: 'PRO', name: 'Proverbs', testament: 'OT', genre: 'Wisdom', words: 11164 },
+    { order: 29, code: 'ECC', name: 'Ecclesiastes', testament: 'OT', genre: 'Wisdom', words: 4546 },
+    { order: 30, code: 'SNG', name: 'Song of Solomon', testament: 'OT', genre: 'Wisdom', words: 2025 },
+    { order: 31, code: 'WIS', name: 'Wisdom of Solomon', testament: 'OT', genre: 'Deuterocanon', words: 6943 },
+    { order: 32, code: 'SIR', name: 'Sirach', testament: 'OT', genre: 'Deuterocanon', words: 18658 },
+    { order: 33, code: 'PSS', name: 'Psalms of Solomon', testament: 'OT', genre: 'Deuterocanon', words: 4926 },
+    { order: 34, code: 'HOS', name: 'Hosea', testament: 'OT', genre: 'Minor Prophets', words: 3941 },
+    { order: 35, code: 'AMO', name: 'Amos', testament: 'OT', genre: 'Minor Prophets', words: 3210 },
+    { order: 36, code: 'MIC', name: 'Micah', testament: 'OT', genre: 'Minor Prophets', words: 2368 },
+    { order: 37, code: 'JOL', name: 'Joel', testament: 'OT', genre: 'Minor Prophets', words: 1580 },
+    { order: 38, code: 'OBA', name: 'Obadiah', testament: 'OT', genre: 'Minor Prophets', words: 472 },
+    { order: 39, code: 'JON', name: 'Jonah', testament: 'OT', genre: 'Minor Prophets', words: 1090 },
+    { order: 40, code: 'NAM', name: 'Nahum', testament: 'OT', genre: 'Minor Prophets', words: 937 },
+    { order: 41, code: 'HAB', name: 'Habakkuk', testament: 'OT', genre: 'Minor Prophets', words: 1105 },
+    { order: 42, code: 'ZEP', name: 'Zephaniah', testament: 'OT', genre: 'Minor Prophets', words: 1223 },
+    { order: 43, code: 'HAG', name: 'Haggai', testament: 'OT', genre: 'Minor Prophets', words: 947 },
+    { order: 44, code: 'ZEC', name: 'Zechariah', testament: 'OT', genre: 'Minor Prophets', words: 4963 },
+    { order: 45, code: 'MAL', name: 'Malachi', testament: 'OT', genre: 'Minor Prophets', words: 1416 },
+    { order: 46, code: 'ISA', name: 'Isaiah', testament: 'OT', genre: 'Major Prophets', words: 27075 },
+    { order: 47, code: 'JER', name: 'Jeremiah', testament: 'OT', genre: 'Major Prophets', words: 28948 },
+    { order: 48, code: 'BAR', name: 'Baruch', testament: 'OT', genre: 'Deuterocanon', words: 2608 },
+    { order: 49, code: 'LAM', name: 'Lamentations', testament: 'OT', genre: 'Major Prophets', words: 2391 },
+    { order: 50, code: 'LJE', name: 'Letter of Jeremiah', testament: 'OT', genre: 'Deuterocanon', words: 1285 },
+    { order: 51, code: 'EZK', name: 'Ezekiel', testament: 'OT', genre: 'Major Prophets', words: 29658 },
+    { order: 52, code: 'SUS', name: 'Susanna', testament: 'OT', genre: 'Deuterocanon', words: 792 },
+    { order: 53, code: 'DAN', name: 'Daniel', testament: 'OT', genre: 'Major Prophets', words: 10781 },
+    { order: 54, code: 'BEL', name: 'Bel and the Dragon', testament: 'OT', genre: 'Deuterocanon', words: 901 },
+    { order: 55, code: 'MAT', name: 'Matthew', testament: 'NT', genre: 'Gospels', words: 18373 },
+    { order: 56, code: 'MRK', name: 'Mark', testament: 'NT', genre: 'Gospels', words: 11286 },
+    { order: 57, code: 'LUK', name: 'Luke', testament: 'NT', genre: 'Gospels', words: 19508 },
+    { order: 58, code: 'JHN', name: 'John', testament: 'NT', genre: 'Gospels', words: 15660 },
+    { order: 59, code: 'ACT', name: 'Acts', testament: 'NT', genre: 'History', words: 18459 },
+    { order: 60, code: 'ROM', name: 'Romans', testament: 'NT', genre: 'Pauline Epistles', words: 7120 },
+    { order: 61, code: '1CO', name: '1 Corinthians', testament: 'NT', genre: 'Pauline Epistles', words: 6838 },
+    { order: 62, code: '2CO', name: '2 Corinthians', testament: 'NT', genre: 'Pauline Epistles', words: 4477 },
+    { order: 63, code: 'GAL', name: 'Galatians', testament: 'NT', genre: 'Pauline Epistles', words: 2231 },
+    { order: 64, code: 'EPH', name: 'Ephesians', testament: 'NT', genre: 'Pauline Epistles', words: 2423 },
+    { order: 65, code: 'PHP', name: 'Philippians', testament: 'NT', genre: 'Pauline Epistles', words: 1631 },
+    { order: 66, code: 'COL', name: 'Colossians', testament: 'NT', genre: 'Pauline Epistles', words: 1584 },
+    { order: 67, code: '1TH', name: '1 Thessalonians', testament: 'NT', genre: 'Pauline Epistles', words: 1481 },
+    { order: 68, code: '2TH', name: '2 Thessalonians', testament: 'NT', genre: 'Pauline Epistles', words: 824 },
+    { order: 69, code: '1TI', name: '1 Timothy', testament: 'NT', genre: 'Pauline Epistles', words: 1592 },
+    { order: 70, code: '2TI', name: '2 Timothy', testament: 'NT', genre: 'Pauline Epistles', words: 1239 },
+    { order: 71, code: 'TIT', name: 'Titus', testament: 'NT', genre: 'Pauline Epistles', words: 659 },
+    { order: 72, code: 'PHM', name: 'Philemon', testament: 'NT', genre: 'Pauline Epistles', words: 335 },
+    { order: 73, code: 'HEB', name: 'Hebrews', testament: 'NT', genre: 'General Epistles', words: 4960 },
+    { order: 74, code: 'JAS', name: 'James', testament: 'NT', genre: 'General Epistles', words: 1743 },
+    { order: 75, code: '1PE', name: '1 Peter', testament: 'NT', genre: 'General Epistles', words: 1685 },
+    { order: 76, code: '2PE', name: '2 Peter', testament: 'NT', genre: 'General Epistles', words: 1102 },
+    { order: 77, code: '1JN', name: '1 John', testament: 'NT', genre: 'General Epistles', words: 2141 },
+    { order: 78, code: '2JN', name: '2 John', testament: 'NT', genre: 'General Epistles', words: 245 },
+    { order: 79, code: '3JN', name: '3 John', testament: 'NT', genre: 'General Epistles', words: 219 },
+    { order: 80, code: 'JUD', name: 'Jude', testament: 'NT', genre: 'General Epistles', words: 460 },
+    { order: 81, code: 'REV', name: 'Revelation', testament: 'NT', genre: 'Apocalypse', words: 9856 }
+];
+
+const BIBLE_BOOKS_VUL = [
+    { order: 1, code: 'GEN', name: 'Genesis', testament: 'OT', genre: 'Law', words: 25455 },
+    { order: 2, code: 'EXO', name: 'Exodus', testament: 'OT', genre: 'Law', words: 20208 },
+    { order: 3, code: 'LEV', name: 'Leviticus', testament: 'OT', genre: 'Law', words: 13809 },
+    { order: 4, code: 'NUM', name: 'Numbers', testament: 'OT', genre: 'Law', words: 19410 },
+    { order: 5, code: 'DEU', name: 'Deuteronomy', testament: 'OT', genre: 'Law', words: 18560 },
+    { order: 6, code: 'JOS', name: 'Joshua', testament: 'OT', genre: 'History', words: 12253 },
+    { order: 7, code: 'JDG', name: 'Judges', testament: 'OT', genre: 'History', words: 12696 },
+    { order: 8, code: 'RUT', name: 'Ruth', testament: 'OT', genre: 'History', words: 1792 },
+    { order: 9, code: '1SA', name: '1 Samuel', testament: 'OT', genre: 'History', words: 18394 },
+    { order: 10, code: '2SA', name: '2 Samuel', testament: 'OT', genre: 'History', words: 14722 },
+    { order: 11, code: '1KI', name: '1 Kings', testament: 'OT', genre: 'History', words: 17319 },
+    { order: 12, code: '2KI', name: '2 Kings', testament: 'OT', genre: 'History', words: 16061 },
+    { order: 13, code: '1CH', name: '1 Chronicles', testament: 'OT', genre: 'History', words: 14400 },
+    { order: 14, code: '2CH', name: '2 Chronicles', testament: 'OT', genre: 'History', words: 18019 },
+    { order: 15, code: 'EZR', name: 'Ezra', testament: 'OT', genre: 'History', words: 5134 },
+    { order: 16, code: 'NEH', name: 'Nehemiah', testament: 'OT', genre: 'History', words: 7379 },
+    { order: 17, code: 'TOB', name: 'Tobit', testament: 'OT', genre: 'Deuterocanon', words: 5031 },
+    { order: 18, code: 'JDT', name: 'Judith', testament: 'OT', genre: 'Deuterocanon', words: 6643 },
+    { order: 19, code: 'EST', name: 'Esther', testament: 'OT', genre: 'History', words: 5978 },
+    { order: 20, code: '1MA', name: '1 Machabees', testament: 'OT', genre: 'Deuterocanon', words: 16615 },
+    { order: 21, code: '2MA', name: '2 Machabees', testament: 'OT', genre: 'Deuterocanon', words: 10498 },
+    { order: 22, code: 'JOB', name: 'Job', testament: 'OT', genre: 'Wisdom', words: 12567 },
+    { order: 23, code: 'PSA', name: 'Psalms', testament: 'OT', genre: 'Wisdom', words: 30268 },
+    { order: 24, code: 'PRO', name: 'Proverbs', testament: 'OT', genre: 'Wisdom', words: 10197 },
+    { order: 25, code: 'ECC', name: 'Ecclesiastes', testament: 'OT', genre: 'Wisdom', words: 3823 },
+    { order: 26, code: 'SNG', name: 'Song of Solomon', testament: 'OT', genre: 'Wisdom', words: 1844 },
+    { order: 27, code: 'WIS', name: 'Wisdom of Solomon', testament: 'OT', genre: 'Deuterocanon', words: 7285 },
+    { order: 28, code: 'SIR', name: 'Sirach', testament: 'OT', genre: 'Deuterocanon', words: 20508 },
+    { order: 29, code: 'ISA', name: 'Isaiah', testament: 'OT', genre: 'Major Prophets', words: 24658 },
+    { order: 30, code: 'JER', name: 'Jeremiah', testament: 'OT', genre: 'Major Prophets', words: 29585 },
+    { order: 31, code: 'LAM', name: 'Lamentations', testament: 'OT', genre: 'Major Prophets', words: 2399 },
+    { order: 32, code: 'BAR', name: 'Baruch', testament: 'OT', genre: 'Deuterocanon', words: 3619 },
+    { order: 33, code: 'EZK', name: 'Ezekiel', testament: 'OT', genre: 'Major Prophets', words: 26906 },
+    { order: 34, code: 'DAN', name: 'Daniel', testament: 'OT', genre: 'Major Prophets', words: 10812 },
+    { order: 35, code: 'HOS', name: 'Hosea', testament: 'OT', genre: 'Minor Prophets', words: 3511 },
+    { order: 36, code: 'JOL', name: 'Joel', testament: 'OT', genre: 'Minor Prophets', words: 1358 },
+    { order: 37, code: 'AMO', name: 'Amos', testament: 'OT', genre: 'Minor Prophets', words: 2801 },
+    { order: 38, code: 'OBA', name: 'Obadiah', testament: 'OT', genre: 'Minor Prophets', words: 428 },
+    { order: 39, code: 'JON', name: 'Jonah', testament: 'OT', genre: 'Minor Prophets', words: 967 },
+    { order: 40, code: 'MIC', name: 'Micah', testament: 'OT', genre: 'Minor Prophets', words: 2076 },
+    { order: 41, code: 'NAM', name: 'Nahum', testament: 'OT', genre: 'Minor Prophets', words: 853 },
+    { order: 42, code: 'HAB', name: 'Habakkuk', testament: 'OT', genre: 'Minor Prophets', words: 1003 },
+    { order: 43, code: 'ZEP', name: 'Zephaniah', testament: 'OT', genre: 'Minor Prophets', words: 1065 },
+    { order: 44, code: 'HAG', name: 'Haggai', testament: 'OT', genre: 'Minor Prophets', words: 797 },
+    { order: 45, code: 'ZEC', name: 'Zechariah', testament: 'OT', genre: 'Minor Prophets', words: 4368 },
+    { order: 46, code: 'MAL', name: 'Malachi', testament: 'OT', genre: 'Minor Prophets', words: 1220 },
+    { order: 47, code: 'MAT', name: 'Matthew', testament: 'NT', genre: 'Gospels', words: 16543 },
+    { order: 48, code: 'MRK', name: 'Mark', testament: 'NT', genre: 'Gospels', words: 10311 },
+    { order: 49, code: 'LUK', name: 'Luke', testament: 'NT', genre: 'Gospels', words: 18082 },
+    { order: 50, code: 'JHN', name: 'John', testament: 'NT', genre: 'Gospels', words: 14092 },
+    { order: 51, code: 'ACT', name: 'Acts', testament: 'NT', genre: 'History', words: 16779 },
+    { order: 52, code: 'ROM', name: 'Romans', testament: 'NT', genre: 'Pauline Epistles', words: 6607 },
+    { order: 53, code: '1CO', name: '1 Corinthians', testament: 'NT', genre: 'Pauline Epistles', words: 6445 },
+    { order: 54, code: '2CO', name: '2 Corinthians', testament: 'NT', genre: 'Pauline Epistles', words: 4299 },
+    { order: 55, code: 'GAL', name: 'Galatians', testament: 'NT', genre: 'Pauline Epistles', words: 2130 },
+    { order: 56, code: 'EPH', name: 'Ephesians', testament: 'NT', genre: 'Pauline Epistles', words: 2150 },
+    { order: 57, code: 'PHP', name: 'Philippians', testament: 'NT', genre: 'Pauline Epistles', words: 1558 },
+    { order: 58, code: 'COL', name: 'Colossians', testament: 'NT', genre: 'Pauline Epistles', words: 1464 },
+    { order: 59, code: '1TH', name: '1 Thessalonians', testament: 'NT', genre: 'Pauline Epistles', words: 1404 },
+    { order: 60, code: '2TH', name: '2 Thessalonians', testament: 'NT', genre: 'Pauline Epistles', words: 751 },
+    { order: 61, code: '1TI', name: '1 Timothy', testament: 'NT', genre: 'Pauline Epistles', words: 1591 },
+    { order: 62, code: '2TI', name: '2 Timothy', testament: 'NT', genre: 'Pauline Epistles', words: 1170 },
+    { order: 63, code: 'TIT', name: 'Titus', testament: 'NT', genre: 'Pauline Epistles', words: 676 },
+    { order: 64, code: 'PHM', name: 'Philemon', testament: 'NT', genre: 'Pauline Epistles', words: 322 },
+    { order: 65, code: 'HEB', name: 'Hebrews', testament: 'NT', genre: 'General Epistles', words: 4598 },
+    { order: 66, code: 'JAS', name: 'James', testament: 'NT', genre: 'General Epistles', words: 1650 },
+    { order: 67, code: '1PE', name: '1 Peter', testament: 'NT', genre: 'General Epistles', words: 1661 },
+    { order: 68, code: '2PE', name: '2 Peter', testament: 'NT', genre: 'General Epistles', words: 1053 },
+    { order: 69, code: '1JN', name: '1 John', testament: 'NT', genre: 'General Epistles', words: 1886 },
+    { order: 70, code: '2JN', name: '2 John', testament: 'NT', genre: 'General Epistles', words: 218 },
+    { order: 71, code: '3JN', name: '3 John', testament: 'NT', genre: 'General Epistles', words: 211 },
+    { order: 72, code: 'JUD', name: 'Jude', testament: 'NT', genre: 'General Epistles', words: 442 },
+    { order: 73, code: 'REV', name: 'Revelation', testament: 'NT', genre: 'Apocalypse', words: 8483 }
+];
+
+const BIBLE_BOOKS = BIBLE_BOOKS_LXX;
 const BOOK_CODE_MAP = Object.fromEntries(BIBLE_BOOKS.map(b => [b.code, b]));
 
 const BOOK_ALIASES = {
@@ -95,33 +257,48 @@ const BOOK_ALIASES = {
     '2sa': '2SA', '2samuel': '2SA', '2sam': '2SA', '2s': '2SA',
     '1ki': '1KI', '1kings': '1KI', '1kgs': '1KI', '1k': '1KI',
     '2ki': '2KI', '2kings': '2KI', '2kgs': '2KI', '2k': '2KI',
-    '1ch': '1CH', '1chronicles': '1CH', '1chron': '1CH',
-    '2ch': '2CH', '2chronicles': '2CH', '2chron': '2CH',
+    '1ch': '1CH', '1chronicles': '1CH', '1chron': '1CH', '1par': '1CH', '1paralipomenon': '1CH',
+    '2ch': '2CH', '2chronicles': '2CH', '2chron': '2CH', '2par': '2CH', '2paralipomenon': '2CH',
+    '1es': '1ES', '1esdras': '1ES', '1esd': '1ES', 'esdrasa': '1ES',
     'ezr': 'EZR', 'ezra': 'EZR',
     'neh': 'NEH', 'nehemiah': 'NEH',
+    'tob': 'TOB', 'tobit': 'TOB', 'tb': 'TOB', 'tobias': 'TOB',
+    'jdt': 'JDT', 'judith': 'JDT', 'jth': 'JDT',
     'est': 'EST', 'esther': 'EST',
+    '1ma': '1MA', '1maccabees': '1MA', '1macc': '1MA', '1mac': '1MA', '1machabees': '1MA', '1mach': '1MA',
+    '2ma': '2MA', '2maccabees': '2MA', '2macc': '2MA', '2mac': '2MA', '2machabees': '2MA', '2mach': '2MA',
+    '3ma': '3MA', '3maccabees': '3MA', '3macc': '3MA', '3mac': '3MA',
+    '4ma': '4MA', '4maccabees': '4MA', '4macc': '4MA', '4mac': '4MA',
     'job': 'JOB',
-    'psa': 'PSA', 'psalms': 'PSA', 'psalm': 'PSA', 'ps': 'PSA', 'pss': 'PSA',
+    'psa': 'PSA', 'psalms': 'PSA', 'psalm': 'PSA', 'ps': 'PSA',
+    'oda': 'ODA', 'odes': 'ODA', 'ode': 'ODA', 'man': 'ODA', 'prayerofmanasseh': 'ODA',
     'pro': 'PRO', 'proverbs': 'PRO', 'prv': 'PRO', 'pr': 'PRO',
     'ecc': 'ECC', 'ecclesiastes': 'ECC', 'eccl': 'ECC',
-    'sng': 'SNG', 'songofsolomon': 'SNG', 'songofsongs': 'SNG', 'song': 'SNG', 'sos': 'SNG', 'canticles': 'SNG',
-    'isa': 'ISA', 'isaiah': 'ISA', 'is': 'ISA',
-    'jer': 'JER', 'jeremiah': 'JER', 'jr': 'JER',
+    'sng': 'SNG', 'songofsolomon': 'SNG', 'songofsongs': 'SNG', 'song': 'SNG', 'sos': 'SNG', 'canticles': 'SNG', 'canticle': 'SNG', 'canticleofcanticles': 'SNG',
+    'wis': 'WIS', 'wisdom': 'WIS', 'wisdomofsolomon': 'WIS', 'ws': 'WIS',
+    'sir': 'SIR', 'sirach': 'SIR', 'ecclesiasticus': 'SIR',
+    'pss': 'PSS', 'psalmsofsolomon': 'PSS', 'pssol': 'PSS',
+    'isa': 'ISA', 'isaiah': 'ISA', 'is': 'ISA', 'isaias': 'ISA',
+    'jer': 'JER', 'jeremiah': 'JER', 'jr': 'JER', 'jeremias': 'JER',
+    'bar': 'BAR', 'baruch': 'BAR',
     'lam': 'LAM', 'lamentations': 'LAM',
-    'ezk': 'EZK', 'ezekiel': 'EZK', 'ezek': 'EZK',
+    'lje': 'LJE', 'letterofjeremiah': 'LJE', 'epistleofjeremiah': 'LJE', 'epjer': 'LJE',
+    'ezk': 'EZK', 'ezekiel': 'EZK', 'ezek': 'EZK', 'ezechiel': 'EZK',
+    'sus': 'SUS', 'susanna': 'SUS',
     'dan': 'DAN', 'daniel': 'DAN', 'dn': 'DAN',
-    'hos': 'HOS', 'hosea': 'HOS',
+    'bel': 'BEL', 'belandthedragon': 'BEL',
+    'hos': 'HOS', 'hosea': 'HOS', 'osee': 'HOS',
     'jol': 'JOL', 'joel': 'JOL',
     'amo': 'AMO', 'amos': 'AMO',
-    'oba': 'OBA', 'obadiah': 'OBA',
-    'jon': 'JON', 'jonah': 'JON',
-    'mic': 'MIC', 'micah': 'MIC',
+    'oba': 'OBA', 'obadiah': 'OBA', 'abdias': 'OBA',
+    'jon': 'JON', 'jonah': 'JON', 'jonas': 'JON',
+    'mic': 'MIC', 'micah': 'MIC', 'micheas': 'MIC',
     'nam': 'NAM', 'nahum': 'NAM', 'nah': 'NAM',
-    'hab': 'HAB', 'habakkuk': 'HAB',
-    'zep': 'ZEP', 'zephaniah': 'ZEP',
-    'hag': 'HAG', 'haggai': 'HAG',
-    'zec': 'ZEC', 'zechariah': 'ZEC',
-    'mal': 'MAL', 'malachi': 'MAL',
+    'hab': 'HAB', 'habakkuk': 'HAB', 'habacuc': 'HAB',
+    'zep': 'ZEP', 'zephaniah': 'ZEP', 'sophonias': 'ZEP',
+    'hag': 'HAG', 'haggai': 'HAG', 'aggeus': 'HAG',
+    'zec': 'ZEC', 'zechariah': 'ZEC', 'zacharias': 'ZEC',
+    'mal': 'MAL', 'malachi': 'MAL', 'malachias': 'MAL',
     'mat': 'MAT', 'matthew': 'MAT', 'matt': 'MAT', 'mt': 'MAT',
     'mrk': 'MRK', 'mark': 'MRK', 'mk': 'MRK',
     'luk': 'LUK', 'luke': 'LUK', 'lk': 'LUK',
@@ -624,6 +801,11 @@ class BibleWordMap extends HTMLElement {
                     color: #ffffff;
                     border-color: var(--bwm-node-hover);
                     font-weight: 600;
+                }
+                #bwm-foundation-filter .bwm-pill-btn {
+                    flex: 1 1 calc(33.333% - 6px);
+                    font-weight: 600;
+                    letter-spacing: 0.5px;
                 }
                 .bwm-active-word-item {
                     display: flex;
@@ -1511,10 +1693,11 @@ class BibleWordMap extends HTMLElement {
                                 <h4>Semantic Foundation</h4>
                             </div>
                             <div class="bwm-pill-group" id="bwm-foundation-filter">
-                                <button type="button" class="bwm-pill-btn" id="bwm-btn-foundation-lxx" data-foundation="lxx" title="Greek Septuagint &amp; New Testament">LXX (Greek)</button>
-                                <button type="button" class="bwm-pill-btn active" id="bwm-btn-foundation-bsb" data-foundation="bsb" title="Berean Standard Bible English">BSB (English)</button>
+                                <button type="button" class="bwm-pill-btn active" id="bwm-btn-foundation-bsb" data-foundation="bsb" title="Berean Standard Bible English (66 Books)">BSB</button>
+                                <button type="button" class="bwm-pill-btn" id="bwm-btn-foundation-lxx" data-foundation="lxx" title="Septuagint &amp; Greek NT (81 Books)">LXX</button>
+                                <button type="button" class="bwm-pill-btn" id="bwm-btn-foundation-vul" data-foundation="vul" title="Latin Clementine Vulgate (73 Books)">VUL</button>
                             </div>
-                            <div class="bwm-drawer-hint" id="bwm-foundation-hint">Switch underlying semantic training between Greek Septuagint/NT and BSB English.</div>
+                            <div class="bwm-drawer-hint" id="bwm-foundation-hint">Switch underlying semantic training between BSB English (66 books), Greek Septuagint/NT (81 books), and Latin Clementine Vulgate (73 books).</div>
                         </div>
                         <div class="bwm-drawer-section">
                             <div class="bwm-drawer-section-header">
@@ -1575,7 +1758,13 @@ class BibleWordMap extends HTMLElement {
     connectedCallback() {
         let urlParams = new URLSearchParams(window.location.search);
         let baseParam = (urlParams.get('canon') || urlParams.get('base') || urlParams.get('foundation') || this.getAttribute('foundation') || 'bsb').toLowerCase();
-        this.foundation = (baseParam === 'lxx') ? 'lxx' : 'bsb';
+        if (baseParam === 'lxx') {
+            this.foundation = 'lxx';
+        } else if (baseParam === 'vul' || baseParam === 'vulgata' || baseParam === 'vulgate') {
+            this.foundation = 'vul';
+        } else {
+            this.foundation = 'bsb';
+        }
 
         const vParam = '?v=8.0.0';
         if (this.foundation === 'lxx') {
@@ -1583,6 +1772,11 @@ class BibleWordMap extends HTMLElement {
             this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
             this.srcBooks = this.getAttribute('src-books-lxx') || ('data/output/bookmap_2d_lxx.json' + vParam);
             this.srcVersemap = this.getAttribute('src-versemap-lxx') || ('data/output/versemap_2d_lxx.json' + vParam);
+        } else if (this.foundation === 'vul') {
+            this.src2d = this.getAttribute('src-2d-vul') || ('data/output/wordmap_2d_vul.json' + vParam);
+            this.srcVerses = this.getAttribute('src-verses-vul') || ('data/output/verse_index_vul.json' + vParam);
+            this.srcBooks = this.getAttribute('src-books-vul') || ('data/output/bookmap_2d_vul.json' + vParam);
+            this.srcVersemap = this.getAttribute('src-versemap-vul') || ('data/output/versemap_2d_vul.json' + vParam);
         } else {
             this.src2d = this.getAttribute('src-2d-bsb') || this.getAttribute('src-2d') || ('data/output/wordmap_2d.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-bsb') || this.getAttribute('src-verses') || ('data/output/verse_index.json' + vParam);
@@ -1774,14 +1968,11 @@ class BibleWordMap extends HTMLElement {
         });
         const lxxPill = this.querySelector('#bwm-btn-foundation-lxx');
         const bsbPill = this.querySelector('#bwm-btn-foundation-bsb');
-        if (lxxPill && bsbPill) {
-            if (this.foundation === 'bsb') {
-                lxxPill.classList.remove('active');
-                bsbPill.classList.add('active');
-            } else {
-                lxxPill.classList.add('active');
-                bsbPill.classList.remove('active');
-            }
+        const vulPill = this.querySelector('#bwm-btn-foundation-vul');
+        if (lxxPill && bsbPill && vulPill) {
+            bsbPill.classList.toggle('active', this.foundation === 'bsb');
+            lxxPill.classList.toggle('active', this.foundation === 'lxx');
+            vulPill.classList.toggle('active', this.foundation === 'vul');
         }
 
         const testamentPills = this.querySelectorAll('#bwm-testament-filter .bwm-pill-btn');
@@ -1999,10 +2190,46 @@ class BibleWordMap extends HTMLElement {
 
     async loadData() {
         let params = new URLSearchParams(window.location.search);
+        let baseParam = (params.get('canon') || params.get('base') || params.get('foundation') || this.foundation || 'bsb').toLowerCase();
+        if (baseParam === 'lxx') {
+            this.foundation = 'lxx';
+        } else if (baseParam === 'vul' || baseParam === 'vulgata' || baseParam === 'vulgate') {
+            this.foundation = 'vul';
+        } else {
+            this.foundation = 'bsb';
+        }
+
+        const vParam = '?v=8.0.0';
+        if (this.foundation === 'lxx') {
+            this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
+            this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
+            this.srcBooks = this.getAttribute('src-books-lxx') || ('data/output/bookmap_2d_lxx.json' + vParam);
+            this.srcVersemap = this.getAttribute('src-versemap-lxx') || ('data/output/versemap_2d_lxx.json' + vParam);
+        } else if (this.foundation === 'vul') {
+            this.src2d = this.getAttribute('src-2d-vul') || ('data/output/wordmap_2d_vul.json' + vParam);
+            this.srcVerses = this.getAttribute('src-verses-vul') || ('data/output/verse_index_vul.json' + vParam);
+            this.srcBooks = this.getAttribute('src-books-vul') || ('data/output/bookmap_2d_vul.json' + vParam);
+            this.srcVersemap = this.getAttribute('src-versemap-vul') || ('data/output/versemap_2d_vul.json' + vParam);
+        } else {
+            this.src2d = this.getAttribute('src-2d-bsb') || this.getAttribute('src-2d') || ('data/output/wordmap_2d.json' + vParam);
+            this.srcVerses = this.getAttribute('src-verses-bsb') || this.getAttribute('src-verses') || ('data/output/verse_index.json' + vParam);
+            this.srcBooks = this.getAttribute('src-books-bsb') || this.getAttribute('src-books') || ('data/output/bookmap_2d.json' + vParam);
+            this.srcVersemap = this.getAttribute('src-versemap-bsb') || this.getAttribute('src-versemap') || ('data/output/versemap_2d.json' + vParam);
+        }
+
+        const lxxPill = this.querySelector('#bwm-btn-foundation-lxx');
+        const bsbPill = this.querySelector('#bwm-btn-foundation-bsb');
+        const vulPill = this.querySelector('#bwm-btn-foundation-vul');
+        if (lxxPill && bsbPill && vulPill) {
+            bsbPill.classList.toggle('active', this.foundation === 'bsb');
+            lxxPill.classList.toggle('active', this.foundation === 'lxx');
+            vulPill.classList.toggle('active', this.foundation === 'vul');
+        }
+
         let view = params.get('view');
-        let books = params.get('books');
-        let verses = params.get('verses');
-        let keywords = params.get('keywords');
+        let books = params.get('books') || params.get('book');
+        let verses = params.get('verses') || params.get('verse');
+        let keywords = params.get('keywords') || params.get('keyword') || params.get('words') || params.get('word');
         this.updateUrl({
             view: view || undefined,
             books: books || undefined,
@@ -2149,6 +2376,13 @@ class BibleWordMap extends HTMLElement {
                         this.drawerVerses = [...this.searchedVerses];
                         this.searchVerses(true);
                     } else {
+                        this.searchedVerses = [];
+                        this.drawerVerses = [];
+                        this.selectedVerse = null;
+                        this.isSearchMode = false;
+                        if (this.searchInput) this.searchInput.value = '';
+                        this.updateClearBtnVisibility();
+                        this.updateUrl({ view: 'verses', verses: undefined });
                         this.buildVersesGraph();
                     }
                 } else {
@@ -2165,9 +2399,21 @@ class BibleWordMap extends HTMLElement {
                 if (this.searchedBooks && this.searchedBooks.length > 0) {
                     this.searchBooks(true);
                 } else if (books) {
-                    this.searchedBooks = books.split(',').map(b => b.trim().toUpperCase()).filter(b => b);
-                    this.drawerBooks = [...this.searchedBooks];
-                    this.searchBooks(true);
+                    let parsed = this.parseBookQuery(books);
+                    if (parsed.length > 0) {
+                        this.searchedBooks = parsed.map(b => b.code);
+                        this.drawerBooks = [...this.searchedBooks];
+                        this.searchBooks(true);
+                    } else {
+                        this.searchedBooks = [];
+                        this.drawerBooks = [];
+                        this.selectedBook = null;
+                        this.isSearchMode = false;
+                        if (this.searchInput) this.searchInput.value = '';
+                        this.updateClearBtnVisibility();
+                        this.updateUrl({ view: 'books', books: undefined });
+                        this.buildBooksGraph();
+                    }
                 } else {
                     this.buildBooksGraph();
                 }
@@ -2239,6 +2485,36 @@ class BibleWordMap extends HTMLElement {
         return this.getBookVerses(wordId, bookCode).length > 0;
     }
 
+    findMatchesForWordToken(token) {
+        if (!token || !this.data2d) return [];
+        token = token.toLowerCase();
+
+        let idMatch = this.data2d.filter(d => d.id.toLowerCase() === token);
+        if (idMatch.length > 0) return idMatch;
+
+        let wordMatch = this.data2d.filter(d => d.w.toLowerCase() === token);
+        if (wordMatch.length > 0) return wordMatch;
+
+        let glossPartMatch = this.data2d.filter(d => d.w.toLowerCase().split(/[\s-]+/).includes(token));
+        if (glossPartMatch.length > 0) return glossPartMatch;
+
+        let origMatch = this.data2d.filter(d => {
+            if (!d.original || !Array.isArray(d.original)) return false;
+            return d.original.some(o => {
+                if (o.lemma && o.lemma.toLowerCase() === token) return true;
+                if (o.translit && o.translit.toLowerCase() === token) return true;
+                if (o.strongs) {
+                    let sLow = o.strongs.toLowerCase();
+                    if (sLow === token || sLow === 'g' + token || sLow === 'h' + token) return true;
+                }
+                return false;
+            });
+        });
+        if (origMatch.length > 0) return origMatch;
+
+        return [];
+    }
+
     async searchWord(useExplicitIds = false) {
         this.hoveredNode = null;
         let foundPoints = [];
@@ -2252,6 +2528,8 @@ class BibleWordMap extends HTMLElement {
             return;
         }
         
+        const findMatchesForToken = (token) => this.findMatchesForWordToken(token);
+
         if (!useExplicitIds) {
             let originalQuery = this.searchInput.value.trim();
             let query = originalQuery.toLowerCase();
@@ -2259,33 +2537,6 @@ class BibleWordMap extends HTMLElement {
                 this.clearAllKeywords();
                 return;
             }
-
-            const findMatchesForToken = (token) => {
-                let idMatch = this.data2d.filter(d => d.id.toLowerCase() === token);
-                if (idMatch.length > 0) return idMatch;
-
-                let wordMatch = this.data2d.filter(d => d.w.toLowerCase() === token);
-                if (wordMatch.length > 0) return wordMatch;
-
-                let glossPartMatch = this.data2d.filter(d => d.w.toLowerCase().split(/[\s-]+/).includes(token));
-                if (glossPartMatch.length > 0) return glossPartMatch;
-
-                let origMatch = this.data2d.filter(d => {
-                    if (!d.original || !Array.isArray(d.original)) return false;
-                    return d.original.some(o => {
-                        if (o.lemma && o.lemma.toLowerCase() === token) return true;
-                        if (o.translit && o.translit.toLowerCase() === token) return true;
-                        if (o.strongs) {
-                            let sLow = o.strongs.toLowerCase();
-                            if (sLow === token || sLow === 'g' + token || sLow === 'h' + token) return true;
-                        }
-                        return false;
-                    });
-                });
-                if (origMatch.length > 0) return origMatch;
-
-                return [];
-            };
 
             this.searchedWords = [];
             let phraseMatches = findMatchesForToken(query);
@@ -2327,6 +2578,16 @@ class BibleWordMap extends HTMLElement {
                     resolvedIds.push(p.id);
                 }
             });
+            if (resolvedIds.length === 0 && this.searchInput && this.searchInput.value.trim()) {
+                let queryTokens = this.searchInput.value.trim().toLowerCase().split(/[\s,]+/).filter(w => w);
+                for (let qt of queryTokens) {
+                    let matches = findMatchesForToken(qt);
+                    if (matches.length > 0) {
+                        foundPoints.push(...matches.slice(0, 3));
+                        resolvedIds.push(...matches.slice(0, 3).map(m => m.id));
+                    }
+                }
+            }
             this.searchedWords = [...new Set(resolvedIds)];
             this.drawerWords = [...this.searchedWords];
         }
@@ -2334,9 +2595,19 @@ class BibleWordMap extends HTMLElement {
         this.updateClearBtnVisibility();
         
         if (foundPoints.length === 0) {
-            this.errorSpan.style.display = 'flex';
-            this.errorSpan.textContent = 'None of the words were found.';
-            setTimeout(() => this.errorSpan.style.display = 'none', 3000);
+            this.searchedWords = [];
+            this.drawerWords = [];
+            this.isSearchMode = false;
+            if (this.searchInput) this.searchInput.value = '';
+            this.updateClearBtnVisibility();
+            this.updateUrl({ keywords: undefined });
+            this.renderActiveWords();
+            if (this.errorSpan) {
+                this.errorSpan.style.display = 'flex';
+                this.errorSpan.textContent = 'Word not found in this canon.';
+                setTimeout(() => { if (this.errorSpan) this.errorSpan.style.display = 'none'; }, 2500);
+            }
+            this.buildAllWordsGraph();
             return;
         }
 
@@ -2510,33 +2781,48 @@ class BibleWordMap extends HTMLElement {
     }
 
     parseWordId(id) {
-        if (!id) return { word: '', pos: '', strongs: '' };
+        if (!id) return { word: '', pos: '', strongs: '', lemma: '' };
         if (this.data2d) {
             let found = this.data2d.find(d => d.id === id);
             if (found) {
                 let st = '';
-                if (found.original && found.original.length > 0 && found.original[0].strongs) {
-                    st = found.original[0].strongs;
+                let lm = '';
+                if (found.original && found.original.length > 0) {
+                    if (found.original[0].strongs) st = found.original[0].strongs;
+                    if (found.original[0].lemma) lm = found.original[0].lemma;
                 }
                 return {
                     word: found.w,
                     pos: found.pos,
-                    strongs: st
+                    strongs: st,
+                    lemma: lm
                 };
             }
         }
         let parts = id.split('_');
-        if (parts.length >= 3 && /^([GH]\d+|L\d+)/i.test(parts[parts.length - 2])) {
+        if (parts.length >= 3) {
             let pos = parts[parts.length - 1];
-            let strongs = parts[parts.length - 2];
+            let mid = parts[parts.length - 2];
             let word = parts.slice(0, parts.length - 2).join(' ');
-            return { word, pos, strongs };
-        } else if (parts.length >= 2) {
+            let isStrongs = /^([GH]\d+|L\d+)/i.test(mid);
+            return {
+                word,
+                pos,
+                strongs: isStrongs ? mid : '',
+                lemma: !isStrongs ? mid : ''
+            };
+        } else if (parts.length === 2) {
             let pos = parts[parts.length - 1];
             let word = parts.slice(0, parts.length - 1).join(' ');
-            return { word, pos, strongs: '' };
+            return { word, pos, strongs: '', lemma: '' };
         }
-        return { word: id, pos: '', strongs: '' };
+        return { word: id, pos: '', strongs: '', lemma: '' };
+    }
+
+    getActiveBibleBooks() {
+        if (this.foundation === 'vul') return BIBLE_BOOKS_VUL;
+        if (this.foundation === 'lxx') return BIBLE_BOOKS_LXX;
+        return BIBLE_BOOKS_BSB;
     }
 
     updateUrl(paramsObj = {}) {
@@ -2562,14 +2848,11 @@ class BibleWordMap extends HTMLElement {
 
         const lxxPill = this.querySelector('#bwm-btn-foundation-lxx');
         const bsbPill = this.querySelector('#bwm-btn-foundation-bsb');
-        if (lxxPill && bsbPill) {
-            if (foundation === 'bsb') {
-                lxxPill.classList.remove('active');
-                bsbPill.classList.add('active');
-            } else {
-                lxxPill.classList.add('active');
-                bsbPill.classList.remove('active');
-            }
+        const vulPill = this.querySelector('#bwm-btn-foundation-vul');
+        if (lxxPill && bsbPill && vulPill) {
+            bsbPill.classList.toggle('active', foundation === 'bsb');
+            lxxPill.classList.toggle('active', foundation === 'lxx');
+            vulPill.classList.toggle('active', foundation === 'vul');
         }
 
         const vParam = '?v=8.0.0';
@@ -2578,6 +2861,11 @@ class BibleWordMap extends HTMLElement {
             this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
             this.srcBooks = this.getAttribute('src-books-lxx') || ('data/output/bookmap_2d_lxx.json' + vParam);
             this.srcVersemap = this.getAttribute('src-versemap-lxx') || ('data/output/versemap_2d_lxx.json' + vParam);
+        } else if (foundation === 'vul') {
+            this.src2d = this.getAttribute('src-2d-vul') || ('data/output/wordmap_2d_vul.json' + vParam);
+            this.srcVerses = this.getAttribute('src-verses-vul') || ('data/output/verse_index_vul.json' + vParam);
+            this.srcBooks = this.getAttribute('src-books-vul') || ('data/output/bookmap_2d_vul.json' + vParam);
+            this.srcVersemap = this.getAttribute('src-versemap-vul') || ('data/output/versemap_2d_vul.json' + vParam);
         } else {
             this.src2d = this.getAttribute('src-2d-bsb') || this.getAttribute('src-2d') || ('data/output/wordmap_2d.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-bsb') || this.getAttribute('src-verses') || ('data/output/verse_index.json' + vParam);
@@ -3428,6 +3716,21 @@ class BibleWordMap extends HTMLElement {
             foundBooks = this.searchedBooks.map(c => this.booksData.books.find(b => b.code === c)).filter(Boolean);
         }
 
+        if (foundBooks.length === 0) {
+            this.searchedBooks = [];
+            this.drawerBooks = [];
+            this.selectedBook = null;
+            this.isSearchMode = false;
+            if (this.searchInput) this.searchInput.value = '';
+            this.updateClearBtnVisibility();
+            this.updateUrl({ view: 'books', books: undefined });
+            this.renderActiveWords();
+            this.buildBooksGraph();
+            return;
+        }
+
+        this.searchedBooks = foundBooks.map(b => b.code);
+        this.drawerBooks = [...this.searchedBooks];
         if (this.errorSpan) this.errorSpan.style.display = 'none';
         this.selectedBook = foundBooks[0];
         this.isSearchMode = true;
@@ -3728,12 +4031,15 @@ class BibleWordMap extends HTMLElement {
         }).join('');
 
         let topWordsHtml = (book.top_words || []).slice(0, 12).map(tw => {
+            let pos = tw.pos || (tw.id ? this.parseWordId(tw.id).pos : '') || '';
             let posColor = '#94a3b8';
-            if (tw.pos === 'PROPN') posColor = '#4ade80';
-            else if (tw.pos === 'NOUN') posColor = '#60a5fa';
-            else if (tw.pos === 'VERB') posColor = '#f472b6';
-            else if (tw.pos === 'ADJ' || tw.pos === 'ADV') posColor = '#fbbf24';
-            return `<span class="bwm-book-chip" style="border-left: 3px solid ${posColor};" title="TF-IDF Score: ${tw.score}"><b>${this.formatWord(tw.w, tw.pos)}</b> <span style="opacity:0.5;font-size:0.8em;">(${tw.pos.toLowerCase()})</span></span>`;
+            if (pos === 'PROPN') posColor = '#4ade80';
+            else if (pos === 'NOUN') posColor = '#60a5fa';
+            else if (pos === 'VERB') posColor = '#f472b6';
+            else if (pos === 'ADJ' || pos === 'ADV') posColor = '#fbbf24';
+            let titleStr = tw.score ? `TF-IDF Score: ${tw.score}` : (tw.count ? `Occurrences: ${tw.count}` : '');
+            let posLabel = pos ? ` <span style="opacity:0.5;font-size:0.8em;">(${pos.toLowerCase()})</span>` : '';
+            return `<span class="bwm-book-chip" style="border-left: 3px solid ${posColor};" title="${titleStr}"><b>${this.formatWord(tw.w, pos)}</b>${posLabel}</span>`;
         }).join('');
 
         this.bookCard.innerHTML = `
@@ -4030,7 +4336,21 @@ class BibleWordMap extends HTMLElement {
 
         if (this.errorSpan) this.errorSpan.style.display = 'none';
         let records = foundVerses.map(ref => this.versemapLookup ? this.versemapLookup.get(ref) : null).filter(Boolean);
-        if (records.length === 0) return;
+        if (records.length === 0) {
+            this.searchedVerses = [];
+            this.drawerVerses = [];
+            this.selectedVerse = null;
+            this.isSearchMode = false;
+            if (this.searchInput) this.searchInput.value = '';
+            this.updateClearBtnVisibility();
+            this.updateUrl({ view: 'verses', verses: undefined });
+            this.renderActiveWords();
+            this.buildVersesGraph();
+            return;
+        }
+
+        this.searchedVerses = records.map(r => r.id);
+        this.drawerVerses = [...this.searchedVerses];
 
         if (!this.selectedVerse || !records.some(r => r.id === this.selectedVerse.id)) {
             this.selectedVerse = records[0];
@@ -4448,12 +4768,12 @@ class BibleWordMap extends HTMLElement {
                 <div class="bwm-verse-text-box">
                     <div class="bwm-verse-text-header">
                         <span style="font-size:0.7em; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; opacity:0.65;">English Translation</span>
-                        ${greekText ? `<button type="button" class="bwm-window-pill ${this.showGreekOriginal ? 'active' : ''}" id="bwm-btn-toggle-greek" style="font-size:0.7em; padding:2px 8px; cursor:pointer;" title="Toggle Greek original text">&#128220; Greek Original</button>` : ''}
+                        ${greekText ? `<button type="button" class="bwm-window-pill ${this.showGreekOriginal ? 'active' : ''}" id="bwm-btn-toggle-greek" style="font-size:0.7em; padding:2px 8px; cursor:pointer;" title="Toggle ${this.foundation === 'vul' ? 'Latin Vulgate' : 'Greek original'} text">&#128220; ${this.foundation === 'vul' ? 'Latin Vulgate' : 'Greek Original'}</button>` : ''}
                     </div>
                     <div class="bwm-verse-english-text">${verseText}</div>
                     ${greekText ? `
                     <div class="bwm-verse-greek-box" id="bwm-verse-greek-box" style="display: ${this.showGreekOriginal ? 'block' : 'none'};">
-                        <div class="bwm-verse-greek-label">Septuagint / Greek NT</div>
+                        <div class="bwm-verse-greek-label">${this.foundation === 'vul' ? 'Clementine Latin Vulgate' : 'Septuagint / Greek NT'}</div>
                         <div class="bwm-verse-greek-text">${greekText}</div>
                     </div>` : ''}
                 </div>` : ''}
@@ -4945,20 +5265,30 @@ class BibleWordMap extends HTMLElement {
                     this.ctx.fillStyle = this.colors.text;
                     this.ctx.fillText(displayW, 0, yOffset);
                     
-                    // If there are multiple keywords or active nodes with the same word, show POS underneath
+                    // Show original language lemma in parentheses under English translation on LXX / VUL maps
+                    let origLemma = (this.foundation === 'lxx' || this.foundation === 'vul') && n.original && n.original[0] && n.original[0].lemma ? n.original[0].lemma : '';
                     let hasDuplicate = (n.isKw && kwWordCounts[n.w.toLowerCase()] > 1) || (this.isSearchMode && nodeWordCounts[n.w.toLowerCase()] > 1);
-                    if (hasDuplicate && n.pos) {
-                        let posText = `(${n.pos.toLowerCase()})`;
+                    
+                    let subText = '';
+                    if (origLemma && hasDuplicate && n.pos) {
+                        subText = `(${origLemma} · ${n.pos.toLowerCase()})`;
+                    } else if (origLemma) {
+                        subText = `(${origLemma})`;
+                    } else if (hasDuplicate && n.pos) {
+                        subText = `(${n.pos.toLowerCase()})`;
+                    }
+
+                    if (subText) {
                         let posFontSize = n.isKw ? 11 : 9;
                         this.ctx.font = `${posFontSize}px ${this.colors.font}`;
                         let posOffset = yOffset + fontSize + 1;
                         
                         this.ctx.lineWidth = 2.5;
                         this.ctx.strokeStyle = this.colors.bg;
-                        this.ctx.strokeText(posText, 0, posOffset);
+                        this.ctx.strokeText(subText, 0, posOffset);
                         
                         this.ctx.fillStyle = this.colors.nodeDef || '#888888';
-                        this.ctx.fillText(posText, 0, posOffset);
+                        this.ctx.fillText(subText, 0, posOffset);
                     }
                 }
                 
@@ -5246,7 +5576,8 @@ class BibleWordMap extends HTMLElement {
                     }
                 });
                 if (node.original && node.original.length > 0) {
-                    menuItems.push({ icon: '<span style="font-size:0.7em;font-weight:bold;">α/א</span>', label: 'Original Language', action: () => { this.hideRadialMenu(); this.showWordInspector(node, 'original'); } });
+                    let origIcon = (this.foundation === 'vul') ? '<span style="font-size:0.75em;font-weight:bold;">lat</span>' : '<span style="font-size:0.7em;font-weight:bold;">α/א</span>';
+                    menuItems.push({ icon: origIcon, label: 'Original Language', action: () => { this.hideRadialMenu(); this.showWordInspector(node, 'original'); } });
                 }
             }
         } else if (this.viewMode === 'books') {
@@ -5317,7 +5648,8 @@ class BibleWordMap extends HTMLElement {
                     }
                 });
                 if (node.original && node.original.length > 0) {
-                    menuItems.push({ icon: '<span style="font-size:0.7em;font-weight:bold;">α/א</span>', label: 'Original Language', action: () => { this.hideRadialMenu(); this.showWordInspector(node, 'original'); } });
+                    let origIcon = (this.foundation === 'vul') ? '<span style="font-size:0.75em;font-weight:bold;">lat</span>' : '<span style="font-size:0.7em;font-weight:bold;">α/א</span>';
+                    menuItems.push({ icon: origIcon, label: 'Original Language', action: () => { this.hideRadialMenu(); this.showWordInspector(node, 'original'); } });
                 }
             }
         } else {
@@ -5336,7 +5668,8 @@ class BibleWordMap extends HTMLElement {
                 }
             });
             if (node.original && node.original.length > 0) {
-                menuItems.push({ icon: '<span style="font-size:0.7em;font-weight:bold;">α/א</span>', label: 'Original Language', action: () => { this.hideRadialMenu(); this.showWordInspector(node, 'original'); } });
+                let origIcon = (this.foundation === 'vul') ? '<span style="font-size:0.75em;font-weight:bold;">lat</span>' : '<span style="font-size:0.7em;font-weight:bold;">α/א</span>';
+                menuItems.push({ icon: origIcon, label: 'Original Language', action: () => { this.hideRadialMenu(); this.showWordInspector(node, 'original'); } });
             }
         }
         
@@ -5599,13 +5932,14 @@ class BibleWordMap extends HTMLElement {
                 bookCounts[code] = (bookCounts[code] || 0) + 1;
             }
         }
+        let activeBooks = this.getActiveBibleBooks();
         let totalBooksWithOcc = 0;
-        BIBLE_BOOKS.forEach(b => {
+        activeBooks.forEach(b => {
             if ((bookCounts[b.code] || 0) > 0) totalBooksWithOcc++;
         });
 
         let occBadgeText = isVersesLoaded ? `${totalOccurrences} occurrence${totalOccurrences === 1 ? '' : 's'}` : 'Loading stats...';
-        let booksBadgeText = isVersesLoaded ? `in ${totalBooksWithOcc} of 66 books` : '';
+        let booksBadgeText = isVersesLoaded ? `in ${totalBooksWithOcc} of ${activeBooks.length} books` : '';
 
         let isAlreadyKw = this.isSearchMode && this.searchedWords && this.searchedWords.includes(node.id);
         let actionBtnHtml = '';
@@ -5832,15 +6166,16 @@ class BibleWordMap extends HTMLElement {
                         <div style="font-size: 1.5em; font-weight: bold; margin-bottom: 5px; font-family: serif;">${orig.lemma || orig.strongs}</div>
                         ${orig.translit ? `<div style="font-size: 1.1em; color: var(--bwm-text-muted); margin-bottom: 5px; font-style: italic;">${orig.translit}</div>` : ''}
                         <div style="font-size: 0.9em; margin-bottom: 15px;">
-                            <span style="background: var(--bwm-badge-bg); border: 1px solid var(--bwm-border); padding: 2px 6px; border-radius: 4px; font-family: monospace;">${orig.strongs}</span>
-                            <span style="opacity: 0.7; margin-left: 10px;">Translated ${orig.count} time${orig.count === 1 ? '' : 's'} as "${node.w}"</span>
+                            ${orig.strongs ? `<span style="background: var(--bwm-badge-bg); border: 1px solid var(--bwm-border); padding: 2px 6px; border-radius: 4px; font-family: monospace;">${orig.strongs}</span>` : ''}
+                            <span style="opacity: 0.7; margin-left: ${orig.strongs ? '10px' : '0px'};">Translated ${orig.count} time${orig.count === 1 ? '' : 's'} as "${node.w}"</span>
                         </div>
                     </div>
                 `;
                 if (orig.def) {
+                    let defHeading = (this.foundation === 'vul') ? "Whitaker's Latin Definition:" : "Strong's Definition:";
                     origBodyHtml += `
                         <div style="border-top: 1px solid var(--bwm-border); padding-top: 12px; line-height: 1.5;">
-                            <strong>Strong's Definition:</strong><br/>
+                            <strong>${defHeading}</strong><br/>
                             <span style="font-size: 0.92em; line-height: 1.45;">${orig.def}</span>
                         </div>
                     `;
@@ -5873,6 +6208,7 @@ class BibleWordMap extends HTMLElement {
             const GENRE_LABELS = {
                 'Law': 'Law (Pentateuch)',
                 'History': 'History',
+                'Deuterocanon': 'Deuterocanon / Apocrypha',
                 'Wisdom': 'Wisdom & Poetry',
                 'Major Prophets': 'Major Prophets',
                 'Minor Prophets': 'Minor Prophets',
@@ -5881,7 +6217,10 @@ class BibleWordMap extends HTMLElement {
                 'General Epistles': 'General Epistles',
                 'Apocalypse': 'Apocalypse'
             };
-            const GENRE_ORDER = [
+            const GENRE_ORDER = (this.foundation === 'lxx' || this.foundation === 'vul') ? [
+                'Law', 'History', 'Deuterocanon', 'Wisdom', 'Major Prophets', 'Minor Prophets',
+                'Gospels', 'Pauline Epistles', 'General Epistles', 'Apocalypse'
+            ] : [
                 'Law', 'History', 'Wisdom', 'Major Prophets', 'Minor Prophets',
                 'Gospels', 'Pauline Epistles', 'General Epistles', 'Apocalypse'
             ];
@@ -5900,7 +6239,7 @@ class BibleWordMap extends HTMLElement {
             let otTopBook = null;
             let ntTopBook = null;
 
-            BIBLE_BOOKS.forEach(b => {
+            this.getActiveBibleBooks().forEach(b => {
                 const g = b.genre;
                 const c = bookCounts[b.code] || 0;
                 const w = b.words || 0;
@@ -6001,7 +6340,7 @@ class BibleWordMap extends HTMLElement {
             `;
 
             renderBookBars = (filter, sort, metric) => {
-                let list = BIBLE_BOOKS.map((b, idx) => {
+                let list = this.getActiveBibleBooks().map((b, idx) => {
                     const count = bookCounts[b.code] || 0;
                     const words = b.words || 1;
                     const density = (count / words) * 1000;

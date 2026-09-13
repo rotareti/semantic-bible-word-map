@@ -88,3 +88,7 @@ This project was made possible by the following open datasets:
 * **[STEPBible TBESG Lexicon](https://github.com/STEPBible/STEPBible-Data)**: Translators Brief Lexicon of Extended Strong's for Greek, providing concise English glosses and morphological classifications (Tyndale House Cambridge, CC BY 4.0).
 * **[SBL Greek New Testament (SBLGNT)](https://sblgnt.com/)**: Edited by Michael W. Holmes and published by the Society of Biblical Literature and Logos Bible Software (CC BY 4.0).
 * **[OpenScriptures Strong's Dictionary](https://github.com/openscriptures/strongs)**: Used for the original language definitions (Licensed under CC-BY 4.0).
+* **[Clementina Vulgata & Douay-Rheims Translation](https://github.com/mborders/vulgata)**: Biblia Sacra Vulgata (Clementine edition) with parallel Douay-Rheims English translation, covering all 73 canonical books of the Latin Vulgate.
+* **[William Whitaker's WORDS Latin-English Dictionary](https://github.com/Salihbasic/whitaker-words-jsonisator)**: Comprehensive Latin morphological and lexical dictionary compiled by William Whitaker (Public Domain).
+* **[PROIEL Latin Treebank of the Vulgate](https://github.com/UniversalDependencies/UD_Latin-PROIEL)**: Pragmatic Resources in Old Indo-European Languages treebank of Jerome's Vulgate text with gold-standard lemmatization and Universal Dependencies UPOS tagging (University of Oslo, CC BY-NC-SA 3.0 / CC BY 4.0).
+* **[CLTK Latin Lemmatizer](https://github.com/cltk/latin_lemmatizer)**: Classical Language Toolkit lemmatizer tables for Classical and Medieval Latin texts.
