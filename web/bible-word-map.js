@@ -1736,6 +1736,8 @@ class BibleWordMap extends HTMLElement {
                     .bwm-canon-testament-layout {
                         flex-direction: column;
                     }
+                }
+
                 /* 7. Full Map Space Legend & Guide Window */
                 .bwm-legend-overlay {
                     position: absolute;
