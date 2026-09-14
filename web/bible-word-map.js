@@ -1929,6 +1929,8 @@ class BibleWordMap extends HTMLElement {
         const styles = getComputedStyle(this);
         this.colors = {
             bg: styles.getPropertyValue('--bwm-bg').trim() || '#ffffff',
+            cardBg: styles.getPropertyValue('--bwm-input-focus-bg').trim() || styles.getPropertyValue('--bwm-btn-bg').trim() || '#ffffff',
+            border: styles.getPropertyValue('--bwm-border').trim() || '#e5e7eb',
             text: styles.getPropertyValue('--bwm-text').trim() || '#333333',
             nodeDef: styles.getPropertyValue('--bwm-node-default').trim() || '#888888',
             nodeKw: styles.getPropertyValue('--bwm-node-kw').trim() || '#d32f2f',
@@ -5165,6 +5167,119 @@ class BibleWordMap extends HTMLElement {
             this.ctx.setLineDash([]);
         });
         this.ctx.globalAlpha = 1.0;
+        
+        // Draw percentage labels on top 5 semantic connections centered on connecting lines
+        if (this.links && this.links.length > 0) {
+            let primaryNodes = this.nodes.filter(n => n.isKw || n.isFocusedVerse || n.isFocusedBook);
+            let linksToLabel = new Set();
+
+            if (primaryNodes.length > 0) {
+                primaryNodes.forEach(pn => {
+                    let pnLinks = this.links.filter(l => {
+                        if (!l.source || !l.target || l.source.x === undefined || l.target.x === undefined) return false;
+                        let matchSource = this.matchesTestament(l.source.t || l.source.testament);
+                        let matchTarget = this.matchesTestament(l.target.t || l.target.testament);
+                        if (!matchSource || !matchTarget) return false;
+                        return l.source === pn || l.target === pn;
+                    });
+
+                    pnLinks.sort((a, b) => {
+                        let simA = (typeof a.sim === 'number' && a.sim > 0) ? a.sim : (a.source.v && a.target.v ? this.cosineSimilarity(a.source.v, a.target.v) : 0);
+                        let simB = (typeof b.sim === 'number' && b.sim > 0) ? b.sim : (b.source.v && b.target.v ? this.cosineSimilarity(b.source.v, b.target.v) : 0);
+                        return simB - simA;
+                    });
+
+                    pnLinks.slice(0, 5).forEach(l => linksToLabel.add(l));
+                });
+
+                // Also include direct links between primary nodes
+                this.links.forEach(l => {
+                    if (!l.source || !l.target || l.source.x === undefined || l.target.x === undefined) return;
+                    let isBetweenPrimary = (l.source.isKw && l.target.isKw) || (l.source.isFocusedVerse && l.target.isFocusedVerse) || (l.source.isFocusedBook && l.target.isFocusedBook);
+                    if (isBetweenPrimary) linksToLabel.add(l);
+                });
+            } else {
+                // Global/overview mode: top 5 links overall
+                let validLinks = this.links.filter(l => {
+                    if (!l.source || !l.target || l.source.x === undefined || l.target.x === undefined) return false;
+                    let matchSource = this.matchesTestament(l.source.t || l.source.testament);
+                    let matchTarget = this.matchesTestament(l.target.t || l.target.testament);
+                    return matchSource && matchTarget;
+                });
+                validLinks.sort((a, b) => {
+                    let simA = (typeof a.sim === 'number' && a.sim > 0) ? a.sim : (a.source.v && a.target.v ? this.cosineSimilarity(a.source.v, a.target.v) : 0);
+                    let simB = (typeof b.sim === 'number' && b.sim > 0) ? b.sim : (b.source.v && b.target.v ? this.cosineSimilarity(b.source.v, b.target.v) : 0);
+                    return simB - simA;
+                });
+                validLinks.slice(0, 5).forEach(l => linksToLabel.add(l));
+            }
+
+            // Also highlight connections for hovered node
+            if (this.hoveredNode) {
+                this.links.forEach(l => {
+                    if (l.source === this.hoveredNode || l.target === this.hoveredNode) {
+                        linksToLabel.add(l);
+                    }
+                });
+            }
+
+            linksToLabel.forEach(l => {
+                if (!l.source || !l.target || l.source.x === undefined || l.target.x === undefined) return;
+                let sim = (typeof l.sim === 'number' && l.sim > 0) ? l.sim : (l.source.v && l.target.v ? this.cosineSimilarity(l.source.v, l.target.v) : 0);
+                if (sim <= 0 || sim >= 0.9999) return;
+
+                let dx = l.target.x - l.source.x;
+                let dy = l.target.y - l.source.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist * this.transform.k < 32) return;
+
+                let isHovered = Boolean(this.hoveredNode && (l.source === this.hoveredNode || l.target === this.hoveredNode));
+                let pctStr = (sim * 100).toFixed(2) + '%';
+                let midX = (l.source.x + l.target.x) / 2;
+                let midY = (l.source.y + l.target.y) / 2;
+
+                this.ctx.save();
+                this.ctx.translate(midX, midY);
+                this.ctx.scale(1 / this.transform.k, 1 / this.transform.k);
+
+                let fontSize = 9.5;
+                this.ctx.font = `600 ${fontSize}px ${this.colors.font || 'sans-serif'}`;
+                let tw = this.ctx.measureText(pctStr).width;
+                let padX = 5;
+                let padY = 2.5;
+                let w = tw + padX * 2;
+                let h = fontSize + padY * 2;
+                let r = h / 2;
+
+                this.ctx.beginPath();
+                if (this.ctx.roundRect) {
+                    this.ctx.roundRect(-w / 2, -h / 2, w, h, r);
+                } else {
+                    this.ctx.arc(-w / 2 + r, 0, r, Math.PI / 2, Math.PI * 1.5);
+                    this.ctx.arc(w / 2 - r, 0, r, -Math.PI / 2, Math.PI / 2);
+                    this.ctx.closePath();
+                }
+
+                this.ctx.fillStyle = this.colors.cardBg || this.colors.bg || '#ffffff';
+                this.ctx.shadowColor = 'rgba(0, 0, 0, 0.16)';
+                this.ctx.shadowBlur = 4;
+                this.ctx.shadowOffsetX = 0;
+                this.ctx.shadowOffsetY = 1;
+                this.ctx.fill();
+
+                this.ctx.shadowColor = 'transparent';
+                this.ctx.lineWidth = 1;
+                this.ctx.strokeStyle = isHovered ? (this.colors.nodeHover || '#2563eb') : (this.colors.border || 'rgba(150, 150, 150, 0.4)');
+                this.ctx.stroke();
+
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillStyle = isHovered ? (this.colors.nodeHover || '#2563eb') : this.colors.text;
+                this.ctx.fillText(pctStr, 0, 0.5);
+
+                this.ctx.restore();
+            });
+        }
         
         let kwWordCounts = {};
         let nodeWordCounts = {};
