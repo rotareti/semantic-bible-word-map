@@ -2070,6 +2070,7 @@ class BibleWordMap extends HTMLElement {
         // Radial menu handlers
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e), {capture: true});
         this.canvas.addEventListener('click', (e) => this.handleClick(e), {capture: true});
+        this.canvas.addEventListener('contextmenu', (e) => this.handleContextMenu(e), {capture: true});
         this.canvas.addEventListener('mouseleave', () => {
             if (!this.radialMenuNode) {
                 this.hoveredNode = null;
@@ -2079,6 +2080,12 @@ class BibleWordMap extends HTMLElement {
         }, {capture: true});
         
         this.radialMenu = this.querySelector('#bwm-radial-menu');
+        if (this.radialMenu) {
+            this.radialMenu.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        }
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 if (this.closeActiveInfoWindows()) {
@@ -5470,6 +5477,42 @@ class BibleWordMap extends HTMLElement {
         });
         
         this.ctx.restore();
+        if (this.radialMenuNode) {
+            this.updateRadialMenuPosition();
+        }
+    }
+
+    updateRadialMenuPosition() {
+        if (!this.radialMenuNode || !this.radialMenu) return;
+        let node = this.radialMenuNode;
+        if (node.x === undefined || node.y === undefined) return;
+        let [rawX, rawY] = this.transform.apply([node.x, node.y]);
+        let canvasParent = this.canvas.parentElement;
+        if (!canvasParent) return;
+        let canvasRect = canvasParent.getBoundingClientRect();
+        let container = this.querySelector('.bwm-container');
+        if (!container) return;
+        let containerRect = container.getBoundingClientRect();
+        let offsetX = canvasRect.left - containerRect.left;
+        let offsetY = canvasRect.top - containerRect.top;
+        let screenX = rawX + offsetX;
+        let screenY = rawY + offsetY;
+
+        let items = this.radialMenu.querySelectorAll('.bwm-radial-item');
+        if (items.length === 0) return;
+        let nodeScreenR = (node.canvasR || 8) * this.transform.k;
+        let baseRadius = items.length >= 5 ? 52 : (items.length >= 4 ? 48 : 45);
+        let radius = Math.max(baseRadius, nodeScreenR + 26);
+        let startAngle = -Math.PI / 2;
+        let angleStep = (2 * Math.PI) / items.length;
+
+        items.forEach((el, i) => {
+            let angle = startAngle + i * angleStep;
+            let ix = screenX + radius * Math.cos(angle) - 18;
+            let iy = screenY + radius * Math.sin(angle) - 18;
+            el.style.left = ix + 'px';
+            el.style.top = iy + 'px';
+        });
     }
 
     handleMouseMove(e) {
@@ -5545,6 +5588,9 @@ class BibleWordMap extends HTMLElement {
         let mouseY = e.clientY - rect.top;
 
         let isDesktop = window.innerWidth > 768;
+        if (isDesktop && this.radialMenuNode) {
+            this.hideRadialMenu();
+        }
 
         if (this.viewMode === 'verses') {
             if (this.hoveredNode) {
@@ -5660,28 +5706,76 @@ class BibleWordMap extends HTMLElement {
         }
     }
 
+    handleContextMenu(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        let rect = this.canvas.getBoundingClientRect();
+        let mouseX = e.clientX - rect.left;
+        let mouseY = e.clientY - rect.top;
+
+        let [logicalX, logicalY] = this.transform.invert([mouseX, mouseY]);
+
+        let targetNode = null;
+        let minDist = Infinity;
+        let searchRadius = 24 / this.transform.k;
+
+        if (this.nodes) {
+            for (let n of this.nodes) {
+                let dx = n.x - logicalX;
+                let dy = n.y - logicalY;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+                let effectiveRadius = n.canvasR ? Math.max(searchRadius, n.canvasR * 1.4) : searchRadius;
+                if (dist < effectiveRadius && dist < minDist) {
+                    minDist = dist;
+                    targetNode = n;
+                }
+            }
+        }
+
+        if (!targetNode && this.hoveredNode) {
+            targetNode = this.hoveredNode;
+        }
+
+        if (targetNode) {
+            if (this.radialMenuNode === targetNode) {
+                this.hideRadialMenu();
+            } else {
+                this.showRadialMenu(targetNode, mouseX, mouseY);
+            }
+        } else {
+            this.hideRadialMenu();
+        }
+    }
+
     showRadialMenu(node, mouseX, mouseY) {
         this.hideRadialMenu();
-        this.hideWordInspector();
+        if (window.innerWidth <= 768) {
+            this.hideWordInspector();
+            if (this.verseCard && this.verseCard.classList.contains('visible')) this.hideVerseCard();
+            if (this.bookCard && this.bookCard.classList.contains('visible')) this.hideBookCard();
+        }
         this.radialMenuNode = node;
         this.hoveredNode = node;
         this.draw();
         
         // Compute screen position of the node center, offset by canvas position within container
         let [rawX, rawY] = this.transform.apply([node.x, node.y]);
-        let canvasRect = this.canvas.parentElement.getBoundingClientRect();
-        let containerRect = this.querySelector('.bwm-container').getBoundingClientRect();
+        let canvasParent = this.canvas.parentElement;
+        let canvasRect = canvasParent ? canvasParent.getBoundingClientRect() : this.canvas.getBoundingClientRect();
+        let container = this.querySelector('.bwm-container');
+        let containerRect = container ? container.getBoundingClientRect() : canvasRect;
         let offsetX = canvasRect.left - containerRect.left;
         let offsetY = canvasRect.top - containerRect.top;
         let screenX = rawX + offsetX;
         let screenY = rawY + offsetY;
         
-        let isAlreadyKw = this.isSearchMode && this.searchedWords && this.searchedWords.includes(node.id);
+        let isAlreadyKw = Boolean(node.isKw || (this.isSearchMode && this.searchedWords && this.searchedWords.includes(node.id)));
         let menuItems = [];
         if (this.viewMode === 'verses') {
             if (node.isVerse) {
-                let isAlreadyActive = this.searchedVerses && this.searchedVerses.includes(node.id);
-                if (isAlreadyActive && this.searchedVerses.length > 1) {
+                let isAlreadyActive = Boolean(this.searchedVerses && this.searchedVerses.includes(node.id));
+                if (isAlreadyActive) {
                     menuItems.push({
                         icon: '&minus;',
                         label: 'Remove verse from map',
@@ -5690,7 +5784,7 @@ class BibleWordMap extends HTMLElement {
                             this.removeVerse(node.id);
                         }
                     });
-                } else if (!isAlreadyActive) {
+                } else {
                     menuItems.push({
                         icon: '+',
                         label: 'Add verse to map',
@@ -5755,8 +5849,8 @@ class BibleWordMap extends HTMLElement {
             }
         } else if (this.viewMode === 'books') {
             if (node.isBook) {
-                let isAlreadyActive = this.searchedBooks && this.searchedBooks.includes(node.code);
-                if (isAlreadyActive && this.searchedBooks.length > 1) {
+                let isAlreadyActive = Boolean(this.searchedBooks && this.searchedBooks.includes(node.code));
+                if (isAlreadyActive) {
                     menuItems.push({
                         icon: '&minus;',
                         label: 'Remove book from map',
@@ -5765,7 +5859,7 @@ class BibleWordMap extends HTMLElement {
                             this.removeBook(node.code);
                         }
                     });
-                } else if (!isAlreadyActive) {
+                } else {
                     menuItems.push({
                         icon: '+',
                         label: 'Add book to map',
@@ -5827,7 +5921,7 @@ class BibleWordMap extends HTMLElement {
             }
         } else {
             if (isAlreadyKw) {
-                menuItems.push({ icon: '-', label: 'Remove keyword', action: () => { this.hideRadialMenu(); this.removeKeyword(node.id); } });
+                menuItems.push({ icon: '&minus;', label: 'Remove keyword', action: () => { this.hideRadialMenu(); this.removeKeyword(node.id); } });
             } else {
                 menuItems.push({ icon: '+', label: 'Add keyword', action: () => { this.hideRadialMenu(); this.addKeyword(node.id); } });
             }
@@ -5847,7 +5941,9 @@ class BibleWordMap extends HTMLElement {
         }
         
         this.radialMenu.innerHTML = '';
-        let radius = menuItems.length >= 5 ? 52 : (menuItems.length >= 4 ? 48 : 45);
+        let nodeScreenR = (node.canvasR || 8) * this.transform.k;
+        let baseRadius = menuItems.length >= 5 ? 52 : (menuItems.length >= 4 ? 48 : 45);
+        let radius = Math.max(baseRadius, nodeScreenR + 26);
         let startAngle = -Math.PI / 2; // start from top
         let angleStep = (2 * Math.PI) / menuItems.length;
         
@@ -5865,6 +5961,10 @@ class BibleWordMap extends HTMLElement {
             el.addEventListener('click', (e) => {
                 e.stopPropagation();
                 item.action();
+            });
+            el.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
             });
             el.addEventListener('touchstart', (e) => {
                 e.stopPropagation();
