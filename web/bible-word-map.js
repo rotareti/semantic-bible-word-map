@@ -870,16 +870,52 @@ class BibleWordMap extends HTMLElement {
                     border-color: var(--bwm-node-hover);
                     font-weight: 600;
                 }
-                #bwm-foundation-filter .bwm-pill-btn {
-                    flex: 1 1 calc(33.333% - 6px);
-                    font-weight: 600;
-                    letter-spacing: 0.5px;
+                #bwm-foundation-filter,
+                #bwm-sim-labels-filter {
+                    display: flex;
+                    width: 100%;
+                    box-sizing: border-box;
+                    background: var(--bwm-btn-bg);
+                    border: 1px solid var(--bwm-border);
+                    border-radius: 20px;
+                    padding: 3px;
+                    gap: 3px;
+                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+                    user-select: none;
+                    flex-wrap: nowrap;
+                    margin-top: 10px;
                 }
+                #bwm-foundation-filter .bwm-pill-btn,
                 #bwm-sim-labels-filter .bwm-pill-btn {
-                    flex: 1 1 calc(33.333% - 6px);
-                    font-weight: 500;
+                    flex: 1 1 0;
+                    background: transparent;
+                    border: none;
+                    padding: 5px 6px;
+                    border-radius: 16px;
+                    font-size: 0.82em;
+                    font-weight: 600;
+                    color: var(--bwm-text-muted);
+                    cursor: pointer;
+                    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+                    text-align: center;
                     white-space: nowrap;
-                    padding: 7px 4px;
+                    font-family: var(--bwm-font);
+                }
+                #bwm-foundation-filter .bwm-pill-btn:hover,
+                #bwm-sim-labels-filter .bwm-pill-btn:hover {
+                    background: transparent;
+                    color: var(--bwm-text);
+                }
+                #bwm-foundation-filter .bwm-pill-btn.active,
+                #bwm-sim-labels-filter .bwm-pill-btn.active {
+                    background: var(--bwm-node-hover);
+                    color: #ffffff;
+                    border: none;
+                    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.35);
+                    font-weight: 600;
+                }
+                #bwm-foundation-filter .bwm-pill-btn {
+                    letter-spacing: 0.5px;
                 }
                 .bwm-active-word-item {
                     display: flex;
