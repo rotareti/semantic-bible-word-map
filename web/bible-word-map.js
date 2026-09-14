@@ -632,25 +632,32 @@ class BibleWordMap extends HTMLElement {
                 .bwm-radial-item:hover {
                     background: rgba(51, 51, 51, 0.9);
                     transform: scale(1.15);
+                    z-index: 100;
                 }
                 .bwm-radial-item:active {
                     transform: scale(0.95);
+                    z-index: 100;
                 }
                 .bwm-radial-label {
                     position: absolute;
-                    top: -22px;
+                    top: -24px;
                     left: 50%;
                     transform: translateX(-50%);
                     white-space: nowrap;
                     font-size: 11px;
                     font-weight: 600;
                     color: #ffffff;
-                    background: rgba(0, 0, 0, 0.75);
-                    padding: 2px 6px;
+                    background: rgba(0, 0, 0, 0.85);
+                    padding: 3px 7px;
                     border-radius: 4px;
                     pointer-events: none;
                     opacity: 0;
                     transition: opacity 0.15s;
+                    z-index: 101;
+                    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+                }
+                .bwm-radial-item.pos-bottom .bwm-radial-label {
+                    top: calc(100% + 6px);
                 }
                 .bwm-radial-item:hover .bwm-radial-label {
                     opacity: 1;
@@ -2154,6 +2161,10 @@ class BibleWordMap extends HTMLElement {
                         this.draw();
                         this.ignoreNextClick = true;
                     }, 500);
+                } else {
+                    this.hoveredNode = null;
+                    if (this.radialMenuNode) this.hideRadialMenu();
+                    this.draw();
                 }
             }
         }, {passive: true, capture: true});
@@ -2176,13 +2187,12 @@ class BibleWordMap extends HTMLElement {
             if (this.touchTimer) {
                 clearTimeout(this.touchTimer);
                 this.touchTimer = null;
-                // If it was a short tap, the simulated click event will fire.
-                // We set the hoveredNode so handleClick can process the additive search!
-                if (this.touchTargetNode) {
-                    this.hoveredNode = this.touchTargetNode;
-                } else {
-                    this.hoveredNode = null;
-                }
+            }
+            if (this.touchTargetNode) {
+                this.hoveredNode = this.touchTargetNode;
+            } else {
+                this.hoveredNode = null;
+                this.draw();
             }
         }, {passive: true, capture: true});
         
@@ -5512,6 +5522,11 @@ class BibleWordMap extends HTMLElement {
             let iy = screenY + radius * Math.sin(angle) - 18;
             el.style.left = ix + 'px';
             el.style.top = iy + 'px';
+            if (Math.sin(angle) > 0.2) {
+                el.classList.add('pos-bottom');
+            } else {
+                el.classList.remove('pos-bottom');
+            }
         });
     }
 
@@ -5580,12 +5595,22 @@ class BibleWordMap extends HTMLElement {
         }
         if (this.isTouch && this.touchCloseTooltip) {
             this.touchCloseTooltip = false;
+            this.hoveredNode = null;
+            this.draw();
             return;
         }
 
         let rect = this.canvas.getBoundingClientRect();
         let mouseX = e.clientX - rect.left;
         let mouseY = e.clientY - rect.top;
+
+        if (this.isTouch && !this.touchTargetNode) {
+            this.hoveredNode = null;
+            this.hideRadialMenu();
+            this.hideWordInspector();
+            this.draw();
+            return;
+        }
 
         let isDesktop = window.innerWidth > 768;
         if (isDesktop && this.radialMenuNode) {
@@ -5632,9 +5657,11 @@ class BibleWordMap extends HTMLElement {
             } else {
                 this.hideRadialMenu();
                 this.hideWordInspector();
+                this.hoveredNode = null;
                 if (this.verseCard && this.verseCard.classList.contains('visible')) {
                     this.hideVerseCard();
                 }
+                this.draw();
             }
             return;
         }
@@ -5679,9 +5706,11 @@ class BibleWordMap extends HTMLElement {
             } else {
                 this.hideRadialMenu();
                 this.hideWordInspector();
+                this.hoveredNode = null;
                 if (this.bookCard && this.bookCard.classList.contains('visible')) {
                     this.hideBookCard();
                 }
+                this.draw();
             }
             return;
         }
@@ -5703,6 +5732,8 @@ class BibleWordMap extends HTMLElement {
         } else {
             this.hideRadialMenu();
             this.hideWordInspector();
+            this.hoveredNode = null;
+            this.draw();
         }
     }
 
@@ -5954,6 +5985,9 @@ class BibleWordMap extends HTMLElement {
             
             let el = document.createElement('div');
             el.className = 'bwm-radial-item';
+            if (Math.sin(angle) > 0.2) {
+                el.classList.add('pos-bottom');
+            }
             el.style.left = ix + 'px';
             el.style.top = iy + 'px';
             el.innerHTML = `${item.icon}<span class="bwm-radial-label">${item.label}</span>`;
