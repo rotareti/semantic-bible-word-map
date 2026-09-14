@@ -19,46 +19,6 @@
                 <button type="button" class="view-mode-pill" id="view-mode-verses" data-mode="verses">Verses</button>
                 <button type="button" class="view-mode-pill" id="view-mode-books" data-mode="books">Books</button>
             </div>
-            <div class="info-wrapper">
-                <div class="info-btn" id="info-btn" title="Map Guide & Legend">i</div>
-                <div class="info-panel" id="info-panel">
-                    <div class="info-sheet-handle" id="info-sheet-handle"></div>
-                    <div class="info-close" id="info-close">&times;</div>
-                    <div class="info-body" id="info-body">
-                        <div style="font-size: 1.05em; font-weight: 700; margin-bottom: 8px; color: var(--heading-color);">Map Guide & Legend</div>
-                        Explore the Holy Scriptures through a semantic lens. Switch between the Berean Standard Bible (BSB), Greek Septuagint / New Testament (LXX), and Latin Clementine Vulgate (VUL) in Options. Each dot represents a word, biblical book, or verse centroid, and physical distance indicates semantic proximity based on biblical usage.
-                        <br><br>
-                        <strong>Word Colors:</strong><br>
-                        <span style="color: #4ade80;">■</span> Proper Nouns (Names, Places)<br>
-                        <span style="color: #60a5fa;">■</span> Nouns (Objects, Concepts)<br>
-                        <span style="color: #f472b6;">■</span> Verbs (Actions)<br>
-                        <span style="color: #fbbf24;">■</span> Adjectives & Adverbs<br>
-                        <span style="color: #94a3b8;">■</span> Other
-                        <br><br>
-                        <strong>Book & Verse Genres:</strong><br>
-                        <span style="color: #3b82f6;">■</span> Law (Pentateuch)<br>
-                        <span style="color: #10b981;">■</span> History<br>
-                        <span style="color: #a855f7;">■</span> Deuterocanon<br>
-                        <span style="color: #f59e0b;">■</span> Wisdom & Poetry<br>
-                        <span style="color: #8b5cf6;">■</span> Major Prophets<br>
-                        <span style="color: #ec4899;">■</span> Minor Prophets<br>
-                        <span style="color: #ef4444;">■</span> Gospels<br>
-                        <span style="color: #06b6d4;">■</span> Pauline Epistles<br>
-                        <span style="color: #14b8a6;">■</span> General Epistles<br>
-                        <span style="color: #e11d48;">■</span> Apocalypse
-                        <br><br>
-                        <strong>Connection Lines:</strong><br>
-                        <div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
-                            <span class="legend-line legend-line-direct"></span>
-                            <span>Direct Link (single verse linked words / word constellation)</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
-                            <span class="legend-line legend-line-indirect"></span>
-                            <span>Grey Link (indirect semantic links)</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </header>
     <main>
@@ -69,155 +29,14 @@
     </footer>
     <script src="bible-word-map.js?v=8.0.0" type="module"></script>
     <script>
-        const btn = document.getElementById('info-btn');
-        const panel = document.getElementById('info-panel');
-        const closeBtn = document.getElementById('info-close');
-        const infoBody = document.getElementById('info-body');
         const mapEl = document.querySelector('bible-word-map');
-        let pinned = false;
-
-        function openInfoPanel() {
-            pinned = true;
-            if (mapEl && mapEl.closeActiveInfoWindows) {
-                mapEl.closeActiveInfoWindows();
-            }
-            panel.style.transform = '';
-            panel.style.transition = '';
-            panel.style.opacity = '';
-            panel.classList.add('visible', 'pinned');
-            if (infoBody) infoBody.scrollTop = 0;
-        }
-
-        function closeInfoPanel() {
-            pinned = false;
-            panel.classList.remove('visible', 'pinned');
-            panel.style.transform = '';
-            panel.style.transition = '';
-            panel.style.opacity = '';
-        }
-
-        btn.addEventListener('mouseenter', () => { 
-            if (window.innerWidth > 768 && !pinned) panel.classList.add('visible'); 
-        });
-        btn.addEventListener('mouseleave', () => { 
-            if (window.innerWidth > 768 && !pinned) panel.classList.remove('visible'); 
-        });
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (panel.classList.contains('visible')) {
-                closeInfoPanel();
-            } else {
-                openInfoPanel();
-            }
-        });
-        closeBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            closeInfoPanel();
-        });
-
-        // Close when clicking outside panel
-        document.addEventListener('click', (e) => {
-            if (panel.classList.contains('visible')) {
-                if (!panel.contains(e.target) && !btn.contains(e.target)) {
-                    closeInfoPanel();
-                }
-            }
-        });
-
-        // Mobile Swipe-to-Dismiss Gesture
-        let startY = 0;
-        let startX = 0;
-        let currentY = 0;
-        let startTime = 0;
-        let isDragging = false;
-        let canDrag = false;
-
-        const onTouchMove = (e) => {
-            if (!e.touches || e.touches.length === 0) return;
-            const touch = e.touches[0];
-            currentY = touch.clientY;
-            const dy = currentY - startY;
-            const dx = touch.clientX - startX;
-
-            if (!isDragging) {
-                if (infoBody && infoBody.scrollTop > 0) {
-                    canDrag = false;
-                }
-                if (canDrag && dy > 8 && Math.abs(dy) > Math.abs(dx) * 1.15) {
-                    isDragging = true;
-                    panel.style.transition = 'none';
-                }
-            }
-
-            if (isDragging) {
-                if (e.cancelable) e.preventDefault();
-                e.stopPropagation();
-                if (dy > 0) {
-                    panel.style.transform = `translateY(${dy}px)`;
-                } else {
-                    panel.style.transform = `translateY(${dy * 0.2}px)`;
-                }
-            }
-        };
-
-        const onTouchEnd = (e) => {
-            window.removeEventListener('touchmove', onTouchMove, { capture: true });
-            window.removeEventListener('touchend', onTouchEnd, { capture: true });
-            window.removeEventListener('touchcancel', onTouchEnd, { capture: true });
-
-            if (!isDragging) return;
-            isDragging = false;
-            e.stopPropagation();
-
-            panel.style.transition = 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease';
-
-            const dy = currentY - startY;
-            const elapsed = Math.max(1, performance.now() - startTime);
-            const vy = dy / elapsed;
-
-            if (dy > 70 || (dy > 25 && vy > 0.35)) {
-                panel.style.transform = 'translateY(105%)';
-                panel.style.opacity = '0';
-                setTimeout(() => {
-                    closeInfoPanel();
-                }, 220);
-            } else {
-                panel.style.transform = 'translateY(0)';
-                setTimeout(() => {
-                    panel.style.transition = '';
-                }, 240);
-            }
-        };
-
-        panel.addEventListener('touchstart', (e) => {
-            if (window.innerWidth > 768) return;
-            if (!e.touches || e.touches.length === 0) return;
-
-            const touch = e.touches[0];
-            startY = touch.clientY;
-            startX = touch.clientX;
-            currentY = startY;
-            startTime = performance.now();
-            isDragging = false;
-
-            const targetInBody = touch.target.closest('#info-body');
-            if (targetInBody) {
-                canDrag = (infoBody.scrollTop <= 0);
-            } else {
-                canDrag = true;
-            }
-
-            window.addEventListener('touchmove', onTouchMove, { capture: true, passive: false });
-            window.addEventListener('touchend', onTouchEnd, { capture: true });
-            window.addEventListener('touchcancel', onTouchEnd, { capture: true });
-        }, { passive: true });
 
         // Title click: reset current view back to landscape without changing mode
         const titleBtn = document.getElementById('header-title-text');
         if (titleBtn) {
             const handleTitleReset = () => {
-                if (typeof closeInfoPanel === 'function') {
-                    closeInfoPanel();
+                if (mapEl && mapEl.hideLegendWindow) {
+                    mapEl.hideLegendWindow();
                 }
                 if (mapEl && mapEl.resetCurrentView) {
                     mapEl.resetCurrentView();

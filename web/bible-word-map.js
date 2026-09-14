@@ -739,6 +739,43 @@ class BibleWordMap extends HTMLElement {
                     overflow-y: auto;
                     flex: 1;
                 }
+                .bwm-drawer-legend-btn {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    width: 100%;
+                    box-sizing: border-box;
+                    padding: 11px 14px;
+                    margin-bottom: 20px;
+                    background: color-mix(in srgb, var(--bwm-btn-bg) 80%, var(--bwm-text) 5%);
+                    border: 1px solid var(--bwm-border);
+                    border-radius: 8px;
+                    font-size: 0.93em;
+                    font-weight: 600;
+                    color: var(--bwm-text);
+                    cursor: pointer;
+                    user-select: none;
+                    text-align: left;
+                    font-family: inherit;
+                    transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+                }
+                .bwm-drawer-legend-btn:hover {
+                    background: var(--bwm-btn-hover);
+                    border-color: var(--bwm-node-hover);
+                    color: var(--bwm-node-hover);
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+                }
+                .bwm-drawer-legend-btn:focus-visible {
+                    outline: 2px solid var(--bwm-node-hover);
+                    outline-offset: 2px;
+                }
+                .bwm-drawer-legend-btn svg {
+                    flex-shrink: 0;
+                    transition: transform 0.15s ease;
+                }
+                .bwm-drawer-legend-btn:hover svg {
+                    transform: translateX(2px);
+                }
                 .bwm-drawer-section {
                     margin-bottom: 24px;
                 }
@@ -1699,6 +1736,205 @@ class BibleWordMap extends HTMLElement {
                     .bwm-canon-testament-layout {
                         flex-direction: column;
                     }
+                /* 7. Full Map Space Legend & Guide Window */
+                .bwm-legend-overlay {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background-color: var(--bwm-bg);
+                    background-color: color-mix(in srgb, var(--bwm-bg) 98%, transparent);
+                    backdrop-filter: blur(20px);
+                    -webkit-backdrop-filter: blur(20px);
+                    z-index: 10050;
+                    display: flex;
+                    flex-direction: column;
+                    opacity: 0;
+                    pointer-events: none;
+                    transform: scale(0.985);
+                    transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+                    color: var(--bwm-text);
+                    font-family: var(--bwm-font);
+                    box-sizing: border-box;
+                }
+                .bwm-legend-overlay.visible {
+                    opacity: 1;
+                    pointer-events: auto;
+                    transform: scale(1);
+                }
+                .bwm-legend-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 12px 20px;
+                    border-bottom: 1px solid var(--bwm-border);
+                    background: color-mix(in srgb, var(--bwm-bg) 96%, transparent);
+                    flex-shrink: 0;
+                    gap: 12px;
+                }
+                .bwm-legend-back-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 7px 14px;
+                    border-radius: 8px;
+                    border: 1px solid var(--bwm-border);
+                    background: var(--bwm-btn-bg);
+                    color: var(--bwm-text);
+                    font-size: 0.9em;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: background 0.15s, border-color 0.15s, color 0.15s;
+                    user-select: none;
+                }
+                .bwm-legend-back-btn:hover {
+                    background: var(--bwm-btn-hover);
+                    border-color: var(--bwm-node-hover);
+                    color: var(--bwm-node-hover);
+                }
+                .bwm-legend-back-btn:focus-visible {
+                    outline: 2px solid var(--bwm-node-hover);
+                    outline-offset: 2px;
+                }
+                .bwm-legend-title {
+                    margin: 0;
+                    font-size: 1.15em;
+                    font-weight: 700;
+                    color: var(--bwm-text);
+                    text-align: center;
+                    flex: 1;
+                }
+                .bwm-legend-close-btn {
+                    background: transparent;
+                    border: 1px solid transparent;
+                    font-size: 1.6em;
+                    line-height: 1;
+                    color: var(--bwm-text-muted);
+                    cursor: pointer;
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 8px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: color 0.15s, background 0.15s, border-color 0.15s;
+                }
+                .bwm-legend-close-btn:hover {
+                    color: var(--bwm-text);
+                    background: var(--bwm-btn-hover);
+                    border-color: var(--bwm-border);
+                }
+                .bwm-legend-close-btn:focus-visible {
+                    outline: 2px solid var(--bwm-node-hover);
+                    outline-offset: 2px;
+                }
+                .bwm-legend-body {
+                    flex: 1;
+                    overflow-y: auto;
+                    padding: 24px 20px 40px 20px;
+                    display: flex;
+                    justify-content: center;
+                }
+                .bwm-legend-content {
+                    width: 100%;
+                    max-width: 860px;
+                    line-height: 1.6;
+                }
+                .bwm-legend-intro {
+                    font-size: 0.98em;
+                    color: var(--bwm-text-muted);
+                    margin: 0 0 20px 0;
+                    line-height: 1.6;
+                    background: color-mix(in srgb, var(--bwm-btn-bg) 60%, transparent);
+                    padding: 14px 18px;
+                    border-radius: 10px;
+                    border: 1px solid var(--bwm-border);
+                }
+                .bwm-legend-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 20px;
+                }
+                @media (max-width: 720px) {
+                    .bwm-legend-grid {
+                        grid-template-columns: 1fr;
+                    }
+                }
+                .bwm-legend-card {
+                    background: color-mix(in srgb, var(--bwm-btn-bg) 45%, transparent);
+                    border: 1px solid var(--bwm-border);
+                    border-radius: 10px;
+                    padding: 18px 20px;
+                }
+                .bwm-legend-card-title {
+                    margin: 0 0 12px 0;
+                    font-size: 0.92em;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    color: var(--bwm-text);
+                    opacity: 0.9;
+                }
+                .bwm-legend-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                }
+                .bwm-legend-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    font-size: 0.92em;
+                }
+                .bwm-legend-color-dot {
+                    width: 14px;
+                    height: 14px;
+                    border-radius: 4px;
+                    flex-shrink: 0;
+                }
+                .bwm-legend-label {
+                    color: var(--bwm-text);
+                }
+                .bwm-legend-sub {
+                    color: var(--bwm-text-muted);
+                    font-size: 0.88em;
+                }
+                .bwm-legend-line {
+                    display: inline-block;
+                    width: 24px;
+                    height: 4px;
+                    border-radius: 2px;
+                    flex-shrink: 0;
+                }
+                .bwm-legend-line-direct {
+                    background-color: #16a34a;
+                }
+                .bwm-legend-line-indirect {
+                    background-color: #94a3b8;
+                }
+                .bwm-legend-genres-grid {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                }
+                .bwm-legend-genres-grid .bwm-book-badge {
+                    font-size: 0.78em;
+                    padding: 4px 10px;
+                    border-radius: 14px;
+                }
+                .bwm-legend-tips {
+                    margin: 0;
+                    padding-left: 18px;
+                    font-size: 0.9em;
+                    color: var(--bwm-text-muted);
+                    line-height: 1.55;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                }
+                .bwm-legend-tips strong {
+                    color: var(--bwm-text);
                 }
             </style>
             <div class="bwm-container">
@@ -1721,6 +1957,12 @@ class BibleWordMap extends HTMLElement {
                         <div class="bwm-drawer-close" id="bwm-drawer-close">&times;</div>
                     </div>
                     <div class="bwm-drawer-content">
+                        <button type="button" class="bwm-drawer-legend-btn" id="bwm-drawer-legend-btn" title="Open Map Guide &amp; Legend">
+                            <span>Show Legend</span>
+                            <svg class="bwm-chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </button>
                         <div class="bwm-drawer-section">
                             <div class="bwm-drawer-section-header">
                                 <h4 id="bwm-active-heading">Active Words</h4>
@@ -1813,6 +2055,136 @@ class BibleWordMap extends HTMLElement {
                 <div class="bwm-window-card bwm-word-card" id="bwm-word-card"></div>
                 <div class="bwm-window-card bwm-book-card" id="bwm-book-card"></div>
                 <div class="bwm-window-card bwm-verse-card" id="bwm-verse-card"></div>
+                <div class="bwm-legend-overlay" id="bwm-legend-overlay">
+                    <div class="bwm-legend-header">
+                        <button type="button" class="bwm-legend-back-btn" id="bwm-legend-back-btn" aria-label="Back to Map View" title="Back to Map View">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+                                <polyline points="15 18 9 12 15 6"></polyline>
+                            </svg>
+                            <span>Map View</span>
+                        </button>
+                        <h3 class="bwm-legend-title">Map Guide &amp; Legend</h3>
+                        <button type="button" class="bwm-legend-close-btn" id="bwm-legend-close-btn" aria-label="Close Legend" title="Close Legend">&times;</button>
+                    </div>
+                    <div class="bwm-legend-body">
+                        <div class="bwm-legend-content">
+                            <div class="bwm-legend-intro">
+                                Explore the Holy Scriptures through a semantic lens. Switch between the Berean Standard Bible (BSB), Greek Septuagint / New Testament (LXX), and Latin Clementine Vulgate (VUL) in Options. Each dot represents a word, biblical book, or verse centroid, and physical distance indicates semantic proximity based on biblical usage.
+                            </div>
+                            <div class="bwm-legend-grid">
+                                <div class="bwm-legend-card">
+                                    <h4 class="bwm-legend-card-title">Word Colors (Part of Speech)</h4>
+                                    <div class="bwm-legend-list">
+                                        <div class="bwm-legend-item">
+                                            <span class="bwm-legend-color-dot" style="background-color: #4ade80;"></span>
+                                            <div>
+                                                <div class="bwm-legend-label">Proper Nouns</div>
+                                                <div class="bwm-legend-sub">People, Places, Divine Titles</div>
+                                            </div>
+                                        </div>
+                                        <div class="bwm-legend-item">
+                                            <span class="bwm-legend-color-dot" style="background-color: #60a5fa;"></span>
+                                            <div>
+                                                <div class="bwm-legend-label">Nouns</div>
+                                                <div class="bwm-legend-sub">Objects, Entities, Theological Concepts</div>
+                                            </div>
+                                        </div>
+                                        <div class="bwm-legend-item">
+                                            <span class="bwm-legend-color-dot" style="background-color: #f472b6;"></span>
+                                            <div>
+                                                <div class="bwm-legend-label">Verbs</div>
+                                                <div class="bwm-legend-sub">Actions, Commands, Events</div>
+                                            </div>
+                                        </div>
+                                        <div class="bwm-legend-item">
+                                            <span class="bwm-legend-color-dot" style="background-color: #fbbf24;"></span>
+                                            <div>
+                                                <div class="bwm-legend-label">Adjectives &amp; Adverbs</div>
+                                                <div class="bwm-legend-sub">Qualifiers, Modifiers, Descriptions</div>
+                                            </div>
+                                        </div>
+                                        <div class="bwm-legend-item">
+                                            <span class="bwm-legend-color-dot" style="background-color: #94a3b8;"></span>
+                                            <div>
+                                                <div class="bwm-legend-label">Other</div>
+                                                <div class="bwm-legend-sub">Conjunctions, Pronouns, Particles</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bwm-legend-card">
+                                    <h4 class="bwm-legend-card-title">Connection Lines</h4>
+                                    <div class="bwm-legend-list">
+                                        <div class="bwm-legend-item">
+                                            <span class="bwm-legend-line bwm-legend-line-direct"></span>
+                                            <div>
+                                                <div class="bwm-legend-label">Direct Semantic Connections</div>
+                                                <div class="bwm-legend-sub">Single verse linked words / word constellations</div>
+                                            </div>
+                                        </div>
+                                        <div class="bwm-legend-item">
+                                            <span class="bwm-legend-line bwm-legend-line-indirect"></span>
+                                            <div>
+                                                <div class="bwm-legend-label">Secondary / Bridge Links</div>
+                                                <div class="bwm-legend-sub">Indirect semantic links and contextual proximity</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bwm-legend-card">
+                                    <h4 class="bwm-legend-card-title">Testament Highlighting</h4>
+                                    <div class="bwm-legend-list">
+                                        <div class="bwm-legend-item">
+                                            <span class="bwm-legend-color-dot" style="background-color: #3b82f6;"></span>
+                                            <div>
+                                                <div class="bwm-legend-label">Old Testament Exclusive</div>
+                                                <div class="bwm-legend-sub">Appears only in Old Testament books</div>
+                                            </div>
+                                        </div>
+                                        <div class="bwm-legend-item">
+                                            <span class="bwm-legend-color-dot" style="background-color: #10b981;"></span>
+                                            <div>
+                                                <div class="bwm-legend-label">New Testament Exclusive</div>
+                                                <div class="bwm-legend-sub">Appears only in New Testament books</div>
+                                            </div>
+                                        </div>
+                                        <div class="bwm-legend-item">
+                                            <span class="bwm-legend-color-dot" style="background-color: #8b5cf6;"></span>
+                                            <div>
+                                                <div class="bwm-legend-label">Shared Vocabulary</div>
+                                                <div class="bwm-legend-sub">Spans across both Testaments</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bwm-legend-card">
+                                    <h4 class="bwm-legend-card-title">Book &amp; Verse Genres</h4>
+                                    <div class="bwm-legend-genres-grid">
+                                        <span class="bwm-book-badge" style="background: #3b82f6;">Law</span>
+                                        <span class="bwm-book-badge" style="background: #10b981;">History</span>
+                                        <span class="bwm-book-badge" style="background: #a855f7;">Deuterocanon</span>
+                                        <span class="bwm-book-badge" style="background: #f59e0b;">Wisdom &amp; Poetry</span>
+                                        <span class="bwm-book-badge" style="background: #8b5cf6;">Major Prophets</span>
+                                        <span class="bwm-book-badge" style="background: #ec4899;">Minor Prophets</span>
+                                        <span class="bwm-book-badge" style="background: #ef4444;">Gospels</span>
+                                        <span class="bwm-book-badge" style="background: #06b6d4;">Pauline Epistles</span>
+                                        <span class="bwm-book-badge" style="background: #14b8a6;">General Epistles</span>
+                                        <span class="bwm-book-badge" style="background: #e11d48;">Apocalypse</span>
+                                    </div>
+                                </div>
+                                <div class="bwm-legend-card" style="grid-column: 1 / -1;">
+                                    <h4 class="bwm-legend-card-title">Navigation &amp; Controls</h4>
+                                    <ul class="bwm-legend-tips">
+                                        <li><strong>Left Click / Tap:</strong> Select word, verse, or book to inspect details in the study drawer.</li>
+                                        <li><strong>Right Click:</strong> Open quick actions radial menu on bubbles to add/remove keywords or view references.</li>
+                                        <li><strong>Scroll Wheel / Pinch:</strong> Zoom smoothly into dense semantic constellations.</li>
+                                        <li><strong>Click &amp; Drag:</strong> Pan freely across the semantic projection landscape.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -2214,6 +2586,30 @@ class BibleWordMap extends HTMLElement {
             this.drawer.classList.remove('open');
             this.drawerToggle.classList.remove('active');
         });
+
+        this.legendOverlay = this.querySelector('#bwm-legend-overlay');
+        this.legendBackBtn = this.querySelector('#bwm-legend-back-btn');
+        this.legendCloseBtn = this.querySelector('#bwm-legend-close-btn');
+        this.drawerLegendBtn = this.querySelector('#bwm-drawer-legend-btn');
+
+        if (this.drawerLegendBtn) {
+            this.drawerLegendBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.showLegendWindow();
+            });
+        }
+        if (this.legendBackBtn) {
+            this.legendBackBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.hideLegendWindow();
+            });
+        }
+        if (this.legendCloseBtn) {
+            this.legendCloseBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.hideLegendWindow();
+            });
+        }
         
         // Close radial menu, word card, book card, and drawer when clicking outside
         document.addEventListener('click', (e) => {
@@ -3544,6 +3940,7 @@ class BibleWordMap extends HTMLElement {
         this.selectedVerse = null;
         this.hideBookCard();
         this.hideVerseCard();
+        this.hideLegendWindow();
         if (this.reopenBtn) this.reopenBtn.style.display = 'none';
         if (this.verseReopenBtn) this.verseReopenBtn.style.display = 'none';
         if (this.verseModeSection) {
@@ -4055,6 +4452,24 @@ class BibleWordMap extends HTMLElement {
         this.buildBooksGraph();
     }
 
+    showLegendWindow() {
+        if (!this.legendOverlay) return;
+        this.closeActiveInfoWindows();
+        this.hideRadialMenu();
+        if (this.drawer) {
+            this.drawer.classList.remove('open');
+        }
+        if (this.drawerToggle) {
+            this.drawerToggle.classList.remove('active');
+        }
+        this.legendOverlay.classList.add('visible');
+    }
+
+    hideLegendWindow() {
+        if (!this.legendOverlay) return;
+        this.legendOverlay.classList.remove('visible');
+    }
+
     closeActiveInfoWindows() {
         let closedAny = false;
         if (this.wordCard && this.wordCard.classList.contains('visible')) {
@@ -4067,6 +4482,10 @@ class BibleWordMap extends HTMLElement {
         }
         if (this.verseCard && this.verseCard.classList.contains('visible')) {
             this.hideVerseCard();
+            closedAny = true;
+        }
+        if (this.legendOverlay && this.legendOverlay.classList.contains('visible')) {
+            this.hideLegendWindow();
             closedAny = true;
         }
         return closedAny;
