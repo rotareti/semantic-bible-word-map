@@ -402,6 +402,7 @@ class BibleWordMap extends HTMLElement {
         this.drawerVerses = [];
         this.viewMode = 'words';
         this.testamentFilter = 'all';
+        this.showSimilarityLabels = false;
         this.isSearchMode = false;
         this.searchedWords = [];
         this.nodes = [];
@@ -1764,6 +1765,16 @@ class BibleWordMap extends HTMLElement {
                             </div>
                             <div class="bwm-drawer-hint">Highlight words by presence in Old or New Testament.</div>
                         </div>
+                        <div class="bwm-drawer-section">
+                            <div class="bwm-drawer-section-header">
+                                <h4>Similarity Labels</h4>
+                            </div>
+                            <div class="bwm-pill-group" id="bwm-sim-labels-filter">
+                                <button type="button" class="bwm-pill-btn active" data-sim-labels="off">Off</button>
+                                <button type="button" class="bwm-pill-btn" data-sim-labels="on">Show All</button>
+                            </div>
+                            <div class="bwm-drawer-hint">Display semantic similarity percentages along connecting lines.</div>
+                        </div>
                     </div>
                 </div>
                 <div class="bwm-canvas-container">
@@ -1937,6 +1948,7 @@ class BibleWordMap extends HTMLElement {
             nodeHover: styles.getPropertyValue('--bwm-node-hover').trim() || '#2563eb',
             linkDir: styles.getPropertyValue('--bwm-link-direct').trim() || 'rgba(40, 167, 69, 0.6)',
             linkIndir: styles.getPropertyValue('--bwm-link-indirect').trim() || 'rgba(150, 150, 150, 0.2)',
+            textMuted: styles.getPropertyValue('--bwm-text-muted').trim() || '#666666',
             font: styles.getPropertyValue('--bwm-font').trim() || 'sans-serif'
         };
     }
@@ -2026,6 +2038,16 @@ class BibleWordMap extends HTMLElement {
                 testamentPills.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 this.testamentFilter = btn.getAttribute('data-testament') || 'all';
+                this.draw();
+            });
+        });
+
+        const simLabelPills = this.querySelectorAll('#bwm-sim-labels-filter .bwm-pill-btn');
+        simLabelPills.forEach(btn => {
+            btn.addEventListener('click', () => {
+                simLabelPills.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.showSimilarityLabels = (btn.getAttribute('data-sim-labels') === 'on');
                 this.draw();
             });
         });
@@ -5168,55 +5190,24 @@ class BibleWordMap extends HTMLElement {
         });
         this.ctx.globalAlpha = 1.0;
         
-        // Draw percentage labels on top 5 semantic connections centered on connecting lines
-        if (this.links && this.links.length > 0) {
-            let primaryNodes = this.nodes.filter(n => n.isKw || n.isFocusedVerse || n.isFocusedBook);
+        // Draw percentage labels along connecting lines (rotated along line direction)
+        if (this.links && this.links.length > 0 && (this.showSimilarityLabels || this.hoveredNode)) {
             let linksToLabel = new Set();
 
-            if (primaryNodes.length > 0) {
-                primaryNodes.forEach(pn => {
-                    let pnLinks = this.links.filter(l => {
-                        if (!l.source || !l.target || l.source.x === undefined || l.target.x === undefined) return false;
-                        let matchSource = this.matchesTestament(l.source.t || l.source.testament);
-                        let matchTarget = this.matchesTestament(l.target.t || l.target.testament);
-                        if (!matchSource || !matchTarget) return false;
-                        return l.source === pn || l.target === pn;
-                    });
-
-                    pnLinks.sort((a, b) => {
-                        let simA = (typeof a.sim === 'number' && a.sim > 0) ? a.sim : (a.source.v && a.target.v ? this.cosineSimilarity(a.source.v, a.target.v) : 0);
-                        let simB = (typeof b.sim === 'number' && b.sim > 0) ? b.sim : (b.source.v && b.target.v ? this.cosineSimilarity(b.source.v, b.target.v) : 0);
-                        return simB - simA;
-                    });
-
-                    pnLinks.slice(0, 5).forEach(l => linksToLabel.add(l));
-                });
-
-                // Also include direct links between primary nodes
+            if (this.showSimilarityLabels) {
                 this.links.forEach(l => {
                     if (!l.source || !l.target || l.source.x === undefined || l.target.x === undefined) return;
-                    let isBetweenPrimary = (l.source.isKw && l.target.isKw) || (l.source.isFocusedVerse && l.target.isFocusedVerse) || (l.source.isFocusedBook && l.target.isFocusedBook);
-                    if (isBetweenPrimary) linksToLabel.add(l);
-                });
-            } else {
-                // Global/overview mode: top 5 links overall
-                let validLinks = this.links.filter(l => {
-                    if (!l.source || !l.target || l.source.x === undefined || l.target.x === undefined) return false;
                     let matchSource = this.matchesTestament(l.source.t || l.source.testament);
                     let matchTarget = this.matchesTestament(l.target.t || l.target.testament);
-                    return matchSource && matchTarget;
+                    if (!matchSource || !matchTarget) return;
+                    linksToLabel.add(l);
                 });
-                validLinks.sort((a, b) => {
-                    let simA = (typeof a.sim === 'number' && a.sim > 0) ? a.sim : (a.source.v && a.target.v ? this.cosineSimilarity(a.source.v, a.target.v) : 0);
-                    let simB = (typeof b.sim === 'number' && b.sim > 0) ? b.sim : (b.source.v && b.target.v ? this.cosineSimilarity(b.source.v, b.target.v) : 0);
-                    return simB - simA;
-                });
-                validLinks.slice(0, 5).forEach(l => linksToLabel.add(l));
-            }
-
-            // Also highlight connections for hovered node
-            if (this.hoveredNode) {
+            } else if (this.hoveredNode) {
                 this.links.forEach(l => {
+                    if (!l.source || !l.target || l.source.x === undefined || l.target.x === undefined) return;
+                    let matchSource = this.matchesTestament(l.source.t || l.source.testament);
+                    let matchTarget = this.matchesTestament(l.target.t || l.target.testament);
+                    if (!matchSource || !matchTarget) return;
                     if (l.source === this.hoveredNode || l.target === this.hoveredNode) {
                         linksToLabel.add(l);
                     }
@@ -5225,28 +5216,46 @@ class BibleWordMap extends HTMLElement {
 
             linksToLabel.forEach(l => {
                 if (!l.source || !l.target || l.source.x === undefined || l.target.x === undefined) return;
-                let sim = (typeof l.sim === 'number' && l.sim > 0) ? l.sim : (l.source.v && l.target.v ? this.cosineSimilarity(l.source.v, l.target.v) : 0);
+                let sim = (typeof l.sim === 'number' && l.sim > 0)
+                    ? l.sim
+                    : (l.source.v && l.target.v
+                        ? this.cosineSimilarity(l.source.v, l.target.v)
+                        : (l.source.sim || l.target.sim || 0));
                 if (sim <= 0 || sim >= 0.9999) return;
 
                 let dx = l.target.x - l.source.x;
                 let dy = l.target.y - l.source.y;
                 let dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist * this.transform.k < 32) return;
+
+                // Avoid rendering label if endpoints are too close or within node bubbles on screen
+                let sourceR = l.source.canvasR || 6;
+                let targetR = l.target.canvasR || 6;
+                let screenGap = (dist - sourceR - targetR) * this.transform.k;
+                if (screenGap < 18) return;
 
                 let isHovered = Boolean(this.hoveredNode && (l.source === this.hoveredNode || l.target === this.hoveredNode));
                 let pctStr = (sim * 100).toFixed(2) + '%';
                 let midX = (l.source.x + l.target.x) / 2;
                 let midY = (l.source.y + l.target.y) / 2;
 
+                // Rotate along line direction; keep upright (text reading left-to-right)
+                let angle = Math.atan2(dy, dx);
+                if (angle > Math.PI / 2) {
+                    angle -= Math.PI;
+                } else if (angle < -Math.PI / 2) {
+                    angle += Math.PI;
+                }
+
                 this.ctx.save();
                 this.ctx.translate(midX, midY);
+                this.ctx.rotate(angle);
                 this.ctx.scale(1 / this.transform.k, 1 / this.transform.k);
 
-                let fontSize = 9.5;
-                this.ctx.font = `600 ${fontSize}px ${this.colors.font || 'sans-serif'}`;
+                let fontSize = 8.5;
+                this.ctx.font = `500 ${fontSize}px ${this.colors.font || 'sans-serif'}`;
                 let tw = this.ctx.measureText(pctStr).width;
-                let padX = 5;
-                let padY = 2.5;
+                let padX = 3.5;
+                let padY = 1.5;
                 let w = tw + padX * 2;
                 let h = fontSize + padY * 2;
                 let r = h / 2;
@@ -5260,21 +5269,16 @@ class BibleWordMap extends HTMLElement {
                     this.ctx.closePath();
                 }
 
-                this.ctx.fillStyle = this.colors.cardBg || this.colors.bg || '#ffffff';
-                this.ctx.shadowColor = 'rgba(0, 0, 0, 0.16)';
-                this.ctx.shadowBlur = 4;
-                this.ctx.shadowOffsetX = 0;
-                this.ctx.shadowOffsetY = 1;
+                this.ctx.fillStyle = this.colors.bg || '#ffffff';
                 this.ctx.fill();
 
-                this.ctx.shadowColor = 'transparent';
-                this.ctx.lineWidth = 1;
-                this.ctx.strokeStyle = isHovered ? (this.colors.nodeHover || '#2563eb') : (this.colors.border || 'rgba(150, 150, 150, 0.4)');
+                this.ctx.lineWidth = 0.75;
+                this.ctx.strokeStyle = isHovered ? (this.colors.nodeHover || '#2563eb') : (this.colors.border || 'rgba(148, 163, 184, 0.4)');
                 this.ctx.stroke();
 
                 this.ctx.textAlign = 'center';
                 this.ctx.textBaseline = 'middle';
-                this.ctx.fillStyle = isHovered ? (this.colors.nodeHover || '#2563eb') : this.colors.text;
+                this.ctx.fillStyle = isHovered ? (this.colors.nodeHover || '#2563eb') : (this.colors.textMuted || '#64748b');
                 this.ctx.fillText(pctStr, 0, 0.5);
 
                 this.ctx.restore();
