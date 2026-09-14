@@ -1,12 +1,17 @@
 import json
 import os
+import sys
 import re
 import spacy
 from spacy.lang.en import English
 
+sys.path.append(os.path.dirname(__file__))
+from biblical_entities import load_biblical_proper_names, COMMON_NOUNS
+
 nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
 
 raw_dir = 'data/raw'
+proper_names = load_biblical_proper_names(raw_dir=raw_dir)
 verses = []
 word_to_verse = {}
 
@@ -95,7 +100,22 @@ for i in range(0, len(raw_verses), batch_size):
             if token.pos_ in ["SPACE", "PUNCT"]:
                 continue
                 
-            tagged_word = f"{word_clean}_{token.pos_}"
+            pos = token.pos_
+            if pos == "PROPN":
+                # Reclassify false PROPNs (sentence-initial capitalization, title casing, etc.)
+                if word_clean in COMMON_NOUNS or (word_clean not in proper_names and (not word_clean.endswith('s') or word_clean[:-1] not in proper_names)):
+                    if word_clean == "holy":
+                        pos = "ADJ"
+                    elif word_clean == "behold":
+                        pos = "INTJ"
+                    else:
+                        pos = "NOUN"
+            elif pos == "NOUN":
+                # Reclassify genuine biblical entities mistakenly tagged as common NOUN
+                if word_clean in proper_names and word_clean not in COMMON_NOUNS:
+                    pos = "PROPN"
+
+            tagged_word = f"{word_clean}_{pos}"
             tagged_words.append(tagged_word)
             words_in_verse.add(tagged_word)
             

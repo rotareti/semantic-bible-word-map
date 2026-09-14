@@ -1,9 +1,13 @@
 import json
 import os
+import sys
 import re
 import unicodedata
 from collections import Counter, defaultdict
 from latin_lemmatizer.lemmata import LEMMATA
+
+sys.path.append(os.path.dirname(__file__))
+from biblical_entities import load_biblical_proper_names, COMMON_NOUNS
 
 RAW_DIR = 'data/raw_vul'
 PROCESSED_DIR = 'data/processed'
@@ -175,27 +179,202 @@ ECCLESIASTICAL_OVERRIDES = {
     'possideo': ('possess', 'VERB', 'to possess, own, hold, inherit'),
     'haereditas': ('inheritance', 'NOUN', 'inheritance, heritage, heirloom'),
     'hereditas': ('inheritance', 'NOUN', 'inheritance, heritage, heirloom'),
-    'israel': ('israel', 'PROPN', 'Israel, the people of God'),
-    'ierusalem': ('jerusalem', 'PROPN', 'Jerusalem, the holy city'),
-    'jerusalem': ('jerusalem', 'PROPN', 'Jerusalem, the holy city'),
-    'david': ('david', 'PROPN', 'David, king of Israel'),
-    'moyses': ('moses', 'PROPN', 'Moses, lawgiver of Israel'),
-    'abraham': ('abraham', 'PROPN', 'Abraham, father of faith'),
-    'isaac': ('isaac', 'PROPN', 'Isaac, patriarch of Israel'),
-    'iacob': ('jacob', 'PROPN', 'Jacob, patriarch of Israel'),
-    'jacob': ('jacob', 'PROPN', 'Jacob, patriarch of Israel'),
-    'ioseph': ('joseph', 'PROPN', 'Joseph, son of Jacob'),
-    'joseph': ('joseph', 'PROPN', 'Joseph, son of Jacob'),
-    'petrus': ('peter', 'PROPN', 'Peter, apostle of Christ'),
-    'paulus': ('paul', 'PROPN', 'Paul, apostle to the Gentiles'),
-    'ioannes': ('john', 'PROPN', 'John, apostle and evangelist'),
-    'joannes': ('john', 'PROPN', 'John, apostle and evangelist'),
-    'iesus': ('jesus', 'PROPN', 'Jesus, the Christ and Savior'),
-    'jesus': ('jesus', 'PROPN', 'Jesus, the Christ and Savior'),
-    'christus': ('christ', 'PROPN', 'Christ, the Anointed One, Messiah'),
-    'iudas': ('judas', 'PROPN', 'Judah / Judas'),
-    'judas': ('judas', 'PROPN', 'Judah / Judas'),
-    'maria': ('mary', 'PROPN', 'Mary, mother of Jesus'),
+    'israel': ('israel', 'PROPN', 'Israel, the people of God', 'israel'),
+    'israhel': ('israel', 'PROPN', 'Israel, the people of God', 'israel'),
+    'israeli': ('israel', 'PROPN', 'Israel, the people of God', 'israel'),
+    'israelem': ('israel', 'PROPN', 'Israel, the people of God', 'israel'),
+    'israelis': ('israel', 'PROPN', 'Israel, the people of God', 'israel'),
+    'israelita': ('israelite', 'PROPN', 'Israelite, descendant of Israel', 'israelite'),
+    'israelitae': ('israelite', 'PROPN', 'Israelite, descendant of Israel', 'israelite'),
+    'israelitas': ('israelite', 'PROPN', 'Israelite, descendant of Israel', 'israelite'),
+    'israelitis': ('israelite', 'PROPN', 'Israelite, descendant of Israel', 'israelite'),
+    'ierusalem': ('jerusalem', 'PROPN', 'Jerusalem, the holy city', 'ierusalem'),
+    'hierusalem': ('jerusalem', 'PROPN', 'Jerusalem, the holy city', 'ierusalem'),
+    'jerusalem': ('jerusalem', 'PROPN', 'Jerusalem, the holy city', 'ierusalem'),
+    'david': ('david', 'PROPN', 'David, king of Israel', 'david'),
+    'davidi': ('david', 'PROPN', 'David, king of Israel', 'david'),
+    'davidem': ('david', 'PROPN', 'David, king of Israel', 'david'),
+    'dauid': ('david', 'PROPN', 'David, king of Israel', 'david'),
+    'dauidi': ('david', 'PROPN', 'David, king of Israel', 'david'),
+    'dauidem': ('david', 'PROPN', 'David, king of Israel', 'david'),
+    'salomon': ('solomon', 'PROPN', 'Solomon, king of Israel, son of David', 'salomon'),
+    'salomonis': ('solomon', 'PROPN', 'Solomon, king of Israel, son of David', 'salomon'),
+    'salomonem': ('solomon', 'PROPN', 'Solomon, king of Israel, son of David', 'salomon'),
+    'salomone': ('solomon', 'PROPN', 'Solomon, king of Israel, son of David', 'salomon'),
+    'moyses': ('moses', 'PROPN', 'Moses, lawgiver and prophet of Israel', 'moyses'),
+    'moysen': ('moses', 'PROPN', 'Moses, lawgiver and prophet of Israel', 'moyses'),
+    'moysi': ('moses', 'PROPN', 'Moses, lawgiver and prophet of Israel', 'moyses'),
+    'moyse': ('moses', 'PROPN', 'Moses, lawgiver and prophet of Israel', 'moyses'),
+    'moses': ('moses', 'PROPN', 'Moses, lawgiver and prophet of Israel', 'moyses'),
+    'mosen': ('moses', 'PROPN', 'Moses, lawgiver and prophet of Israel', 'moyses'),
+    'mosi': ('moses', 'PROPN', 'Moses, lawgiver and prophet of Israel', 'moyses'),
+    'mose': ('moses', 'PROPN', 'Moses, lawgiver and prophet of Israel', 'moyses'),
+    'aaron': ('aaron', 'PROPN', 'Aaron, high priest of Israel', 'aaron'),
+    'aaronis': ('aaron', 'PROPN', 'Aaron, high priest of Israel', 'aaron'),
+    'aaronem': ('aaron', 'PROPN', 'Aaron, high priest of Israel', 'aaron'),
+    'aarone': ('aaron', 'PROPN', 'Aaron, high priest of Israel', 'aaron'),
+    'abraham': ('abraham', 'PROPN', 'Abraham, father of faith', 'abraham'),
+    'abrahae': ('abraham', 'PROPN', 'Abraham, father of faith', 'abraham'),
+    'abrahami': ('abraham', 'PROPN', 'Abraham, father of faith', 'abraham'),
+    'isaac': ('isaac', 'PROPN', 'Isaac, patriarch of Israel', 'isaac'),
+    'iacob': ('jacob', 'PROPN', 'Jacob, patriarch of Israel', 'iacob'),
+    'jacob': ('jacob', 'PROPN', 'Jacob, patriarch of Israel', 'iacob'),
+    'iacobi': ('jacob', 'PROPN', 'Jacob, patriarch of Israel', 'iacob'),
+    'iacobo': ('jacob', 'PROPN', 'Jacob, patriarch of Israel', 'iacob'),
+    'iacobum': ('jacob', 'PROPN', 'Jacob, patriarch of Israel', 'iacob'),
+    'ioseph': ('joseph', 'PROPN', 'Joseph, son of Jacob', 'ioseph'),
+    'joseph': ('joseph', 'PROPN', 'Joseph, son of Jacob', 'ioseph'),
+    'petrus': ('peter', 'PROPN', 'Peter, apostle of Christ', 'petrus'),
+    'petri': ('peter', 'PROPN', 'Peter, apostle of Christ', 'petrus'),
+    'petro': ('peter', 'PROPN', 'Peter, apostle of Christ', 'petrus'),
+    'petrum': ('peter', 'PROPN', 'Peter, apostle of Christ', 'petrus'),
+    'paulus': ('paul', 'PROPN', 'Paul, apostle to the Gentiles', 'paulus'),
+    'pauli': ('paul', 'PROPN', 'Paul, apostle to the Gentiles', 'paulus'),
+    'paulo': ('paul', 'PROPN', 'Paul, apostle to the Gentiles', 'paulus'),
+    'paulum': ('paul', 'PROPN', 'Paul, apostle to the Gentiles', 'paulus'),
+    'ioannes': ('john', 'PROPN', 'John, apostle and evangelist', 'ioannes'),
+    'joannes': ('john', 'PROPN', 'John, apostle and evangelist', 'ioannes'),
+    'ioannis': ('john', 'PROPN', 'John, apostle and evangelist', 'ioannes'),
+    'ioanni': ('john', 'PROPN', 'John, apostle and evangelist', 'ioannes'),
+    'ioannem': ('john', 'PROPN', 'John, apostle and evangelist', 'ioannes'),
+    'ioanne': ('john', 'PROPN', 'John, apostle and evangelist', 'ioannes'),
+    'iesus': ('jesus', 'PROPN', 'Jesus, the Christ and Savior', 'iesus'),
+    'jesus': ('jesus', 'PROPN', 'Jesus, the Christ and Savior', 'iesus'),
+    'iesu': ('jesus', 'PROPN', 'Jesus, the Christ and Savior', 'iesus'),
+    'iesum': ('jesus', 'PROPN', 'Jesus, the Christ and Savior', 'iesus'),
+    'christus': ('christ', 'PROPN', 'Christ, the Anointed One, Messiah', 'christus'),
+    'christi': ('christ', 'PROPN', 'Christ, the Anointed One, Messiah', 'christus'),
+    'christo': ('christ', 'PROPN', 'Christ, the Anointed One, Messiah', 'christus'),
+    'christum': ('christ', 'PROPN', 'Christ, the Anointed One, Messiah', 'christus'),
+    'iudas': ('judas', 'PROPN', 'Judah / Judas', 'iudas'),
+    'judas': ('judas', 'PROPN', 'Judah / Judas', 'iudas'),
+    'iudae': ('judas', 'PROPN', 'Judah / Judas', 'iudas'),
+    'iudam': ('judas', 'PROPN', 'Judah / Judas', 'iudas'),
+    'maria': ('mary', 'PROPN', 'Mary, mother of Jesus', 'maria'),
+    'mariae': ('mary', 'PROPN', 'Mary, mother of Jesus', 'maria'),
+    'mariam': ('mary', 'PROPN', 'Mary, mother of Jesus', 'maria'),
+    'saul': ('saul', 'PROPN', 'Saul, king of Israel', 'saul'),
+    'saulis': ('saul', 'PROPN', 'Saul, king of Israel', 'saul'),
+    'saulem': ('saul', 'PROPN', 'Saul, king of Israel', 'saul'),
+    'saule': ('saul', 'PROPN', 'Saul, king of Israel', 'saul'),
+    'pharao': ('pharaoh', 'PROPN', 'Pharaoh, ruler of Egypt', 'pharao'),
+    'pharaonis': ('pharaoh', 'PROPN', 'Pharaoh, ruler of Egypt', 'pharao'),
+    'pharaonem': ('pharaoh', 'PROPN', 'Pharaoh, ruler of Egypt', 'pharao'),
+    'pharaone': ('pharaoh', 'PROPN', 'Pharaoh, ruler of Egypt', 'pharao'),
+    'aegyptus': ('egypt', 'PROPN', 'Egypt, land of Egypt', 'aegyptus'),
+    'aegypti': ('egypt', 'PROPN', 'Egypt, land of Egypt', 'aegyptus'),
+    'aegyptum': ('egypt', 'PROPN', 'Egypt, land of Egypt', 'aegyptus'),
+    'aegypto': ('egypt', 'PROPN', 'Egypt, land of Egypt', 'aegyptus'),
+    'aegyptius': ('egyptian', 'PROPN', 'Egyptian, person from Egypt', 'aegyptius'),
+    'aegyptii': ('egyptian', 'PROPN', 'Egyptian, person from Egypt', 'aegyptius'),
+    'aegyptios': ('egyptian', 'PROPN', 'Egyptian, person from Egypt', 'aegyptius'),
+    'babylon': ('babylon', 'PROPN', 'Babylon, ancient empire and city', 'babylon'),
+    'babylonis': ('babylon', 'PROPN', 'Babylon, ancient empire and city', 'babylon'),
+    'babylonem': ('babylon', 'PROPN', 'Babylon, ancient empire and city', 'babylon'),
+    'sion': ('zion', 'PROPN', 'Zion, Mount Zion, the city of David', 'sion'),
+    'iordanis': ('jordan', 'PROPN', 'Jordan, the river of Israel', 'iordanis'),
+    'iordanem': ('jordan', 'PROPN', 'Jordan, the river of Israel', 'iordanis'),
+    'iordane': ('jordan', 'PROPN', 'Jordan, the river of Israel', 'iordanis'),
+    'galilaea': ('galilee', 'PROPN', 'Galilee, region in Israel', 'galilaea'),
+    'galilaeae': ('galilee', 'PROPN', 'Galilee, region in Israel', 'galilaea'),
+    'galilaeam': ('galilee', 'PROPN', 'Galilee, region in Israel', 'galilaea'),
+    'samaria': ('samaria', 'PROPN', 'Samaria, city and region in Israel', 'samaria'),
+    'samariae': ('samaria', 'PROPN', 'Samaria, city and region in Israel', 'samaria'),
+    'samariam': ('samaria', 'PROPN', 'Samaria, city and region in Israel', 'samaria'),
+    'iudaea': ('judea', 'PROPN', 'Judea, province in Israel', 'iudaea'),
+    'iudaeae': ('judea', 'PROPN', 'Judea, province in Israel', 'iudaea'),
+    'iudaeam': ('judea', 'PROPN', 'Judea, province in Israel', 'iudaea'),
+    'iudaeus': ('jew', 'PROPN', 'Jew, Judean', 'iudaeus'),
+    'iudaei': ('jew', 'PROPN', 'Jew, Judean', 'iudaeus'),
+    'iudaeis': ('jew', 'PROPN', 'Jew, Judean', 'iudaeus'),
+    'iudaeos': ('jew', 'PROPN', 'Jew, Judean', 'iudaeus'),
+    'philistinus': ('philistine', 'PROPN', 'Philistine', 'philistinus'),
+    'philistini': ('philistine', 'PROPN', 'Philistine', 'philistinus'),
+    'philistinos': ('philistine', 'PROPN', 'Philistine', 'philistinus'),
+    'levita': ('levite', 'PROPN', 'Levite, member of tribe of Levi', 'levita'),
+    'levitae': ('levite', 'PROPN', 'Levite, member of tribe of Levi', 'levita'),
+    'levitas': ('levite', 'PROPN', 'Levite, member of tribe of Levi', 'levita'),
+    'pilatus': ('pilate', 'PROPN', 'Pontius Pilate, Roman governor', 'pilatus'),
+    'pilati': ('pilate', 'PROPN', 'Pontius Pilate, Roman governor', 'pilatus'),
+    'pilato': ('pilate', 'PROPN', 'Pontius Pilate, Roman governor', 'pilatus'),
+    'pilatum': ('pilate', 'PROPN', 'Pontius Pilate, Roman governor', 'pilatus'),
+    'herodes': ('herod', 'PROPN', 'Herod, king or tetrarch', 'herodes'),
+    'herodis': ('herod', 'PROPN', 'Herod, king or tetrarch', 'herodes'),
+    'herodem': ('herod', 'PROPN', 'Herod, king or tetrarch', 'herodes'),
+    'panis': ('bread', 'NOUN', 'bread, loaf, food', 'panis'),
+    'panem': ('bread', 'NOUN', 'bread, loaf, food', 'panis'),
+    'pane': ('bread', 'NOUN', 'bread, loaf, food', 'panis'),
+    'panes': ('bread', 'NOUN', 'bread, loaf, food', 'panis'),
+    'panum': ('bread', 'NOUN', 'bread, loaf, food', 'panis'),
+    'panibus': ('bread', 'NOUN', 'bread, loaf, food', 'panis'),
+    'fides': ('faith', 'NOUN', 'faith, trust, fidelity, credit, belief', 'fides'),
+    'fidem': ('faith', 'NOUN', 'faith, trust, fidelity, credit, belief', 'fides'),
+    'fidei': ('faith', 'NOUN', 'faith, trust, fidelity, credit, belief', 'fides'),
+    'fide': ('faith', 'NOUN', 'faith, trust, fidelity, credit, belief', 'fides'),
+    'deus': ('god', 'NOUN', 'God, divinity, the Lord God', 'deus'),
+    'dei': ('god', 'NOUN', 'God, divinity, the Lord God', 'deus'),
+    'deo': ('god', 'NOUN', 'God, divinity, the Lord God', 'deus'),
+    'deum': ('god', 'NOUN', 'God, divinity, the Lord God', 'deus'),
+    'dii': ('god', 'NOUN', 'gods, idols, divinities', 'deus'),
+    'deos': ('god', 'NOUN', 'gods, idols, divinities', 'deus'),
+    'dominus': ('lord', 'NOUN', 'lord, master, the Lord', 'dominus'),
+    'domini': ('lord', 'NOUN', 'lord, master, the Lord', 'dominus'),
+    'domino': ('lord', 'NOUN', 'lord, master, the Lord', 'dominus'),
+    'dominum': ('lord', 'NOUN', 'lord, master, the Lord', 'dominus'),
+    'domine': ('lord', 'NOUN', 'lord, master, the Lord', 'dominus'),
+    'spiritus': ('spirit', 'NOUN', 'spirit, breath, the Holy Spirit', 'spiritus'),
+    'spiritui': ('spirit', 'NOUN', 'spirit, breath, the Holy Spirit', 'spiritus'),
+    'spiritum': ('spirit', 'NOUN', 'spirit, breath, the Holy Spirit', 'spiritus'),
+    'spiritu': ('spirit', 'NOUN', 'spirit, breath, the Holy Spirit', 'spiritus'),
+    'pater': ('father', 'NOUN', 'father, forefather', 'pater'),
+    'patris': ('father', 'NOUN', 'father, forefather', 'pater'),
+    'patri': ('father', 'NOUN', 'father, forefather', 'pater'),
+    'patrem': ('father', 'NOUN', 'father, forefather', 'pater'),
+    'patre': ('father', 'NOUN', 'father, forefather', 'pater'),
+    'patres': ('father', 'NOUN', 'fathers, forefathers', 'pater'),
+    'patrum': ('father', 'NOUN', 'fathers, forefathers', 'pater'),
+    'patribus': ('father', 'NOUN', 'fathers, forefathers', 'pater'),
+    'filius': ('son', 'NOUN', 'son, child, descendant', 'filius'),
+    'filii': ('son', 'NOUN', 'son, child, descendant', 'filius'),
+    'filio': ('son', 'NOUN', 'son, child, descendant', 'filius'),
+    'filium': ('son', 'NOUN', 'son, child, descendant', 'filius'),
+    'filie': ('son', 'NOUN', 'son, child, descendant', 'filius'),
+    'fili': ('son', 'NOUN', 'son, child, descendant', 'filius'),
+    'filios': ('son', 'NOUN', 'sons, children', 'filius'),
+    'filiorum': ('son', 'NOUN', 'sons, children', 'filius'),
+    'filia': ('daughter', 'NOUN', 'daughter, girl', 'filia'),
+    'filiae': ('daughter', 'NOUN', 'daughter, girl', 'filia'),
+    'filiam': ('daughter', 'NOUN', 'daughter, girl', 'filia'),
+    'filias': ('daughter', 'NOUN', 'daughters', 'filia'),
+    'rex': ('king', 'NOUN', 'king, monarch, ruler', 'rex'),
+    'regis': ('king', 'NOUN', 'king, monarch, ruler', 'rex'),
+    'regi': ('king', 'NOUN', 'king, monarch, ruler', 'rex'),
+    'regem': ('king', 'NOUN', 'king, monarch, ruler', 'rex'),
+    'rege': ('king', 'NOUN', 'king, monarch, ruler', 'rex'),
+    'reges': ('king', 'NOUN', 'kings, rulers', 'rex'),
+    'regum': ('king', 'NOUN', 'kings, rulers', 'rex'),
+    'regibus': ('king', 'NOUN', 'kings, rulers', 'rex'),
+    'homo': ('man', 'NOUN', 'human, man, person', 'homo'),
+    'hominis': ('man', 'NOUN', 'human, man, person', 'homo'),
+    'homini': ('man', 'NOUN', 'human, man, person', 'homo'),
+    'hominem': ('man', 'NOUN', 'human, man, person', 'homo'),
+    'homine': ('man', 'NOUN', 'human, man, person', 'homo'),
+    'homines': ('man', 'NOUN', 'men, people', 'homo'),
+    'hominum': ('man', 'NOUN', 'men, people', 'homo'),
+    'hominibus': ('man', 'NOUN', 'men, people', 'homo'),
+    'vir': ('man', 'NOUN', 'man, husband, male', 'vir'),
+    'viri': ('man', 'NOUN', 'man, husband, male', 'vir'),
+    'viro': ('man', 'NOUN', 'man, husband, male', 'vir'),
+    'virum': ('man', 'NOUN', 'man, husband, male', 'vir'),
+    'vires': ('strength', 'NOUN', 'strength, force', 'vires'),
+    'viris': ('man', 'NOUN', 'men, husbands', 'vir'),
+    'virorum': ('man', 'NOUN', 'men, husbands', 'vir'),
+    'testamentum': ('covenant', 'NOUN', 'covenant, testament, will', 'testamentum'),
+    'testamenti': ('covenant', 'NOUN', 'covenant, testament, will', 'testamentum'),
+    'testamento': ('covenant', 'NOUN', 'covenant, testament, will', 'testamentum'),
+    'arca': ('ark', 'NOUN', 'ark, chest, box', 'arca'),
+    'arcae': ('ark', 'NOUN', 'ark, chest, box', 'arca'),
+    'arcam': ('ark', 'NOUN', 'ark, chest, box', 'arca'),
     'super': ('upon', 'ADP', 'over, above, upon, concerning'),
     'in': ('in', 'ADP', 'in, into, on, among, by'),
     'ad': ('to', 'ADP', 'to, toward, near, at'),
@@ -283,8 +462,10 @@ def clean_whitaker_senses(senses):
     return ' '.join(cand.split()[:3]) or 'word'
 
 def main():
+    proper_names = load_biblical_proper_names(raw_dir='data/raw')
     print("Step 1: Loading PROIEL Vulgate Treebank...")
     proiel_map = {}
+    proiel_proper_lemmata = set()
     for split in ['train', 'dev', 'test']:
         p_path = os.path.join(RAW_DIR, f'la_proiel-ud-{split}.conllu')
         if os.path.exists(p_path):
@@ -298,9 +479,11 @@ def main():
                         form = clean_latin(parts[1]).lower().replace('j', 'i').replace('v', 'u')
                         lemma = clean_latin(parts[2]).lower().replace('j', 'i').replace('v', 'u')
                         upos = parts[3]
+                        if upos == 'PROPN':
+                            proiel_proper_lemmata.add(lemma)
                         if form not in proiel_map:
                             proiel_map[form] = (lemma, upos)
-    print(f"Loaded {len(proiel_map)} PROIEL wordform mappings.")
+    print(f"Loaded {len(proiel_map)} PROIEL wordform mappings ({len(proiel_proper_lemmata)} proper lemmata).")
 
     print("Step 2: Loading Whitaker's Words DICTLINE.json...")
     with open(os.path.join(RAW_DIR, 'DICTLINE.json'), 'r', encoding='utf-8') as f:
@@ -340,8 +523,9 @@ def main():
 
         # Priority 1: Ecclesiastical override by exact wordform
         if w_norm in ECCLESIASTICAL_OVERRIDES:
-            gloss, pos, def_text = ECCLESIASTICAL_OVERRIDES[w_norm]
-            lemma = w_norm
+            ov = ECCLESIASTICAL_OVERRIDES[w_norm]
+            gloss, pos, def_text = ov[0], ov[1], ov[2]
+            lemma = ov[3] if len(ov) > 3 else w_norm
             return lemma, pos, gloss, def_text
 
         # Priority 2: PROIEL gold-standard Vulgate
@@ -365,8 +549,10 @@ def main():
         # Check Ecclesiastical overrides for the resolved lemma
         lem_norm = lemma.lower().replace('j', 'i').replace('v', 'u')
         if lem_norm in ECCLESIASTICAL_OVERRIDES:
-            gloss, override_pos, def_text = ECCLESIASTICAL_OVERRIDES[lem_norm]
-            return lemma, (override_pos or pos), gloss, def_text
+            ov = ECCLESIASTICAL_OVERRIDES[lem_norm]
+            gloss, override_pos, def_text = ov[0], ov[1], ov[2]
+            canonical_lemma = ov[3] if len(ov) > 3 else lem_norm
+            return canonical_lemma, (override_pos or pos), gloss, def_text
 
         # Lookup in Whitaker's Words
         gloss = None
@@ -399,6 +585,20 @@ def main():
             def_text = f"Latin: {lemma}"
 
         pos = pos or "NOUN"
+
+        # Enforce canonical cross-canon POS rules:
+        # Common concepts/nouns must NEVER be PROPN.
+        # Genuine biblical proper entities must be PROPN.
+        if gloss in COMMON_NOUNS:
+            if gloss == "holy":
+                pos = "ADJ"
+            elif gloss == "behold":
+                pos = "INTJ"
+            else:
+                pos = "NOUN"
+        elif pos == "PROPN" or gloss in proper_names or lemma in proiel_proper_lemmata:
+            pos = "PROPN"
+
         return lemma, pos, gloss, def_text
 
     print("Step 4: Processing Old Testament and New Testament...")

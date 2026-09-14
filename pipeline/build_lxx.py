@@ -1,8 +1,12 @@
 import csv
 import json
 import os
+import sys
 import re
 from collections import Counter, defaultdict
+
+sys.path.append(os.path.dirname(__file__))
+from biblical_entities import COMMON_NOUNS
 
 RAW_DIR = 'data/raw'
 PROCESSED_DIR = 'data/processed'
@@ -137,6 +141,8 @@ def main():
                     s_id = parts[0].strip()
                     lemma_raw = parts[3].strip()
                     gloss_raw = parts[6].strip()
+                    tag = parts[5].strip()
+                    is_proper = tag.startswith('N:N') or 'PRI' in tag or tag.endswith(('-P', '-L', '-T', '-LG'))
                     # Skip bracketed unnamed sub-entries like [unnamed], [mother-in-law of Peter]
                     if lemma_raw == '[unnamed]' or (gloss_raw.startswith('[') and gloss_raw.endswith(']')):
                         continue
@@ -146,7 +152,8 @@ def main():
                             "lemma": lemma_raw,
                             "translit": parts[4].strip(),
                             "gloss": clean_gloss(gloss_raw),
-                            "def": (parts[7].strip() if len(parts) > 7 else gloss_raw).replace('\u2014', '--')
+                            "def": (parts[7].strip() if len(parts) > 7 else gloss_raw).replace('\u2014', '--'),
+                            "is_proper": is_proper
                         }
 
     lxx_to_g = {}
@@ -156,10 +163,12 @@ def main():
         for row in r:
             if len(row) >= 5:
                 lid = row[0].strip()
+                is_proper = ('Proper Noun' in row[3])
                 lxx_lex[lid] = {
                     "lemma": row[1].strip(),
                     "translit": row[2].strip(),
-                    "gloss": clean_gloss(row[4].strip())
+                    "gloss": clean_gloss(row[4].strip()),
+                    "is_proper": is_proper
                 }
                 if len(row) >= 6:
                     m = re.search(r'S:G(\d+)', row[5])
@@ -208,16 +217,19 @@ def main():
                         "lemma": item["lemma"],
                         "translit": item["translit"],
                         "gloss": item["gloss"],
-                        "def": item["gloss"]
+                        "def": item["gloss"],
+                        "is_proper": item.get("is_proper", False)
                     }
                     break
 
+        is_proper_lex = False
         if match:
             strongs = match.get("strongs", "G0000")
             lemma = match.get("lemma", surface_word)
             translit = match.get("translit", "")
             gloss = match.get("gloss", "") or surface_word.lower()
             def_text = match.get("def", gloss)
+            is_proper_lex = match.get("is_proper", False)
         else:
             strongs = "G0000"
             lemma = surface_word
@@ -227,6 +239,20 @@ def main():
 
         # Clean display word preserving spaces (e.g. "settle accounts", "burnt offering")
         display_w = re.sub(r'\s+', ' ', re.sub(r'[^a-zA-Z0-9\s-]', '', gloss)).strip().lower() or "word"
+        
+        # Enforce canonical POS rules across canons:
+        # Common concepts/nouns must NEVER be PROPN.
+        # Genuine biblical proper entities must be PROPN.
+        if display_w in COMMON_NOUNS:
+            if display_w == "holy":
+                pos = "ADJ"
+            elif display_w == "behold":
+                pos = "INTJ"
+            else:
+                pos = "NOUN"
+        elif is_proper_lex or pos == "PROPN":
+            pos = "PROPN"
+
         # Whitespace-safe token slug for Word2Vec training files (spaces become underscores)
         token_slug = re.sub(r'[^a-zA-Z0-9_]', '', re.sub(r'[\s-]+', '_', display_w)) or "word"
         token_id = f"{token_slug}_{strongs}_{pos}"
