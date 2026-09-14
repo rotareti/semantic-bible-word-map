@@ -847,6 +847,7 @@ class BibleWordMap extends HTMLElement {
                 .bwm-active-word-item label {
                     display: inline-flex;
                     align-items: center;
+                    gap: 6px;
                     cursor: pointer;
                     user-select: none;
                 }
@@ -3036,7 +3037,7 @@ class BibleWordMap extends HTMLElement {
                 let formatted = formatVerseRef(ref);
                 let label = document.createElement('label');
                 label.style.cursor = 'pointer';
-                label.innerHTML = `<strong>${formatted}</strong> <span class="bwm-book-badge" style="background:${genreColor};margin-left:6px;">${genre}</span>`;
+                label.innerHTML = `<strong>${formatted}</strong> <span class="bwm-book-badge" style="background:${genreColor};">${genre}</span>`;
 
                 label.addEventListener('click', () => { cb.click(); });
 
@@ -3089,7 +3090,7 @@ class BibleWordMap extends HTMLElement {
                 let genreColor = GENRE_COLORS[book.genre] || '#3b82f6';
                 let label = document.createElement('label');
                 label.style.cursor = 'pointer';
-                label.innerHTML = `<strong>${book.name}</strong> <span class="bwm-book-badge" style="background:${genreColor};margin-left:6px;">${book.genre}</span>`;
+                label.innerHTML = `<strong>${book.name}</strong> <span class="bwm-book-badge" style="background:${genreColor};">${book.genre}</span>`;
 
                 label.addEventListener('click', () => { cb.click(); });
 
@@ -3142,8 +3143,8 @@ class BibleWordMap extends HTMLElement {
             let label = document.createElement('label');
             label.style.cursor = 'pointer';
             let displayW = this.formatWord(w, pos);
-            let badge = strongs ? `(${strongs} ${pos})` : `(${pos})`;
-            label.innerHTML = `<strong>${displayW}</strong> <span style="color:#888;font-size:0.85em;">${badge}</span>`;
+            let badge = strongs && pos ? `(${strongs} ${pos})` : (strongs ? `(${strongs})` : (pos ? `(${pos})` : ''));
+            label.innerHTML = `<strong>${displayW}</strong>${badge ? ` <span style="color:var(--bwm-text-muted, #888);font-size:0.85em;">${badge}</span>` : ''}`;
             
             // Allow clicking label to toggle checkbox
             label.addEventListener('click', () => { cb.click(); });
