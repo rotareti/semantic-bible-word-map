@@ -12,13 +12,9 @@ class MySentences:
         for filename in self.filenames:
             with open(filename, 'r', encoding='utf-8') as f:
                 for line in f:
-                    # Our Rust parser output is space separated, but very long.
-                    # To prevent memory issues and allow Word2Vec to process effectively,
-                    # we split into chunks of 1000 words.
                     words = line.split()
-                    chunk_size = 1000
-                    for i in range(0, len(words), chunk_size):
-                        yield words[i:i + chunk_size]
+                    if words:
+                        yield words
 
 if __name__ == '__main__':
     data_paths = ['data/processed/ot_text.txt', 'data/processed/nt_text.txt']

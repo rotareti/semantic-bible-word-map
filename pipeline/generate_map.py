@@ -25,15 +25,24 @@ if __name__ == '__main__':
         for line in f:
             nt_words.update(line.split())
 
+    # Load raw verse index to guarantee that every word placed on the map appears in at least one verse
+    raw_index_path = 'data/output/verse_index_raw.json'
+    if not os.path.exists(raw_index_path):
+        print(f"Error: {raw_index_path} not found. Run build.py first.")
+        exit(1)
+    with open(raw_index_path, 'r', encoding='utf-8') as f:
+        v_idx = json.load(f)
+    words_with_verses = set(w for w, v_list in v_idx.get('words', {}).items() if len(v_list) > 0)
+
     words = []
     vectors = []
     freqs = []
     testaments = []
 
-    # We only include words that appear at least min_count times
+    # We only include words that appear at least min_count times AND exist in at least one Bible verse
     for word, vocab_obj in model.wv.key_to_index.items():
         count = model.wv.get_vecattr(word, "count")
-        if count >= 3:
+        if count >= 3 and word in words_with_verses:
             words.append(word)
             vectors.append(model.wv[word])
             freqs.append(int(count))
@@ -158,16 +167,9 @@ if __name__ == '__main__':
     print("Saving map to data/output/...")
     with open('data/output/wordmap_2d.json', 'w', encoding='utf-8') as f:
         json.dump(out_2d, f, separators=(',', ':'), ensure_ascii=False)
-        
     print("Filtering verse index...")
-    with open('data/output/verse_index_raw.json', 'r') as f:
-        v_idx = json.load(f)
-    
     valid_words = set(words)
-    filtered_word_to_verse = {}
-    for w in valid_words:
-        if w in v_idx['words']:
-            filtered_word_to_verse[w] = v_idx['words'][w]
+    filtered_word_to_verse = {w: v_idx['words'][w] for w in valid_words if w in v_idx['words']}
             
     with open('data/output/verse_index.json', 'w') as f:
         json.dump({'verses': v_idx['verses'], 'words': filtered_word_to_verse}, f, separators=(',', ':'))
