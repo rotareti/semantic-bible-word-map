@@ -836,6 +836,12 @@ class BibleWordMap extends HTMLElement {
                     margin-bottom: 8px;
                     font-size: 0.95em;
                 }
+                .bwm-active-word-item label {
+                    display: inline-flex;
+                    align-items: center;
+                    cursor: pointer;
+                    user-select: none;
+                }
                 .bwm-active-word-item input {
                     margin-right: 8px;
                     cursor: pointer;
@@ -1060,7 +1066,7 @@ class BibleWordMap extends HTMLElement {
                     letter-spacing: 0.3px;
                     padding: 2px 8px;
                     border-radius: 12px;
-                    color: #ffffff;
+                    color: #ffffff !important;
                     background: var(--bwm-node-hover);
                 }
                 .bwm-window-badge-muted {
@@ -1073,6 +1079,20 @@ class BibleWordMap extends HTMLElement {
                     border: 1px solid var(--bwm-border);
                     padding: 2px 7px;
                     border-radius: 10px;
+                }
+                .bwm-book-badge {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 0.68em;
+                    font-weight: 700;
+                    letter-spacing: 0.3px;
+                    padding: 2px 8px;
+                    border-radius: 12px;
+                    color: #ffffff !important;
+                    line-height: 1.2;
+                    vertical-align: middle;
+                    white-space: nowrap;
                 }
 
                 /* 6. Shared Close Button */
@@ -2975,7 +2995,7 @@ class BibleWordMap extends HTMLElement {
                 let formatted = formatVerseRef(ref);
                 let label = document.createElement('label');
                 label.style.cursor = 'pointer';
-                label.innerHTML = `<strong>${formatted}</strong> <span class="bwm-book-badge" style="background:${genreColor};font-size:0.65em;padding:1px 5px;margin-left:4px;">${genre}</span>`;
+                label.innerHTML = `<strong>${formatted}</strong> <span class="bwm-book-badge" style="background:${genreColor};margin-left:6px;">${genre}</span>`;
 
                 label.addEventListener('click', () => { cb.click(); });
 
@@ -3028,7 +3048,7 @@ class BibleWordMap extends HTMLElement {
                 let genreColor = GENRE_COLORS[book.genre] || '#3b82f6';
                 let label = document.createElement('label');
                 label.style.cursor = 'pointer';
-                label.innerHTML = `<strong>${book.name}</strong> <span class="bwm-book-badge" style="background:${genreColor};font-size:0.65em;padding:1px 5px;margin-left:4px;">${book.genre}</span>`;
+                label.innerHTML = `<strong>${book.name}</strong> <span class="bwm-book-badge" style="background:${genreColor};margin-left:6px;">${book.genre}</span>`;
 
                 label.addEventListener('click', () => { cb.click(); });
 
@@ -4749,7 +4769,7 @@ class BibleWordMap extends HTMLElement {
                     <div class="bwm-crossref-head">
                         <div class="bwm-crossref-title-wrap">
                             <span class="bwm-crossref-ref" data-focus-verse="${crId}" title="Focus this verse">${crFormatted}</span>
-                            <span class="bwm-book-badge" style="background:${crGenreColor};font-size:0.65em;padding:1px 5px;">${crGenre}</span>
+                            <span class="bwm-book-badge" style="background:${crGenreColor};">${crGenre}</span>
                         </div>
                         <div style="display:flex;align-items:center;gap:6px;">
                             <span class="bwm-crossref-badge" title="100D Vector Cosine Similarity">${pct}% match</span>
