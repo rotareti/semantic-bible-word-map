@@ -402,7 +402,7 @@ class BibleWordMap extends HTMLElement {
         this.drawerVerses = [];
         this.viewMode = 'words';
         this.testamentFilter = 'all';
-        this.showSimilarityLabels = false;
+        this.similarityLabelsMode = 'hover'; // 'off' | 'hover' | 'all'
         this.isSearchMode = false;
         this.searchedWords = [];
         this.nodes = [];
@@ -874,6 +874,12 @@ class BibleWordMap extends HTMLElement {
                     flex: 1 1 calc(33.333% - 6px);
                     font-weight: 600;
                     letter-spacing: 0.5px;
+                }
+                #bwm-sim-labels-filter .bwm-pill-btn {
+                    flex: 1 1 calc(33.333% - 6px);
+                    font-weight: 500;
+                    white-space: nowrap;
+                    padding: 7px 4px;
                 }
                 .bwm-active-word-item {
                     display: flex;
@@ -2022,8 +2028,9 @@ class BibleWordMap extends HTMLElement {
                                 <h4>Similarity Labels</h4>
                             </div>
                             <div class="bwm-pill-group" id="bwm-sim-labels-filter">
-                                <button type="button" class="bwm-pill-btn active" data-sim-labels="off">Off</button>
-                                <button type="button" class="bwm-pill-btn" data-sim-labels="on">Show All</button>
+                                <button type="button" class="bwm-pill-btn" data-sim-labels="off">Off</button>
+                                <button type="button" class="bwm-pill-btn active" data-sim-labels="hover">On Hover</button>
+                                <button type="button" class="bwm-pill-btn" data-sim-labels="all">Show All</button>
                             </div>
                             <div class="bwm-drawer-hint">Display semantic similarity percentages along connecting lines.</div>
                         </div>
@@ -2189,6 +2196,18 @@ class BibleWordMap extends HTMLElement {
                 </div>
             </div>
         `;
+    }
+
+    get showSimilarityLabels() {
+        return this.similarityLabelsMode === 'all';
+    }
+
+    set showSimilarityLabels(val) {
+        if (typeof val === 'string') {
+            this.similarityLabelsMode = val;
+        } else {
+            this.similarityLabelsMode = val ? 'all' : 'off';
+        }
     }
 
     connectedCallback() {
@@ -2429,7 +2448,7 @@ class BibleWordMap extends HTMLElement {
             btn.addEventListener('click', () => {
                 simLabelPills.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                this.showSimilarityLabels = (btn.getAttribute('data-sim-labels') === 'on');
+                this.similarityLabelsMode = btn.getAttribute('data-sim-labels') || 'hover';
                 this.draw();
             });
         });
@@ -5630,10 +5649,10 @@ class BibleWordMap extends HTMLElement {
         this.ctx.globalAlpha = 1.0;
         
         // Draw percentage labels along connecting lines (rotated along line direction)
-        if (this.links && this.links.length > 0 && (this.showSimilarityLabels || this.hoveredNode)) {
+        if (this.links && this.links.length > 0 && this.similarityLabelsMode !== 'off') {
             let linksToLabel = new Set();
 
-            if (this.showSimilarityLabels) {
+            if (this.similarityLabelsMode === 'all') {
                 this.links.forEach(l => {
                     if (!l.source || !l.target || l.source.x === undefined || l.target.x === undefined) return;
                     let matchSource = this.matchesTestament(l.source.t || l.source.testament);
@@ -5641,7 +5660,7 @@ class BibleWordMap extends HTMLElement {
                     if (!matchSource || !matchTarget) return;
                     linksToLabel.add(l);
                 });
-            } else if (this.hoveredNode) {
+            } else if (this.similarityLabelsMode === 'hover' && this.hoveredNode) {
                 this.links.forEach(l => {
                     if (!l.source || !l.target || l.source.x === undefined || l.target.x === undefined) return;
                     let matchSource = this.matchesTestament(l.source.t || l.source.testament);
