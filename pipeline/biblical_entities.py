@@ -102,6 +102,13 @@ def load_biblical_proper_names(raw_dir='data/raw', cache_file='data/processed/bi
                         if len(w_l) > 1 and w_l not in COMMON_NOUNS:
                             proper_names.add(w_l)
 
+    # 4. Canonical proper entities (titles, demonyms, and key biblical figures)
+    canonical_proper_entities = {
+        'nazarene', 'nazarenes', 'nazarite', 'nazarites',
+        'jesse', 'jeshua', 'nazareth', 'christ', 'jesus'
+    }
+    proper_names.update(canonical_proper_entities)
+
     # Ensure cache directory exists and write cache
     os.makedirs(os.path.dirname(cache_file), exist_ok=True)
     with open(cache_file, 'w', encoding='utf-8') as f:

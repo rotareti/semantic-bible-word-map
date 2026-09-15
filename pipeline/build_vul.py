@@ -301,6 +301,24 @@ ECCLESIASTICAL_OVERRIDES = {
     'herodes': ('herod', 'PROPN', 'Herod, king or tetrarch', 'herodes'),
     'herodis': ('herod', 'PROPN', 'Herod, king or tetrarch', 'herodes'),
     'herodem': ('herod', 'PROPN', 'Herod, king or tetrarch', 'herodes'),
+    'nazarenus': ('nazarene', 'PROPN', 'Nazarene, of or from Nazareth', 'nazarenus'),
+    'nazarene': ('nazarene', 'PROPN', 'Nazarene, of or from Nazareth', 'nazarenus'),
+    'nazareno': ('nazarene', 'PROPN', 'Nazarene, of or from Nazareth', 'nazarenus'),
+    'nazarenum': ('nazarene', 'PROPN', 'Nazarene, of or from Nazareth', 'nazarenus'),
+    'nazareni': ('nazarene', 'PROPN', 'Nazarene, of or from Nazareth', 'nazarenus'),
+    'nazarenos': ('nazarene', 'PROPN', 'Nazarene, of or from Nazareth', 'nazarenus'),
+    'nazarenorum': ('nazarene', 'PROPN', 'Nazarene, of or from Nazareth', 'nazarenus'),
+    'nazaraeus': ('nazarene', 'PROPN', 'Nazarene, Nazarite', 'nazaraeus'),
+    'nazaraei': ('nazarene', 'PROPN', 'Nazarene, Nazarite', 'nazaraeus'),
+    'nazaraeo': ('nazarene', 'PROPN', 'Nazarene, Nazarite', 'nazaraeus'),
+    'nazaraeum': ('nazarene', 'PROPN', 'Nazarene, Nazarite', 'nazaraeus'),
+    'nazaraeos': ('nazarene', 'PROPN', 'Nazarene, Nazarite', 'nazaraeus'),
+    'nazaraeorum': ('nazarene', 'PROPN', 'Nazarene, Nazarite', 'nazaraeus'),
+    'nazaraeis': ('nazarene', 'PROPN', 'Nazarene, Nazarite', 'nazaraeus'),
+    'nazareth': ('nazareth', 'PROPN', 'Nazareth, city in Galilee', 'nazareth'),
+    'iesse': ('jesse', 'PROPN', 'Jesse, father of King David', 'iesse'),
+    'isai': ('jesse', 'PROPN', 'Jesse, father of King David', 'iesse'),
+    'iesua': ('jeshua', 'PROPN', 'Jeshua / Joshua', 'iesua'),
     'panis': ('bread', 'NOUN', 'bread, loaf, food', 'panis'),
     'panem': ('bread', 'NOUN', 'bread, loaf, food', 'panis'),
     'pane': ('bread', 'NOUN', 'bread, loaf, food', 'panis'),
@@ -448,6 +466,8 @@ def clean_whitaker_senses(senses):
     s = re.sub(r'\[.*?\]', '', senses)
     s = re.sub(r'\(.*?\)', '', s)
     s = re.sub(r'\|.*', '', s)
+    if 'christ, the nazarene' in s.lower():
+        return 'nazarene'
     clauses = [c.strip() for c in re.split(r'[;]', s) if c.strip()]
     if not clauses:
         return 'word'
@@ -570,6 +590,9 @@ def main():
             # Prefix search in Whitaker stems
             for length in range(len(lem_norm), 2, -1):
                 pref = lem_norm[:length]
+                # Guard against false short prefix matches (e.g. 'ies' matching 'iesse' or other Hebrew names)
+                if pref == 'ies' and not lem_norm.startswith(('iesu', 'jesu')):
+                    continue
                 if (pref, pos) in whitaker_dict:
                     gloss, def_text = whitaker_dict[(pref, pos)]
                     break
