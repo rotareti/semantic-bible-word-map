@@ -17,6 +17,7 @@
 - **Cross-Canon POS Alignment:** Standardized Proper Noun classification across BSB, LXX, and VUL, preventing common theological nouns from misclassifying as PROPN.
 - **Vulgate Lexical Disambiguation:** Corrected Latin gloss for `nazarenus` to "Nazarene" (was "Christ"), resolved Jesse (`iesse`) and Jeshua (`iesua`) prefix collisions, and ensured single-bubble search for Jesus.
 - **BSB Pipeline Artifact Integrity:** Purged stale zero-occurrence tokens and added verse presence safeguards across all builds.
+- **GitHub Pages Deployment:** Added Vulgate semantic map and index files (`*_vul.json`) to the GitHub Actions Pages deployment artifact packaging step.
 
 ## [8.0.0] - 2026-09-11
 ### Added

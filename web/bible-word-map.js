@@ -3053,6 +3053,10 @@ class BibleWordMap extends HTMLElement {
                 }
                 this.hideLoading();
 
+                if (!this.data2d) {
+                    return;
+                }
+
                 if (this.searchedWords && this.searchedWords.length > 0) {
                     let baseWords = [...new Set(this.searchedWords.map(id => {
                         let { word, pos } = this.parseWordId(id);
@@ -3147,6 +3151,8 @@ class BibleWordMap extends HTMLElement {
             this.searchVerses(useExplicitIds);
             return;
         }
+        
+        if (!this.data2d) return;
         
         const findMatchesForToken = (token) => this.findMatchesForWordToken(token);
 
@@ -4309,6 +4315,7 @@ class BibleWordMap extends HTMLElement {
     }
 
     searchBooks(useExplicitCodes = false) {
+        if (!this.booksData || !this.booksData.books) return;
         this.hoveredNode = null;
         let foundBooks = [];
 
@@ -5031,6 +5038,7 @@ class BibleWordMap extends HTMLElement {
     }
 
     searchVerses(useExplicitCodes = false) {
+        if (!this.versemapData || !this.versemapData.verses) return;
         this.hoveredNode = null;
         let foundVerses = [];
 
