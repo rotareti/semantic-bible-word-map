@@ -1,5 +1,23 @@
 # Changelog
 
+## [9.0.0] - 2026-09-14
+### Added
+- **Latin Clementine Vulgate Foundation:** Added full support for the Latin Vulgate (73 books, 35,807 verses) with Douay-Rheims English text, 100D word embeddings, 2D word map, verse centroids, and book centroids.
+- **On-the-Fly Similarity Labels:** Added similarity percentage labels along connecting lines with a 3-option control (Off, On Hover, Show All).
+- **Study Panel Similarity Badges:** Added cosine similarity percentage indicators in the study panel relative to active keywords.
+- **Desktop Radial Context Menu:** Added right-click radial context menu on desktop for quick word, verse, and book actions.
+- **Integrated Map Guide & Legend:** Added "Show Map Guide & Legend" option in Options drawer opening a full map overlay with back and close buttons.
+
+### Changed
+- **Segmented Capsule Controls:** Restyled Semantic Foundation and Similarity Labels options with clean segmented pill groups.
+- **Mobile Bottom-Sheet Drawer:** Unified Options drawer on mobile (<= 768px) to use the swipe-down bottom-sheet design with handle and touch-drag dismissal.
+- **Mutual Exclusivity on Mobile:** Enforced strict single-panel visibility on mobile (opening Options closes study panels and vice versa).
+
+### Fixed
+- **Cross-Canon POS Alignment:** Standardized Proper Noun classification across BSB, LXX, and VUL, preventing common theological nouns from misclassifying as PROPN.
+- **Vulgate Lexical Disambiguation:** Corrected Latin gloss for `nazarenus` to "Nazarene" (was "Christ"), resolved Jesse (`iesse`) and Jeshua (`iesua`) prefix collisions, and ensured single-bubble search for Jesus.
+- **BSB Pipeline Artifact Integrity:** Purged stale zero-occurrence tokens and added verse presence safeguards across all builds.
+
 ## [8.0.0] - 2026-09-11
 ### Added
 - **Greek Septuagint (LXX) & New Testament Semantic Foundation:**
