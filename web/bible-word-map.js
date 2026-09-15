@@ -1168,6 +1168,25 @@ class BibleWordMap extends HTMLElement {
                     padding: 2px 7px;
                     border-radius: 10px;
                 }
+                .bwm-window-badge-sim {
+                    display: inline-flex;
+                    align-items: center;
+                    font-size: 0.74em;
+                    font-weight: 600;
+                    letter-spacing: 0.2px;
+                    background: rgba(37, 99, 235, 0.12);
+                    color: var(--bwm-node-hover, #2563eb) !important;
+                    border: 1px solid rgba(37, 99, 235, 0.35);
+                    padding: 2px 7px;
+                    border-radius: 10px;
+                }
+                @media (prefers-color-scheme: dark) {
+                    bible-word-map .bwm-window-badge-sim {
+                        background: rgba(96, 165, 250, 0.15);
+                        color: #60a5fa !important;
+                        border-color: rgba(96, 165, 250, 0.35);
+                    }
+                }
                 .bwm-book-badge {
                     display: inline-flex;
                     align-items: center;
@@ -4603,15 +4622,39 @@ class BibleWordMap extends HTMLElement {
             return `<span class="bwm-book-chip" style="border-left: 3px solid ${posColor};" title="${titleStr}"><b>${this.formatWord(tw.w, pos)}</b>${posLabel}</span>`;
         }).join('');
 
+        let simVal = null;
+        if (typeof book.sim === 'number' && book.sim > 0 && book.sim < 0.9999) {
+            simVal = book.sim;
+        } else if (this.links && this.links.length > 0) {
+            let bestSim = 0;
+            this.links.forEach(l => {
+                let isSource = (l.source === book || (l.source && (l.source.id === book.id || l.source.code === book.code)));
+                let isTarget = (l.target === book || (l.target && (l.target.id === book.id || l.target.code === book.code)));
+                if (isSource || isTarget) {
+                    let other = isSource ? l.target : l.source;
+                    let otherCode = (typeof other === 'object' && other) ? (other.code || other.id) : other;
+                    if (otherCode && otherCode !== book.code) {
+                        let s = (typeof l.sim === 'number' && l.sim > 0) ? l.sim : 0;
+                        if (s > bestSim && s < 0.9999) bestSim = s;
+                    }
+                }
+            });
+            if (bestSim > 0) simVal = bestSim;
+        }
+        let simBadgeHtml = (typeof simVal === 'number' && simVal > 0)
+            ? `<span class="bwm-window-badge bwm-window-badge-sim" title="Semantic cosine similarity">${(simVal * 100).toFixed(2)}% similarity</span>`
+            : '';
+
         this.bookCard.innerHTML = `
             <div class="bwm-sheet-handle"></div>
             ${tabsHtml}
             <div class="bwm-window-header">
                 <div class="bwm-window-header-top">
                     <div>
-                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;">
                             <span class="bwm-window-badge" style="background: ${genreColor};">${book.genre}</span>
                             <span class="bwm-window-subtitle-inline">${book.testament === 'OT' ? 'Old Testament' : 'New Testament'}</span>
+                            ${simBadgeHtml}
                         </div>
                         <h3 class="bwm-window-title">${book.name}</h3>
                         <div class="bwm-window-subtitle">${book.verses.toLocaleString()} verses &bull; ${book.total_words.toLocaleString()} words</div>
@@ -5315,15 +5358,39 @@ class BibleWordMap extends HTMLElement {
 
         let isAlreadyActive = Boolean(this.searchedVerses && this.searchedVerses.includes(verse.id));
 
+        let simVal = null;
+        if (typeof verse.sim === 'number' && verse.sim > 0 && verse.sim < 0.9999) {
+            simVal = verse.sim;
+        } else if (this.links && this.links.length > 0) {
+            let bestSim = 0;
+            this.links.forEach(l => {
+                let isSource = (l.source === verse || (l.source && l.source.id === verse.id));
+                let isTarget = (l.target === verse || (l.target && l.target.id === verse.id));
+                if (isSource || isTarget) {
+                    let other = isSource ? l.target : l.source;
+                    let otherId = (typeof other === 'object' && other) ? other.id : other;
+                    if (otherId && otherId !== verse.id) {
+                        let s = (typeof l.sim === 'number' && l.sim > 0) ? l.sim : 0;
+                        if (s > bestSim && s < 0.9999) bestSim = s;
+                    }
+                }
+            });
+            if (bestSim > 0) simVal = bestSim;
+        }
+        let simBadgeHtml = (typeof simVal === 'number' && simVal > 0)
+            ? `<span class="bwm-window-badge bwm-window-badge-sim" title="Semantic cosine similarity">${(simVal * 100).toFixed(2)}% similarity</span>`
+            : '';
+
         this.verseCard.innerHTML = `
             <div class="bwm-sheet-handle"></div>
             ${tabsHtml}
             <div class="bwm-window-header">
                 <div class="bwm-window-header-top">
                     <div>
-                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;">
                             <span class="bwm-window-badge" style="background: ${genreColor};">${genre}</span>
                             <span class="bwm-window-subtitle-inline">${testament === 'OT' ? 'Old Testament' : 'New Testament'}</span>
+                            ${simBadgeHtml}
                         </div>
                         <h3 class="bwm-window-title">${formattedRef}</h3>
                     </div>
@@ -5555,6 +5622,18 @@ class BibleWordMap extends HTMLElement {
         return true;
     }
 
+    isKeyNode(node) {
+        if (!node) return false;
+        if (node.isKw) return true;
+        if (this.viewMode === 'verses') {
+            return Boolean(node.isPrimary || (this.searchedVerses && this.searchedVerses.includes(node.id)));
+        }
+        if (this.viewMode === 'books') {
+            return Boolean(node.isPrimary || (this.searchedBooks && (this.searchedBooks.includes(node.code) || this.searchedBooks.includes(node.id))));
+        }
+        return Boolean(this.isSearchMode && this.searchedWords && this.searchedWords.includes(node.id));
+    }
+
     draw() {
         if (!this.ctx || (!this.data2d && !this.booksData && !this.versemapData)) return;
         this.updateColors();
@@ -5697,13 +5776,21 @@ class BibleWordMap extends HTMLElement {
                     linksToLabel.add(l);
                 });
             } else if (this.similarityLabelsMode === 'hover' && this.hoveredNode) {
+                let hoveredIsKey = this.isKeyNode(this.hoveredNode);
                 this.links.forEach(l => {
                     if (!l.source || !l.target || l.source.x === undefined || l.target.x === undefined) return;
                     let matchSource = this.matchesTestament(l.source.t || l.source.testament);
                     let matchTarget = this.matchesTestament(l.target.t || l.target.testament);
                     if (!matchSource || !matchTarget) return;
                     if (l.source === this.hoveredNode || l.target === this.hoveredNode) {
-                        linksToLabel.add(l);
+                        if (hoveredIsKey) {
+                            let other = (l.source === this.hoveredNode) ? l.target : l.source;
+                            if (this.isKeyNode(other) || l.type === 'kw-kw' || l.type === 'book-book') {
+                                linksToLabel.add(l);
+                            }
+                        } else {
+                            linksToLabel.add(l);
+                        }
                     }
                 });
             }
@@ -6755,6 +6842,74 @@ class BibleWordMap extends HTMLElement {
             }
         }
 
+        let simVal = null;
+        let simTargetWord = '';
+        if (typeof node.sim === 'number' && node.sim > 0 && node.sim < 0.9999) {
+            simVal = node.sim;
+            if (node.sourceKw) {
+                let { word: skwWord, pos: skwPos } = this.parseWordId(node.sourceKw);
+                simTargetWord = this.formatWord(skwWord, skwPos);
+            }
+        }
+
+        if (simVal === null && this.searchedWords && this.searchedWords.length > 0) {
+            let bestSim = 0;
+            let bestKw = '';
+
+            if (this.links && this.links.length > 0) {
+                this.links.forEach(l => {
+                    let isSource = (l.source === node || (l.source && l.source.id === node.id));
+                    let isTarget = (l.target === node || (l.target && l.target.id === node.id));
+                    if (isSource || isTarget) {
+                        let other = isSource ? l.target : l.source;
+                        let otherId = (typeof other === 'object' && other) ? other.id : other;
+                        if (otherId && otherId !== node.id) {
+                            let s = (typeof l.sim === 'number' && l.sim > 0)
+                                ? l.sim
+                                : (l.source && l.source.v && l.target && l.target.v ? this.cosineSimilarity(l.source.v, l.target.v) : 0);
+                            if (s > bestSim && s < 0.9999) {
+                                bestSim = s;
+                                bestKw = otherId;
+                            }
+                        }
+                    }
+                });
+            }
+
+            if (bestSim <= 0) {
+                let nodeVec = node.v || (this.data2d ? (this.data2d.find(d => d.id === node.id) || {}).v : null);
+                if (nodeVec) {
+                    this.searchedWords.forEach(swId => {
+                        if (swId === node.id) return;
+                        let kwNode = this.nodes ? this.nodes.find(n => n.id === swId) : null;
+                        let kwVec = kwNode ? kwNode.v : (this.data2d ? (this.data2d.find(d => d.id === swId) || {}).v : null);
+                        if (kwVec) {
+                            let s = this.cosineSimilarity(nodeVec, kwVec);
+                            if (s > bestSim && s < 0.9999) {
+                                bestSim = s;
+                                bestKw = swId;
+                            }
+                        }
+                    });
+                }
+            }
+
+            if (bestSim > 0) {
+                simVal = bestSim;
+                if (bestKw) {
+                    let { word: bKwWord, pos: bKwPos } = this.parseWordId(bestKw);
+                    simTargetWord = this.formatWord(bKwWord, bKwPos);
+                }
+            }
+        }
+
+        let simBadgeHtml = '';
+        if (typeof simVal === 'number' && simVal > 0) {
+            let pct = (simVal * 100).toFixed(2);
+            let simTitle = simTargetWord ? `Semantic similarity to ${simTargetWord} (${pct}%)` : `Semantic cosine similarity: ${pct}%`;
+            simBadgeHtml = `<span class="bwm-window-badge bwm-window-badge-sim" id="bwm-word-sim-badge" title="${simTitle}">${pct}% similarity</span>`;
+        }
+
         let headerHtml = `
             <div class="bwm-sheet-handle"></div>
             <div class="bwm-window-header">
@@ -6763,6 +6918,7 @@ class BibleWordMap extends HTMLElement {
                         <div style="display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;">
                             <h3 class="bwm-window-title" style="margin: 0;">${displayW}</h3>
                             ${node.pos ? `<span class="bwm-window-subtitle-inline">(${node.pos.toLowerCase()})</span>` : ''}
+                            ${simBadgeHtml}
                             <span class="bwm-window-badge" id="bwm-word-occ-badge">${occBadgeText}</span>
                             ${booksBadgeText ? `<span class="bwm-window-badge-muted" id="bwm-word-books-badge">${booksBadgeText}</span>` : ''}
                         </div>
