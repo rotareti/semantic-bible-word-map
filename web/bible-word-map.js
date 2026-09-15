@@ -1172,13 +1172,19 @@ class BibleWordMap extends HTMLElement {
                     display: inline-flex;
                     align-items: center;
                     font-size: 0.74em;
-                    font-weight: 600;
+                    font-weight: 500;
                     letter-spacing: 0.2px;
                     background: rgba(37, 99, 235, 0.12);
                     color: var(--bwm-node-hover, #2563eb) !important;
                     border: 1px solid rgba(37, 99, 235, 0.35);
                     padding: 2px 7px;
                     border-radius: 10px;
+                    white-space: nowrap;
+                    cursor: default;
+                }
+                .bwm-window-badge-sim b {
+                    font-weight: 700;
+                    margin-left: 3px;
                 }
                 @media (prefers-color-scheme: dark) {
                     bible-word-map .bwm-window-badge-sim {
@@ -4622,28 +4628,56 @@ class BibleWordMap extends HTMLElement {
             return `<span class="bwm-book-chip" style="border-left: 3px solid ${posColor};" title="${titleStr}"><b>${this.formatWord(tw.w, pos)}</b>${posLabel}</span>`;
         }).join('');
 
-        let simVal = null;
-        if (typeof book.sim === 'number' && book.sim > 0 && book.sim < 0.9999) {
-            simVal = book.sim;
-        } else if (this.links && this.links.length > 0) {
-            let bestSim = 0;
-            this.links.forEach(l => {
-                let isSource = (l.source === book || (l.source && (l.source.id === book.id || l.source.code === book.code)));
-                let isTarget = (l.target === book || (l.target && (l.target.id === book.id || l.target.code === book.code)));
-                if (isSource || isTarget) {
-                    let other = isSource ? l.target : l.source;
-                    let otherCode = (typeof other === 'object' && other) ? (other.code || other.id) : other;
-                    if (otherCode && otherCode !== book.code) {
-                        let s = (typeof l.sim === 'number' && l.sim > 0) ? l.sim : 0;
-                        if (s > bestSim && s < 0.9999) bestSim = s;
+        let isPrimaryBook = Boolean(this.searchedBooks && this.searchedBooks.includes(book.code));
+        let simBadgeHtml = '';
+        if (isPrimaryBook) {
+            if (this.searchedBooks && this.searchedBooks.length > 1) {
+                let otherSim = 0;
+                let otherName = '';
+                this.searchedBooks.filter(c => c !== book.code).forEach(oC => {
+                    let link = this.links ? this.links.find(l =>
+                        (l.source && (l.source.code === book.code || l.source === book.code) && l.target && (l.target.code === oC || l.target === oC)) ||
+                        (l.target && (l.target.code === book.code || l.target === book.code) && l.source && (l.source.code === oC || l.source === oC))
+                    ) : null;
+                    let s = link && typeof link.sim === 'number' ? link.sim : 0;
+                    if (s > otherSim && s < 0.9999) {
+                        otherSim = s;
+                        let oBook = this.booksData ? this.booksData.books.find(b => b.code === oC) : null;
+                        otherName = oBook ? oBook.name : oC;
                     }
+                });
+                if (otherSim > 0) {
+                    simBadgeHtml = `<span class="bwm-window-badge bwm-window-badge-sim" title="Similarity to ${otherName}">${(otherSim * 100).toFixed(2)}% similarity to <b>${otherName}</b></span>`;
                 }
-            });
-            if (bestSim > 0) simVal = bestSim;
+            }
+        } else {
+            let simVal = (typeof book.sim === 'number' && book.sim > 0 && book.sim < 0.9999) ? book.sim : null;
+            let targetName = '';
+            if (this.links && this.links.length > 0) {
+                let bestSim = 0;
+                this.links.forEach(l => {
+                    let isSource = (l.source === book || (l.source && (l.source.id === book.id || l.source.code === book.code)));
+                    let isTarget = (l.target === book || (l.target && (l.target.id === book.id || l.target.code === book.code)));
+                    if (isSource || isTarget) {
+                        let other = isSource ? l.target : l.source;
+                        let otherCode = (typeof other === 'object' && other) ? (other.code || other.id) : other;
+                        if (this.searchedBooks && this.searchedBooks.includes(otherCode)) {
+                            let s = (typeof l.sim === 'number' && l.sim > 0) ? l.sim : 0;
+                            if (s > bestSim && s < 0.9999) {
+                                bestSim = s;
+                                let oBook = this.booksData ? this.booksData.books.find(b => b.code === otherCode) : null;
+                                targetName = oBook ? oBook.name : otherCode;
+                            }
+                        }
+                    }
+                });
+                if (bestSim > 0) simVal = bestSim;
+            }
+            if (typeof simVal === 'number' && simVal > 0) {
+                let label = targetName ? `${(simVal * 100).toFixed(2)}% similarity to <b>${targetName}</b>` : `${(simVal * 100).toFixed(2)}% similarity`;
+                simBadgeHtml = `<span class="bwm-window-badge bwm-window-badge-sim" title="Similarity">${label}</span>`;
+            }
         }
-        let simBadgeHtml = (typeof simVal === 'number' && simVal > 0)
-            ? `<span class="bwm-window-badge bwm-window-badge-sim" title="Semantic cosine similarity">${(simVal * 100).toFixed(2)}% similarity</span>`
-            : '';
 
         this.bookCard.innerHTML = `
             <div class="bwm-sheet-handle"></div>
@@ -5358,28 +5392,53 @@ class BibleWordMap extends HTMLElement {
 
         let isAlreadyActive = Boolean(this.searchedVerses && this.searchedVerses.includes(verse.id));
 
-        let simVal = null;
-        if (typeof verse.sim === 'number' && verse.sim > 0 && verse.sim < 0.9999) {
-            simVal = verse.sim;
-        } else if (this.links && this.links.length > 0) {
-            let bestSim = 0;
-            this.links.forEach(l => {
-                let isSource = (l.source === verse || (l.source && l.source.id === verse.id));
-                let isTarget = (l.target === verse || (l.target && l.target.id === verse.id));
-                if (isSource || isTarget) {
-                    let other = isSource ? l.target : l.source;
-                    let otherId = (typeof other === 'object' && other) ? other.id : other;
-                    if (otherId && otherId !== verse.id) {
-                        let s = (typeof l.sim === 'number' && l.sim > 0) ? l.sim : 0;
-                        if (s > bestSim && s < 0.9999) bestSim = s;
+        let simBadgeHtml = '';
+        if (isAlreadyActive) {
+            if (this.searchedVerses && this.searchedVerses.length > 1) {
+                let otherSim = 0;
+                let otherRef = '';
+                this.searchedVerses.filter(id => id !== verse.id).forEach(oId => {
+                    let link = this.links ? this.links.find(l =>
+                        (l.source && (l.source.id === verse.id || l.source === verse.id) && l.target && (l.target.id === oId || l.target === oId)) ||
+                        (l.target && (l.target.id === verse.id || l.target === verse.id) && l.source && (l.source.id === oId || l.source === oId))
+                    ) : null;
+                    let s = link && typeof link.sim === 'number' ? link.sim : 0;
+                    if (s > otherSim && s < 0.9999) {
+                        otherSim = s;
+                        otherRef = formatVerseRef(oId);
                     }
+                });
+                if (otherSim > 0) {
+                    simBadgeHtml = `<span class="bwm-window-badge bwm-window-badge-sim" title="Similarity to ${otherRef}">${(otherSim * 100).toFixed(2)}% similarity to <b>${otherRef}</b></span>`;
                 }
-            });
-            if (bestSim > 0) simVal = bestSim;
+            }
+        } else {
+            let simVal = (typeof verse.sim === 'number' && verse.sim > 0 && verse.sim < 0.9999) ? verse.sim : null;
+            let targetRef = '';
+            if (this.links && this.links.length > 0) {
+                let bestSim = 0;
+                this.links.forEach(l => {
+                    let isSource = (l.source === verse || (l.source && l.source.id === verse.id));
+                    let isTarget = (l.target === verse || (l.target && l.target.id === verse.id));
+                    if (isSource || isTarget) {
+                        let other = isSource ? l.target : l.source;
+                        let otherId = (typeof other === 'object' && other) ? other.id : other;
+                        if (this.searchedVerses && this.searchedVerses.includes(otherId)) {
+                            let s = (typeof l.sim === 'number' && l.sim > 0) ? l.sim : 0;
+                            if (s > bestSim && s < 0.9999) {
+                                bestSim = s;
+                                targetRef = formatVerseRef(otherId);
+                            }
+                        }
+                    }
+                });
+                if (bestSim > 0) simVal = bestSim;
+            }
+            if (typeof simVal === 'number' && simVal > 0) {
+                let label = targetRef ? `${(simVal * 100).toFixed(2)}% similarity to <b>${targetRef}</b>` : `${(simVal * 100).toFixed(2)}% similarity`;
+                simBadgeHtml = `<span class="bwm-window-badge bwm-window-badge-sim" title="Similarity">${label}</span>`;
+            }
         }
-        let simBadgeHtml = (typeof simVal === 'number' && simVal > 0)
-            ? `<span class="bwm-window-badge bwm-window-badge-sim" title="Semantic cosine similarity">${(simVal * 100).toFixed(2)}% similarity</span>`
-            : '';
 
         this.verseCard.innerHTML = `
             <div class="bwm-sheet-handle"></div>
@@ -6842,73 +6901,57 @@ class BibleWordMap extends HTMLElement {
             }
         }
 
-        let simVal = null;
-        let simTargetWord = '';
-        if (typeof node.sim === 'number' && node.sim > 0 && node.sim < 0.9999) {
-            simVal = node.sim;
-            if (node.sourceKw) {
-                let { word: skwWord, pos: skwPos } = this.parseWordId(node.sourceKw);
-                simTargetWord = this.formatWord(skwWord, skwPos);
-            }
+        let activeKwIds = [];
+        if (this.viewMode === 'words' && this.isSearchMode && Array.isArray(this.searchedWords)) {
+            activeKwIds = this.searchedWords.filter(Boolean);
         }
 
-        if (simVal === null && this.searchedWords && this.searchedWords.length > 0) {
-            let bestSim = 0;
-            let bestKw = '';
+        let isNodeKw = Boolean(node.isKw || (activeKwIds.length > 0 && activeKwIds.includes(node.id)));
+        let targetKwIds = [];
 
-            if (this.links && this.links.length > 0) {
-                this.links.forEach(l => {
-                    let isSource = (l.source === node || (l.source && l.source.id === node.id));
-                    let isTarget = (l.target === node || (l.target && l.target.id === node.id));
-                    if (isSource || isTarget) {
-                        let other = isSource ? l.target : l.source;
-                        let otherId = (typeof other === 'object' && other) ? other.id : other;
-                        if (otherId && otherId !== node.id) {
-                            let s = (typeof l.sim === 'number' && l.sim > 0)
-                                ? l.sim
-                                : (l.source && l.source.v && l.target && l.target.v ? this.cosineSimilarity(l.source.v, l.target.v) : 0);
-                            if (s > bestSim && s < 0.9999) {
-                                bestSim = s;
-                                bestKw = otherId;
-                            }
-                        }
-                    }
+        if (isNodeKw) {
+            // If there are multiple key words, then each key word shows similarity to every other key word.
+            // If there is only one key word, there are no other words for it to show similarity to.
+            if (activeKwIds.length > 1) {
+                targetKwIds = activeKwIds.filter(id => id !== node.id);
+            }
+        } else if (activeKwIds.length > 0) {
+            // Neighbor words show similarity to the key words on the map
+            targetKwIds = [...activeKwIds];
+        }
+
+        let nodeVec = node.v || (this.data2d ? (this.data2d.find(d => d.id === node.id) || {}).v : null);
+        let simItems = [];
+
+        targetKwIds.forEach(tId => {
+            let tKwNode = this.nodes ? this.nodes.find(n => n.id === tId) : null;
+            let tKwVec = tKwNode ? tKwNode.v : (this.data2d ? (this.data2d.find(d => d.id === tId) || {}).v : null);
+
+            let s = null;
+            if (nodeVec && tKwVec) {
+                s = this.cosineSimilarity(nodeVec, tKwVec);
+            } else if (node.sourceKw === tId && typeof node.sim === 'number' && node.sim > 0 && node.sim < 0.9999) {
+                s = node.sim;
+            }
+
+            if (typeof s === 'number' && s > 0 && s < 0.9999) {
+                let { word: tWord, pos: tPos } = this.parseWordId(tId);
+                let formattedTWord = this.formatWord(tWord, tPos);
+                simItems.push({
+                    id: tId,
+                    name: formattedTWord,
+                    sim: s
                 });
             }
+        });
 
-            if (bestSim <= 0) {
-                let nodeVec = node.v || (this.data2d ? (this.data2d.find(d => d.id === node.id) || {}).v : null);
-                if (nodeVec) {
-                    this.searchedWords.forEach(swId => {
-                        if (swId === node.id) return;
-                        let kwNode = this.nodes ? this.nodes.find(n => n.id === swId) : null;
-                        let kwVec = kwNode ? kwNode.v : (this.data2d ? (this.data2d.find(d => d.id === swId) || {}).v : null);
-                        if (kwVec) {
-                            let s = this.cosineSimilarity(nodeVec, kwVec);
-                            if (s > bestSim && s < 0.9999) {
-                                bestSim = s;
-                                bestKw = swId;
-                            }
-                        }
-                    });
-                }
-            }
+        // Sort similarity items by similarity descending (highest similarity first)
+        simItems.sort((a, b) => b.sim - a.sim);
 
-            if (bestSim > 0) {
-                simVal = bestSim;
-                if (bestKw) {
-                    let { word: bKwWord, pos: bKwPos } = this.parseWordId(bestKw);
-                    simTargetWord = this.formatWord(bKwWord, bKwPos);
-                }
-            }
-        }
-
-        let simBadgeHtml = '';
-        if (typeof simVal === 'number' && simVal > 0) {
-            let pct = (simVal * 100).toFixed(2);
-            let simTitle = simTargetWord ? `Semantic similarity to ${simTargetWord} (${pct}%)` : `Semantic cosine similarity: ${pct}%`;
-            simBadgeHtml = `<span class="bwm-window-badge bwm-window-badge-sim" id="bwm-word-sim-badge" title="${simTitle}">${pct}% similarity</span>`;
-        }
+        let simBadgesHtml = simItems.map(item => {
+            let pctStr = (item.sim * 100).toFixed(2);
+            return `<span class="bwm-window-badge bwm-window-badge-sim" title="Semantic cosine similarity: ${pctStr}% to ${item.name}">${pctStr}% similarity to <b>${item.name}</b></span>`;
+        }).join('');
 
         let headerHtml = `
             <div class="bwm-sheet-handle"></div>
@@ -6918,7 +6961,7 @@ class BibleWordMap extends HTMLElement {
                         <div style="display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;">
                             <h3 class="bwm-window-title" style="margin: 0;">${displayW}</h3>
                             ${node.pos ? `<span class="bwm-window-subtitle-inline">(${node.pos.toLowerCase()})</span>` : ''}
-                            ${simBadgeHtml}
+                            ${simBadgesHtml}
                             <span class="bwm-window-badge" id="bwm-word-occ-badge">${occBadgeText}</span>
                             ${booksBadgeText ? `<span class="bwm-window-badge-muted" id="bwm-word-books-badge">${booksBadgeText}</span>` : ''}
                         </div>
