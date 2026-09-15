@@ -738,6 +738,10 @@ class BibleWordMap extends HTMLElement {
                     padding: 20px;
                     overflow-y: auto;
                     flex: 1;
+                    min-height: 0;
+                    scrollbar-width: thin;
+                    scrollbar-color: var(--bwm-border) transparent;
+                    -webkit-overflow-scrolling: touch;
                 }
                 .bwm-drawer-legend-btn {
                     display: flex;
@@ -1755,7 +1759,8 @@ class BibleWordMap extends HTMLElement {
                         background: var(--bwm-node-hover);
                     }
 
-                    .bwm-window-card {
+                    .bwm-window-card,
+                    .bwm-drawer {
                         top: auto !important;
                         bottom: 0 !important;
                         left: 0 !important;
@@ -1770,16 +1775,32 @@ class BibleWordMap extends HTMLElement {
                         border-left: none !important;
                         border-right: none !important;
                         box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35) !important;
+                        background-color: rgba(255, 255, 255, 0.95) !important;
+                        background-color: color-mix(in srgb, var(--bwm-bg) 95%, transparent) !important;
+                        backdrop-filter: blur(16px) !important;
+                        -webkit-backdrop-filter: blur(16px) !important;
                         transform: translateY(105%);
                         opacity: 0;
                         pointer-events: none;
-                        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+                        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease !important;
+                        z-index: 10020 !important;
+                        overflow: hidden;
                     }
 
-                    .bwm-window-card.visible {
-                        transform: translateY(0);
-                        opacity: 1;
-                        pointer-events: auto;
+                    .bwm-window-card.visible,
+                    .bwm-drawer.open {
+                        left: 0 !important;
+                        transform: translateY(0) !important;
+                        opacity: 1 !important;
+                        pointer-events: auto !important;
+                    }
+
+                    .bwm-drawer-header {
+                        padding: 8px 20px 12px 20px;
+                    }
+
+                    .bwm-drawer-content {
+                        padding: 16px 20px 24px 20px;
                     }
 
                     .bwm-book-card-reopen {
@@ -2021,6 +2042,7 @@ class BibleWordMap extends HTMLElement {
                 </div>
                 <div style="position: relative; height: 0;"><span id="bwm-error" class="bwm-error" style="position: absolute; top: -10px; left: 50px;">Word not found</span></div>
                 <div class="bwm-drawer" id="bwm-drawer">
+                    <div class="bwm-sheet-handle"></div>
                     <div class="bwm-drawer-header">
                         <h3>Options</h3>
                         <div class="bwm-drawer-close" id="bwm-drawer-close">&times;</div>
@@ -2550,7 +2572,19 @@ class BibleWordMap extends HTMLElement {
         }
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
+                let handled = false;
+                if (this.drawer && this.drawer.classList.contains('open')) {
+                    this.closeDrawer();
+                    handled = true;
+                }
+                if (this.legendOverlay && this.legendOverlay.classList.contains('visible')) {
+                    this.hideLegendWindow();
+                    handled = true;
+                }
                 if (this.closeActiveInfoWindows()) {
+                    handled = true;
+                }
+                if (handled) {
                     e.stopPropagation();
                 }
             }
@@ -2562,13 +2596,19 @@ class BibleWordMap extends HTMLElement {
             this.lastTouchStartTime = Date.now();
             let menuWasVisible = this.radialMenuNode !== null;
             let wordWasVisible = this.wordCard && this.wordCard.classList.contains('visible');
+            let bookWasVisible = this.bookCard && this.bookCard.classList.contains('visible');
+            let verseWasVisible = this.verseCard && this.verseCard.classList.contains('visible');
+            let drawerWasVisible = this.drawer && this.drawer.classList.contains('open');
             if (menuWasVisible) {
                 this.touchCloseTooltip = true;
                 this.hideRadialMenu();
             }
-            if (wordWasVisible && window.innerWidth <= 768) {
+            if ((wordWasVisible || bookWasVisible || verseWasVisible) && window.innerWidth <= 768) {
                 this.touchCloseTooltip = true;
-                this.hideWordInspector();
+                this.closeActiveInfoWindows();
+            }
+            if (drawerWasVisible && window.innerWidth <= 768) {
+                this.closeDrawer();
             }
             
             if (e.touches && e.touches.length > 1) {
@@ -2658,16 +2698,26 @@ class BibleWordMap extends HTMLElement {
         this.drawer = this.querySelector('#bwm-drawer');
         this.drawerClose = this.querySelector('#bwm-drawer-close');
         
-        this.drawerToggle.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const isOpen = this.drawer.classList.toggle('open');
-            this.drawerToggle.classList.toggle('active', isOpen);
-        });
+        if (this.drawer) {
+            this.drawer.addEventListener('click', (e) => e.stopPropagation());
+            this.drawer.addEventListener('pointerdown', (e) => e.stopPropagation());
+            this.drawer.addEventListener('mousedown', (e) => e.stopPropagation());
+            this.setupMobileSwipeToDismiss(this.drawer, () => this.closeDrawer());
+        }
+
+        if (this.drawerToggle) {
+            this.drawerToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleDrawer();
+            });
+        }
         
-        this.drawerClose.addEventListener('click', () => {
-            this.drawer.classList.remove('open');
-            this.drawerToggle.classList.remove('active');
-        });
+        if (this.drawerClose) {
+            this.drawerClose.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.closeDrawer();
+            });
+        }
 
         this.legendOverlay = this.querySelector('#bwm-legend-overlay');
         this.legendBackBtn = this.querySelector('#bwm-legend-back-btn');
@@ -2716,15 +2766,22 @@ class BibleWordMap extends HTMLElement {
             }
             
             if (this.drawer && this.drawer.classList.contains('open')) {
-                if (!this.drawer.contains(e.target) && !this.drawerToggle.contains(e.target)) {
-                    this.drawer.classList.remove('open');
-                    this.drawerToggle.classList.remove('active');
+                if (!this.drawer.contains(e.target) && (!this.drawerToggle || !this.drawerToggle.contains(e.target))) {
+                    this.closeDrawer();
                 }
             }
         });
     }
 
     resize() {
+        if (window.innerWidth <= 768) {
+            let hasActiveCard = (this.wordCard && this.wordCard.classList.contains('visible')) ||
+                                (this.bookCard && this.bookCard.classList.contains('visible')) ||
+                                (this.verseCard && this.verseCard.classList.contains('visible'));
+            if (hasActiveCard && this.drawer && this.drawer.classList.contains('open')) {
+                this.closeDrawer();
+            }
+        }
         let rect = this.canvas.parentElement.getBoundingClientRect();
         let dpr = window.devicePixelRatio || 1;
         
@@ -4538,18 +4595,44 @@ class BibleWordMap extends HTMLElement {
         if (!this.legendOverlay) return;
         this.closeActiveInfoWindows();
         this.hideRadialMenu();
-        if (this.drawer) {
-            this.drawer.classList.remove('open');
-        }
-        if (this.drawerToggle) {
-            this.drawerToggle.classList.remove('active');
-        }
+        this.closeDrawer();
         this.legendOverlay.classList.add('visible');
     }
 
     hideLegendWindow() {
         if (!this.legendOverlay) return;
         this.legendOverlay.classList.remove('visible');
+    }
+
+    openDrawer() {
+        if (!this.drawer) return;
+        if (window.innerWidth <= 768) {
+            this.closeActiveInfoWindows();
+            this.hideRadialMenu();
+        }
+        this.drawer.style.transform = '';
+        this.drawer.style.transition = '';
+        this.drawer.style.opacity = '';
+        this.drawer.classList.add('open');
+        if (this.drawerToggle) this.drawerToggle.classList.add('active');
+    }
+
+    closeDrawer() {
+        if (!this.drawer) return;
+        this.drawer.classList.remove('open');
+        this.drawer.style.transform = '';
+        this.drawer.style.transition = '';
+        this.drawer.style.opacity = '';
+        if (this.drawerToggle) this.drawerToggle.classList.remove('active');
+    }
+
+    toggleDrawer() {
+        if (!this.drawer) return;
+        if (this.drawer.classList.contains('open')) {
+            this.closeDrawer();
+        } else {
+            this.openDrawer();
+        }
     }
 
     closeActiveInfoWindows() {
@@ -4579,7 +4662,11 @@ class BibleWordMap extends HTMLElement {
 
     showBookCard(book, allActiveBooks = null) {
         if (!this.bookCard || !book) return;
+        if (window.innerWidth <= 768) {
+            this.closeDrawer();
+        }
         this.hideWordInspector();
+        this.hideVerseCard();
         this.hideRadialMenu();
         this.selectedBook = book;
         let genreColor = GENRE_COLORS[book.genre] || '#3b82f6';
@@ -5314,6 +5401,9 @@ class BibleWordMap extends HTMLElement {
         if (!this.verseCard || !verse) return;
         if (this.versemapLookup && this.versemapLookup.has(verse.id)) {
             verse = this.versemapLookup.get(verse.id);
+        }
+        if (window.innerWidth <= 768) {
+            this.closeDrawer();
         }
         this.hideWordInspector();
         this.hideBookCard();
@@ -6230,7 +6320,10 @@ class BibleWordMap extends HTMLElement {
         if (this.isTouch && !this.touchTargetNode) {
             this.hoveredNode = null;
             this.hideRadialMenu();
-            this.hideWordInspector();
+            this.closeActiveInfoWindows();
+            if (window.innerWidth <= 768) {
+                this.closeDrawer();
+            }
             this.draw();
             return;
         }
@@ -6279,11 +6372,11 @@ class BibleWordMap extends HTMLElement {
                 }
             } else {
                 this.hideRadialMenu();
-                this.hideWordInspector();
-                this.hoveredNode = null;
-                if (this.verseCard && this.verseCard.classList.contains('visible')) {
-                    this.hideVerseCard();
+                this.closeActiveInfoWindows();
+                if (window.innerWidth <= 768) {
+                    this.closeDrawer();
                 }
+                this.hoveredNode = null;
                 this.draw();
             }
             return;
@@ -6328,11 +6421,11 @@ class BibleWordMap extends HTMLElement {
                 }
             } else {
                 this.hideRadialMenu();
-                this.hideWordInspector();
-                this.hoveredNode = null;
-                if (this.bookCard && this.bookCard.classList.contains('visible')) {
-                    this.hideBookCard();
+                this.closeActiveInfoWindows();
+                if (window.innerWidth <= 768) {
+                    this.closeDrawer();
                 }
+                this.hoveredNode = null;
                 this.draw();
             }
             return;
@@ -6354,7 +6447,10 @@ class BibleWordMap extends HTMLElement {
             }
         } else {
             this.hideRadialMenu();
-            this.hideWordInspector();
+            this.closeActiveInfoWindows();
+            if (window.innerWidth <= 768) {
+                this.closeDrawer();
+            }
             this.hoveredNode = null;
             this.draw();
         }
@@ -6730,7 +6826,7 @@ class BibleWordMap extends HTMLElement {
             startTime = performance.now();
             isDragging = false;
 
-            scrollEl = touch.target.closest('.bwm-window-body, .bwm-verses-body, .bwm-canon-list, .bwm-book-chip-list');
+            scrollEl = touch.target.closest('.bwm-window-body, .bwm-verses-body, .bwm-canon-list, .bwm-book-chip-list, .bwm-drawer-content');
             if (scrollEl) {
                 canDrag = (scrollEl.scrollTop <= 0);
             } else {
@@ -6746,9 +6842,9 @@ class BibleWordMap extends HTMLElement {
         card.addEventListener('mousedown', (e) => {
             if (window.innerWidth > 768) return;
             if (e.button !== 0) return;
-            const handleOrHeader = e.target.closest('.bwm-sheet-handle, .bwm-window-header');
+            const handleOrHeader = e.target.closest('.bwm-sheet-handle, .bwm-window-header, .bwm-drawer-header');
             if (!handleOrHeader) return;
-            if (e.target.closest('button, input, a, .bwm-window-tab, .bwm-window-pill')) return;
+            if (e.target.closest('button, input, a, .bwm-window-tab, .bwm-window-pill, .bwm-pill-btn, .bwm-drawer-close, .bwm-drawer-legend-btn')) return;
 
             e.stopPropagation();
             startY = e.clientY;
@@ -6837,7 +6933,11 @@ class BibleWordMap extends HTMLElement {
 
     async showWordInspector(node, defaultTab = 'verses') {
         if (!node) return;
+        if (window.innerWidth <= 768) {
+            this.closeDrawer();
+        }
         this.hideBookCard();
+        this.hideVerseCard();
         this.hideRadialMenu();
         this.inspectorNode = node;
         this.lastWordInspectorTab = defaultTab;
