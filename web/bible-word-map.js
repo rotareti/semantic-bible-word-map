@@ -693,6 +693,8 @@ class BibleWordMap extends HTMLElement {
                     left: 0;
                     width: 100%;
                     max-width: 640px;
+                    max-height: 80vh;
+                    overflow-y: auto;
                     z-index: 10031;
                     background-color: var(--bwm-bg);
                     background-color: color-mix(in srgb, var(--bwm-bg) 96%, transparent);
@@ -3588,7 +3590,7 @@ class BibleWordMap extends HTMLElement {
                 if (this.searchedVerses && this.searchedVerses.length > 0) {
                     this.searchVerses(true);
                 } else if (verses) {
-                    let parsed = this.parseVerseQuery(verses);
+                    let parsed = this.parseVerseQuery(verses, true);
                     if (parsed.length > 0) {
                         this.searchedVerses = parsed;
                         this.drawerVerses = [...this.searchedVerses];
@@ -3814,11 +3816,9 @@ class BibleWordMap extends HTMLElement {
         let typoWordSuggestions = [];
         let detectedVerse = detectVerseReference(q);
         let detectedBook = detectBookMatch(q, this.booksData ? this.booksData.books : null);
-        let hasDirectWordMatch = false;
-
-        if (this.data2d && this.findMatchesForWordToken(q).length > 0) {
-            hasDirectWordMatch = true;
-        }
+        let exactWordMatches = (this.data2d && this.findMatchesForWordToken(q)) || [];
+        let directWordMatch = exactWordMatches.length > 0 ? exactWordMatches[0] : null;
+        let hasDirectWordMatch = Boolean(directWordMatch);
 
         // Handle multi-word tokens in words mode (only if not a detected verse or book)
         let multiTokenSuggestions = null;
@@ -3849,7 +3849,11 @@ class BibleWordMap extends HTMLElement {
         if (currentMode === 'words') {
             html += `No exact match for &ldquo;${escapeHtml(q)}&rdquo; in Words view.`;
         } else if (currentMode === 'verses') {
-            html += `No verse found matching &ldquo;${escapeHtml(q)}&rdquo;.`;
+            if (detectedBook && !detectedBook.isTypo) {
+                html += `No chapter or verse specified for &ldquo;${escapeHtml(q)}&rdquo;.`;
+            } else {
+                html += `No verse found matching &ldquo;${escapeHtml(q)}&rdquo;.`;
+            }
         } else {
             html += `No book found matching &ldquo;${escapeHtml(q)}&rdquo;.`;
         }
@@ -3862,23 +3866,53 @@ class BibleWordMap extends HTMLElement {
 
         let hasContent = false;
 
-        // SECTION: Verse Detection Action (if in words or books view, or verse typo in verses view)
-        if (detectedVerse) {
-            if (currentMode !== 'verses' || detectedVerse.isTypo) {
-                hasContent = true;
-                let btnLabel = currentMode === 'verses' ? `Search ${escapeHtml(detectedVerse.displayRef)} &rarr;` : `View in Verses Mode &rarr;`;
-                let title = detectedVerse.isTypo ? `📖 Did you mean Scripture Verse: ${escapeHtml(detectedVerse.displayRef)}?` : `📖 Scripture Verse Detected: ${escapeHtml(detectedVerse.displayRef)}`;
-                let desc = detectedVerse.isTypo ? `Typo detected in book reference. Search for this passage in Verses Mode.` : `This query matches a biblical passage. Explore its cross-references in Verses Mode.`;
-                html += `
-                    <div class="bwm-recovery-action-card">
-                        <div class="bwm-recovery-action-info">
-                            <div class="bwm-recovery-action-title">${title}</div>
-                            <div class="bwm-recovery-action-desc">${desc}</div>
-                        </div>
-                        <button type="button" class="bwm-recovery-action-btn" id="bwm-recovery-btn-verse" data-verse="${escapeHtml(detectedVerse.searchRef || detectedVerse.displayRef)}">${btnLabel}</button>
-                    </div>
-                `;
+        // SECTION: Verse Detection Action (if in words or books view with detected verse, verse typo in verses view, or bare book in verses view)
+        let verseActionData = null;
+        if (detectedVerse && (currentMode !== 'verses' || detectedVerse.isTypo)) {
+            verseActionData = {
+                displayRef: detectedVerse.displayRef,
+                searchRef: detectedVerse.searchRef || detectedVerse.displayRef,
+                isTypo: detectedVerse.isTypo,
+                isBook11: false
+            };
+        } else if (currentMode === 'verses' && !detectedVerse && detectedBook) {
+            verseActionData = {
+                displayRef: `${detectedBook.book.name} 1:1`,
+                searchRef: `${detectedBook.book.name} 1:1`,
+                isTypo: detectedBook.isTypo,
+                isBook11: true,
+                bookName: detectedBook.book.name
+            };
+        }
+
+        if (verseActionData) {
+            hasContent = true;
+            let btnLabel = currentMode === 'verses' ? `Search ${escapeHtml(verseActionData.displayRef)} &rarr;` : `View in Verses Mode &rarr;`;
+            let title = '';
+            let desc = '';
+            if (verseActionData.isBook11) {
+                title = verseActionData.isTypo
+                    ? `📖 Did you mean Verse: ${escapeHtml(verseActionData.displayRef)}?`
+                    : `📖 Verse Suggestion: ${escapeHtml(verseActionData.displayRef)}`;
+                desc = `Start at the opening verse of ${escapeHtml(verseActionData.bookName)} in Verses Mode.`;
+            } else {
+                title = verseActionData.isTypo
+                    ? `📖 Did you mean Scripture Verse: ${escapeHtml(verseActionData.displayRef)}?`
+                    : `📖 Scripture Verse Detected: ${escapeHtml(verseActionData.displayRef)}`;
+                desc = verseActionData.isTypo
+                    ? `Typo detected in book reference. Search for this passage in Verses Mode.`
+                    : `This query matches a biblical passage. Explore its cross-references in Verses Mode.`;
             }
+
+            html += `
+                <div class="bwm-recovery-action-card">
+                    <div class="bwm-recovery-action-info">
+                        <div class="bwm-recovery-action-title">${title}</div>
+                        <div class="bwm-recovery-action-desc">${desc}</div>
+                    </div>
+                    <button type="button" class="bwm-recovery-action-btn" id="bwm-recovery-btn-verse" data-verse="${escapeHtml(verseActionData.searchRef)}">${btnLabel}</button>
+                </div>
+            `;
         }
 
         // SECTION: Book Detection Action (if in words or verses view, or book typo in books view)
@@ -3902,16 +3936,18 @@ class BibleWordMap extends HTMLElement {
         }
 
         // SECTION: Word Detection Action (if in verses or books view and query exists in words vocabulary)
-        if (currentMode !== 'words' && (hasDirectWordMatch || this.findTypoWordSuggestions(q, 1).length > 0)) {
+        if (currentMode !== 'words' && (hasDirectWordMatch || (!detectedBook && this.findTypoWordSuggestions(q, 1).length > 0))) {
             hasContent = true;
-            let targetWord = hasDirectWordMatch ? q : this.findTypoWordSuggestions(q, 1)[0].w;
+            let targetWord = hasDirectWordMatch ? (directWordMatch ? directWordMatch.w : q) : this.findTypoWordSuggestions(q, 1)[0].w;
+            let posBadge = directWordMatch && directWordMatch.pos ? ` (${directWordMatch.pos.toLowerCase()})` : '';
+            let displayWord = directWordMatch ? this.formatWord(directWordMatch.w, directWordMatch.pos) : (targetWord.charAt(0).toUpperCase() + targetWord.slice(1));
             html += `
                 <div class="bwm-recovery-action-card">
                     <div class="bwm-recovery-action-info">
-                        <div class="bwm-recovery-action-title">✦ Biblical Keyword Detected: &ldquo;${escapeHtml(targetWord)}&rdquo;</div>
+                        <div class="bwm-recovery-action-title">✦ Biblical Keyword Detected: &ldquo;${escapeHtml(displayWord)}&rdquo;${escapeHtml(posBadge)}</div>
                         <div class="bwm-recovery-action-desc">This query is a canonical word. Explore its semantic constellation and usage in Words Mode.</div>
                     </div>
-                    <button type="button" class="bwm-recovery-action-btn" id="bwm-recovery-btn-word" data-word="${escapeHtml(targetWord)}">Search in Words Mode &rarr;</button>
+                    <button type="button" class="bwm-recovery-action-btn" id="bwm-recovery-btn-word" data-word="${escapeHtml(displayWord)}">Search in Words Mode &rarr;</button>
                 </div>
             `;
         }
@@ -5955,7 +5991,7 @@ class BibleWordMap extends HTMLElement {
         }
     }
 
-    parseVerseQuery(query) {
+    parseVerseQuery(query, fallbackTo11 = false) {
         if (!query) return [];
         let parts = query.trim().split(/[,;]+|\s+and\s+/i);
         let results = [];
@@ -6004,7 +6040,7 @@ class BibleWordMap extends HTMLElement {
                         }
                     }
                 }
-            } else {
+            } else if (fallbackTo11) {
                 let clean = norm.replace(/\s+/g, '');
                 let bookCode = BOOK_ALIASES[clean];
                 if (bookCode) {
