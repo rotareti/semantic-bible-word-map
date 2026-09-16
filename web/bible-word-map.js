@@ -1228,6 +1228,7 @@ class BibleWordMap extends HTMLElement {
                     border-color: var(--bwm-node-hover);
                     font-weight: 600;
                 }
+                #bwm-verse-mode-filter,
                 #bwm-foundation-filter,
                 #bwm-sim-labels-filter {
                     display: flex;
@@ -1243,6 +1244,7 @@ class BibleWordMap extends HTMLElement {
                     flex-wrap: nowrap;
                     margin-top: 10px;
                 }
+                #bwm-verse-mode-filter .bwm-pill-btn,
                 #bwm-foundation-filter .bwm-pill-btn,
                 #bwm-sim-labels-filter .bwm-pill-btn {
                     flex: 1 1 0;
@@ -1259,11 +1261,13 @@ class BibleWordMap extends HTMLElement {
                     white-space: nowrap;
                     font-family: var(--bwm-font);
                 }
+                #bwm-verse-mode-filter .bwm-pill-btn:hover,
                 #bwm-foundation-filter .bwm-pill-btn:hover,
                 #bwm-sim-labels-filter .bwm-pill-btn:hover {
                     background: transparent;
                     color: var(--bwm-text);
                 }
+                #bwm-verse-mode-filter .bwm-pill-btn.active,
                 #bwm-foundation-filter .bwm-pill-btn.active,
                 #bwm-sim-labels-filter .bwm-pill-btn.active {
                     background: var(--bwm-node-hover);
@@ -2706,7 +2710,7 @@ class BibleWordMap extends HTMLElement {
                                 <h4>Verse Connections Mode</h4>
                             </div>
                             <div class="bwm-pill-group" id="bwm-verse-mode-filter">
-                                <button type="button" class="bwm-pill-btn active" id="bwm-btn-mode-refs" data-submode="refs" title="View semantic cross-reference network">🔗 Cross-References</button>
+                                <button type="button" class="bwm-pill-btn active" id="bwm-btn-mode-refs" data-submode="refs" title="View semantic cross-reference network">🔗 References</button>
                                 <button type="button" class="bwm-pill-btn" id="bwm-btn-mode-words" data-submode="words" title="View constituent word constellation">✦ Words</button>
                             </div>
                             <div class="bwm-drawer-hint" id="bwm-verse-mode-hint">Toggle between verse cross-references and constituent words.</div>
