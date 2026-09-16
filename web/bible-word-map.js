@@ -1675,6 +1675,151 @@ class BibleWordMap extends HTMLElement {
                     line-height: 1.4;
                 }
 
+                /* Neighbors Tab & Similarity Chart */
+                .bwm-neighbors-body {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    padding: 12px 16px;
+                }
+                .bwm-neighbors-summary {
+                    background: var(--bwm-badge-bg);
+                    border: 1px solid var(--bwm-border);
+                    border-radius: 8px;
+                    padding: 10px 14px;
+                    font-size: 0.84em;
+                    color: var(--bwm-text);
+                    line-height: 1.45;
+                }
+                .bwm-neighbors-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                }
+                .bwm-neighbor-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 6px 10px;
+                    border-radius: 8px;
+                    background: var(--bwm-input-bg);
+                    border: 1px solid var(--bwm-border);
+                    transition: background-color 0.12s ease, transform 0.1s ease, border-color 0.12s ease;
+                    cursor: pointer;
+                }
+                .bwm-neighbor-row:hover {
+                    background: var(--bwm-badge-bg);
+                    border-color: color-mix(in srgb, var(--bwm-node-hover) 40%, var(--bwm-border));
+                    transform: translateX(2px);
+                }
+                .bwm-neighbor-rank {
+                    font-family: monospace;
+                    font-weight: 700;
+                    font-size: 0.82em;
+                    color: var(--bwm-text-muted);
+                    width: 22px;
+                    text-align: right;
+                    flex-shrink: 0;
+                }
+                .bwm-neighbor-info {
+                    width: 135px;
+                    min-width: 110px;
+                    flex-shrink: 0;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1px;
+                }
+                .bwm-neighbor-word-line {
+                    display: flex;
+                    align-items: baseline;
+                    gap: 5px;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+                .bwm-neighbor-name {
+                    font-weight: 600;
+                    font-size: 0.88em;
+                    color: var(--bwm-text);
+                }
+                .bwm-neighbor-pos {
+                    font-size: 0.74em;
+                    font-weight: 500;
+                }
+                .bwm-neighbor-orig {
+                    font-size: 0.74em;
+                    color: var(--bwm-text-muted);
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    max-width: 135px;
+                }
+                .bwm-neighbor-track {
+                    flex: 1;
+                    height: 14px;
+                    background: var(--bwm-badge-bg);
+                    border: 1px solid var(--bwm-border);
+                    border-radius: 7px;
+                    overflow: hidden;
+                    position: relative;
+                }
+                .bwm-neighbor-fill {
+                    height: 100%;
+                    border-radius: 6px;
+                    transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                .bwm-neighbor-stats {
+                    min-width: 54px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: flex-end;
+                    font-size: 0.82em;
+                    font-weight: 700;
+                    color: var(--bwm-text);
+                    font-variant-numeric: tabular-nums;
+                    flex-shrink: 0;
+                }
+                .bwm-neighbor-action {
+                    flex-shrink: 0;
+                }
+                .bwm-neighbor-action-btn {
+                    font-size: 0.75em;
+                    padding: 2px 7px;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    white-space: nowrap;
+                }
+                @media (max-width: 768px) {
+                    .bwm-window-tabs {
+                        padding: 0 8px;
+                        gap: 2px;
+                    }
+                    .bwm-window-tab {
+                        padding: 7px 6px;
+                        font-size: 0.81em;
+                        gap: 4px;
+                    }
+                    .bwm-neighbor-info {
+                        width: auto;
+                        min-width: 0;
+                        flex: 1;
+                    }
+                    .bwm-neighbor-orig {
+                        max-width: 100%;
+                    }
+                    .bwm-neighbor-track {
+                        flex: 0 0 42px;
+                        width: 42px;
+                    }
+                    .bwm-neighbor-rank {
+                        width: 18px;
+                    }
+                    .bwm-neighbor-stats {
+                        min-width: 46px;
+                        font-size: 0.78em;
+                    }
+                }
+
                 .bwm-verse-text-box {
                     font-size: 0.95em;
                     line-height: 1.55;
@@ -6650,15 +6795,23 @@ class BibleWordMap extends HTMLElement {
                 menuItems.push({ icon: '\u{1F4D6}', label: 'Verses', action: () => { this.hideRadialMenu(); this.showWordInspector(node, 'verses'); } });
                 menuItems.push({
                     icon: '&#128202;',
-                    label: 'Canon Usage',
+                    label: 'Usage',
                     action: () => {
                         this.hideRadialMenu();
                         this.showWordInspector(node, 'canon');
                     }
                 });
+                menuItems.push({
+                    icon: '&#128279;',
+                    label: 'Neighbors',
+                    action: () => {
+                        this.hideRadialMenu();
+                        this.showWordInspector(node, 'neighbors');
+                    }
+                });
                 if (node.original && node.original.length > 0) {
                     let origIcon = (this.foundation === 'vul') ? '<span style="font-size:0.75em;font-weight:bold;">lat</span>' : '<span style="font-size:0.7em;font-weight:bold;">α/א</span>';
-                    menuItems.push({ icon: origIcon, label: 'Original Language', action: () => { this.hideRadialMenu(); this.showWordInspector(node, 'original'); } });
+                    menuItems.push({ icon: origIcon, label: 'Language', action: () => { this.hideRadialMenu(); this.showWordInspector(node, 'original'); } });
                 }
             }
         } else if (this.viewMode === 'books') {
@@ -6722,15 +6875,23 @@ class BibleWordMap extends HTMLElement {
                 menuItems.push({ icon: '\u{1F4D6}', label: 'Verses', action: () => { this.hideRadialMenu(); this.showWordInspector(node, 'verses'); } });
                 menuItems.push({
                     icon: '&#128202;',
-                    label: 'Canon Usage',
+                    label: 'Usage',
                     action: () => {
                         this.hideRadialMenu();
                         this.showWordInspector(node, 'canon');
                     }
                 });
+                menuItems.push({
+                    icon: '&#128279;',
+                    label: 'Neighbors',
+                    action: () => {
+                        this.hideRadialMenu();
+                        this.showWordInspector(node, 'neighbors');
+                    }
+                });
                 if (node.original && node.original.length > 0) {
                     let origIcon = (this.foundation === 'vul') ? '<span style="font-size:0.75em;font-weight:bold;">lat</span>' : '<span style="font-size:0.7em;font-weight:bold;">α/א</span>';
-                    menuItems.push({ icon: origIcon, label: 'Original Language', action: () => { this.hideRadialMenu(); this.showWordInspector(node, 'original'); } });
+                    menuItems.push({ icon: origIcon, label: 'Language', action: () => { this.hideRadialMenu(); this.showWordInspector(node, 'original'); } });
                 }
             }
         } else {
@@ -6742,15 +6903,23 @@ class BibleWordMap extends HTMLElement {
             menuItems.push({ icon: '\u{1F4D6}', label: 'Verses', action: () => { this.hideRadialMenu(); this.showWordInspector(node, 'verses'); } });
             menuItems.push({
                 icon: '&#128202;',
-                label: 'Canon Usage',
+                label: 'Usage',
                 action: () => {
                     this.hideRadialMenu();
                     this.showWordInspector(node, 'canon');
                 }
             });
+            menuItems.push({
+                icon: '&#128279;',
+                label: 'Neighbors',
+                action: () => {
+                    this.hideRadialMenu();
+                    this.showWordInspector(node, 'neighbors');
+                }
+            });
             if (node.original && node.original.length > 0) {
                 let origIcon = (this.foundation === 'vul') ? '<span style="font-size:0.75em;font-weight:bold;">lat</span>' : '<span style="font-size:0.7em;font-weight:bold;">α/א</span>';
-                menuItems.push({ icon: origIcon, label: 'Original Language', action: () => { this.hideRadialMenu(); this.showWordInspector(node, 'original'); } });
+                menuItems.push({ icon: origIcon, label: 'Language', action: () => { this.hideRadialMenu(); this.showWordInspector(node, 'original'); } });
             }
         }
         
@@ -6995,6 +7164,10 @@ class BibleWordMap extends HTMLElement {
         this.hideWordInspector();
     }
 
+    showNeighborsPanel(node) {
+        this.showWordInspector(node, 'neighbors');
+    }
+
     async showWordInspector(node, defaultTab = 'verses') {
         if (!node) return;
         if (window.innerWidth <= 768) {
@@ -7139,8 +7312,9 @@ class BibleWordMap extends HTMLElement {
             </div>
             <div class="bwm-window-tabs bwm-word-tabs">
                 <button type="button" class="bwm-window-tab ${defaultTab === 'verses' ? 'active' : ''}" data-word-tab="verses">&#128214; Verses</button>
-                <button type="button" class="bwm-window-tab ${defaultTab === 'original' ? 'active' : ''}" data-word-tab="original">&#128220; Original Language</button>
-                <button type="button" class="bwm-window-tab ${defaultTab === 'canon' ? 'active' : ''}" data-word-tab="canon">&#128202; Canon Usage</button>
+                <button type="button" class="bwm-window-tab ${defaultTab === 'original' ? 'active' : ''}" data-word-tab="original">&#128220; Language</button>
+                <button type="button" class="bwm-window-tab ${defaultTab === 'canon' ? 'active' : ''}" data-word-tab="canon">&#128202; Usage</button>
+                <button type="button" class="bwm-window-tab ${defaultTab === 'neighbors' ? 'active' : ''}" data-word-tab="neighbors">&#128279; Neighbors</button>
             </div>
         `;
 
@@ -7606,10 +7780,130 @@ class BibleWordMap extends HTMLElement {
             `;
         }
 
+        // Pane 4: Top 10 Nearest Neighbors
+        let neighborsPaneHtml = '';
+        let top10Neighbors = [];
+
+        if (!nodeVec && this.data2d) {
+            let foundIn2d = this.data2d.find(d => d.id === node.id || (d.w.toLowerCase() === node.w.toLowerCase() && (!node.pos || d.pos === node.pos)));
+            if (foundIn2d && foundIn2d.v) {
+                nodeVec = foundIn2d.v;
+            }
+        }
+
+        if (!nodeVec || !this.data2d) {
+            neighborsPaneHtml = `
+                <div class="bwm-word-pane" id="bwm-word-pane-neighbors" style="display: ${defaultTab === 'neighbors' ? 'flex' : 'none'};">
+                    <div class="bwm-window-body" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 20px;">
+                        <span class="bwm-loading-spinner" style="width:24px; height:24px; border-width:3px; margin-bottom:12px;"></span>
+                        <div style="font-size:0.9em; color:var(--bwm-text-muted);">Calculating vector similarity neighbors...</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            let sims = [];
+            for (let i = 0; i < this.data2d.length; i++) {
+                let d = this.data2d[i];
+                if (d.id === node.id) continue;
+                if (!d.v) continue;
+                let s = this.cosineSimilarity(nodeVec, d.v);
+                if (s !== null && !isNaN(s) && s > 0 && s <= 1.00001) {
+                    sims.push({ point: d, sim: s });
+                }
+            }
+            sims.sort((a, b) => b.sim - a.sim);
+            top10Neighbors = sims.slice(0, 10);
+
+            const POS_COLORS = {
+                'NOUN': '#3b82f6',
+                'VERB': '#ef4444',
+                'PROPN': '#10b981',
+                'ADJ': '#8b5cf6',
+                'ADV': '#ec4899',
+                'PRON': '#14b8a6',
+                'NUM': '#f59e0b'
+            };
+
+            let rowsHtml = top10Neighbors.map((item, idx) => {
+                let pt = item.point;
+                let rank = idx + 1;
+                let simPct = (item.sim * 100).toFixed(2);
+                let formattedName = this.formatWord(pt.w, pt.pos);
+                let posColor = POS_COLORS[pt.pos] || '#94a3b8';
+                let barColor = item.sim >= 0.70 ? '#10b981' : (item.sim >= 0.55 ? '#3b82f6' : '#8b5cf6');
+                
+                let origSnippet = '';
+                if (pt.original && pt.original.length > 0) {
+                    let prim = pt.original[0];
+                    let lemmaPart = prim.lemma ? `<i>${prim.lemma}</i>` : '';
+                    let defPart = prim.def ? prim.def.split(';')[0].split(',')[0].trim() : '';
+                    if (lemmaPart && defPart) {
+                        origSnippet = `${lemmaPart} &bull; ${defPart}`;
+                    } else if (lemmaPart) {
+                        origSnippet = lemmaPart;
+                    } else if (defPart) {
+                        origSnippet = defPart;
+                    }
+                }
+
+                let isAlreadyKw = this.isSearchMode && this.searchedWords && this.searchedWords.includes(pt.id);
+                let actionBtnHtml = '';
+                if (this.viewMode === 'words') {
+                    actionBtnHtml = `
+                        <button type="button" class="bwm-window-pill bwm-neighbor-action-btn" data-neighbor-action="kw" data-neighbor-id="${pt.id}" title="${isAlreadyKw ? 'Remove keyword from map' : 'Add keyword to map'}">
+                            ${isAlreadyKw ? '&minus;' : '+ Add'}
+                        </button>
+                    `;
+                } else {
+                    actionBtnHtml = `
+                        <button type="button" class="bwm-window-pill bwm-neighbor-action-btn" data-neighbor-action="explore" data-neighbor-id="${pt.id}" title="Explore on Word Map">
+                            &#128269;
+                        </button>
+                    `;
+                }
+
+                return `
+                    <div class="bwm-neighbor-row" data-neighbor-id="${pt.id}" title="Inspect ${formattedName}">
+                        <span class="bwm-neighbor-rank">#${rank}</span>
+                        <div class="bwm-neighbor-info">
+                            <div class="bwm-neighbor-word-line">
+                                <span class="bwm-neighbor-name">${formattedName}</span>
+                                ${pt.pos ? `<span class="bwm-neighbor-pos" style="color:${posColor};">(${pt.pos.toLowerCase()})</span>` : ''}
+                            </div>
+                            ${origSnippet ? `<div class="bwm-neighbor-orig" title="${origSnippet.replace(/<[^>]+>/g, '')}">${origSnippet}</div>` : ''}
+                        </div>
+                        <div class="bwm-neighbor-track">
+                            <div class="bwm-neighbor-fill" style="width:${simPct}%; background:${barColor};"></div>
+                        </div>
+                        <span class="bwm-neighbor-stats">${simPct}%</span>
+                        <div class="bwm-neighbor-action">
+                            ${actionBtnHtml}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            neighborsPaneHtml = `
+                <div class="bwm-word-pane" id="bwm-word-pane-neighbors" style="display: ${defaultTab === 'neighbors' ? 'flex' : 'none'};">
+                    <div class="bwm-window-body bwm-neighbors-body">
+                        <div class="bwm-neighbors-summary">
+                            <b>Top 10 Nearest Neighbors (Cosine Similarity):</b>
+                            <div style="font-size:0.92em; color:var(--bwm-text-muted); margin-top:2px;">
+                                Words positioned closest to <b>${displayW}</b> in 100-dimensional semantic space based on biblical usage and co-occurrence patterns.
+                            </div>
+                        </div>
+                        <div class="bwm-neighbors-list">
+                            ${rowsHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
         this.wordCard.style.transform = '';
         this.wordCard.style.transition = '';
         this.wordCard.style.opacity = '';
-        this.wordCard.innerHTML = headerHtml + versesPaneHtml + origPaneHtml + canonPaneHtml;
+        this.wordCard.innerHTML = headerHtml + versesPaneHtml + origPaneHtml + canonPaneHtml + neighborsPaneHtml;
         this.wordCard.classList.add('visible');
 
         // Close button
@@ -7657,7 +7951,8 @@ class BibleWordMap extends HTMLElement {
         const panes = {
             verses: this.wordCard.querySelector('#bwm-word-pane-verses'),
             original: this.wordCard.querySelector('#bwm-word-pane-original'),
-            canon: this.wordCard.querySelector('#bwm-word-pane-canon')
+            canon: this.wordCard.querySelector('#bwm-word-pane-canon'),
+            neighbors: this.wordCard.querySelector('#bwm-word-pane-neighbors')
         };
         mainTabs.forEach(tab => {
             tab.addEventListener('click', (e) => {
@@ -7669,6 +7964,58 @@ class BibleWordMap extends HTMLElement {
                 Object.keys(panes).forEach(k => {
                     if (panes[k]) panes[k].style.display = (k === targetTab) ? 'flex' : 'none';
                 });
+            });
+        });
+
+        // Neighbors tab listeners
+        const neighborRows = this.wordCard.querySelectorAll('.bwm-neighbor-row');
+        neighborRows.forEach(row => {
+            row.addEventListener('click', (e) => {
+                if (e.target.closest('.bwm-neighbor-action-btn')) return;
+                e.stopPropagation();
+                const neighborId = row.getAttribute('data-neighbor-id');
+                const targetPoint = this.data2d ? this.data2d.find(d => d.id === neighborId) : null;
+                if (targetPoint) {
+                    this.showWordInspector(targetPoint, 'neighbors');
+                }
+            });
+        });
+
+        const neighborKwBtns = this.wordCard.querySelectorAll('.bwm-neighbor-action-btn[data-neighbor-action="kw"]');
+        neighborKwBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const neighborId = btn.getAttribute('data-neighbor-id');
+                if (!neighborId) return;
+                if (this.isSearchMode && this.searchedWords && this.searchedWords.includes(neighborId)) {
+                    this.removeKeyword(neighborId);
+                    btn.innerHTML = '+ Add';
+                    btn.title = 'Add keyword to map';
+                } else {
+                    this.addKeyword(neighborId);
+                    btn.innerHTML = '&minus;';
+                    btn.title = 'Remove keyword from map';
+                }
+            });
+        });
+
+        const neighborExploreBtns = this.wordCard.querySelectorAll('.bwm-neighbor-action-btn[data-neighbor-action="explore"]');
+        neighborExploreBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const neighborId = btn.getAttribute('data-neighbor-id');
+                const targetPoint = this.data2d ? this.data2d.find(d => d.id === neighborId) : null;
+                if (targetPoint) {
+                    const wordsBtn = document.getElementById('view-mode-words');
+                    const booksBtn = document.getElementById('view-mode-books');
+                    if (wordsBtn && booksBtn) {
+                        wordsBtn.classList.add('active');
+                        booksBtn.classList.remove('active');
+                    }
+                    this.setViewMode('words');
+                    if (this.searchInput) this.searchInput.value = this.formatWord(targetPoint.w, targetPoint.pos);
+                    this.searchWord();
+                }
             });
         });
 
