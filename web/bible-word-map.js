@@ -381,6 +381,131 @@ function parseVerseMeta(v) {
     return { b, c, v: verseNum };
 }
 
+function damerauLevenshtein(a, b, maxDist = 2) {
+    if (a === b) return 0;
+    const la = a.length;
+    const lb = b.length;
+    if (Math.abs(la - lb) > maxDist) return maxDist + 1;
+    const d = [];
+    for (let i = 0; i <= la; i++) {
+        d[i] = new Uint8Array(lb + 1);
+        d[i][0] = i;
+    }
+    for (let j = 0; j <= lb; j++) {
+        d[0][j] = j;
+    }
+    for (let i = 1; i <= la; i++) {
+        let minRow = 99;
+        for (let j = 1; j <= lb; j++) {
+            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+            let val = Math.min(
+                d[i - 1][j] + 1,
+                d[i][j - 1] + 1,
+                d[i - 1][j - 1] + cost
+            );
+            if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+                val = Math.min(val, d[i - 2][j - 2] + 1);
+            }
+            d[i][j] = val;
+            if (val < minRow) minRow = val;
+        }
+        if (minRow > maxDist) return maxDist + 1;
+    }
+    return d[la][lb];
+}
+
+function detectVerseReference(query) {
+    if (!query) return null;
+    let norm = query.trim().toLowerCase();
+    norm = norm.replace(/\b1st\b/g, '1').replace(/\bfirst\b/g, '1');
+    norm = norm.replace(/\b2nd\b/g, '2').replace(/\bsecond\b/g, '2');
+    norm = norm.replace(/\b3rd\b/g, '3').replace(/\bthird\b/g, '3');
+    norm = norm.replace(/\bsong of songs\b/g, 'songofsolomon');
+
+    let m = norm.match(/^(?:((?:[123]\s*)?[a-z]+(?:\s+of\s+[a-z]+)?)\s+)?(\d+)(?:[:\s.](\d+)(?:-(\d+))?)?$/i);
+    if (!m) return null;
+    let bStr = m[1];
+    let chap = parseInt(m[2], 10);
+    let vstart = m[3] ? parseInt(m[3], 10) : null;
+    let vend = m[4] ? parseInt(m[4], 10) : null;
+    if (!bStr) return null;
+
+    let cleanB = bStr.replace(/\s+/g, '');
+    let bookCode = BOOK_ALIASES[cleanB];
+    let isTypo = false;
+
+    if (!bookCode) {
+        for (let [alias, code] of Object.entries(BOOK_ALIASES)) {
+            if (cleanB.startsWith(alias)) {
+                bookCode = code;
+                break;
+            }
+        }
+    }
+
+    if (!bookCode) {
+        let candidates = [];
+        for (let [alias, code] of Object.entries(BOOK_ALIASES)) {
+            let dist = damerauLevenshtein(cleanB, alias, 1);
+            if (dist <= 1) {
+                let lenDiff = Math.abs(cleanB.length - alias.length);
+                let isFullName = Boolean(BOOK_CODE_MAP[code] && BOOK_CODE_MAP[code].name.toLowerCase() === alias);
+                candidates.push({ alias, code, dist, lenDiff, isFullName });
+            }
+        }
+        if (candidates.length > 0) {
+            candidates.sort((a, b) => {
+                if (a.dist !== b.dist) return a.dist - b.dist;
+                if (a.lenDiff !== b.lenDiff) return a.lenDiff - b.lenDiff;
+                if (a.isFullName !== b.isFullName) return a.isFullName ? -1 : 1;
+                return 0;
+            });
+            bookCode = candidates[0].code;
+            isTypo = true;
+        }
+    }
+
+    if (!bookCode) return null;
+    let bName = (BOOK_CODE_MAP[bookCode] && BOOK_CODE_MAP[bookCode].name) || bookCode;
+    let displayRef = `${bName} ${chap}${vstart ? ':' + vstart : ''}${vend ? '-' + vend : ''}`;
+    let searchRef = `${bookCode} ${chap}:${vstart || 1}`;
+    return { bookCode, bookName: bName, chap, vstart, vend, displayRef, searchRef, isTypo };
+}
+
+function detectBookMatch(query, books) {
+    if (!query) return null;
+    const q = query.trim().toLowerCase();
+    if (q.length < 2) return null;
+
+    if (books && Array.isArray(books)) {
+        for (const b of books) {
+            if (b.name.toLowerCase() === q || b.code.toLowerCase() === q) {
+                return { book: b, isTypo: false, dist: 0 };
+            }
+        }
+        let best = null;
+        let bestDist = 99;
+        for (const b of books) {
+            const dName = damerauLevenshtein(q, b.name.toLowerCase(), 2);
+            if (dName < bestDist && dName <= 2) {
+                bestDist = dName;
+                best = b;
+            }
+        }
+        if (best) {
+            return { book: best, isTypo: true, dist: bestDist };
+        }
+    }
+
+    // Fallback against BOOK_ALIASES
+    let cleanQ = q.replace(/\s+/g, '');
+    let code = BOOK_ALIASES[cleanQ];
+    if (code && BOOK_CODE_MAP[code]) {
+        return { book: BOOK_CODE_MAP[code], isTypo: false, dist: 0 };
+    }
+    return null;
+}
+
 class BibleWordMap extends HTMLElement {
     constructor() {
         super();
@@ -414,6 +539,9 @@ class BibleWordMap extends HTMLElement {
         this.neighborsPerKeyword = 100;
         this.verseRefsPerVerse = 16;
         this.verseWordsPerVerse = 6;
+        this.searchRecoveryPopover = null;
+        this._uniqueWordList = null;
+        this._uniqueWordListSource = null;
         
         this.innerHTML = `
             <style>
@@ -467,6 +595,8 @@ class BibleWordMap extends HTMLElement {
                     color: var(--bwm-text);
                 }
                 .bwm-top-bar {
+                    position: relative;
+                    z-index: 10030;
                     display: flex;
                     justify-content: space-between;
                     gap: 10px;
@@ -474,6 +604,7 @@ class BibleWordMap extends HTMLElement {
                     flex-wrap: nowrap;
                 }
                 .bwm-search-controls {
+                    position: relative;
                     display: flex;
                     gap: 8px;
                     flex-wrap: nowrap;
@@ -555,11 +686,166 @@ class BibleWordMap extends HTMLElement {
                     color: white;
                     border-color: var(--bwm-node-hover);
                 }
-                .bwm-error {
-                    color: #d32f2f;
-                    font-size: 0.9rem;
+                /* Search Recovery Popover */
+                .bwm-search-recovery-popover {
+                    position: absolute;
+                    top: calc(100% + 8px);
+                    left: 0;
+                    width: 100%;
+                    max-width: 640px;
+                    z-index: 10031;
+                    background-color: var(--bwm-bg);
+                    background-color: color-mix(in srgb, var(--bwm-bg) 96%, transparent);
+                    backdrop-filter: blur(16px);
+                    -webkit-backdrop-filter: blur(16px);
+                    border: 1px solid var(--bwm-border);
+                    border-radius: 12px;
+                    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.24);
+                    padding: 14px 16px;
+                    box-sizing: border-box;
                     display: none;
+                    flex-direction: column;
+                    gap: 12px;
+                    animation: bwmPopoverFadeIn 0.16s ease-out;
+                }
+                @keyframes bwmPopoverFadeIn {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-4px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                .bwm-recovery-header {
+                    display: flex;
                     align-items: center;
+                    justify-content: space-between;
+                    gap: 10px;
+                }
+                .bwm-recovery-title-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-weight: 600;
+                    font-size: 0.95rem;
+                    color: var(--bwm-text);
+                }
+                .bwm-recovery-close {
+                    background: transparent;
+                    border: none;
+                    color: var(--bwm-text-muted);
+                    font-size: 1.3rem;
+                    line-height: 1;
+                    cursor: pointer;
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    transition: color 0.15s, background 0.15s;
+                }
+                .bwm-recovery-close:hover {
+                    color: var(--bwm-text);
+                    background: var(--bwm-badge-bg);
+                }
+                .bwm-recovery-section {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                }
+                .bwm-recovery-section-label {
+                    font-size: 0.78rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    color: var(--bwm-text-muted);
+                }
+                .bwm-recovery-pills {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                }
+                .bwm-recovery-pill-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 5px 12px;
+                    border-radius: 16px;
+                    background: var(--bwm-btn-bg);
+                    border: 1px solid var(--bwm-border);
+                    color: var(--bwm-text);
+                    font-size: 0.88rem;
+                    font-family: inherit;
+                    cursor: pointer;
+                    transition: all 0.15s ease;
+                    user-select: none;
+                }
+                .bwm-recovery-pill-btn:hover {
+                    background: var(--bwm-btn-hover);
+                    border-color: var(--bwm-node-hover);
+                    color: #ffffff;
+                    transform: translateY(-1px);
+                }
+                .bwm-recovery-pill-pos {
+                    font-size: 0.76rem;
+                    padding: 1px 5px;
+                    border-radius: 8px;
+                    background: var(--bwm-badge-bg);
+                    color: var(--bwm-text-muted);
+                }
+                .bwm-recovery-pill-freq {
+                    font-size: 0.76rem;
+                    color: var(--bwm-text-muted);
+                    opacity: 0.85;
+                }
+                .bwm-recovery-action-card {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 12px;
+                    padding: 10px 14px;
+                    border-radius: 10px;
+                    background: color-mix(in srgb, var(--bwm-node-hover) 10%, var(--bwm-btn-bg));
+                    border: 1px solid color-mix(in srgb, var(--bwm-node-hover) 35%, var(--bwm-border));
+                }
+                .bwm-recovery-action-info {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2px;
+                }
+                .bwm-recovery-action-title {
+                    font-weight: 600;
+                    font-size: 0.92rem;
+                    color: var(--bwm-text);
+                }
+                .bwm-recovery-action-desc {
+                    font-size: 0.82rem;
+                    color: var(--bwm-text-muted);
+                }
+                .bwm-recovery-action-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 7px 14px;
+                    border-radius: 8px;
+                    background: var(--bwm-node-hover);
+                    color: #ffffff;
+                    border: none;
+                    font-size: 0.88rem;
+                    font-weight: 600;
+                    font-family: inherit;
+                    cursor: pointer;
+                    white-space: nowrap;
+                    transition: filter 0.15s ease, transform 0.15s ease;
+                    flex-shrink: 0;
+                }
+                .bwm-recovery-action-btn:hover {
+                    filter: brightness(1.12);
+                    transform: translateY(-1px);
+                }
+                .bwm-recovery-empty-hint {
+                    font-size: 0.88rem;
+                    color: var(--bwm-text-muted);
+                    line-height: 1.4;
                 }
                 .bwm-canvas-container {
                     flex: 1;
@@ -2090,6 +2376,23 @@ class BibleWordMap extends HTMLElement {
                     .bwm-canon-testament-layout {
                         flex-direction: column;
                     }
+
+                    .bwm-search-recovery-popover {
+                        top: calc(100% + 6px);
+                        left: -44px;
+                        right: 0;
+                        padding: 12px 14px;
+                        border-radius: 10px;
+                    }
+                    .bwm-recovery-action-card {
+                        flex-direction: column;
+                        align-items: stretch;
+                        gap: 8px;
+                    }
+                    .bwm-recovery-action-btn {
+                        justify-content: center;
+                        width: 100%;
+                    }
                 }
 
                 /* 7. Full Map Space Legend & Guide Window */
@@ -2304,9 +2607,9 @@ class BibleWordMap extends HTMLElement {
                             <button class="bwm-search-clear" id="bwm-search-clear" title="Clear all keywords" type="button">&times;</button>
                         </div>
                         <button class="bwm-btn" id="bwm-btn-search">Search</button>
+                        <div class="bwm-search-recovery-popover" id="bwm-search-recovery-popover" style="display: none;"></div>
                     </div>
                 </div>
-                <div style="position: relative; height: 0;"><span id="bwm-error" class="bwm-error" style="position: absolute; top: -10px; left: 50px;">Word not found</span></div>
                 <div class="bwm-drawer" id="bwm-drawer">
                     <div class="bwm-sheet-handle"></div>
                     <div class="bwm-drawer-header">
@@ -2676,7 +2979,7 @@ class BibleWordMap extends HTMLElement {
         this.searchInput = this.querySelector('#bwm-search');
         this.searchClearBtn = this.querySelector('#bwm-search-clear');
         this.searchBtn = this.querySelector('#bwm-btn-search');
-        this.errorSpan = this.querySelector('#bwm-error');
+        this.searchRecoveryPopover = this.querySelector('#bwm-search-recovery-popover');
         
         this.drawerClearAllBtn = this.querySelector('#bwm-btn-clear-all');
         this.neighborSlider = this.querySelector('#bwm-neighbor-slider');
@@ -2711,10 +3014,26 @@ class BibleWordMap extends HTMLElement {
         });
         this.searchInput.addEventListener('input', () => {
             this.updateClearBtnVisibility();
+            this.closeSearchRecovery();
+        });
+
+        // Global dismiss for search recovery popover
+        document.addEventListener('click', (e) => {
+            if (this.searchRecoveryPopover && this.searchRecoveryPopover.style.display !== 'none') {
+                if (!this.searchRecoveryPopover.contains(e.target) && !this.searchInput.contains(e.target) && !this.searchBtn.contains(e.target)) {
+                    this.closeSearchRecovery();
+                }
+            }
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.searchRecoveryPopover && this.searchRecoveryPopover.style.display !== 'none') {
+                this.closeSearchRecovery();
+            }
         });
         
         if (this.searchClearBtn) {
             this.searchClearBtn.addEventListener('click', () => {
+                this.closeSearchRecovery();
                 this.clearAllKeywords();
             });
         }
@@ -3405,9 +3724,318 @@ class BibleWordMap extends HTMLElement {
         return [];
     }
 
+    getUniqueWordList() {
+        if (this._uniqueWordList && this._uniqueWordListSource === this.data2d) {
+            return this._uniqueWordList;
+        }
+        if (!this.data2d) return [];
+        const wordMap = new Map();
+        for (let i = 0; i < this.data2d.length; i++) {
+            const d = this.data2d[i];
+            if (!d.w) continue;
+            const low = d.w.toLowerCase();
+            const f = d.f || 1;
+            if (!wordMap.has(low)) {
+                wordMap.set(low, { w: d.w, id: d.id, pos: d.pos, f, original: d.original });
+            } else {
+                const existing = wordMap.get(low);
+                if (f > existing.f) {
+                    wordMap.set(low, { w: d.w, id: d.id, pos: d.pos, f, original: d.original });
+                }
+            }
+        }
+        this._uniqueWordList = Array.from(wordMap.entries()).map(([low, entry]) => ({
+            low,
+            len: low.length,
+            entry
+        }));
+        this._uniqueWordListSource = this.data2d;
+        return this._uniqueWordList;
+    }
+
+    findTypoWordSuggestions(query, limit = 5) {
+        if (!query) return [];
+        const q = query.trim().toLowerCase();
+        const qLen = q.length;
+        if (qLen < 2) return [];
+
+        const uniqueWords = this.getUniqueWordList();
+        if (!uniqueWords || uniqueWords.length === 0) return [];
+
+        const scored = [];
+        for (let i = 0; i < uniqueWords.length; i++) {
+            const item = uniqueWords[i];
+            if (Math.abs(item.len - qLen) > 2) continue;
+            const dist = damerauLevenshtein(q, item.low, 2);
+            if (dist <= 2) {
+                const firstLetterMatch = q[0] === item.low[0];
+                const score = (3 - dist) * 1000 + (firstLetterMatch ? 300 : 0) + Math.min(item.entry.f, 500);
+                scored.push({
+                    ...item.entry,
+                    dist,
+                    score
+                });
+            }
+        }
+        scored.sort((a, b) => b.score - a.score);
+        return scored.slice(0, limit);
+    }
+
+    showSearchRecovery(query, currentMode = 'words') {
+        if (!this.searchRecoveryPopover) return;
+        const q = (query || '').trim();
+        if (!q) {
+            this.closeSearchRecovery();
+            return;
+        }
+
+        const escapeHtml = (str) => {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        };
+
+        let typoWordSuggestions = [];
+        let detectedVerse = detectVerseReference(q);
+        let detectedBook = detectBookMatch(q, this.booksData ? this.booksData.books : null);
+        let hasDirectWordMatch = false;
+
+        if (this.data2d && this.findMatchesForWordToken(q).length > 0) {
+            hasDirectWordMatch = true;
+        }
+
+        // Handle multi-word tokens in words mode (only if not a detected verse or book)
+        let multiTokenSuggestions = null;
+        if (currentMode === 'words' && !detectedVerse && !detectedBook) {
+            let tokens = q.split(/[\s,]+/).filter(w => w);
+            if (tokens.length > 1) {
+                let tokenDetails = tokens.map(t => {
+                    let direct = this.findMatchesForWordToken(t);
+                    if (direct.length > 0) return { token: t, matched: true, suggestions: [] };
+                    return { token: t, matched: false, suggestions: this.findTypoWordSuggestions(t, 3) };
+                });
+                let anyUnmatched = tokenDetails.some(td => !td.matched);
+                if (anyUnmatched) {
+                    multiTokenSuggestions = tokenDetails;
+                }
+            }
+            if (!multiTokenSuggestions) {
+                typoWordSuggestions = this.findTypoWordSuggestions(q, 6);
+            }
+        }
+
+        let html = `
+            <div class="bwm-recovery-header">
+                <div class="bwm-recovery-title-row">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--bwm-node-hover); flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    <span>`;
+
+        if (currentMode === 'words') {
+            html += `No exact match for &ldquo;${escapeHtml(q)}&rdquo; in Words view.`;
+        } else if (currentMode === 'verses') {
+            html += `No verse found matching &ldquo;${escapeHtml(q)}&rdquo;.`;
+        } else {
+            html += `No book found matching &ldquo;${escapeHtml(q)}&rdquo;.`;
+        }
+
+        html += `</span>
+                </div>
+                <button type="button" class="bwm-recovery-close" id="bwm-recovery-close-btn" title="Close suggestions">&times;</button>
+            </div>
+        `;
+
+        let hasContent = false;
+
+        // SECTION: Verse Detection Action (if in words or books view, or verse typo in verses view)
+        if (detectedVerse) {
+            if (currentMode !== 'verses' || detectedVerse.isTypo) {
+                hasContent = true;
+                let btnLabel = currentMode === 'verses' ? `Search ${escapeHtml(detectedVerse.displayRef)} &rarr;` : `View in Verses Mode &rarr;`;
+                let title = detectedVerse.isTypo ? `📖 Did you mean Scripture Verse: ${escapeHtml(detectedVerse.displayRef)}?` : `📖 Scripture Verse Detected: ${escapeHtml(detectedVerse.displayRef)}`;
+                let desc = detectedVerse.isTypo ? `Typo detected in book reference. Search for this passage in Verses Mode.` : `This query matches a biblical passage. Explore its cross-references in Verses Mode.`;
+                html += `
+                    <div class="bwm-recovery-action-card">
+                        <div class="bwm-recovery-action-info">
+                            <div class="bwm-recovery-action-title">${title}</div>
+                            <div class="bwm-recovery-action-desc">${desc}</div>
+                        </div>
+                        <button type="button" class="bwm-recovery-action-btn" id="bwm-recovery-btn-verse" data-verse="${escapeHtml(detectedVerse.searchRef || detectedVerse.displayRef)}">${btnLabel}</button>
+                    </div>
+                `;
+            }
+        }
+
+        // SECTION: Book Detection Action (if in words or verses view, or book typo in books view)
+        if (detectedBook) {
+            if (currentMode !== 'books' || detectedBook.isTypo) {
+                hasContent = true;
+                let bookName = detectedBook.book.name;
+                let btnLabel = currentMode === 'books' ? `Search ${escapeHtml(bookName)} &rarr;` : `View in Books Mode &rarr;`;
+                let title = detectedBook.isTypo ? `📚 Did you mean Bible Book: ${escapeHtml(bookName)}?` : `📚 Bible Book Detected: ${escapeHtml(bookName)}`;
+                let desc = detectedBook.isTypo ? `Typo detected in book name. Explore its chapter and thematic network in Books Mode.` : `This query matches a biblical book. Explore its structural connections in Books Mode.`;
+                html += `
+                    <div class="bwm-recovery-action-card">
+                        <div class="bwm-recovery-action-info">
+                            <div class="bwm-recovery-action-title">${title}</div>
+                            <div class="bwm-recovery-action-desc">${desc}</div>
+                        </div>
+                        <button type="button" class="bwm-recovery-action-btn" id="bwm-recovery-btn-book" data-book="${escapeHtml(bookName)}">${btnLabel}</button>
+                    </div>
+                `;
+            }
+        }
+
+        // SECTION: Word Detection Action (if in verses or books view and query exists in words vocabulary)
+        if (currentMode !== 'words' && (hasDirectWordMatch || this.findTypoWordSuggestions(q, 1).length > 0)) {
+            hasContent = true;
+            let targetWord = hasDirectWordMatch ? q : this.findTypoWordSuggestions(q, 1)[0].w;
+            html += `
+                <div class="bwm-recovery-action-card">
+                    <div class="bwm-recovery-action-info">
+                        <div class="bwm-recovery-action-title">✦ Biblical Keyword Detected: &ldquo;${escapeHtml(targetWord)}&rdquo;</div>
+                        <div class="bwm-recovery-action-desc">This query is a canonical word. Explore its semantic constellation and usage in Words Mode.</div>
+                    </div>
+                    <button type="button" class="bwm-recovery-action-btn" id="bwm-recovery-btn-word" data-word="${escapeHtml(targetWord)}">Search in Words Mode &rarr;</button>
+                </div>
+            `;
+        }
+
+        // SECTION: Multi-token Typo Suggestions (in words mode)
+        if (multiTokenSuggestions) {
+            hasContent = true;
+            let combinedParts = multiTokenSuggestions.map(td => {
+                if (td.matched) return td.token;
+                return (td.suggestions[0] ? td.suggestions[0].w : td.token);
+            });
+            let combinedQuery = combinedParts.join(' ');
+            html += `
+                <div class="bwm-recovery-section">
+                    <div class="bwm-recovery-section-label">Suggested Correction:</div>
+                    <div class="bwm-recovery-pills">
+                        <button type="button" class="bwm-recovery-pill-btn bwm-recovery-pill-word" data-word="${escapeHtml(combinedQuery)}">
+                            <strong>${escapeHtml(combinedQuery)}</strong>
+                        </button>
+                    </div>
+                </div>
+            `;
+            let unmatchedTokens = multiTokenSuggestions.filter(td => !td.matched && td.suggestions.length > 0);
+            if (unmatchedTokens.length > 0) {
+                html += `
+                    <div class="bwm-recovery-section">
+                        <div class="bwm-recovery-section-label">Token Suggestions:</div>
+                        <div class="bwm-recovery-pills">`;
+                for (let ut of unmatchedTokens) {
+                    for (let s of ut.suggestions) {
+                        html += `
+                            <button type="button" class="bwm-recovery-pill-btn bwm-recovery-pill-word" data-word="${escapeHtml(s.w)}" title="${escapeHtml(s.w)} (${s.pos || 'word'})">
+                                <span>${escapeHtml(s.w)}</span>
+                                ${s.pos ? `<span class="bwm-recovery-pill-pos">${escapeHtml(s.pos.toLowerCase())}</span>` : ''}
+                                ${s.f ? `<span class="bwm-recovery-pill-freq">${s.f}x</span>` : ''}
+                            </button>
+                        `;
+                    }
+                }
+                html += `</div></div>`;
+            }
+        } else if (typoWordSuggestions.length > 0) {
+            hasContent = true;
+            html += `
+                <div class="bwm-recovery-section">
+                    <div class="bwm-recovery-section-label">Did you mean:</div>
+                    <div class="bwm-recovery-pills">`;
+            for (let s of typoWordSuggestions) {
+                html += `
+                    <button type="button" class="bwm-recovery-pill-btn bwm-recovery-pill-word" data-word="${escapeHtml(s.w)}" title="${escapeHtml(s.w)} (${s.pos || 'word'})">
+                        <span>${escapeHtml(s.w)}</span>
+                        ${s.pos ? `<span class="bwm-recovery-pill-pos">${escapeHtml(s.pos.toLowerCase())}</span>` : ''}
+                        ${s.f ? `<span class="bwm-recovery-pill-freq">${s.f}x</span>` : ''}
+                    </button>
+                `;
+            }
+            html += `</div></div>`;
+        }
+
+        if (!hasContent) {
+            html += `
+                <div class="bwm-recovery-empty-hint">
+                    Check your spelling or try searching for another biblical word, chapter, or book.
+                </div>
+            `;
+        }
+
+        this.searchRecoveryPopover.innerHTML = html;
+        this.searchRecoveryPopover.style.display = 'flex';
+
+        const closeBtn = this.searchRecoveryPopover.querySelector('#bwm-recovery-close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.closeSearchRecovery();
+            });
+        }
+
+        const btnVerse = this.searchRecoveryPopover.querySelector('#bwm-recovery-btn-verse');
+        if (btnVerse) {
+            btnVerse.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const verseTarget = btnVerse.getAttribute('data-verse');
+                this.closeSearchRecovery();
+                this.setViewMode('verses');
+                if (this.searchInput) this.searchInput.value = verseTarget;
+                this.searchVerses();
+            });
+        }
+
+        const btnBook = this.searchRecoveryPopover.querySelector('#bwm-recovery-btn-book');
+        if (btnBook) {
+            btnBook.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const bookTarget = btnBook.getAttribute('data-book');
+                this.closeSearchRecovery();
+                this.setViewMode('books');
+                if (this.searchInput) this.searchInput.value = bookTarget;
+                this.searchBooks();
+            });
+        }
+
+        const btnWord = this.searchRecoveryPopover.querySelector('#bwm-recovery-btn-word');
+        if (btnWord) {
+            btnWord.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const wordTarget = btnWord.getAttribute('data-word');
+                this.closeSearchRecovery();
+                this.setViewMode('words');
+                if (this.searchInput) this.searchInput.value = wordTarget;
+                this.searchWord();
+            });
+        }
+
+        const wordPills = this.searchRecoveryPopover.querySelectorAll('.bwm-recovery-pill-word');
+        wordPills.forEach(pill => {
+            pill.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const wordTarget = pill.getAttribute('data-word');
+                this.closeSearchRecovery();
+                if (this.searchInput) this.searchInput.value = wordTarget;
+                this.searchWord();
+            });
+        });
+    }
+
+    closeSearchRecovery() {
+        if (this.searchRecoveryPopover) {
+            this.searchRecoveryPopover.style.display = 'none';
+            this.searchRecoveryPopover.innerHTML = '';
+        }
+    }
+
     async searchWord(useExplicitIds = false) {
         this.hoveredNode = null;
         let foundPoints = [];
+        let originalQuery = this.searchInput ? this.searchInput.value.trim() : '';
         
         if (this.viewMode === 'books') {
             this.searchBooks(useExplicitIds);
@@ -3423,10 +4051,24 @@ class BibleWordMap extends HTMLElement {
         const findMatchesForToken = (token) => this.findMatchesForWordToken(token);
 
         if (!useExplicitIds) {
-            let originalQuery = this.searchInput.value.trim();
             let query = originalQuery.toLowerCase();
             if (!query) {
                 this.clearAllKeywords();
+                return;
+            }
+
+            // If the query is formatted as a Scripture verse citation (e.g. "John 3:16", "1 Cor 13"),
+            // prioritize verse recovery instead of treating the book name as a word lemma
+            let detectedVerse = detectVerseReference(originalQuery);
+            if (detectedVerse) {
+                this.searchedWords = [];
+                this.drawerWords = [];
+                this.isSearchMode = false;
+                this.updateClearBtnVisibility();
+                this.updateUrl({ keywords: undefined });
+                this.renderActiveWords();
+                this.showSearchRecovery(originalQuery, 'words');
+                this.buildAllWordsGraph();
                 return;
             }
 
@@ -3470,8 +4112,8 @@ class BibleWordMap extends HTMLElement {
                     resolvedIds.push(p.id);
                 }
             });
-            if (resolvedIds.length === 0 && this.searchInput && this.searchInput.value.trim()) {
-                let queryTokens = this.searchInput.value.trim().toLowerCase().split(/[\s,]+/).filter(w => w);
+            if (resolvedIds.length === 0 && originalQuery) {
+                let queryTokens = originalQuery.toLowerCase().split(/[\s,]+/).filter(w => w);
                 for (let qt of queryTokens) {
                     let matches = findMatchesForToken(qt);
                     if (matches.length > 0) {
@@ -3490,18 +4132,15 @@ class BibleWordMap extends HTMLElement {
             this.searchedWords = [];
             this.drawerWords = [];
             this.isSearchMode = false;
-            if (this.searchInput) this.searchInput.value = '';
             this.updateClearBtnVisibility();
             this.updateUrl({ keywords: undefined });
             this.renderActiveWords();
-            if (this.errorSpan) {
-                this.errorSpan.style.display = 'flex';
-                this.errorSpan.textContent = 'Word not found in this canon.';
-                setTimeout(() => { if (this.errorSpan) this.errorSpan.style.display = 'none'; }, 2500);
-            }
+            this.showSearchRecovery(originalQuery, 'words');
             this.buildAllWordsGraph();
             return;
         }
+
+        this.closeSearchRecovery();
 
         let topWordsSet = new Map();
 
@@ -3621,6 +4260,7 @@ class BibleWordMap extends HTMLElement {
     }
 
     clearAllKeywords() {
+        this.closeSearchRecovery();
         if (this.viewMode === 'books') {
             this.resetBooksView();
             return;
@@ -4322,6 +4962,7 @@ class BibleWordMap extends HTMLElement {
     }
 
     resetCurrentView() {
+        this.closeSearchRecovery();
         this.closeActiveInfoWindows();
         if (this.viewMode === 'books') {
             this.resetBooksView();
@@ -4333,6 +4974,7 @@ class BibleWordMap extends HTMLElement {
     }
 
     setViewMode(mode, forceReset = false) {
+        this.closeSearchRecovery();
         if (this.viewMode === mode && !forceReset) {
             if (mode === 'books') {
                 if (this.isSearchMode || (this.searchedBooks && this.searchedBooks.length > 0) || this.selectedBook) {
@@ -4610,13 +5252,22 @@ class BibleWordMap extends HTMLElement {
                 this.clearAllKeywords();
                 return;
             }
+            let detectedVerse = detectVerseReference(query);
+            if (detectedVerse) {
+                this.searchedBooks = [];
+                this.drawerBooks = [];
+                this.selectedBook = null;
+                this.isSearchMode = false;
+                this.updateClearBtnVisibility();
+                this.updateUrl({ view: 'books', books: undefined });
+                this.renderActiveWords();
+                this.showSearchRecovery(query, 'books');
+                this.buildBooksGraph();
+                return;
+            }
             foundBooks = this.parseBookQuery(query);
             if (foundBooks.length === 0) {
-                if (this.errorSpan) {
-                    this.errorSpan.textContent = 'Book not found';
-                    this.errorSpan.style.display = 'inline';
-                    setTimeout(() => { if (this.errorSpan) this.errorSpan.style.display = 'none'; }, 2500);
-                }
+                this.showSearchRecovery(query, 'books');
                 return;
             }
             this.searchedBooks = foundBooks.map(b => b.code);
@@ -4634,17 +5285,17 @@ class BibleWordMap extends HTMLElement {
             this.drawerBooks = [];
             this.selectedBook = null;
             this.isSearchMode = false;
-            if (this.searchInput) this.searchInput.value = '';
             this.updateClearBtnVisibility();
             this.updateUrl({ view: 'books', books: undefined });
             this.renderActiveWords();
+            this.showSearchRecovery(this.searchInput ? this.searchInput.value : '', 'books');
             this.buildBooksGraph();
             return;
         }
 
+        this.closeSearchRecovery();
         this.searchedBooks = foundBooks.map(b => b.code);
         this.drawerBooks = [...this.searchedBooks];
-        if (this.errorSpan) this.errorSpan.style.display = 'none';
         this.selectedBook = foundBooks[0];
         this.isSearchMode = true;
         this.userInteracted = false;
@@ -4853,6 +5504,7 @@ class BibleWordMap extends HTMLElement {
     }
 
     resetBooksView() {
+        this.closeSearchRecovery();
         if (this.simulation) this.simulation.stop();
         if (this.spawnInterval) {
             clearInterval(this.spawnInterval);
@@ -5365,11 +6017,7 @@ class BibleWordMap extends HTMLElement {
             }
             foundVerses = this.parseVerseQuery(query);
             if (foundVerses.length === 0) {
-                if (this.errorSpan) {
-                    this.errorSpan.textContent = 'Verse not found';
-                    this.errorSpan.style.display = 'inline';
-                    setTimeout(() => { if (this.errorSpan) this.errorSpan.style.display = 'none'; }, 2500);
-                }
+                this.showSearchRecovery(query, 'verses');
                 return;
             }
             this.searchedVerses = foundVerses;
@@ -5382,21 +6030,21 @@ class BibleWordMap extends HTMLElement {
             foundVerses = [...this.searchedVerses];
         }
 
-        if (this.errorSpan) this.errorSpan.style.display = 'none';
         let records = foundVerses.map(ref => this.versemapLookup ? this.versemapLookup.get(ref) : null).filter(Boolean);
         if (records.length === 0) {
             this.searchedVerses = [];
             this.drawerVerses = [];
             this.selectedVerse = null;
             this.isSearchMode = false;
-            if (this.searchInput) this.searchInput.value = '';
             this.updateClearBtnVisibility();
             this.updateUrl({ view: 'verses', verses: undefined });
             this.renderActiveWords();
+            this.showSearchRecovery(this.searchInput ? this.searchInput.value : '', 'verses');
             this.buildVersesGraph();
             return;
         }
 
+        this.closeSearchRecovery();
         this.searchedVerses = records.map(r => r.id);
         this.drawerVerses = [...this.searchedVerses];
 
@@ -6056,6 +6704,7 @@ class BibleWordMap extends HTMLElement {
     }
 
     resetVersesView() {
+        this.closeSearchRecovery();
         if (this.simulation) this.simulation.stop();
         if (this.spawnInterval) {
             clearInterval(this.spawnInterval);
