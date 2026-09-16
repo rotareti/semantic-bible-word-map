@@ -414,6 +414,16 @@ function damerauLevenshtein(a, b, maxDist = 2) {
     return d[la][lb];
 }
 
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 function detectVerseReference(query) {
     if (!query) return null;
     let norm = query.trim().toLowerCase();
@@ -2351,6 +2361,57 @@ class BibleWordMap extends HTMLElement {
                     font-size: 0.82em;
                     color: var(--bwm-text-muted);
                     line-height: 1.42;
+                    word-break: break-word;
+                }
+                .bwm-crossref-original {
+                    font-size: 0.8em;
+                    opacity: 0.7;
+                    font-family: 'Times New Roman', 'Gentium Plus', serif;
+                    margin-top: 4px;
+                    line-height: 1.35;
+                    word-break: break-word;
+                    color: var(--bwm-text);
+                    border-left: 2px solid var(--bwm-border);
+                    padding-left: 6px;
+                }
+                .bwm-verse-expand-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 22px;
+                    height: 22px;
+                    padding: 0;
+                    margin: 0;
+                    border: none;
+                    background: transparent;
+                    color: var(--bwm-text-muted);
+                    border-radius: 4px;
+                    cursor: pointer;
+                    flex-shrink: 0;
+                    transition: background-color 0.15s ease, color 0.15s ease;
+                }
+                .bwm-verse-expand-btn:hover {
+                    color: var(--bwm-text);
+                    background: var(--bwm-btn-hover);
+                }
+                .bwm-verse-expand-btn .bwm-chevron-icon {
+                    width: 14px;
+                    height: 14px;
+                    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                .bwm-verse-expand-btn.is-expanded .bwm-chevron-icon {
+                    transform: rotate(180deg);
+                }
+                .bwm-verse-item-original {
+                    font-size: 0.8em;
+                    opacity: 0.7;
+                    font-family: 'Times New Roman', 'Gentium Plus', serif;
+                    margin-top: 4px;
+                    line-height: 1.35;
+                    word-break: break-word;
+                    color: var(--bwm-text);
+                    border-left: 2px solid var(--bwm-border);
+                    padding-left: 6px;
                 }
 
                 /* Mobile Bottom Sheet Unification Across ALL Windows */
@@ -6910,6 +6971,8 @@ class BibleWordMap extends HTMLElement {
             let crGenre = getVerseGenre(crId);
             let crGenreColor = GENRE_COLORS[crGenre] || '#3b82f6';
             let crText = this.verseTextMap ? (this.verseTextMap.get(crId) || '') : '';
+            let crGreek = this.verseGreekMap ? (this.verseGreekMap.get(crId) || '') : '';
+            let isExpandable = crText.length > 110 || Boolean(crGreek);
             let snippet = crText.length > 110 ? crText.slice(0, 107) + '...' : crText;
             let pct = Math.round((crSim || 0.8) * 100);
             let isAlreadyActive = Boolean(this.searchedVerses && this.searchedVerses.includes(crId));
@@ -6921,7 +6984,7 @@ class BibleWordMap extends HTMLElement {
                 title: isAlreadyActive ? 'Remove verse from map' : 'Add verse to map'
             });
             return `
-                <div class="bwm-crossref-card">
+                <div class="bwm-crossref-card" data-cr-id="${crId}">
                     <div class="bwm-crossref-head">
                         <div class="bwm-crossref-title-wrap">
                             <span class="bwm-crossref-ref" data-focus-verse="${crId}" title="Focus this verse">${crFormatted}</span>
@@ -6930,9 +6993,19 @@ class BibleWordMap extends HTMLElement {
                         <div style="display:flex;align-items:center;gap:6px;">
                             <span class="bwm-crossref-badge" title="100D Vector Cosine Similarity">${pct}% match</span>
                             ${crActionHtml}
+                            ${isExpandable ? `
+                            <button type="button" class="bwm-verse-expand-btn" data-action="expand-crossref" aria-expanded="false" title="Expand full verse">
+                                <svg class="bwm-chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </button>` : ''}
                         </div>
                     </div>
-                    ${snippet ? `<div class="bwm-crossref-snippet">${snippet}</div>` : ''}
+                    ${snippet ? `
+                    <div class="bwm-crossref-body">
+                        <div class="bwm-crossref-snippet" data-snippet="${escapeHtml(snippet)}" data-full="${escapeHtml(crText)}">${snippet}</div>
+                        ${crGreek ? `<div class="bwm-crossref-original" style="display:none;">${escapeHtml(crGreek)}</div>` : ''}
+                    </div>` : ''}
                 </div>
             `;
         }).join('');
@@ -7115,6 +7188,35 @@ class BibleWordMap extends HTMLElement {
                 this.selectVerse(ref);
             });
         });
+
+        // Expand/collapse cross-reference verse text in place
+        let crList = this.verseCard.querySelector('.bwm-crossref-list');
+        if (crList) {
+            crList.addEventListener('click', (e) => {
+                let expandBtn = e.target.closest('.bwm-verse-expand-btn[data-action="expand-crossref"]');
+                if (!expandBtn) return;
+                e.stopPropagation();
+                e.preventDefault();
+                let card = expandBtn.closest('.bwm-crossref-card');
+                if (!card) return;
+                let snippetEl = card.querySelector('.bwm-crossref-snippet');
+                let origEl = card.querySelector('.bwm-crossref-original');
+                let isExpanded = expandBtn.classList.contains('is-expanded');
+                if (isExpanded) {
+                    expandBtn.classList.remove('is-expanded');
+                    expandBtn.setAttribute('aria-expanded', 'false');
+                    expandBtn.setAttribute('title', 'Expand full verse');
+                    if (snippetEl) snippetEl.textContent = snippetEl.getAttribute('data-snippet') || '';
+                    if (origEl) origEl.style.display = 'none';
+                } else {
+                    expandBtn.classList.add('is-expanded');
+                    expandBtn.setAttribute('aria-expanded', 'true');
+                    expandBtn.setAttribute('title', 'Collapse verse');
+                    if (snippetEl) snippetEl.textContent = snippetEl.getAttribute('data-full') || '';
+                    if (origEl) origEl.style.display = 'block';
+                }
+            });
+        }
 
         // Add/remove verse toggle click listener -> adds/removes verse to/from map
         let toggleBtns = this.verseCard.querySelectorAll('.bwm-pill-toggle[data-toggle-verse]');
@@ -8681,11 +8783,23 @@ class BibleWordMap extends HTMLElement {
             let ref = parts[0];
             let english = parts[1] || '';
             let greek = parts[2] || '';
-            return `<div style="margin: 4px 0; padding: 6px 0; border-bottom: 1px solid var(--bwm-border);">
-                <span style="color:var(--bwm-tooltip-link); font-family: monospace; font-weight:600;">${ref}</span><br>
-                <span style="font-size:0.85em; opacity:0.95; line-height:1.4; display:inline-block; margin-top:2px;">${english}</span>
-                ${greek ? `<br><span style="font-size:0.8em; opacity:0.65; font-family: 'Times New Roman', 'Gentium Plus', serif; line-height:1.4; display:inline-block; margin-top:2px;">${greek}</span>` : ''}
-            </div>`;
+            let isExpandable = english.length > 110 || Boolean(greek);
+            let snippet = english.length > 110 ? english.slice(0, 107) + '...' : english;
+            return `
+                <div class="bwm-verse-item" data-verse-id="${id}" style="margin: 4px 0; padding: 6px 0; border-bottom: 1px solid var(--bwm-border);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                        <span class="bwm-verse-item-ref" style="color:var(--bwm-tooltip-link); font-family: monospace; font-weight:600;">${ref}</span>
+                        ${isExpandable ? `
+                        <button type="button" class="bwm-verse-expand-btn" data-action="expand-verse-item" aria-expanded="false" title="Expand full verse">
+                            <svg class="bwm-chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>` : ''}
+                    </div>
+                    <div class="bwm-verse-item-english" data-snippet="${escapeHtml(snippet)}" data-full="${escapeHtml(english)}" style="font-size:0.85em; opacity:0.95; line-height:1.4; display:inline-block; margin-top:2px;">${snippet}</div>
+                    ${greek ? `<div class="bwm-verse-item-original" style="display:none;">${escapeHtml(greek)}</div>` : ''}
+                </div>
+            `;
         };
 
         const renderInitialBatch = (tabId, vList) => {
@@ -9417,6 +9531,35 @@ class BibleWordMap extends HTMLElement {
                 if (versesBody) versesBody.scrollTop = 0;
             });
         });
+
+        // Expand/collapse verse items in Verses tab in place
+        const versesPane = this.wordCard.querySelector('#bwm-word-pane-verses');
+        if (versesPane) {
+            versesPane.addEventListener('click', (e) => {
+                let expandBtn = e.target.closest('.bwm-verse-expand-btn[data-action="expand-verse-item"]');
+                if (!expandBtn) return;
+                e.stopPropagation();
+                e.preventDefault();
+                let item = expandBtn.closest('.bwm-verse-item');
+                if (!item) return;
+                let engEl = item.querySelector('.bwm-verse-item-english');
+                let origEl = item.querySelector('.bwm-verse-item-original');
+                let isExpanded = expandBtn.classList.contains('is-expanded');
+                if (isExpanded) {
+                    expandBtn.classList.remove('is-expanded');
+                    expandBtn.setAttribute('aria-expanded', 'false');
+                    expandBtn.setAttribute('title', 'Expand full verse');
+                    if (engEl) engEl.textContent = engEl.getAttribute('data-snippet') || '';
+                    if (origEl) origEl.style.display = 'none';
+                } else {
+                    expandBtn.classList.add('is-expanded');
+                    expandBtn.setAttribute('aria-expanded', 'true');
+                    expandBtn.setAttribute('title', 'Collapse verse');
+                    if (engEl) engEl.textContent = engEl.getAttribute('data-full') || '';
+                    if (origEl) origEl.style.display = 'block';
+                }
+            });
+        }
 
         // Original language sub-tabs
         const origSubtabs = this.wordCard.querySelectorAll('.bwm-orig-subtabs .bwm-window-tab');
