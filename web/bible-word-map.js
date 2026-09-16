@@ -1240,6 +1240,7 @@ class BibleWordMap extends HTMLElement {
                 }
                 #bwm-verse-mode-filter,
                 #bwm-foundation-filter,
+                #bwm-testament-filter,
                 #bwm-sim-labels-filter {
                     display: flex;
                     width: 100%;
@@ -1256,11 +1257,12 @@ class BibleWordMap extends HTMLElement {
                 }
                 #bwm-verse-mode-filter .bwm-pill-btn,
                 #bwm-foundation-filter .bwm-pill-btn,
+                #bwm-testament-filter .bwm-pill-btn,
                 #bwm-sim-labels-filter .bwm-pill-btn {
                     flex: 1 1 0;
                     background: transparent;
                     border: none;
-                    padding: 5px 6px;
+                    padding: 5px 4px;
                     border-radius: 16px;
                     font-size: 0.82em;
                     font-weight: 600;
@@ -1273,12 +1275,14 @@ class BibleWordMap extends HTMLElement {
                 }
                 #bwm-verse-mode-filter .bwm-pill-btn:hover,
                 #bwm-foundation-filter .bwm-pill-btn:hover,
+                #bwm-testament-filter .bwm-pill-btn:hover,
                 #bwm-sim-labels-filter .bwm-pill-btn:hover {
                     background: transparent;
                     color: var(--bwm-text);
                 }
                 #bwm-verse-mode-filter .bwm-pill-btn.active,
                 #bwm-foundation-filter .bwm-pill-btn.active,
+                #bwm-testament-filter .bwm-pill-btn.active,
                 #bwm-sim-labels-filter .bwm-pill-btn.active {
                     background: var(--bwm-node-hover);
                     color: #ffffff;
@@ -2802,10 +2806,10 @@ class BibleWordMap extends HTMLElement {
                                 <h4>Testament Filter</h4>
                             </div>
                             <div class="bwm-pill-group" id="bwm-testament-filter">
-                                <button type="button" class="bwm-pill-btn active" data-testament="all">All</button>
-                                <button type="button" class="bwm-pill-btn" data-testament="ot">Old Testament</button>
-                                <button type="button" class="bwm-pill-btn" data-testament="nt">New Testament</button>
-                                <button type="button" class="bwm-pill-btn" data-testament="both">Both Only</button>
+                                <button type="button" class="bwm-pill-btn active" data-testament="all" title="Show all words across Old and New Testaments">All</button>
+                                <button type="button" class="bwm-pill-btn" data-testament="ot" title="Filter words occurring in the Old Testament">Old</button>
+                                <button type="button" class="bwm-pill-btn" data-testament="nt" title="Filter words occurring in the New Testament">New</button>
+                                <button type="button" class="bwm-pill-btn" data-testament="both" title="Filter words occurring in both Old and New Testaments">Both</button>
                             </div>
                             <div class="bwm-drawer-hint">Highlight words by presence in Old or New Testament.</div>
                         </div>
