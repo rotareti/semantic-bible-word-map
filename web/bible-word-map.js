@@ -774,6 +774,7 @@ class BibleWordMap extends HTMLElement {
                     border: 1px solid var(--bwm-border);
                     color: var(--bwm-text);
                     font-size: 0.88rem;
+                    font-weight: 500;
                     font-family: inherit;
                     cursor: pointer;
                     transition: all 0.15s ease;
@@ -782,8 +783,18 @@ class BibleWordMap extends HTMLElement {
                 .bwm-recovery-pill-btn:hover {
                     background: var(--bwm-btn-hover);
                     border-color: var(--bwm-node-hover);
-                    color: #ffffff;
+                    color: var(--bwm-text);
+                    font-weight: 600;
+                    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
                     transform: translateY(-1px);
+                }
+                .bwm-recovery-pill-btn:hover .bwm-recovery-pill-pos {
+                    background: color-mix(in srgb, var(--bwm-node-hover) 15%, var(--bwm-badge-bg));
+                    color: var(--bwm-text);
+                }
+                .bwm-recovery-pill-btn:hover .bwm-recovery-pill-freq {
+                    color: var(--bwm-text);
+                    opacity: 0.95;
                 }
                 .bwm-recovery-pill-pos {
                     font-size: 0.76rem;
@@ -791,11 +802,13 @@ class BibleWordMap extends HTMLElement {
                     border-radius: 8px;
                     background: var(--bwm-badge-bg);
                     color: var(--bwm-text-muted);
+                    transition: all 0.15s ease;
                 }
                 .bwm-recovery-pill-freq {
                     font-size: 0.76rem;
                     color: var(--bwm-text-muted);
                     opacity: 0.85;
+                    transition: all 0.15s ease;
                 }
                 .bwm-recovery-action-card {
                     display: flex;
