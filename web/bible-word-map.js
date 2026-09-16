@@ -836,6 +836,10 @@ class BibleWordMap extends HTMLElement {
                     font-size: 0.82rem;
                     color: var(--bwm-text-muted);
                 }
+                .bwm-recovery-verse-card .bwm-recovery-action-desc {
+                    font-style: italic;
+                    line-height: 1.35;
+                }
                 .bwm-recovery-action-btn {
                     display: inline-flex;
                     align-items: center;
@@ -3796,7 +3800,133 @@ class BibleWordMap extends HTMLElement {
         return scored.slice(0, limit);
     }
 
-    showSearchRecovery(query, currentMode = 'words') {
+    async findCentroidVerses(query, topN = 4) {
+        if (this.versemapPromise && !this.versemapData) {
+            try {
+                let data = await this.versemapPromise;
+                if (data) {
+                    let list = data.verses || (Array.isArray(data) ? data : []);
+                    this.versemapData = data.verses ? data : { count: list.length, verses: list };
+                    this.versemapLookup = new Map(list.map(v => [v.id, v]));
+                }
+            } catch (e) {}
+        }
+        if (this.versesPromise && !this.verses) {
+            try {
+                let vData = await this.versesPromise;
+                if (vData) {
+                    this.verses = vData.verses;
+                    this.wordToVerses = vData.words;
+                }
+            } catch (e) {}
+        }
+        if (!this.versemapData || !this.verses || !this.data2d) {
+            return { centroid: null, allMatched: false, matchedTokens: [], verses: [] };
+        }
+
+        let rawTokens = query.toLowerCase().split(/[\s,]+/).filter(Boolean);
+        let cleanPhrase = query.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+
+        let tokenMatches = [];
+        for (let t of rawTokens) {
+            let hits = this.findMatchesForWordToken(t);
+            if (hits.length === 0) {
+                let stem = t.replace(/(ed|ing|s|es)$/i, '');
+                if (stem && stem.length >= 3) {
+                    hits = this.findMatchesForWordToken(stem);
+                }
+            }
+            if (hits.length > 0) {
+                hits.sort((a, b) => b.f - a.f);
+                tokenMatches.push({ token: t, bestPoint: hits[0], hits });
+            }
+        }
+
+        if (tokenMatches.length < 2) {
+            return { centroid: null, allMatched: false, matchedTokens: tokenMatches, verses: [] };
+        }
+
+        let allMatched = tokenMatches.length === rawTokens.length;
+
+        let centroid = {
+            x: tokenMatches.reduce((sum, m) => sum + m.bestPoint.x, 0) / tokenMatches.length,
+            y: tokenMatches.reduce((sum, m) => sum + m.bestPoint.y, 0) / tokenMatches.length
+        };
+
+        let candidateIndices = new Set();
+        if (this.wordToVerses) {
+            for (let tm of tokenMatches) {
+                for (let h of tm.hits) {
+                    let list = this.wordToVerses[h.id] || [];
+                    for (let vIdx of list) candidateIndices.add(vIdx);
+                }
+            }
+        }
+
+        let scored = [];
+        for (let vIdx of candidateIndices) {
+            let raw = this.verses[vIdx];
+            if (!raw) continue;
+            let pipeIdx = raw.indexOf('|');
+            let ref = pipeIdx !== -1 ? raw.slice(0, pipeIdx) : raw;
+            let text = pipeIdx !== -1 ? raw.slice(pipeIdx + 1) : '';
+            let normText = text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+
+            let phraseBonus = 0;
+            if (cleanPhrase.length >= 6 && normText.includes(cleanPhrase)) {
+                phraseBonus = 250;
+            } else {
+                let pWords = cleanPhrase.split(' ');
+                for (let len = pWords.length - 1; len >= 2; len--) {
+                    for (let start = 0; start <= pWords.length - len; start++) {
+                        let sub = pWords.slice(start, start + len).join(' ');
+                        if (sub.length >= 6 && normText.includes(sub)) {
+                            phraseBonus = Math.max(phraseBonus, len * 35);
+                        }
+                    }
+                }
+            }
+
+            let matchCount = 0;
+            if (this.wordToVerses) {
+                for (let tm of tokenMatches) {
+                    let hasToken = tm.hits.some(h => {
+                        let list = this.wordToVerses[h.id];
+                        return list && list.includes(vIdx);
+                    });
+                    if (hasToken) matchCount++;
+                }
+            }
+
+            if (matchCount < 2 && phraseBonus === 0) continue;
+
+            let vObj = this.versemapLookup ? this.versemapLookup.get(ref) : null;
+            let dist2D = vObj ? Math.hypot(vObj.x - centroid.x, vObj.y - centroid.y) : 999;
+            let proxScore = Math.max(0, 30 - dist2D * 12);
+
+            let score = (matchCount * 50) + phraseBonus + proxScore;
+
+            let bParts = ref.split(' ');
+            let bCode = bParts[0];
+            let chapVerse = bParts[1] || '';
+            let bName = (BOOK_CODE_MAP[bCode] && BOOK_CODE_MAP[bCode].name) || bCode;
+            let displayRef = `${bName} ${chapVerse}`;
+
+            let snippet = text.length > 95 ? text.slice(0, 92).trim() + '...' : text;
+
+            scored.push({ ref, displayRef, text, snippet, matchCount, dist2D, score });
+        }
+
+        scored.sort((a, b) => b.score - a.score);
+        return {
+            centroid,
+            allMatched,
+            matchedTokens: tokenMatches,
+            verses: scored.slice(0, topN)
+        };
+    }
+
+    async showSearchRecovery(query, currentMode = 'words') {
         if (!this.searchRecoveryPopover) return;
         const q = (query || '').trim();
         if (!q) {
@@ -3813,198 +3943,271 @@ class BibleWordMap extends HTMLElement {
                 .replace(/"/g, '&quot;');
         };
 
-        let typoWordSuggestions = [];
+        let rawTokens = q.split(/[\s,]+/).filter(Boolean);
         let detectedVerse = detectVerseReference(q);
-        let detectedBook = detectBookMatch(q, this.booksData ? this.booksData.books : null);
-        let exactWordMatches = (this.data2d && this.findMatchesForWordToken(q)) || [];
-        let directWordMatch = exactWordMatches.length > 0 ? exactWordMatches[0] : null;
-        let hasDirectWordMatch = Boolean(directWordMatch);
+        let isMultiWordQuery = !detectedVerse && rawTokens.length >= 4;
+        let centroidResult = null;
 
-        // Handle multi-word tokens in words mode (only if not a detected verse or book)
-        let multiTokenSuggestions = null;
-        if (currentMode === 'words' && !detectedVerse && !detectedBook) {
-            let tokens = q.split(/[\s,]+/).filter(w => w);
-            if (tokens.length > 1) {
-                let tokenDetails = tokens.map(t => {
-                    let direct = this.findMatchesForWordToken(t);
-                    if (direct.length > 0) return { token: t, matched: true, suggestions: [] };
-                    return { token: t, matched: false, suggestions: this.findTypoWordSuggestions(t, 3) };
-                });
-                let anyUnmatched = tokenDetails.some(td => !td.matched);
-                if (anyUnmatched) {
-                    multiTokenSuggestions = tokenDetails;
-                }
-            }
-            if (!multiTokenSuggestions) {
-                typoWordSuggestions = this.findTypoWordSuggestions(q, 6);
-            }
+        if (isMultiWordQuery) {
+            centroidResult = await this.findCentroidVerses(q, 4);
         }
 
-        let html = `
-            <div class="bwm-recovery-header">
-                <div class="bwm-recovery-title-row">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--bwm-node-hover); flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                    <span>`;
-
-        if (currentMode === 'words') {
-            html += `No exact match for &ldquo;${escapeHtml(q)}&rdquo; in Words view.`;
-        } else if (currentMode === 'verses') {
-            if (detectedBook && !detectedBook.isTypo) {
-                html += `No chapter or verse specified for &ldquo;${escapeHtml(q)}&rdquo;.`;
-            } else {
-                html += `No verse found matching &ldquo;${escapeHtml(q)}&rdquo;.`;
-            }
-        } else {
-            html += `No book found matching &ldquo;${escapeHtml(q)}&rdquo;.`;
-        }
-
-        html += `</span>
-                </div>
-                <button type="button" class="bwm-recovery-close" id="bwm-recovery-close-btn" title="Close suggestions">&times;</button>
-            </div>
-        `;
-
+        let html = '';
         let hasContent = false;
 
-        // SECTION: Verse Detection Action (if in words or books view with detected verse, verse typo in verses view, or bare book in verses view)
-        let verseActionData = null;
-        if (detectedVerse && (currentMode !== 'verses' || detectedVerse.isTypo)) {
-            verseActionData = {
-                displayRef: detectedVerse.displayRef,
-                searchRef: detectedVerse.searchRef || detectedVerse.displayRef,
-                isTypo: detectedVerse.isTypo,
-                isBook11: false
-            };
-        } else if (currentMode === 'verses' && !detectedVerse && detectedBook) {
-            verseActionData = {
-                displayRef: `${detectedBook.book.name} 1:1`,
-                searchRef: `${detectedBook.book.name} 1:1`,
-                isTypo: detectedBook.isTypo,
-                isBook11: true,
-                bookName: detectedBook.book.name
-            };
-        }
-
-        if (verseActionData) {
+        if (isMultiWordQuery && centroidResult && (centroidResult.verses.length > 0 || centroidResult.matchedTokens.length >= 2)) {
             hasContent = true;
-            let btnLabel = currentMode === 'verses' ? `Search ${escapeHtml(verseActionData.displayRef)} &rarr;` : `View in Verses Mode &rarr;`;
-            let title = '';
-            let desc = '';
-            if (verseActionData.isBook11) {
-                title = verseActionData.isTypo
-                    ? `📖 Did you mean Verse: ${escapeHtml(verseActionData.displayRef)}?`
-                    : `📖 Verse Suggestion: ${escapeHtml(verseActionData.displayRef)}`;
-                desc = `Start at the opening verse of ${escapeHtml(verseActionData.bookName)} in Verses Mode.`;
-            } else {
-                title = verseActionData.isTypo
-                    ? `📖 Did you mean Scripture Verse: ${escapeHtml(verseActionData.displayRef)}?`
-                    : `📖 Scripture Verse Detected: ${escapeHtml(verseActionData.displayRef)}`;
-                desc = verseActionData.isTypo
-                    ? `Typo detected in book reference. Search for this passage in Verses Mode.`
-                    : `This query matches a biblical passage. Explore its cross-references in Verses Mode.`;
-            }
-
-            html += `
-                <div class="bwm-recovery-action-card">
-                    <div class="bwm-recovery-action-info">
-                        <div class="bwm-recovery-action-title">${title}</div>
-                        <div class="bwm-recovery-action-desc">${desc}</div>
+            let titleText = `Phrase search: &ldquo;${escapeHtml(q)}&rdquo;`;
+            html = `
+                <div class="bwm-recovery-header">
+                    <div class="bwm-recovery-title-row">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--bwm-node-hover); flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                        <span>${titleText}</span>
                     </div>
-                    <button type="button" class="bwm-recovery-action-btn" id="bwm-recovery-btn-verse" data-verse="${escapeHtml(verseActionData.searchRef)}">${btnLabel}</button>
+                    <button type="button" class="bwm-recovery-close" id="bwm-recovery-close-btn" title="Close suggestions">&times;</button>
                 </div>
             `;
-        }
 
-        // SECTION: Book Detection Action (if in words or verses view, or book typo in books view)
-        if (detectedBook) {
-            if (currentMode !== 'books' || detectedBook.isTypo) {
+            const renderWordsCard = () => {
+                if (centroidResult.matchedTokens.length < 2) return '';
+                let wordSearchQuery = centroidResult.matchedTokens.map(m => m.bestPoint.w).join(' ');
+                let btnText = currentMode === 'words' ? 'Graph Words &rarr;' : 'Search in Words Mode &rarr;';
+                let cardTitle = `✦ Explore ${centroidResult.matchedTokens.length} Keywords in Words Mode`;
+                let cardDesc = currentMode === 'words'
+                    ? `Graph all ${centroidResult.matchedTokens.length} words across their semantic constellations.`
+                    : `All words match canonical vocabulary. Search the combined semantic constellation in Words Mode.`;
+                return `
+                    <div class="bwm-recovery-action-card">
+                        <div class="bwm-recovery-action-info">
+                            <div class="bwm-recovery-action-title">${cardTitle}</div>
+                            <div class="bwm-recovery-action-desc">${cardDesc}</div>
+                        </div>
+                        <button type="button" class="bwm-recovery-action-btn" id="bwm-recovery-btn-multiword" data-words="${escapeHtml(wordSearchQuery)}">${btnText}</button>
+                    </div>
+                `;
+            };
+
+            const renderVersesSection = () => {
+                if (!centroidResult.verses || centroidResult.verses.length === 0) return '';
+                let vHtml = `
+                    <div class="bwm-recovery-section">
+                        <div class="bwm-recovery-section-label">Top Linked Verses (Semantic Map Centroid):</div>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                `;
+                let verseBtnLabel = currentMode === 'verses' ? 'Search Verse &rarr;' : 'View in Verses Mode &rarr;';
+                for (let v of centroidResult.verses) {
+                    vHtml += `
+                        <div class="bwm-recovery-action-card bwm-recovery-verse-card">
+                            <div class="bwm-recovery-action-info">
+                                <div class="bwm-recovery-action-title">📖 ${escapeHtml(v.displayRef)}</div>
+                                <div class="bwm-recovery-action-desc">&ldquo;${escapeHtml(v.snippet)}&rdquo;</div>
+                            </div>
+                            <button type="button" class="bwm-recovery-action-btn bwm-recovery-btn-suggested-verse" data-verse="${escapeHtml(v.displayRef)}">${verseBtnLabel}</button>
+                        </div>
+                    `;
+                }
+                vHtml += `</div></div>`;
+                return vHtml;
+            };
+
+            if (currentMode === 'words') {
+                html += renderWordsCard();
+                html += renderVersesSection();
+            } else {
+                html += renderVersesSection();
+                html += renderWordsCard();
+            }
+        } else {
+            let typoWordSuggestions = [];
+            let detectedBook = detectBookMatch(q, this.booksData ? this.booksData.books : null);
+            let exactWordMatches = (this.data2d && this.findMatchesForWordToken(q)) || [];
+            let directWordMatch = exactWordMatches.length > 0 ? exactWordMatches[0] : null;
+            let hasDirectWordMatch = Boolean(directWordMatch);
+
+            // Handle multi-word tokens in words mode (only if not a detected verse or book)
+            let multiTokenSuggestions = null;
+            if (currentMode === 'words' && !detectedVerse && !detectedBook) {
+                let tokens = q.split(/[\s,]+/).filter(w => w);
+                if (tokens.length > 1) {
+                    let tokenDetails = tokens.map(t => {
+                        let direct = this.findMatchesForWordToken(t);
+                        if (direct.length > 0) return { token: t, matched: true, suggestions: [] };
+                        return { token: t, matched: false, suggestions: this.findTypoWordSuggestions(t, 3) };
+                    });
+                    let anyUnmatched = tokenDetails.some(td => !td.matched);
+                    if (anyUnmatched) {
+                        multiTokenSuggestions = tokenDetails;
+                    }
+                }
+                if (!multiTokenSuggestions) {
+                    typoWordSuggestions = this.findTypoWordSuggestions(q, 6);
+                }
+            }
+
+            html = `
+                <div class="bwm-recovery-header">
+                    <div class="bwm-recovery-title-row">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--bwm-node-hover); flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                        <span>`;
+
+            if (currentMode === 'words') {
+                html += `No exact match for &ldquo;${escapeHtml(q)}&rdquo; in Words view.`;
+            } else if (currentMode === 'verses') {
+                if (detectedBook && !detectedBook.isTypo) {
+                    html += `No chapter or verse specified for &ldquo;${escapeHtml(q)}&rdquo;.`;
+                } else {
+                    html += `No verse found matching &ldquo;${escapeHtml(q)}&rdquo;.`;
+                }
+            } else {
+                html += `No book found matching &ldquo;${escapeHtml(q)}&rdquo;.`;
+            }
+
+            html += `</span>
+                    </div>
+                    <button type="button" class="bwm-recovery-close" id="bwm-recovery-close-btn" title="Close suggestions">&times;</button>
+                </div>
+            `;
+
+            // SECTION: Verse Detection Action (if in words or books view with detected verse, verse typo in verses view, or bare book in verses view)
+            let verseActionData = null;
+            if (detectedVerse && (currentMode !== 'verses' || detectedVerse.isTypo)) {
+                verseActionData = {
+                    displayRef: detectedVerse.displayRef,
+                    searchRef: detectedVerse.searchRef || detectedVerse.displayRef,
+                    isTypo: detectedVerse.isTypo,
+                    isBook11: false
+                };
+            } else if (currentMode === 'verses' && !detectedVerse && detectedBook) {
+                verseActionData = {
+                    displayRef: `${detectedBook.book.name} 1:1`,
+                    searchRef: `${detectedBook.book.name} 1:1`,
+                    isTypo: detectedBook.isTypo,
+                    isBook11: true,
+                    bookName: detectedBook.book.name
+                };
+            }
+
+            if (verseActionData) {
                 hasContent = true;
-                let bookName = detectedBook.book.name;
-                let btnLabel = currentMode === 'books' ? `Search ${escapeHtml(bookName)} &rarr;` : `View in Books Mode &rarr;`;
-                let title = detectedBook.isTypo ? `📚 Did you mean Bible Book: ${escapeHtml(bookName)}?` : `📚 Bible Book Detected: ${escapeHtml(bookName)}`;
-                let desc = detectedBook.isTypo ? `Typo detected in book name. Explore its chapter and thematic network in Books Mode.` : `This query matches a biblical book. Explore its structural connections in Books Mode.`;
+                let btnLabel = currentMode === 'verses' ? `Search ${escapeHtml(verseActionData.displayRef)} &rarr;` : `View in Verses Mode &rarr;`;
+                let title = '';
+                let desc = '';
+                if (verseActionData.isBook11) {
+                    title = verseActionData.isTypo
+                        ? `📖 Did you mean Verse: ${escapeHtml(verseActionData.displayRef)}?`
+                        : `📖 Verse Suggestion: ${escapeHtml(verseActionData.displayRef)}`;
+                    desc = `Start at the opening verse of ${escapeHtml(verseActionData.bookName)} in Verses Mode.`;
+                } else {
+                    title = verseActionData.isTypo
+                        ? `📖 Did you mean Scripture Verse: ${escapeHtml(verseActionData.displayRef)}?`
+                        : `📖 Scripture Verse Detected: ${escapeHtml(verseActionData.displayRef)}`;
+                    desc = verseActionData.isTypo
+                        ? `Typo detected in book reference. Search for this passage in Verses Mode.`
+                        : `This query matches a biblical passage. Explore its cross-references in Verses Mode.`;
+                }
+
                 html += `
                     <div class="bwm-recovery-action-card">
                         <div class="bwm-recovery-action-info">
                             <div class="bwm-recovery-action-title">${title}</div>
                             <div class="bwm-recovery-action-desc">${desc}</div>
                         </div>
-                        <button type="button" class="bwm-recovery-action-btn" id="bwm-recovery-btn-book" data-book="${escapeHtml(bookName)}">${btnLabel}</button>
+                        <button type="button" class="bwm-recovery-action-btn" id="bwm-recovery-btn-verse" data-verse="${escapeHtml(verseActionData.searchRef)}">${btnLabel}</button>
                     </div>
                 `;
             }
-        }
 
-        // SECTION: Word Detection Action (if in verses or books view and query exists in words vocabulary)
-        if (currentMode !== 'words' && (hasDirectWordMatch || (!detectedBook && this.findTypoWordSuggestions(q, 1).length > 0))) {
-            hasContent = true;
-            let targetWord = hasDirectWordMatch ? (directWordMatch ? directWordMatch.w : q) : this.findTypoWordSuggestions(q, 1)[0].w;
-            let posBadge = directWordMatch && directWordMatch.pos ? ` (${directWordMatch.pos.toLowerCase()})` : '';
-            let displayWord = directWordMatch ? this.formatWord(directWordMatch.w, directWordMatch.pos) : (targetWord.charAt(0).toUpperCase() + targetWord.slice(1));
-            html += `
-                <div class="bwm-recovery-action-card">
-                    <div class="bwm-recovery-action-info">
-                        <div class="bwm-recovery-action-title">✦ Biblical Keyword Detected: &ldquo;${escapeHtml(displayWord)}&rdquo;${escapeHtml(posBadge)}</div>
-                        <div class="bwm-recovery-action-desc">This query is a canonical word. Explore its semantic constellation and usage in Words Mode.</div>
-                    </div>
-                    <button type="button" class="bwm-recovery-action-btn" id="bwm-recovery-btn-word" data-word="${escapeHtml(displayWord)}">Search in Words Mode &rarr;</button>
-                </div>
-            `;
-        }
+            // SECTION: Book Detection Action (if in words or verses view, or book typo in books view)
+            if (detectedBook) {
+                if (currentMode !== 'books' || detectedBook.isTypo) {
+                    hasContent = true;
+                    let bookName = detectedBook.book.name;
+                    let btnLabel = currentMode === 'books' ? `Search ${escapeHtml(bookName)} &rarr;` : `View in Books Mode &rarr;`;
+                    let title = detectedBook.isTypo ? `📚 Did you mean Bible Book: ${escapeHtml(bookName)}?` : `📚 Bible Book Detected: ${escapeHtml(bookName)}`;
+                    let desc = detectedBook.isTypo ? `Typo detected in book name. Explore its chapter and thematic network in Books Mode.` : `This query matches a biblical book. Explore its structural connections in Books Mode.`;
+                    html += `
+                        <div class="bwm-recovery-action-card">
+                            <div class="bwm-recovery-action-info">
+                                <div class="bwm-recovery-action-title">${title}</div>
+                                <div class="bwm-recovery-action-desc">${desc}</div>
+                            </div>
+                            <button type="button" class="bwm-recovery-action-btn" id="bwm-recovery-btn-book" data-book="${escapeHtml(bookName)}">${btnLabel}</button>
+                        </div>
+                    `;
+                }
+            }
 
-        // SECTION: Multi-token Typo Suggestions (in words mode)
-        if (multiTokenSuggestions) {
-            hasContent = true;
-            let combinedParts = multiTokenSuggestions.map(td => {
-                if (td.matched) return td.token;
-                return (td.suggestions[0] ? td.suggestions[0].w : td.token);
-            });
-            let combinedQuery = combinedParts.join(' ');
-            html += `
-                <div class="bwm-recovery-section">
-                    <div class="bwm-recovery-section-label">Suggested Correction:</div>
-                    <div class="bwm-recovery-pills">
-                        <button type="button" class="bwm-recovery-pill-btn bwm-recovery-pill-word" data-word="${escapeHtml(combinedQuery)}">
-                            <strong>${escapeHtml(combinedQuery)}</strong>
-                        </button>
+            // SECTION: Word Detection Action (if in verses or books view and query exists in words vocabulary)
+            if (currentMode !== 'words' && (hasDirectWordMatch || (!detectedBook && this.findTypoWordSuggestions(q, 1).length > 0))) {
+                hasContent = true;
+                let targetWord = hasDirectWordMatch ? (directWordMatch ? directWordMatch.w : q) : this.findTypoWordSuggestions(q, 1)[0].w;
+                let posBadge = directWordMatch && directWordMatch.pos ? ` (${directWordMatch.pos.toLowerCase()})` : '';
+                let displayWord = directWordMatch ? this.formatWord(directWordMatch.w, directWordMatch.pos) : (targetWord.charAt(0).toUpperCase() + targetWord.slice(1));
+                html += `
+                    <div class="bwm-recovery-action-card">
+                        <div class="bwm-recovery-action-info">
+                            <div class="bwm-recovery-action-title">✦ Biblical Keyword Detected: &ldquo;${escapeHtml(displayWord)}&rdquo;${escapeHtml(posBadge)}</div>
+                            <div class="bwm-recovery-action-desc">This query is a canonical word. Explore its semantic constellation and usage in Words Mode.</div>
+                        </div>
+                        <button type="button" class="bwm-recovery-action-btn" id="bwm-recovery-btn-word" data-word="${escapeHtml(displayWord)}">Search in Words Mode &rarr;</button>
                     </div>
-                </div>
-            `;
-            let unmatchedTokens = multiTokenSuggestions.filter(td => !td.matched && td.suggestions.length > 0);
-            if (unmatchedTokens.length > 0) {
+                `;
+            }
+
+            // SECTION: Multi-token Typo Suggestions (in words mode)
+            if (multiTokenSuggestions) {
+                hasContent = true;
+                let combinedParts = multiTokenSuggestions.map(td => {
+                    if (td.matched) return td.token;
+                    return (td.suggestions[0] ? td.suggestions[0].w : td.token);
+                });
+                let combinedQuery = combinedParts.join(' ');
                 html += `
                     <div class="bwm-recovery-section">
-                        <div class="bwm-recovery-section-label">Token Suggestions:</div>
-                        <div class="bwm-recovery-pills">`;
-                for (let ut of unmatchedTokens) {
-                    for (let s of ut.suggestions) {
-                        html += `
-                            <button type="button" class="bwm-recovery-pill-btn bwm-recovery-pill-word" data-word="${escapeHtml(s.w)}" title="${escapeHtml(s.w)} (${s.pos || 'word'})">
-                                <span>${escapeHtml(s.w)}</span>
-                                ${s.pos ? `<span class="bwm-recovery-pill-pos">${escapeHtml(s.pos.toLowerCase())}</span>` : ''}
-                                ${s.f ? `<span class="bwm-recovery-pill-freq">${s.f}x</span>` : ''}
+                        <div class="bwm-recovery-section-label">Suggested Correction:</div>
+                        <div class="bwm-recovery-pills">
+                            <button type="button" class="bwm-recovery-pill-btn bwm-recovery-pill-word" data-word="${escapeHtml(combinedQuery)}">
+                                <strong>${escapeHtml(combinedQuery)}</strong>
                             </button>
-                        `;
+                        </div>
+                    </div>
+                `;
+                let unmatchedTokens = multiTokenSuggestions.filter(td => !td.matched && td.suggestions.length > 0);
+                if (unmatchedTokens.length > 0) {
+                    html += `
+                        <div class="bwm-recovery-section">
+                            <div class="bwm-recovery-section-label">Token Suggestions:</div>
+                            <div class="bwm-recovery-pills">`;
+                    for (let ut of unmatchedTokens) {
+                        for (let s of ut.suggestions) {
+                            html += `
+                                <button type="button" class="bwm-recovery-pill-btn bwm-recovery-pill-word" data-word="${escapeHtml(s.w)}" title="${escapeHtml(s.w)} (${s.pos || 'word'})">
+                                    <span>${escapeHtml(s.w)}</span>
+                                    ${s.pos ? `<span class="bwm-recovery-pill-pos">${escapeHtml(s.pos.toLowerCase())}</span>` : ''}
+                                    ${s.f ? `<span class="bwm-recovery-pill-freq">${s.f}x</span>` : ''}
+                                </button>
+                            `;
+                        }
                     }
+                    html += `</div></div>`;
+                }
+            } else if (typoWordSuggestions.length > 0) {
+                hasContent = true;
+                html += `
+                    <div class="bwm-recovery-section">
+                        <div class="bwm-recovery-section-label">Did you mean:</div>
+                        <div class="bwm-recovery-pills">`;
+                for (let s of typoWordSuggestions) {
+                    html += `
+                        <button type="button" class="bwm-recovery-pill-btn bwm-recovery-pill-word" data-word="${escapeHtml(s.w)}" title="${escapeHtml(s.w)} (${s.pos || 'word'})">
+                            <span>${escapeHtml(s.w)}</span>
+                            ${s.pos ? `<span class="bwm-recovery-pill-pos">${escapeHtml(s.pos.toLowerCase())}</span>` : ''}
+                            ${s.f ? `<span class="bwm-recovery-pill-freq">${s.f}x</span>` : ''}
+                        </button>
+                    `;
                 }
                 html += `</div></div>`;
             }
-        } else if (typoWordSuggestions.length > 0) {
-            hasContent = true;
-            html += `
-                <div class="bwm-recovery-section">
-                    <div class="bwm-recovery-section-label">Did you mean:</div>
-                    <div class="bwm-recovery-pills">`;
-            for (let s of typoWordSuggestions) {
-                html += `
-                    <button type="button" class="bwm-recovery-pill-btn bwm-recovery-pill-word" data-word="${escapeHtml(s.w)}" title="${escapeHtml(s.w)} (${s.pos || 'word'})">
-                        <span>${escapeHtml(s.w)}</span>
-                        ${s.pos ? `<span class="bwm-recovery-pill-pos">${escapeHtml(s.pos.toLowerCase())}</span>` : ''}
-                        ${s.f ? `<span class="bwm-recovery-pill-freq">${s.f}x</span>` : ''}
-                    </button>
-                `;
-            }
-            html += `</div></div>`;
         }
 
         if (!hasContent) {
@@ -4062,6 +4265,30 @@ class BibleWordMap extends HTMLElement {
             });
         }
 
+        const verseBtns = this.searchRecoveryPopover.querySelectorAll('.bwm-recovery-btn-suggested-verse');
+        verseBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const verseTarget = btn.getAttribute('data-verse');
+                this.closeSearchRecovery();
+                this.setViewMode('verses');
+                if (this.searchInput) this.searchInput.value = verseTarget;
+                this.searchVerses();
+            });
+        });
+
+        const btnMultiWord = this.searchRecoveryPopover.querySelector('#bwm-recovery-btn-multiword');
+        if (btnMultiWord) {
+            btnMultiWord.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const wordsTarget = btnMultiWord.getAttribute('data-words');
+                this.closeSearchRecovery();
+                this.setViewMode('words');
+                if (this.searchInput) this.searchInput.value = wordsTarget;
+                this.searchWord(false, true);
+            });
+        }
+
         const wordPills = this.searchRecoveryPopover.querySelectorAll('.bwm-recovery-pill-word');
         wordPills.forEach(pill => {
             pill.addEventListener('click', (e) => {
@@ -4081,7 +4308,7 @@ class BibleWordMap extends HTMLElement {
         }
     }
 
-    async searchWord(useExplicitIds = false) {
+    async searchWord(useExplicitIds = false, directKeywordSearch = false) {
         this.hoveredNode = null;
         let foundPoints = [];
         let originalQuery = this.searchInput ? this.searchInput.value.trim() : '';
@@ -4118,6 +4345,12 @@ class BibleWordMap extends HTMLElement {
                 this.renderActiveWords();
                 this.showSearchRecovery(originalQuery, 'words');
                 this.buildAllWordsGraph();
+                return;
+            }
+
+            let queryTokens = query.split(/[\s,]+/).filter(w => w);
+            if (!directKeywordSearch && queryTokens.length >= 4) {
+                this.showSearchRecovery(originalQuery, 'words');
                 return;
             }
 
