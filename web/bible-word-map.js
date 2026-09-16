@@ -6908,7 +6908,14 @@ class BibleWordMap extends HTMLElement {
             let crText = this.verseTextMap ? (this.verseTextMap.get(crId) || '') : '';
             let snippet = crText.length > 110 ? crText.slice(0, 107) + '...' : crText;
             let pct = Math.round((crSim || 0.8) * 100);
-            let isAlreadyActive = this.searchedVerses && this.searchedVerses.includes(crId);
+            let isAlreadyActive = Boolean(this.searchedVerses && this.searchedVerses.includes(crId));
+            let crActionHtml = this.renderPillToggle({
+                isActive: isAlreadyActive,
+                dataAttrs: {
+                    'toggle-verse': crId
+                },
+                title: isAlreadyActive ? 'Remove verse from map' : 'Add verse to map'
+            });
             return `
                 <div class="bwm-crossref-card">
                     <div class="bwm-crossref-head">
@@ -6918,9 +6925,7 @@ class BibleWordMap extends HTMLElement {
                         </div>
                         <div style="display:flex;align-items:center;gap:6px;">
                             <span class="bwm-crossref-badge" title="100D Vector Cosine Similarity">${pct}% match</span>
-                            <button type="button" class="bwm-chip-add" data-toggle-verse="${crId}" title="${isAlreadyActive ? 'Remove from map' : 'Add to map'}">
-                                ${isAlreadyActive ? '&minus;' : '+'}
-                            </button>
+                            ${crActionHtml}
                         </div>
                     </div>
                     ${snippet ? `<div class="bwm-crossref-snippet">${snippet}</div>` : ''}
@@ -6941,6 +6946,14 @@ class BibleWordMap extends HTMLElement {
         }).join('');
 
         let isAlreadyActive = Boolean(this.searchedVerses && this.searchedVerses.includes(verse.id));
+        let verseActionHtml = this.renderPillToggle({
+            isActive: isAlreadyActive,
+            id: 'bwm-verse-action-toggle',
+            dataAttrs: {
+                'toggle-verse': verse.id
+            },
+            title: isAlreadyActive ? 'Remove verse from map' : 'Add verse to map'
+        });
 
         let simBadgeHtml = '';
         if (isAlreadyActive) {
@@ -7004,9 +7017,7 @@ class BibleWordMap extends HTMLElement {
                         <h3 class="bwm-window-title">${formattedRef}</h3>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <button type="button" class="bwm-window-pill ${isAlreadyActive ? '' : 'active'}" id="bwm-btn-toggle-active-verse" title="${isAlreadyActive ? 'Remove this verse from map' : 'Add this verse to map'}" style="font-size: 0.8em; padding: 4px 10px; display: inline-flex; align-items: center; gap: 4px;">
-                            ${isAlreadyActive ? '&minus; Remove from Map' : '+ Add to Map'}
-                        </button>
+                        ${verseActionHtml}
                         <button type="button" class="bwm-window-close" id="bwm-verse-card-close" title="Dismiss">&times;</button>
                     </div>
                 </div>
@@ -7042,9 +7053,6 @@ class BibleWordMap extends HTMLElement {
                     <button type="button" class="bwm-window-pill" id="bwm-btn-reset-verses" title="Return to landmark overview">
                         &larr; Landmark Overview
                     </button>
-                    <button type="button" class="bwm-window-pill ${isAlreadyActive ? '' : 'active'}" id="bwm-btn-toggle-active-verse-footer" title="${isAlreadyActive ? 'Remove from map' : 'Add to map'}">
-                        ${isAlreadyActive ? '&minus; Remove from Map' : '+ Add to Map'}
-                    </button>
                     <button type="button" class="bwm-window-pill active" id="bwm-btn-dismiss-verse-card" title="Explore constellation on map">
                         Explore Map
                     </button>
@@ -7062,21 +7070,6 @@ class BibleWordMap extends HTMLElement {
 
         let closeBtn = this.verseCard.querySelector('#bwm-verse-card-close');
         if (closeBtn) closeBtn.addEventListener('click', (e) => { e.stopPropagation(); this.hideVerseCard(); });
-
-        const toggleActiveVerse = (e) => {
-            e.stopPropagation();
-            if (this.searchedVerses && this.searchedVerses.includes(verse.id)) {
-                this.removeVerse(verse.id);
-            } else {
-                this.addVerse(verse.id);
-            }
-        };
-
-        let toggleHeaderBtn = this.verseCard.querySelector('#bwm-btn-toggle-active-verse');
-        if (toggleHeaderBtn) toggleHeaderBtn.addEventListener('click', toggleActiveVerse);
-
-        let toggleFooterBtn = this.verseCard.querySelector('#bwm-btn-toggle-active-verse-footer');
-        if (toggleFooterBtn) toggleFooterBtn.addEventListener('click', toggleActiveVerse);
 
         let toggleGreekBtn = this.verseCard.querySelector('#bwm-btn-toggle-greek');
         let greekBox = this.verseCard.querySelector('#bwm-verse-greek-box');
@@ -7119,16 +7112,18 @@ class BibleWordMap extends HTMLElement {
             });
         });
 
-        let toggleBtns = this.verseCard.querySelectorAll('button[data-toggle-verse]');
-        toggleBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                let ref = btn.getAttribute('data-toggle-verse');
-                if (this.searchedVerses && this.searchedVerses.includes(ref)) {
-                    this.removeVerse(ref);
-                } else {
+        // Add/remove verse toggle click listener -> adds/removes verse to/from map
+        let toggleBtns = this.verseCard.querySelectorAll('.bwm-pill-toggle[data-toggle-verse]');
+        toggleBtns.forEach(toggle => {
+            this.setupPillToggleListener(toggle, (nextActive) => {
+                let ref = toggle.getAttribute('data-toggle-verse');
+                if (!ref) return;
+                if (nextActive) {
                     this.addVerse(ref);
+                } else {
+                    this.removeVerse(ref);
                 }
+                this.syncVerseToggles(ref, nextActive);
             });
         });
     }
@@ -7171,9 +7166,7 @@ class BibleWordMap extends HTMLElement {
         if (!this.drawerVerses.includes(ref)) {
             this.drawerVerses.push(ref);
         }
-        if (this.versemapLookup && this.versemapLookup.has(ref)) {
-            this.selectedVerse = this.versemapLookup.get(ref);
-        }
+        this.syncVerseToggles(ref, true);
         this.searchVerses(true);
     }
 
@@ -7181,6 +7174,7 @@ class BibleWordMap extends HTMLElement {
         if (!this.searchedVerses) return;
         this.searchedVerses = this.searchedVerses.filter(r => r !== ref);
         this.drawerVerses = this.drawerVerses.filter(r => r !== ref);
+        this.syncVerseToggles(ref, false);
         if (this.searchedVerses.length === 0) {
             this.clearAllKeywords();
         } else {
@@ -7208,6 +7202,11 @@ class BibleWordMap extends HTMLElement {
         this.selectedVerse = null;
         this.isSearchMode = false;
         if (this.searchInput) this.searchInput.value = '';
+        this.querySelectorAll('.bwm-pill-toggle[data-toggle-verse], #bwm-verse-action-toggle').forEach(t => {
+            t.classList.remove('is-active');
+            t.setAttribute('aria-checked', 'false');
+            t.title = 'Add verse to map';
+        });
         this.updateClearBtnVisibility();
         this.renderActiveWords();
         this.hideRadialMenu();
@@ -8484,8 +8483,34 @@ class BibleWordMap extends HTMLElement {
         toggles.forEach(t => {
             t.classList.toggle('is-active', isActive);
             t.setAttribute('aria-checked', isActive ? 'true' : 'false');
-            t.title = isActive ? 'Remove from map' : 'Add to map';
+            t.title = isActive ? 'Remove book from map' : 'Add book to map';
         });
+        if (this.selectedBook && this.selectedBook.code === bookCode) {
+            const headerToggle = this.querySelector('#bwm-book-action-toggle');
+            if (headerToggle) {
+                headerToggle.classList.toggle('is-active', isActive);
+                headerToggle.setAttribute('aria-checked', isActive ? 'true' : 'false');
+                headerToggle.title = isActive ? 'Remove book from map' : 'Add book to map';
+            }
+        }
+    }
+
+    syncVerseToggles(verseId, isActive) {
+        if (!verseId) return;
+        const toggles = this.querySelectorAll(`.bwm-pill-toggle[data-toggle-verse="${verseId}"]`);
+        toggles.forEach(t => {
+            t.classList.toggle('is-active', isActive);
+            t.setAttribute('aria-checked', isActive ? 'true' : 'false');
+            t.title = isActive ? 'Remove verse from map' : 'Add verse to map';
+        });
+        if (this.selectedVerse && this.selectedVerse.id === verseId) {
+            const headerToggle = this.querySelector('#bwm-verse-action-toggle');
+            if (headerToggle) {
+                headerToggle.classList.toggle('is-active', isActive);
+                headerToggle.setAttribute('aria-checked', isActive ? 'true' : 'false');
+                headerToggle.title = isActive ? 'Remove verse from map' : 'Add verse to map';
+            }
+        }
     }
 
     async showWordInspector(node, defaultTab = 'verses') {
