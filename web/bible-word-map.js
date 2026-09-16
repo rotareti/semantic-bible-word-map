@@ -657,6 +657,32 @@ class BibleWordMap extends HTMLElement {
                 .bwm-search-clear.visible {
                     display: flex;
                 }
+                .bwm-search-spinner {
+                    position: absolute;
+                    right: 12px;
+                    top: 50%;
+                    margin-top: -8px;
+                    width: 16px;
+                    height: 16px;
+                    box-sizing: border-box;
+                    border: 2px solid var(--bwm-border);
+                    border-top-color: var(--bwm-node-hover);
+                    border-radius: 50%;
+                    animation: bwm-search-spin 0.65s linear infinite;
+                    display: none;
+                    pointer-events: none;
+                    z-index: 3;
+                }
+                .bwm-search-clear.visible ~ .bwm-search-spinner {
+                    right: 36px;
+                }
+                .bwm-search-input-wrapper.is-loading input {
+                    padding-right: 58px;
+                }
+                @keyframes bwm-search-spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
                 .bwm-search-controls input::placeholder {
                     color: var(--bwm-text-muted);
                     opacity: 0.8;
@@ -839,6 +865,29 @@ class BibleWordMap extends HTMLElement {
                 .bwm-recovery-verse-card .bwm-recovery-action-desc {
                     font-style: italic;
                     line-height: 1.35;
+                }
+                .bwm-recovery-canon-tag {
+                    display: inline-block;
+                    font-size: 0.72rem;
+                    font-weight: 700;
+                    padding: 1px 6px;
+                    border-radius: 4px;
+                    background: color-mix(in srgb, var(--bwm-node-hover) 15%, var(--bwm-badge-bg));
+                    color: var(--bwm-node-hover);
+                    border: 1px solid color-mix(in srgb, var(--bwm-node-hover) 40%, var(--bwm-border));
+                    margin-left: 6px;
+                    vertical-align: middle;
+                    letter-spacing: 0.5px;
+                }
+                .bwm-recovery-foundation-note {
+                    font-size: 0.82rem;
+                    color: var(--bwm-text-muted);
+                    line-height: 1.4;
+                    margin: -4px 0 8px 0;
+                    padding: 6px 10px;
+                    border-radius: 6px;
+                    background: color-mix(in srgb, var(--bwm-node-hover) 8%, var(--bwm-badge-bg));
+                    border-left: 3px solid var(--bwm-node-hover);
                 }
                 .bwm-recovery-action-btn {
                     display: inline-flex;
@@ -2624,6 +2673,7 @@ class BibleWordMap extends HTMLElement {
                         <div class="bwm-search-input-wrapper">
                             <input type="text" id="bwm-search" placeholder="Search for words (e.g. Father Son Spirit)">
                             <button class="bwm-search-clear" id="bwm-search-clear" title="Clear all keywords" type="button">&times;</button>
+                            <div class="bwm-search-spinner" id="bwm-search-spinner" style="display: none;"></div>
                         </div>
                         <button class="bwm-btn" id="bwm-btn-search">Search</button>
                         <div class="bwm-search-recovery-popover" id="bwm-search-recovery-popover" style="display: none;"></div>
@@ -2999,6 +3049,7 @@ class BibleWordMap extends HTMLElement {
         this.searchClearBtn = this.querySelector('#bwm-search-clear');
         this.searchBtn = this.querySelector('#bwm-btn-search');
         this.searchRecoveryPopover = this.querySelector('#bwm-search-recovery-popover');
+        this.searchSpinner = this.querySelector('#bwm-search-spinner');
         
         this.drawerClearAllBtn = this.querySelector('#bwm-btn-clear-all');
         this.neighborSlider = this.querySelector('#bwm-neighbor-slider');
@@ -3023,6 +3074,16 @@ class BibleWordMap extends HTMLElement {
             textMuted: styles.getPropertyValue('--bwm-text-muted').trim() || '#666666',
             font: styles.getPropertyValue('--bwm-font').trim() || 'sans-serif'
         };
+    }
+
+    setSearchSpinner(loading) {
+        if (this.searchSpinner) {
+            this.searchSpinner.style.display = loading ? 'block' : 'none';
+        }
+        const wrapper = this.querySelector('.bwm-search-input-wrapper');
+        if (wrapper) {
+            wrapper.classList.toggle('is-loading', Boolean(loading));
+        }
     }
 
     setupEvents() {
@@ -3496,37 +3557,49 @@ class BibleWordMap extends HTMLElement {
         this.updateNeighborSlider();
 
         // Fetch datasets concurrently
-        this.booksPromise = this.srcBooks ? fetch(this.srcBooks).then(r => {
-            if (!r.ok) throw new Error(`HTTP ${r.status}`);
-            return r.json();
-        }).catch(err => {
-            console.warn("Could not load bookmap data", err);
-            return null;
-        }) : Promise.resolve(null);
+        if (this.foundation === 'bsb' && this._englishSemanticData) {
+            this.booksPromise = this._englishSemanticData.booksData
+                ? Promise.resolve(this._englishSemanticData.booksData)
+                : (this.srcBooks ? fetch(this.srcBooks).then(r => {
+                    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                    return r.json();
+                }).catch(() => null) : Promise.resolve(null));
+            this.versesPromise = Promise.resolve({ verses: this._englishSemanticData.verses, words: this._englishSemanticData.wordToVerses });
+            this.data2dPromise = Promise.resolve(this._englishSemanticData.data2d);
+            this.versemapPromise = Promise.resolve(this._englishSemanticData.versemapData);
+        } else {
+            this.booksPromise = this.srcBooks ? fetch(this.srcBooks).then(r => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json();
+            }).catch(err => {
+                console.warn("Could not load bookmap data", err);
+                return null;
+            }) : Promise.resolve(null);
 
-        this.versesPromise = this.srcVerses ? fetch(this.srcVerses).then(r => {
-            if (!r.ok) throw new Error(`HTTP ${r.status}`);
-            return r.json();
-        }).catch(err => {
-            console.warn("Could not load verses data", err);
-            return null;
-        }) : Promise.resolve(null);
+            this.versesPromise = this.srcVerses ? fetch(this.srcVerses).then(r => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json();
+            }).catch(err => {
+                console.warn("Could not load verses data", err);
+                return null;
+            }) : Promise.resolve(null);
 
-        this.data2dPromise = this.src2d ? fetch(this.src2d).then(r => {
-            if (!r.ok) throw new Error(`HTTP ${r.status}`);
-            return r.json();
-        }).catch(err => {
-            console.error("Could not load wordmap data", err);
-            return null;
-        }) : Promise.resolve(null);
+            this.data2dPromise = this.src2d ? fetch(this.src2d).then(r => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json();
+            }).catch(err => {
+                console.error("Could not load wordmap data", err);
+                return null;
+            }) : Promise.resolve(null);
 
-        this.versemapPromise = this.srcVersemap ? fetch(this.srcVersemap).then(r => {
-            if (!r.ok) throw new Error(`HTTP ${r.status}`);
-            return r.json();
-        }).catch(err => {
-            console.warn("Could not load versemap data", err);
-            return null;
-        }) : Promise.resolve(null);
+            this.versemapPromise = this.srcVersemap ? fetch(this.srcVersemap).then(r => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json();
+            }).catch(err => {
+                console.warn("Could not load versemap data", err);
+                return null;
+            }) : Promise.resolve(null);
+        }
 
         this.booksPromise.then(data => {
             if (data) this.booksData = data;
@@ -3591,7 +3664,12 @@ class BibleWordMap extends HTMLElement {
                 this.hideLoading();
 
                 this.setViewMode('verses', true);
-                if (this.searchedVerses && this.searchedVerses.length > 0) {
+                if (this._pendingVerseSearch) {
+                    let target = this._pendingVerseSearch;
+                    this._pendingVerseSearch = null;
+                    if (this.searchInput) this.searchInput.value = target;
+                    this.searchVerses();
+                } else if (this.searchedVerses && this.searchedVerses.length > 0) {
                     this.searchVerses(true);
                 } else if (verses) {
                     let parsed = this.parseVerseQuery(verses, true);
@@ -3661,7 +3739,12 @@ class BibleWordMap extends HTMLElement {
                     return;
                 }
 
-                if (this.searchedWords && this.searchedWords.length > 0) {
+                if (this._pendingKeywordSearch) {
+                    let target = this._pendingKeywordSearch;
+                    this._pendingKeywordSearch = null;
+                    if (this.searchInput) this.searchInput.value = target;
+                    this.searchWord(false, true);
+                } else if (this.searchedWords && this.searchedWords.length > 0) {
                     let baseWords = [...new Set(this.searchedWords.map(id => {
                         let { word, pos } = this.parseWordId(id);
                         return this.formatWord(word, pos);
@@ -3800,27 +3883,109 @@ class BibleWordMap extends HTMLElement {
         return scored.slice(0, limit);
     }
 
+    async getEnglishSemanticData() {
+        if (this.foundation === 'bsb') {
+            if (this.versemapPromise && !this.versemapData) {
+                try {
+                    let data = await this.versemapPromise;
+                    if (data) {
+                        let list = data.verses || (Array.isArray(data) ? data : []);
+                        this.versemapData = data.verses ? data : { count: list.length, verses: list };
+                        this.versemapLookup = new Map(list.map(v => [v.id, v]));
+                    }
+                } catch (e) {}
+            }
+            if (this.versesPromise && !this.verses) {
+                try {
+                    let vData = await this.versesPromise;
+                    if (vData) {
+                        this.verses = vData.verses;
+                        this.wordToVerses = vData.words;
+                    }
+                } catch (e) {}
+            }
+            if (this.data2dPromise && !this.data2d) {
+                try {
+                    this.data2d = await this.data2dPromise;
+                } catch (e) {}
+            }
+            if (this.data2d && this.verses && this.versemapLookup) {
+                return {
+                    data2d: this.data2d,
+                    verses: this.verses,
+                    wordToVerses: this.wordToVerses,
+                    versemapData: this.versemapData,
+                    versemapLookup: this.versemapLookup,
+                    booksData: this.booksData,
+                    findMatches: (token) => this.findMatchesForWordToken(token)
+                };
+            }
+        }
+        if (this._englishSemanticData) {
+            return this._englishSemanticData;
+        }
+
+        const vParam = '?v=9.1.0';
+        const wordmapSrc = this.getAttribute('src-2d-bsb') || this.getAttribute('src-2d') || ('data/output/wordmap_2d.json' + vParam);
+        const versesSrc = this.getAttribute('src-verses-bsb') || this.getAttribute('src-verses') || ('data/output/verse_index.json' + vParam);
+        const versemapSrc = this.getAttribute('src-versemap-bsb') || this.getAttribute('src-versemap') || ('data/output/versemap_2d.json' + vParam);
+        const booksSrc = this.getAttribute('src-books-bsb') || this.getAttribute('src-books') || ('data/output/bookmap_2d.json' + vParam);
+
+        try {
+            const [wData, vData, vmData, bData] = await Promise.all([
+                fetch(wordmapSrc).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
+                fetch(versesSrc).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
+                fetch(versemapSrc).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
+                fetch(booksSrc).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }).catch(() => null)
+            ]);
+
+            const vmList = vmData ? (vmData.verses || (Array.isArray(vmData) ? vmData : [])) : [];
+            const vmLookup = new Map(vmList.map(v => [v.id, v]));
+
+            const findMatches = (token) => {
+                if (!token || !wData) return [];
+                token = token.toLowerCase();
+                let idMatch = wData.filter(d => d.id.toLowerCase() === token);
+                if (idMatch.length > 0) return idMatch;
+                let wordMatch = wData.filter(d => d.w.toLowerCase() === token);
+                if (wordMatch.length > 0) return wordMatch;
+                let glossPartMatch = wData.filter(d => d.w.toLowerCase().split(/[\s-]+/).includes(token));
+                if (glossPartMatch.length > 0) return glossPartMatch;
+                let origMatch = wData.filter(d => {
+                    if (!d.original || !Array.isArray(d.original)) return false;
+                    return d.original.some(o => {
+                        if (o.lemma && o.lemma.toLowerCase() === token) return true;
+                        if (o.translit && o.translit.toLowerCase() === token) return true;
+                        if (o.strongs) {
+                            let sLow = o.strongs.toLowerCase();
+                            if (sLow === token || sLow === 'g' + token || sLow === 'h' + token) return true;
+                        }
+                        return false;
+                    });
+                });
+                if (origMatch.length > 0) return origMatch;
+                return [];
+            };
+
+            this._englishSemanticData = {
+                data2d: wData,
+                verses: vData ? vData.verses : [],
+                wordToVerses: vData ? vData.words : {},
+                versemapData: vmData ? (vmData.verses ? vmData : { count: vmList.length, verses: vmList }) : null,
+                versemapLookup: vmLookup,
+                booksData: bData,
+                findMatches
+            };
+            return this._englishSemanticData;
+        } catch (err) {
+            console.error('Could not load English semantic data:', err);
+            return null;
+        }
+    }
+
     async findCentroidVerses(query, topN = 4) {
-        if (this.versemapPromise && !this.versemapData) {
-            try {
-                let data = await this.versemapPromise;
-                if (data) {
-                    let list = data.verses || (Array.isArray(data) ? data : []);
-                    this.versemapData = data.verses ? data : { count: list.length, verses: list };
-                    this.versemapLookup = new Map(list.map(v => [v.id, v]));
-                }
-            } catch (e) {}
-        }
-        if (this.versesPromise && !this.verses) {
-            try {
-                let vData = await this.versesPromise;
-                if (vData) {
-                    this.verses = vData.verses;
-                    this.wordToVerses = vData.words;
-                }
-            } catch (e) {}
-        }
-        if (!this.versemapData || !this.verses || !this.data2d) {
+        const engData = await this.getEnglishSemanticData();
+        if (!engData || !engData.versemapLookup || !engData.verses || !engData.data2d) {
             return { centroid: null, allMatched: false, matchedTokens: [], verses: [] };
         }
 
@@ -3829,11 +3994,11 @@ class BibleWordMap extends HTMLElement {
 
         let tokenMatches = [];
         for (let t of rawTokens) {
-            let hits = this.findMatchesForWordToken(t);
+            let hits = engData.findMatches(t);
             if (hits.length === 0) {
                 let stem = t.replace(/(ed|ing|s|es)$/i, '');
                 if (stem && stem.length >= 3) {
-                    hits = this.findMatchesForWordToken(stem);
+                    hits = engData.findMatches(stem);
                 }
             }
             if (hits.length > 0) {
@@ -3854,10 +4019,10 @@ class BibleWordMap extends HTMLElement {
         };
 
         let candidateIndices = new Set();
-        if (this.wordToVerses) {
+        if (engData.wordToVerses) {
             for (let tm of tokenMatches) {
                 for (let h of tm.hits) {
-                    let list = this.wordToVerses[h.id] || [];
+                    let list = engData.wordToVerses[h.id] || [];
                     for (let vIdx of list) candidateIndices.add(vIdx);
                 }
             }
@@ -3865,7 +4030,7 @@ class BibleWordMap extends HTMLElement {
 
         let scored = [];
         for (let vIdx of candidateIndices) {
-            let raw = this.verses[vIdx];
+            let raw = engData.verses[vIdx];
             if (!raw) continue;
             let pipeIdx = raw.indexOf('|');
             let ref = pipeIdx !== -1 ? raw.slice(0, pipeIdx) : raw;
@@ -3888,10 +4053,10 @@ class BibleWordMap extends HTMLElement {
             }
 
             let matchCount = 0;
-            if (this.wordToVerses) {
+            if (engData.wordToVerses) {
                 for (let tm of tokenMatches) {
                     let hasToken = tm.hits.some(h => {
-                        let list = this.wordToVerses[h.id];
+                        let list = engData.wordToVerses[h.id];
                         return list && list.includes(vIdx);
                     });
                     if (hasToken) matchCount++;
@@ -3900,7 +4065,7 @@ class BibleWordMap extends HTMLElement {
 
             if (matchCount < 2 && phraseBonus === 0) continue;
 
-            let vObj = this.versemapLookup ? this.versemapLookup.get(ref) : null;
+            let vObj = engData.versemapLookup ? engData.versemapLookup.get(ref) : null;
             let dist2D = vObj ? Math.hypot(vObj.x - centroid.x, vObj.y - centroid.y) : 999;
             let proxScore = Math.max(0, 30 - dist2D * 12);
 
@@ -3934,90 +4099,112 @@ class BibleWordMap extends HTMLElement {
             return;
         }
 
-        const escapeHtml = (str) => {
-            if (!str) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;');
-        };
-
-        let rawTokens = q.split(/[\s,]+/).filter(Boolean);
-        let detectedVerse = detectVerseReference(q);
-        let isMultiWordQuery = !detectedVerse && rawTokens.length >= 4;
-        let centroidResult = null;
-
-        if (isMultiWordQuery) {
-            centroidResult = await this.findCentroidVerses(q, 4);
-        }
-
-        let html = '';
-        let hasContent = false;
-
-        if (isMultiWordQuery && centroidResult && (centroidResult.verses.length > 0 || centroidResult.matchedTokens.length >= 2)) {
-            hasContent = true;
-            let titleText = `Phrase search: &ldquo;${escapeHtml(q)}&rdquo;`;
-            html = `
-                <div class="bwm-recovery-header">
-                    <div class="bwm-recovery-title-row">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--bwm-node-hover); flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                        <span>${titleText}</span>
-                    </div>
-                    <button type="button" class="bwm-recovery-close" id="bwm-recovery-close-btn" title="Close suggestions">&times;</button>
-                </div>
-            `;
-
-            const renderWordsCard = () => {
-                if (centroidResult.matchedTokens.length < 2) return '';
-                let wordSearchQuery = centroidResult.matchedTokens.map(m => m.bestPoint.w).join(' ');
-                let btnText = currentMode === 'words' ? 'Graph Words &rarr;' : 'Search in Words Mode &rarr;';
-                let cardTitle = `✦ Explore ${centroidResult.matchedTokens.length} Keywords in Words Mode`;
-                let cardDesc = currentMode === 'words'
-                    ? `Graph all ${centroidResult.matchedTokens.length} words across their semantic constellations.`
-                    : `All words match canonical vocabulary. Search the combined semantic constellation in Words Mode.`;
-                return `
-                    <div class="bwm-recovery-action-card">
-                        <div class="bwm-recovery-action-info">
-                            <div class="bwm-recovery-action-title">${cardTitle}</div>
-                            <div class="bwm-recovery-action-desc">${cardDesc}</div>
-                        </div>
-                        <button type="button" class="bwm-recovery-action-btn" id="bwm-recovery-btn-multiword" data-words="${escapeHtml(wordSearchQuery)}">${btnText}</button>
-                    </div>
-                `;
+        this.setSearchSpinner(true);
+        try {
+            const escapeHtml = (str) => {
+                if (!str) return '';
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
             };
 
-            const renderVersesSection = () => {
-                if (!centroidResult.verses || centroidResult.verses.length === 0) return '';
-                let vHtml = `
-                    <div class="bwm-recovery-section">
-                        <div class="bwm-recovery-section-label">Top Linked Verses (Semantic Map Centroid):</div>
-                        <div style="display: flex; flex-direction: column; gap: 8px;">
+            let rawTokens = q.split(/[\s,]+/).filter(Boolean);
+            let detectedVerse = detectVerseReference(q);
+            let isMultiWordQuery = !detectedVerse && rawTokens.length >= 4;
+            let centroidResult = null;
+
+            if (isMultiWordQuery) {
+                centroidResult = await this.findCentroidVerses(q, 4);
+            }
+
+            let html = '';
+            let hasContent = false;
+
+            if (isMultiWordQuery && centroidResult && (centroidResult.verses.length > 0 || centroidResult.matchedTokens.length >= 2)) {
+                hasContent = true;
+                let titleText = `Phrase search: &ldquo;${escapeHtml(q)}&rdquo;`;
+                let isNonBsb = (this.foundation !== 'bsb');
+                html = `
+                    <div class="bwm-recovery-header">
+                        <div class="bwm-recovery-title-row">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--bwm-node-hover); flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                            <span>${titleText}</span>
+                        </div>
+                        <button type="button" class="bwm-recovery-close" id="bwm-recovery-close-btn" title="Close suggestions">&times;</button>
+                    </div>
                 `;
-                let verseBtnLabel = currentMode === 'verses' ? 'Search Verse &rarr;' : 'View in Verses Mode &rarr;';
-                for (let v of centroidResult.verses) {
-                    vHtml += `
-                        <div class="bwm-recovery-action-card bwm-recovery-verse-card">
-                            <div class="bwm-recovery-action-info">
-                                <div class="bwm-recovery-action-title">📖 ${escapeHtml(v.displayRef)}</div>
-                                <div class="bwm-recovery-action-desc">&ldquo;${escapeHtml(v.snippet)}&rdquo;</div>
-                            </div>
-                            <button type="button" class="bwm-recovery-action-btn bwm-recovery-btn-suggested-verse" data-verse="${escapeHtml(v.displayRef)}">${verseBtnLabel}</button>
+
+                if (isNonBsb) {
+                    html += `
+                        <div class="bwm-recovery-foundation-note">
+                            Semantic phrase matching is calculated against the English (BSB) map. Selecting a verse will automatically switch to the BSB canon.
                         </div>
                     `;
                 }
-                vHtml += `</div></div>`;
-                return vHtml;
-            };
 
-            if (currentMode === 'words') {
-                html += renderWordsCard();
-                html += renderVersesSection();
+                const renderWordsCard = () => {
+                    if (centroidResult.matchedTokens.length < 2) return '';
+                    let wordSearchQuery = centroidResult.matchedTokens.map(m => m.bestPoint.w).join(' ');
+                    let btnText = isNonBsb
+                        ? 'Switch to BSB &amp; Graph &rarr;'
+                        : (currentMode === 'words' ? 'Graph Words &rarr;' : 'Search in Words Mode &rarr;');
+                    let cardTitle = isNonBsb
+                        ? `✦ Explore ${centroidResult.matchedTokens.length} Keywords in BSB Words Mode`
+                        : `✦ Explore ${centroidResult.matchedTokens.length} Keywords in Words Mode`;
+                    let cardDesc = isNonBsb
+                        ? `Switch to the English (BSB) canon to graph these keywords across their semantic constellation.`
+                        : (currentMode === 'words'
+                            ? `Graph all ${centroidResult.matchedTokens.length} words across their semantic constellations.`
+                            : `All words match canonical vocabulary. Search the combined semantic constellation in Words Mode.`);
+                    return `
+                        <div class="bwm-recovery-action-card">
+                            <div class="bwm-recovery-action-info">
+                                <div class="bwm-recovery-action-title">${cardTitle}</div>
+                                <div class="bwm-recovery-action-desc">${cardDesc}</div>
+                            </div>
+                            <button type="button" class="bwm-recovery-action-btn" id="bwm-recovery-btn-multiword" data-words="${escapeHtml(wordSearchQuery)}" data-switch-bsb="${isNonBsb}">${btnText}</button>
+                        </div>
+                    `;
+                };
+
+                const renderVersesSection = () => {
+                    if (!centroidResult.verses || centroidResult.verses.length === 0) return '';
+                    let sectionLabel = isNonBsb
+                        ? 'Top Linked Verses (BSB English Centroid):'
+                        : 'Top Linked Verses (Semantic Map Centroid):';
+                    let vHtml = `
+                        <div class="bwm-recovery-section">
+                            <div class="bwm-recovery-section-label">${sectionLabel}</div>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                    `;
+                    let verseBtnLabel = isNonBsb
+                        ? (currentMode === 'verses' ? 'Switch to BSB &amp; Search &rarr;' : 'Switch to BSB &amp; View &rarr;')
+                        : (currentMode === 'verses' ? 'Search Verse &rarr;' : 'View in Verses Mode &rarr;');
+                    for (let v of centroidResult.verses) {
+                        vHtml += `
+                            <div class="bwm-recovery-action-card bwm-recovery-verse-card">
+                                <div class="bwm-recovery-action-info">
+                                    <div class="bwm-recovery-action-title">📖 ${escapeHtml(v.displayRef)} <span class="bwm-recovery-canon-tag">BSB</span></div>
+                                    <div class="bwm-recovery-action-desc">&ldquo;${escapeHtml(v.snippet)}&rdquo;</div>
+                                </div>
+                                <button type="button" class="bwm-recovery-action-btn bwm-recovery-btn-suggested-verse" data-verse="${escapeHtml(v.displayRef)}" data-ref="${escapeHtml(v.ref)}" data-switch-bsb="${isNonBsb}">${verseBtnLabel}</button>
+                            </div>
+                        `;
+                    }
+                    vHtml += `</div></div>`;
+                    return vHtml;
+                };
+
+                if (currentMode === 'words') {
+                    html += renderWordsCard();
+                    html += renderVersesSection();
+                } else {
+                    html += renderVersesSection();
+                    html += renderWordsCard();
+                }
             } else {
-                html += renderVersesSection();
-                html += renderWordsCard();
-            }
-        } else {
             let typoWordSuggestions = [];
             let detectedBook = detectBookMatch(q, this.booksData ? this.booksData.books : null);
             let exactWordMatches = (this.data2d && this.findMatchesForWordToken(q)) || [];
@@ -4270,10 +4457,18 @@ class BibleWordMap extends HTMLElement {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const verseTarget = btn.getAttribute('data-verse');
+                const switchBsb = btn.getAttribute('data-switch-bsb') === 'true' || this.foundation !== 'bsb';
                 this.closeSearchRecovery();
-                this.setViewMode('verses');
-                if (this.searchInput) this.searchInput.value = verseTarget;
-                this.searchVerses();
+                if (switchBsb) {
+                    this.setViewMode('verses');
+                    this._pendingVerseSearch = verseTarget;
+                    if (this.searchInput) this.searchInput.value = verseTarget;
+                    this.setSemanticFoundation('bsb', true);
+                } else {
+                    this.setViewMode('verses');
+                    if (this.searchInput) this.searchInput.value = verseTarget;
+                    this.searchVerses();
+                }
             });
         });
 
@@ -4282,10 +4477,18 @@ class BibleWordMap extends HTMLElement {
             btnMultiWord.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const wordsTarget = btnMultiWord.getAttribute('data-words');
+                const switchBsb = btnMultiWord.getAttribute('data-switch-bsb') === 'true' || this.foundation !== 'bsb';
                 this.closeSearchRecovery();
-                this.setViewMode('words');
-                if (this.searchInput) this.searchInput.value = wordsTarget;
-                this.searchWord(false, true);
+                if (switchBsb) {
+                    this.setViewMode('words');
+                    this._pendingKeywordSearch = wordsTarget;
+                    if (this.searchInput) this.searchInput.value = wordsTarget;
+                    this.setSemanticFoundation('bsb', true);
+                } else {
+                    this.setViewMode('words');
+                    if (this.searchInput) this.searchInput.value = wordsTarget;
+                    this.searchWord(false, true);
+                }
             });
         }
 
@@ -4299,9 +4502,13 @@ class BibleWordMap extends HTMLElement {
                 this.searchWord();
             });
         });
+        } finally {
+            this.setSearchSpinner(false);
+        }
     }
 
     closeSearchRecovery() {
+        this.setSearchSpinner(false);
         if (this.searchRecoveryPopover) {
             this.searchRecoveryPopover.style.display = 'none';
             this.searchRecoveryPopover.innerHTML = '';
