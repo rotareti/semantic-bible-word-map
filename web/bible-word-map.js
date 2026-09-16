@@ -3433,7 +3433,10 @@ class BibleWordMap extends HTMLElement {
         this.drawerClose = this.querySelector('#bwm-drawer-close');
         
         if (this.drawer) {
-            this.drawer.addEventListener('click', (e) => e.stopPropagation());
+            this.drawer.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.closeSearchRecovery();
+            });
             this.drawer.addEventListener('pointerdown', (e) => e.stopPropagation());
             this.drawer.addEventListener('mousedown', (e) => e.stopPropagation());
             this.setupMobileSwipeToDismiss(this.drawer, () => this.closeDrawer());
@@ -3442,6 +3445,7 @@ class BibleWordMap extends HTMLElement {
         if (this.drawerToggle) {
             this.drawerToggle.addEventListener('click', (e) => {
                 e.stopPropagation();
+                this.closeSearchRecovery();
                 this.toggleDrawer();
             });
         }
@@ -6102,6 +6106,7 @@ class BibleWordMap extends HTMLElement {
 
     showLegendWindow() {
         if (!this.legendOverlay) return;
+        this.closeSearchRecovery();
         this.closeActiveInfoWindows();
         this.hideRadialMenu();
         this.closeDrawer();
@@ -6115,6 +6120,7 @@ class BibleWordMap extends HTMLElement {
 
     openDrawer() {
         if (!this.drawer) return;
+        this.closeSearchRecovery();
         if (window.innerWidth <= 768) {
             this.closeActiveInfoWindows();
             this.hideRadialMenu();
@@ -6137,6 +6143,7 @@ class BibleWordMap extends HTMLElement {
 
     toggleDrawer() {
         if (!this.drawer) return;
+        this.closeSearchRecovery();
         if (this.drawer.classList.contains('open')) {
             this.closeDrawer();
         } else {
