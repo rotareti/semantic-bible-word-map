@@ -946,43 +946,51 @@ class BibleWordMap extends HTMLElement {
                 }
                 .bwm-loading {
                     position: absolute;
-                    top: 50%; left: 50%;
-                    transform: translate(-50%, -50%);
-                    background-color: rgba(255, 255, 255, 0.92);
-                    background-color: color-mix(in srgb, var(--bwm-bg) 92%, transparent);
-                    backdrop-filter: blur(16px);
-                    -webkit-backdrop-filter: blur(16px);
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: var(--bwm-bg);
+                    background-color: color-mix(in srgb, var(--bwm-bg) 95%, transparent);
+                    backdrop-filter: blur(20px);
+                    -webkit-backdrop-filter: blur(20px);
                     color: var(--bwm-text);
-                    border: 1px solid var(--bwm-border);
-                    padding: 14px 18px 12px 18px;
-                    border-radius: 16px;
-                    box-shadow: 0 12px 36px rgba(0,0,0,0.18);
-                    z-index: 100;
+                    border-radius: inherit;
+                    z-index: 500;
                     display: flex;
-                    flex-direction: column;
                     align-items: center;
                     justify-content: center;
-                    width: 320px;
-                    max-width: calc(100% - 30px);
                     box-sizing: border-box;
                     user-select: none;
+                    pointer-events: auto;
+                    overflow: hidden;
+                    opacity: 1;
+                    transition: opacity 0.25s ease;
+                }
+                .bwm-loading.bwm-loading-fadeout {
+                    opacity: 0;
                     pointer-events: none;
                 }
                 .bwm-loading-visual {
-                    position: relative;
-                    width: 280px;
-                    height: 160px;
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
                     display: flex;
                     align-items: center;
                     justify-content: center;
+                    overflow: hidden;
+                    pointer-events: none;
                 }
                 .bwm-loading-canvas {
                     position: absolute;
                     top: 0;
                     left: 0;
-                    width: 280px;
-                    height: 160px;
-                    border-radius: 10px;
+                    width: 100%;
+                    height: 100%;
+                    display: block;
+                    border-radius: inherit;
                 }
                 .bwm-loading-tip-container {
                     position: absolute;
@@ -994,50 +1002,82 @@ class BibleWordMap extends HTMLElement {
                     align-items: center;
                     justify-content: center;
                     pointer-events: none;
-                    padding: 0 15px;
+                    padding: 24px;
                     box-sizing: border-box;
                     z-index: 2;
                 }
                 .bwm-loading-tip {
-                    font-size: 0.92em;
+                    font-size: 1.05em;
                     font-weight: 600;
                     text-align: center;
-                    line-height: 1.35;
+                    line-height: 1.45;
                     color: var(--bwm-text);
-                    background-color: rgba(255, 255, 255, 0.9);
-                    background-color: color-mix(in srgb, var(--bwm-bg) 90%, transparent);
-                    padding: 8px 14px;
-                    border-radius: 12px;
+                    background-color: rgba(255, 255, 255, 0.92);
+                    background-color: color-mix(in srgb, var(--bwm-bg) 92%, transparent);
+                    backdrop-filter: blur(16px);
+                    -webkit-backdrop-filter: blur(16px);
+                    padding: 14px 24px;
+                    border-radius: 14px;
                     border: 1px solid var(--bwm-border);
-                    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+                    box-shadow: 0 8px 32px rgba(0,0,0,0.14);
                     opacity: 0;
-                    transform: scale(0.85);
+                    transform: scale(0.9);
                     transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                    max-width: 520px;
+                    box-sizing: border-box;
                 }
                 .bwm-loading-tip.visible {
                     opacity: 1;
                     transform: scale(1);
                 }
                 .bwm-loading-status {
+                    position: absolute;
+                    bottom: 28px;
+                    left: 50%;
+                    transform: translateX(-50%);
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    gap: 8px;
-                    margin-top: 8px;
-                    font-size: 0.85em;
-                    color: var(--bwm-text-muted);
-                    font-weight: 500;
+                    gap: 10px;
+                    font-size: 0.88em;
+                    color: var(--bwm-text);
+                    font-weight: 600;
+                    background-color: rgba(255, 255, 255, 0.92);
+                    background-color: color-mix(in srgb, var(--bwm-bg) 92%, transparent);
+                    backdrop-filter: blur(16px);
+                    -webkit-backdrop-filter: blur(16px);
+                    border: 1px solid var(--bwm-border);
+                    padding: 8px 20px;
+                    border-radius: 9999px;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+                    z-index: 3;
+                    letter-spacing: 0.01em;
+                    white-space: nowrap;
+                    pointer-events: none;
                 }
                 .bwm-loading-spinner {
-                    width: 13px;
-                    height: 13px;
+                    width: 15px;
+                    height: 15px;
                     border: 2px solid var(--bwm-border);
                     border-top-color: var(--bwm-node-hover);
                     border-radius: 50%;
                     animation: bwm-spin 0.8s linear infinite;
+                    flex-shrink: 0;
                 }
                 @keyframes bwm-spin {
                     to { transform: rotate(360deg); }
+                }
+                @media (max-width: 768px) {
+                    .bwm-loading-status {
+                        bottom: 18px;
+                        font-size: 0.8em;
+                        padding: 6px 14px;
+                    }
+                    .bwm-loading-tip {
+                        font-size: 0.92em;
+                        padding: 10px 16px;
+                        max-width: calc(100% - 32px);
+                    }
                 }
                 /* ==========================================================================
                    Foundational Info Window Design System (Shared Across All Info Windows)
@@ -3390,6 +3430,11 @@ class BibleWordMap extends HTMLElement {
 
     showLoading(text = 'Loading Bible Word Map...', type = 'words') {
         if (!this.loading) return;
+        if (this._loadingFadeTimeout) {
+            clearTimeout(this._loadingFadeTimeout);
+            this._loadingFadeTimeout = null;
+        }
+        this.loading.classList.remove('bwm-loading-fadeout');
         if (this.loadingText) {
             this.loadingText.textContent = text;
         } else {
@@ -3402,8 +3447,19 @@ class BibleWordMap extends HTMLElement {
 
     hideLoading() {
         if (!this.loading) return;
-        this.stopLoadingAnimation();
-        this.loading.style.display = 'none';
+        if (this._loadingFadeTimeout) {
+            clearTimeout(this._loadingFadeTimeout);
+            this._loadingFadeTimeout = null;
+        }
+        this.loading.classList.add('bwm-loading-fadeout');
+        this._loadingFadeTimeout = setTimeout(() => {
+            this.stopLoadingAnimation();
+            if (this.loading) {
+                this.loading.style.display = 'none';
+                this.loading.classList.remove('bwm-loading-fadeout');
+            }
+            this._loadingFadeTimeout = null;
+        }, 250);
     }
 
     parseWordId(id) {
@@ -7798,62 +7854,88 @@ class BibleWordMap extends HTMLElement {
         const canvas = this.loadingCanvas;
         const ctx = canvas.getContext('2d');
         const dpr = window.devicePixelRatio || 1;
-        const width = 280;
-        const height = 160;
+        
+        const getDims = () => {
+            const container = canvas.parentElement || this.loading || this.canvasContainer;
+            const rect = container ? container.getBoundingClientRect() : null;
+            const w = Math.max(280, Math.floor((rect && rect.width) || canvas.clientWidth || 800));
+            const h = Math.max(200, Math.floor((rect && rect.height) || canvas.clientHeight || 600));
+            return { w, h };
+        };
+
+        let { w: width, h: height } = getDims();
+        let cx = width / 2;
+        let cy = height / 2;
         
         canvas.width = width * dpr;
         canvas.height = height * dpr;
-        ctx.scale(dpr, dpr);
-        
-        const cx = width / 2;
-        const cy = height / 2;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         
         const isVerses = (type === 'verses' || this.viewMode === 'verses');
         const isBooks = !isVerses && (type === 'books' || this.viewMode === 'books');
 
         // Colors matching the Part-of-Speech or Book Genre palette
-        const wordsColors = ['#4ade80', '#60a5fa', '#f472b6', '#fbbf24', '#94a3b8'];
+        const wordsColors = ['#4ade80', '#60a5fa', '#f472b6', '#fbbf24', '#a78bfa', '#38bdf8', '#94a3b8'];
         const booksColors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#ef4444', '#06b6d4', '#e11d48'];
         const colors = (isBooks || isVerses) ? booksColors : wordsColors;
-        const numParticles = 36;
+        
+        const area = width * height;
+        const numParticles = Math.min(100, Math.max(45, Math.floor(area / 11000)));
         const particles = [];
         
         for (let i = 0; i < numParticles; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const dist = Math.random() * 60 + 15;
             particles.push({
-                x: cx + Math.cos(angle) * dist,
-                y: cy + Math.sin(angle) * dist,
-                vx: (Math.random() - 0.5) * 1.1,
-                vy: (Math.random() - 0.5) * 1.1,
-                radius: Math.random() * 2 + 2.2,
+                x: Math.random() * (width - 40) + 20,
+                y: Math.random() * (height - 40) + 20,
+                vx: (Math.random() - 0.5) * 1.0,
+                vy: (Math.random() - 0.5) * 1.0,
+                radius: Math.random() * 2.2 + 2.0,
                 color: colors[i % colors.length]
             });
         }
         
         const wordsTips = [
-            "Search any word in the Bible",
-            "Select a word bubble to learn more",
-            "Explore original Greek & Hebrew definitions",
-            "View verse links and semantic proximity",
-            "Filter by Old or New Testament in Options drawer"
+            "Search any word in the Bible to view semantic neighbors",
+            "Select a word bubble to inspect definitions and verse usage",
+            "Explore original Greek & Hebrew definitions and morphology",
+            "Observe connecting lines representing high cosine similarity",
+            "Filter by Old or New Testament in the Options drawer"
         ];
         const booksTips = [
-            "Explore the 66 biblical books in semantic space",
-            "Click any book to view its distinctive themes and vocabulary",
-            "Search multiple books to compare theology (e.g. James Proverbs)",
-            "Solid green links show direct occurrences in that book",
-            "Dashed gray links show broader theological concepts",
+            "Explore biblical books mapped across multi-dimensional semantic space",
+            "Click any book to view its distinctive vocabulary and theological themes",
+            "Search multiple books to compare shared theological motifs",
+            "Solid green links show direct lexical occurrences in that book",
+            "Dashed gray links show broader theological concepts across the canon",
             "Filter books by genre or testament in the Options drawer"
         ];
         const versesTips = [
-            "Explore 30,969 biblical verses mapped by semantic centroids",
+            "Explore biblical verses mapped by semantic centroids",
             "Discover unbiased cross-references based on 100D vector similarity",
             "Toggle between cross-reference networks and constituent word constellations",
             "Search multiple verses to find semantic bridges across the canon",
-            "Compare Old and New Testament thematic parallels without theological bias"
+            "Compare Old and New Testament thematic parallels"
         ];
-        const tips = isVerses ? versesTips : (isBooks ? booksTips : wordsTips);
+        const vulTips = [
+            "Explore Jerome's Latin Vulgate in 100-dimensional semantic space",
+            "Pair Latin lemmas and inflections with Douay-Rheims English text",
+            "Search theological terms across all 73 books of the historic Latin canon",
+            "Discover semantic relationships formed by Jerome's classical translation"
+        ];
+        const lxxTips = [
+            "Explore the original Greek Septuagint and Greek New Testament",
+            "Original Greek lemmas paired with TBESG definitions and morphology",
+            "Compare Greek Old and New Testament lexical networks across biblical eras",
+            "Search Greek transliterations, Strong's numbers, or English glosses"
+        ];
+        
+        let tips = isVerses ? versesTips : (isBooks ? booksTips : wordsTips);
+        if (this.foundation === 'vul') {
+            tips = [...vulTips, ...tips];
+        } else if (this.foundation === 'lxx') {
+            tips = [...lxxTips, ...tips];
+        }
+        
         let tipIdx = 0;
         
         const STATE_FLOAT = 0;
@@ -7873,22 +7955,33 @@ class BibleWordMap extends HTMLElement {
         updateTipText();
         
         const animate = (now) => {
+            const dims = getDims();
+            if (dims.w !== width || dims.h !== height) {
+                width = dims.w;
+                height = dims.h;
+                cx = width / 2;
+                cy = height / 2;
+                canvas.width = width * dpr;
+                canvas.height = height * dpr;
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            }
+            
             const elapsed = now - stateStartTime;
             ctx.clearRect(0, 0, width, height);
             
             if (state === STATE_FLOAT) {
                 if (this.loadingTip) this.loadingTip.classList.remove('visible');
-                // Floating ambient motion
+                // Floating ambient motion across full canvas
                 for (let p of particles) {
                     p.x += p.vx;
                     p.y += p.vy;
-                    if (p.x < 10) { p.x = 10; p.vx *= -1; }
-                    if (p.x > width - 10) { p.x = width - 10; p.vx *= -1; }
-                    if (p.y < 10) { p.y = 10; p.vy *= -1; }
-                    if (p.y > height - 10) { p.y = height - 10; p.vy *= -1; }
+                    if (p.x < 15) { p.x = 15; p.vx = Math.abs(p.vx); }
+                    if (p.x > width - 15) { p.x = width - 15; p.vx = -Math.abs(p.vx); }
+                    if (p.y < 15) { p.y = 15; p.vy = Math.abs(p.vy); }
+                    if (p.y > height - 15) { p.y = height - 15; p.vy = -Math.abs(p.vy); }
                 }
                 
-                if (elapsed > 3000) {
+                if (elapsed > 2800) {
                     state = STATE_GRAVITATE;
                     stateStartTime = now;
                 }
@@ -7897,10 +7990,10 @@ class BibleWordMap extends HTMLElement {
                 for (let p of particles) {
                     const dx = cx - p.x;
                     const dy = cy - p.y;
-                    p.vx += dx * 0.045;
-                    p.vy += dy * 0.045;
-                    p.vx *= 0.86;
-                    p.vy *= 0.86;
+                    p.vx += dx * 0.04;
+                    p.vy += dy * 0.04;
+                    p.vx *= 0.88;
+                    p.vy *= 0.88;
                     p.x += p.vx;
                     p.y += p.vy;
                 }
@@ -7911,57 +8004,63 @@ class BibleWordMap extends HTMLElement {
                     if (this.loadingTip) this.loadingTip.classList.add('visible');
                 }
             } else if (state === STATE_SHOW_TIP) {
-                // Gentle clustering & orbiting around center
-                const t = (now - stateStartTime) * 0.003;
+                // Gentle clustering & orbiting in an elliptical halo around the central tip card
+                const t = (now - stateStartTime) * 0.0025;
+                const tipRect = this.loadingTip ? this.loadingTip.getBoundingClientRect() : null;
+                const baseRx = tipRect && tipRect.width ? Math.max(160, (tipRect.width / 2) + 30) : Math.min(width * 0.35, 240);
+                const baseRy = tipRect && tipRect.height ? Math.max(75, (tipRect.height / 2) + 25) : Math.min(height * 0.26, 110);
+                
                 for (let i = 0; i < particles.length; i++) {
                     const p = particles[i];
                     const targetAngle = (i / particles.length) * Math.PI * 2 + t;
-                    const targetDist = 18 + Math.sin(t * 2 + i) * 10;
-                    const targetX = cx + Math.cos(targetAngle) * targetDist;
-                    const targetY = cy + Math.sin(targetAngle) * targetDist;
+                    const orbitRx = baseRx + Math.sin(t * 2 + i * 0.7) * 20;
+                    const orbitRy = baseRy + Math.cos(t * 2 + i * 0.7) * 16;
+                    const targetX = cx + Math.cos(targetAngle) * orbitRx;
+                    const targetY = cy + Math.sin(targetAngle) * orbitRy;
                     
                     p.x += (targetX - p.x) * 0.08;
                     p.y += (targetY - p.y) * 0.08;
                 }
                 
-                if (elapsed > 3000) {
+                if (elapsed > 3200) {
                     state = STATE_EXPLODE;
                     stateStartTime = now;
                     if (this.loadingTip) this.loadingTip.classList.remove('visible');
-                    // Explode outwards
+                    // Explode outwards across full map
                     for (let p of particles) {
-                        const angle = Math.atan2(p.y - cy, p.x - cx) + (Math.random() - 0.5) * 0.6;
-                        const speed = Math.random() * 3.5 + 3;
+                        const angle = Math.atan2(p.y - cy, p.x - cx) + (Math.random() - 0.5) * 0.5;
+                        const speed = Math.random() * (Math.min(width, height) * 0.016) + 4.5;
                         p.vx = Math.cos(angle) * speed;
                         p.vy = Math.sin(angle) * speed;
                     }
                 }
             } else if (state === STATE_EXPLODE) {
-                // Bursting outwards with drag
+                // Bursting outwards with drag across full canvas
                 for (let p of particles) {
                     p.vx *= 0.93;
                     p.vy *= 0.93;
                     p.x += p.vx;
                     p.y += p.vy;
-                    if (p.x < 10) { p.x = 10; p.vx *= -1; }
-                    if (p.x > width - 10) { p.x = width - 10; p.vx *= -1; }
-                    if (p.y < 10) { p.y = 10; p.vy *= -1; }
-                    if (p.y > height - 10) { p.y = height - 10; p.vy *= -1; }
+                    if (p.x < 15) { p.x = 15; p.vx = Math.abs(p.vx); }
+                    if (p.x > width - 15) { p.x = width - 15; p.vx = -Math.abs(p.vx); }
+                    if (p.y < 15) { p.y = 15; p.vy = Math.abs(p.vy); }
+                    if (p.y > height - 15) { p.y = height - 15; p.vy = -Math.abs(p.vy); }
                 }
                 
-                if (elapsed > 700) {
+                if (elapsed > 750) {
                     state = STATE_FLOAT;
                     stateStartTime = now;
                     updateTipText();
                     for (let p of particles) {
-                        p.vx = (Math.random() - 0.5) * 1.1;
-                        p.vy = (Math.random() - 0.5) * 1.1;
+                        p.vx = (Math.random() - 0.5) * 1.0;
+                        p.vy = (Math.random() - 0.5) * 1.0;
                     }
                 }
             }
             
             // Draw connecting lines between close particles
-            const maxDist = state === STATE_GRAVITATE || state === STATE_SHOW_TIP ? 40 : 55;
+            const baseDist = Math.min(110, Math.max(65, Math.min(width, height) * 0.13));
+            const maxDist = (state === STATE_GRAVITATE || state === STATE_SHOW_TIP) ? baseDist * 0.75 : baseDist;
             ctx.lineWidth = 1;
             for (let i = 0; i < particles.length; i++) {
                 for (let j = i + 1; j < particles.length; j++) {
@@ -7971,7 +8070,7 @@ class BibleWordMap extends HTMLElement {
                     const dy = p1.y - p2.y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
                     if (dist < maxDist) {
-                        const alpha = (1 - dist / maxDist) * 0.35;
+                        const alpha = (1 - dist / maxDist) * 0.32;
                         ctx.strokeStyle = `rgba(150, 150, 150, ${alpha})`;
                         ctx.beginPath();
                         ctx.moveTo(p1.x, p1.y);
