@@ -1,5 +1,17 @@
 # Changelog
 
+## [9.1.0] - 2026-09-15
+### Added
+- **Fullscreen Particle Loading Animation:** Expanded the initial loading animation to fill the entire map container with a responsive dynamic constellation of floating semantic particles and connective pulses.
+- **Top 10 Nearest Neighbors Study Tab:** Added a dedicated "Neighbors" tab to the study panel calculating real-time cosine similarity across 100D semantic vector embeddings with proportional color-coded progress bars, similarity percentages, and original language definition snippets.
+- **Radial Menu Neighbors Shortcut:** Added a "Neighbors" option to the radial context menu across Words, Verses, and Books modes for 1-click access to nearest semantic neighbors.
+- **Unified Segmented Pill Toggles (`[ − | + ]`):** Introduced a standardized fixed-width (48px) segmented pill toggle for adding and removing keywords and books across the study panel header, Neighbors tab rows, Book Inspector header, and sibling book chips.
+- **Universal Toggle State Synchronization:** Automatically synchronizes keyword and book active states across all panels, rows, headers, search pills, and radial menus simultaneously.
+
+### Changed
+- **Streamlined Tab Labels:** Shortened study panel tab titles to single-word labels ("Verses", "Language", "Usage", "Neighbors") to ensure clean responsive layout across desktop side panels and mobile bottom sheets without truncation or horizontal scroll.
+- **Row Stability & Layout:** Fixed action button width in neighbor rows and inspector headers, completely preventing row shifting or two-line button wrapping when toggling items on or off.
+
 ## [9.0.0] - 2026-09-14
 ### Added
 - **Latin Clementine Vulgate Foundation:** Added full support for the Latin Vulgate (73 books, 35,807 verses) with Douay-Rheims English text, 100D word embeddings, 2D word map, verse centroids, and book centroids.
