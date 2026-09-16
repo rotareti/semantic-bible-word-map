@@ -1350,7 +1350,76 @@ class BibleWordMap extends HTMLElement {
                     font-weight: 600;
                 }
 
-
+                /* Shared Segmented Pill Toggle (- is off, + is added to map) */
+                .bwm-pill-toggle {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    background: var(--bwm-badge-bg);
+                    border: 1px solid var(--bwm-border);
+                    border-radius: 12px;
+                    padding: 2px;
+                    gap: 2px;
+                    cursor: pointer;
+                    user-select: none;
+                    box-sizing: border-box;
+                    height: 24px;
+                    width: 48px;
+                    flex-shrink: 0;
+                    transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+                }
+                .bwm-pill-toggle:hover {
+                    border-color: var(--bwm-node-hover);
+                }
+                .bwm-pill-toggle:focus-visible {
+                    outline: 2px solid var(--bwm-node-hover);
+                    outline-offset: 1px;
+                }
+                .bwm-pill-toggle-opt {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 20px;
+                    height: 18px;
+                    border-radius: 9px;
+                    font-size: 0.82em;
+                    font-weight: 700;
+                    line-height: 1;
+                    color: var(--bwm-text-muted);
+                    transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+                    pointer-events: auto;
+                }
+                /* Inactive State: Minus is indicated as off, Plus is dimmed */
+                .bwm-pill-toggle:not(.is-active) .bwm-pill-toggle-minus {
+                    background: var(--bwm-input-bg);
+                    color: var(--bwm-text);
+                    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+                    opacity: 1;
+                }
+                .bwm-pill-toggle:not(.is-active) .bwm-pill-toggle-plus {
+                    opacity: 0.35;
+                }
+                .bwm-pill-toggle:not(.is-active) .bwm-pill-toggle-plus:hover {
+                    opacity: 0.85;
+                    color: var(--bwm-node-hover);
+                }
+                /* Active State: Plus is highlighted with theme color, Minus is dimmed */
+                .bwm-pill-toggle.is-active {
+                    border-color: color-mix(in srgb, var(--bwm-node-hover) 45%, var(--bwm-border));
+                }
+                .bwm-pill-toggle.is-active .bwm-pill-toggle-plus {
+                    background: var(--bwm-node-hover, #3b82f6);
+                    color: #ffffff;
+                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+                    opacity: 1;
+                }
+                .bwm-pill-toggle.is-active .bwm-pill-toggle-minus {
+                    opacity: 0.35;
+                }
+                .bwm-pill-toggle.is-active .bwm-pill-toggle-minus:hover {
+                    opacity: 0.85;
+                    color: var(--bwm-text);
+                }
 
                 /* Book Card Internal Elements */
                 .bwm-book-chip-list {
@@ -1781,6 +1850,10 @@ class BibleWordMap extends HTMLElement {
                 }
                 .bwm-neighbor-action {
                     flex-shrink: 0;
+                    width: 48px;
+                    display: flex;
+                    justify-content: flex-end;
+                    align-items: center;
                 }
                 .bwm-neighbor-action-btn {
                     font-size: 0.75em;
@@ -1788,6 +1861,10 @@ class BibleWordMap extends HTMLElement {
                     border-radius: 6px;
                     cursor: pointer;
                     white-space: nowrap;
+                    height: 24px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
                 }
                 @media (max-width: 768px) {
                     .bwm-window-tabs {
@@ -1817,6 +1894,10 @@ class BibleWordMap extends HTMLElement {
                     .bwm-neighbor-stats {
                         min-width: 46px;
                         font-size: 0.78em;
+                    }
+                    .bwm-neighbor-action {
+                        width: 48px;
+                        flex-shrink: 0;
                     }
                 }
 
@@ -4003,6 +4084,7 @@ class BibleWordMap extends HTMLElement {
         if (!this.isSearchMode || !this.searchedWords.includes(oldWord)) return;
         
         this.searchedWords = this.searchedWords.filter(x => x !== oldWord);
+        this.syncKeywordToggles(oldWord, false);
         let baseWords = [...new Set(this.searchedWords.map(id => {
             let { word, pos } = this.parseWordId(id);
             return this.formatWord(word, pos);
@@ -4015,6 +4097,7 @@ class BibleWordMap extends HTMLElement {
         if (!this.isSearchMode) {
             let { word, pos } = this.parseWordId(newWord);
             this.searchInput.value = this.formatWord(word, pos);
+            this.syncKeywordToggles(newWord, true);
             this.searchWord();
             return;
         }
@@ -4025,6 +4108,7 @@ class BibleWordMap extends HTMLElement {
         if (!p) return;
         
         this.searchedWords.push(newWord);
+        this.syncKeywordToggles(newWord, true);
         if (!this.drawerWords) this.drawerWords = [];
         if (!this.drawerWords.includes(newWord)) this.drawerWords.push(newWord);
         
@@ -4753,12 +4837,14 @@ class BibleWordMap extends HTMLElement {
         if (!this.drawerBooks.includes(bookCode)) {
             this.drawerBooks.push(bookCode);
         }
+        this.syncBookToggles(bookCode, true);
         this.searchBooks(true);
     }
 
     removeBook(bookCode) {
         if (!this.searchedBooks) return;
         this.searchedBooks = this.searchedBooks.filter(c => c !== bookCode);
+        this.syncBookToggles(bookCode, false);
         if (this.searchedBooks.length === 0) {
             this.clearAllKeywords();
         } else {
@@ -4779,6 +4865,11 @@ class BibleWordMap extends HTMLElement {
         this.selectedBook = null;
         this.isSearchMode = false;
         if (this.searchInput) this.searchInput.value = '';
+        this.querySelectorAll('.bwm-pill-toggle[data-toggle-book-code], #bwm-book-action-toggle').forEach(t => {
+            t.classList.remove('is-active');
+            t.setAttribute('aria-checked', 'false');
+            t.title = 'Add to map';
+        });
         this.updateClearBtnVisibility();
         this.renderActiveWords();
         this.hideRadialMenu();
@@ -4904,9 +4995,13 @@ class BibleWordMap extends HTMLElement {
                     <button type="button" class="bwm-book-chip" data-book-code="${nb.code}" title="View ${nb.name} details">
                         <b>${nb.name}</b> <span style="opacity:0.65;font-size:0.85em;">${Math.round(nb.sim * 100)}%</span>
                     </button>
-                    <button type="button" class="bwm-chip-add" data-toggle-book-code="${nb.code}" title="${isAlreadyActive ? 'Remove from map' : 'Add to map'}">
-                        ${isAlreadyActive ? '&minus;' : '+'}
-                    </button>
+                    ${this.renderPillToggle({
+                        isActive: isAlreadyActive,
+                        dataAttrs: {
+                            'toggle-book-code': nb.code
+                        },
+                        title: isAlreadyActive ? 'Remove from map' : 'Add to map'
+                    })}
                 </div>
             `;
         }).join('');
@@ -4942,21 +5037,28 @@ class BibleWordMap extends HTMLElement {
                     }
                 });
                 if (otherSim > 0) {
-                    simBadgeHtml = `<span class="bwm-window-badge bwm-window-badge-sim" title="Similarity to ${otherName}">${(otherSim * 100).toFixed(2)}% similarity to <b>${otherName}</b></span>`;
+                    let label = `${(otherSim * 100).toFixed(2)}% similarity to <b>${otherName}</b>`;
+                    simBadgeHtml = `<span class="bwm-window-badge bwm-window-badge-sim" title="Similarity">${label}</span>`;
                 }
             }
-        } else {
-            let simVal = (typeof book.sim === 'number' && book.sim > 0 && book.sim < 0.9999) ? book.sim : null;
+        } else if (this.searchedBooks && this.searchedBooks.length > 0) {
+            let bestSim = 0;
             let targetName = '';
-            if (this.links && this.links.length > 0) {
-                let bestSim = 0;
-                this.links.forEach(l => {
-                    let isSource = (l.source === book || (l.source && (l.source.id === book.id || l.source.code === book.code)));
-                    let isTarget = (l.target === book || (l.target && (l.target.id === book.id || l.target.code === book.code)));
-                    if (isSource || isTarget) {
-                        let other = isSource ? l.target : l.source;
-                        let otherCode = (typeof other === 'object' && other) ? (other.code || other.id) : other;
-                        if (this.searchedBooks && this.searchedBooks.includes(otherCode)) {
+            if (book.nearest_books) {
+                book.nearest_books.forEach(nb => {
+                    if (this.searchedBooks.includes(nb.code) && nb.sim > bestSim) {
+                        bestSim = nb.sim;
+                        let oBook = this.booksData ? this.booksData.books.find(b => b.code === nb.code) : null;
+                        targetName = oBook ? oBook.name : nb.code;
+                    }
+                });
+            }
+            if (bestSim === 0 && this.links) {
+                this.searchedBooks.forEach(otherCode => {
+                    for (let l of this.links) {
+                        let matches = (l.source && (l.source.code === book.code || l.source === book.code) && l.target && (l.target.code === otherCode || l.target === otherCode)) ||
+                                      (l.target && (l.target.code === book.code || l.target === book.code) && l.source && (l.source.code === otherCode || l.source === otherCode));
+                        if (matches) {
                             let s = (typeof l.sim === 'number' && l.sim > 0) ? l.sim : 0;
                             if (s > bestSim && s < 0.9999) {
                                 bestSim = s;
@@ -4966,13 +5068,22 @@ class BibleWordMap extends HTMLElement {
                         }
                     }
                 });
-                if (bestSim > 0) simVal = bestSim;
             }
-            if (typeof simVal === 'number' && simVal > 0) {
-                let label = targetName ? `${(simVal * 100).toFixed(2)}% similarity to <b>${targetName}</b>` : `${(simVal * 100).toFixed(2)}% similarity`;
+            if (bestSim > 0) {
+                let label = targetName ? `${(bestSim * 100).toFixed(2)}% similarity to <b>${targetName}</b>` : `${(bestSim * 100).toFixed(2)}% similarity`;
                 simBadgeHtml = `<span class="bwm-window-badge bwm-window-badge-sim" title="Similarity">${label}</span>`;
             }
         }
+
+        let isBookActive = Boolean(this.searchedBooks && this.searchedBooks.includes(book.code));
+        let bookActionHtml = this.renderPillToggle({
+            isActive: isBookActive,
+            id: 'bwm-book-action-toggle',
+            dataAttrs: {
+                'toggle-book-code': book.code
+            },
+            title: isBookActive ? 'Remove book from map' : 'Add book to map'
+        });
 
         this.bookCard.innerHTML = `
             <div class="bwm-sheet-handle"></div>
@@ -4988,7 +5099,10 @@ class BibleWordMap extends HTMLElement {
                         <h3 class="bwm-window-title">${book.name}</h3>
                         <div class="bwm-window-subtitle">${book.verses.toLocaleString()} verses &bull; ${book.total_words.toLocaleString()} words</div>
                     </div>
-                    <button type="button" class="bwm-window-close" id="bwm-book-card-close" title="Dismiss">&times;</button>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        ${bookActionHtml}
+                        <button type="button" class="bwm-window-close" id="bwm-book-card-close" title="Dismiss">&times;</button>
+                    </div>
                 </div>
             </div>
             <div class="bwm-window-body">
@@ -5075,16 +5189,16 @@ class BibleWordMap extends HTMLElement {
         });
 
         // Add/remove sibling toggle click listener -> adds/removes book to/from map
-        let toggleBtns = this.bookCard.querySelectorAll('button[data-toggle-book-code]');
-        toggleBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                let code = btn.getAttribute('data-toggle-book-code');
-                if (this.searchedBooks && this.searchedBooks.includes(code)) {
-                    this.removeBook(code);
-                } else {
+        let toggleBtns = this.bookCard.querySelectorAll('.bwm-pill-toggle[data-toggle-book-code]');
+        toggleBtns.forEach(toggle => {
+            this.setupPillToggleListener(toggle, (nextActive) => {
+                let code = toggle.getAttribute('data-toggle-book-code');
+                if (nextActive) {
                     this.addBook(code);
+                } else {
+                    this.removeBook(code);
                 }
+                this.syncBookToggles(code, nextActive);
             });
         });
     }
@@ -7168,6 +7282,74 @@ class BibleWordMap extends HTMLElement {
         this.showWordInspector(node, 'neighbors');
     }
 
+    renderPillToggle({ isActive, id = '', dataAttrs = {}, title = '' } = {}) {
+        let activeClass = isActive ? 'is-active' : '';
+        let ariaChecked = isActive ? 'true' : 'false';
+        let defaultTitle = isActive ? 'Remove from map' : 'Add to map';
+        let titleAttr = `title="${title || defaultTitle}"`;
+        let idAttr = id ? `id="${id}"` : '';
+        let dataStr = Object.entries(dataAttrs).map(([k, v]) => `data-${k}="${v}"`).join(' ');
+        return `
+            <div class="bwm-pill-toggle ${activeClass}" ${idAttr} ${dataStr} ${titleAttr} role="switch" aria-checked="${ariaChecked}" tabindex="0">
+                <span class="bwm-pill-toggle-opt bwm-pill-toggle-minus" title="Off map">&minus;</span>
+                <span class="bwm-pill-toggle-opt bwm-pill-toggle-plus" title="Added to map">+</span>
+            </div>
+        `;
+    }
+
+    setupPillToggleListener(el, onToggle) {
+        if (!el) return;
+        const handleToggle = (e) => {
+            e.stopPropagation();
+            const isCurrentlyActive = el.classList.contains('is-active');
+            const clickedMinus = Boolean(e.target.closest('.bwm-pill-toggle-minus'));
+            const clickedPlus = Boolean(e.target.closest('.bwm-pill-toggle-plus'));
+            
+            if (clickedMinus && !isCurrentlyActive) return;
+            if (clickedPlus && isCurrentlyActive) return;
+            
+            const nextActive = !isCurrentlyActive;
+            el.classList.toggle('is-active', nextActive);
+            el.setAttribute('aria-checked', nextActive ? 'true' : 'false');
+            if (onToggle) onToggle(nextActive, el);
+        };
+        el.addEventListener('click', handleToggle);
+        el.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleToggle(e);
+            }
+        });
+    }
+
+    syncKeywordToggles(wordId, isActive) {
+        if (!wordId) return;
+        const toggles = this.querySelectorAll(`.bwm-pill-toggle[data-kw-id="${wordId}"], .bwm-pill-toggle[data-neighbor-id="${wordId}"]`);
+        toggles.forEach(t => {
+            t.classList.toggle('is-active', isActive);
+            t.setAttribute('aria-checked', isActive ? 'true' : 'false');
+            t.title = isActive ? 'Remove keyword from map' : 'Add keyword to map';
+        });
+        if (this.inspectorNode && this.inspectorNode.id === wordId) {
+            const headerToggle = this.querySelector('#bwm-word-action-kw');
+            if (headerToggle) {
+                headerToggle.classList.toggle('is-active', isActive);
+                headerToggle.setAttribute('aria-checked', isActive ? 'true' : 'false');
+                headerToggle.title = isActive ? 'Remove keyword from map' : 'Add keyword to map';
+            }
+        }
+    }
+
+    syncBookToggles(bookCode, isActive) {
+        if (!bookCode) return;
+        const toggles = this.querySelectorAll(`.bwm-pill-toggle[data-toggle-book-code="${bookCode}"]`);
+        toggles.forEach(t => {
+            t.classList.toggle('is-active', isActive);
+            t.setAttribute('aria-checked', isActive ? 'true' : 'false');
+            t.title = isActive ? 'Remove from map' : 'Add to map';
+        });
+    }
+
     async showWordInspector(node, defaultTab = 'verses') {
         if (!node) return;
         if (window.innerWidth <= 768) {
@@ -7211,15 +7393,18 @@ class BibleWordMap extends HTMLElement {
         let isAlreadyKw = this.isSearchMode && this.searchedWords && this.searchedWords.includes(node.id);
         let actionBtnHtml = '';
         if (this.viewMode === 'words') {
-            actionBtnHtml = `
-                <button type="button" class="bwm-window-pill bwm-word-action-btn" id="bwm-word-action-kw" title="${isAlreadyKw ? 'Remove keyword from map' : 'Add keyword to map'}" style="font-size:0.8em; padding:3px 8px;">
-                    ${isAlreadyKw ? '&minus; Remove' : '+ Add keyword'}
-                </button>
-            `;
+            actionBtnHtml = this.renderPillToggle({
+                isActive: isAlreadyKw,
+                id: 'bwm-word-action-kw',
+                dataAttrs: {
+                    'kw-id': node.id
+                },
+                title: isAlreadyKw ? 'Remove keyword from map' : 'Add keyword to map'
+            });
         } else {
             actionBtnHtml = `
-                <button type="button" class="bwm-window-pill bwm-word-action-btn" id="bwm-word-action-explore" title="Explore on Word Map" style="font-size:0.8em; padding:3px 8px;">
-                    &#128269; Explore Word
+                <button type="button" class="bwm-window-pill bwm-word-action-btn" id="bwm-word-action-explore" title="Explore on Word Map" style="font-size:0.8em; padding:3px 8px; white-space:nowrap; height:24px; display:inline-flex; align-items:center;">
+                    &#128269; Explore
                 </button>
             `;
         }
@@ -7849,11 +8034,14 @@ class BibleWordMap extends HTMLElement {
                 let isAlreadyKw = this.isSearchMode && this.searchedWords && this.searchedWords.includes(pt.id);
                 let actionBtnHtml = '';
                 if (this.viewMode === 'words') {
-                    actionBtnHtml = `
-                        <button type="button" class="bwm-window-pill bwm-neighbor-action-btn" data-neighbor-action="kw" data-neighbor-id="${pt.id}" title="${isAlreadyKw ? 'Remove keyword from map' : 'Add keyword to map'}">
-                            ${isAlreadyKw ? '&minus;' : '+ Add'}
-                        </button>
-                    `;
+                    actionBtnHtml = this.renderPillToggle({
+                        isActive: isAlreadyKw,
+                        dataAttrs: {
+                            'neighbor-action': 'kw',
+                            'neighbor-id': pt.id
+                        },
+                        title: isAlreadyKw ? 'Remove keyword from map' : 'Add keyword to map'
+                    });
                 } else {
                     actionBtnHtml = `
                         <button type="button" class="bwm-window-pill bwm-neighbor-action-btn" data-neighbor-action="explore" data-neighbor-id="${pt.id}" title="Explore on Word Map">
@@ -7915,19 +8103,18 @@ class BibleWordMap extends HTMLElement {
             });
         }
 
-        // Action button (keyword add/remove or explore on word map)
-        const btnKw = this.wordCard.querySelector('#bwm-word-action-kw');
-        if (btnKw) {
-            btnKw.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (this.isSearchMode && this.searchedWords && this.searchedWords.includes(node.id)) {
-                    this.removeKeyword(node.id);
-                } else {
+        // Action button / toggle (keyword add/remove or explore on word map)
+        const toggleKw = this.wordCard.querySelector('#bwm-word-action-kw');
+        if (toggleKw) {
+            this.setupPillToggleListener(toggleKw, (nextActive) => {
+                if (nextActive) {
                     this.addKeyword(node.id);
+                    toggleKw.title = 'Remove keyword from map';
+                } else {
+                    this.removeKeyword(node.id);
+                    toggleKw.title = 'Add keyword to map';
                 }
-                const nowKw = this.isSearchMode && this.searchedWords && this.searchedWords.includes(node.id);
-                btnKw.innerHTML = nowKw ? '&minus; Remove' : '+ Add keyword';
-                btnKw.title = nowKw ? 'Remove keyword from map' : 'Add keyword to map';
+                this.syncKeywordToggles(node.id, nextActive);
             });
         }
         const btnExplore = this.wordCard.querySelector('#bwm-word-action-explore');
@@ -7971,7 +8158,7 @@ class BibleWordMap extends HTMLElement {
         const neighborRows = this.wordCard.querySelectorAll('.bwm-neighbor-row');
         neighborRows.forEach(row => {
             row.addEventListener('click', (e) => {
-                if (e.target.closest('.bwm-neighbor-action-btn')) return;
+                if (e.target.closest('.bwm-pill-toggle') || e.target.closest('.bwm-neighbor-action-btn')) return;
                 e.stopPropagation();
                 const neighborId = row.getAttribute('data-neighbor-id');
                 const targetPoint = this.data2d ? this.data2d.find(d => d.id === neighborId) : null;
@@ -7981,21 +8168,19 @@ class BibleWordMap extends HTMLElement {
             });
         });
 
-        const neighborKwBtns = this.wordCard.querySelectorAll('.bwm-neighbor-action-btn[data-neighbor-action="kw"]');
-        neighborKwBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const neighborId = btn.getAttribute('data-neighbor-id');
+        const neighborKwToggles = this.wordCard.querySelectorAll('.bwm-pill-toggle[data-neighbor-action="kw"]');
+        neighborKwToggles.forEach(toggle => {
+            this.setupPillToggleListener(toggle, (nextActive) => {
+                const neighborId = toggle.getAttribute('data-neighbor-id');
                 if (!neighborId) return;
-                if (this.isSearchMode && this.searchedWords && this.searchedWords.includes(neighborId)) {
-                    this.removeKeyword(neighborId);
-                    btn.innerHTML = '+ Add';
-                    btn.title = 'Add keyword to map';
-                } else {
+                if (nextActive) {
                     this.addKeyword(neighborId);
-                    btn.innerHTML = '&minus;';
-                    btn.title = 'Remove keyword from map';
+                    toggle.title = 'Remove keyword from map';
+                } else {
+                    this.removeKeyword(neighborId);
+                    toggle.title = 'Add keyword to map';
                 }
+                this.syncKeywordToggles(neighborId, nextActive);
             });
         });
 
