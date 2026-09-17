@@ -538,6 +538,8 @@ class BibleWordMap extends HTMLElement {
         this.viewMode = 'words';
         this.testamentFilter = 'all';
         this.similarityLabelsMode = 'hover'; // 'off' | 'hover' | 'all'
+        this.mapTextSize = 'small'; // 'small' | 'medium' | 'large'
+        this.mapTextScale = 1.0;
         this.isSearchMode = false;
         this.searchedWords = [];
         this.nodes = [];
@@ -1242,7 +1244,8 @@ class BibleWordMap extends HTMLElement {
                 #bwm-verse-mode-filter,
                 #bwm-foundation-filter,
                 #bwm-testament-filter,
-                #bwm-sim-labels-filter {
+                #bwm-sim-labels-filter,
+                #bwm-text-size-filter {
                     display: flex;
                     width: 100%;
                     box-sizing: border-box;
@@ -1260,7 +1263,8 @@ class BibleWordMap extends HTMLElement {
                 #bwm-verse-mode-filter .bwm-pill-btn,
                 #bwm-foundation-filter .bwm-pill-btn,
                 #bwm-testament-filter .bwm-pill-btn,
-                #bwm-sim-labels-filter .bwm-pill-btn {
+                #bwm-sim-labels-filter .bwm-pill-btn,
+                #bwm-text-size-filter .bwm-pill-btn {
                     flex: 1 1 0;
                     background: transparent;
                     border: none;
@@ -1279,7 +1283,8 @@ class BibleWordMap extends HTMLElement {
                 #bwm-verse-mode-filter .bwm-pill-btn:hover,
                 #bwm-foundation-filter .bwm-pill-btn:hover,
                 #bwm-testament-filter .bwm-pill-btn:hover,
-                #bwm-sim-labels-filter .bwm-pill-btn:hover {
+                #bwm-sim-labels-filter .bwm-pill-btn:hover,
+                #bwm-text-size-filter .bwm-pill-btn:hover {
                     background: transparent;
                     color: var(--bwm-text);
                 }
@@ -1287,7 +1292,8 @@ class BibleWordMap extends HTMLElement {
                 #bwm-verse-mode-filter .bwm-pill-btn.active,
                 #bwm-foundation-filter .bwm-pill-btn.active,
                 #bwm-testament-filter .bwm-pill-btn.active,
-                #bwm-sim-labels-filter .bwm-pill-btn.active {
+                #bwm-sim-labels-filter .bwm-pill-btn.active,
+                #bwm-text-size-filter .bwm-pill-btn.active {
                     background: var(--bwm-node-hover);
                     color: #ffffff;
                     border: none;
@@ -2839,6 +2845,17 @@ class BibleWordMap extends HTMLElement {
                             </div>
                             <div class="bwm-drawer-hint">Display semantic similarity percentages along connecting lines.</div>
                         </div>
+                        <div class="bwm-drawer-section">
+                            <div class="bwm-drawer-section-header">
+                                <h4>Map Text Size</h4>
+                            </div>
+                            <div class="bwm-pill-group" id="bwm-text-size-filter">
+                                <button type="button" class="bwm-pill-btn active" data-text-size="small" title="Default font size">Small</button>
+                                <button type="button" class="bwm-pill-btn" data-text-size="medium" title="Medium font size (+30%)">Medium</button>
+                                <button type="button" class="bwm-pill-btn" data-text-size="large" title="Large font size (+60%)">Large</button>
+                            </div>
+                            <div class="bwm-drawer-hint">Scale words, percentages, and labels on the map canvas.</div>
+                        </div>
                     </div>
                 </div>
                 <div class="bwm-canvas-container">
@@ -3013,6 +3030,28 @@ class BibleWordMap extends HTMLElement {
         } else {
             this.similarityLabelsMode = val ? 'all' : 'off';
         }
+    }
+
+    setMapTextSize(size) {
+        if (size === 'medium') {
+            this.mapTextSize = 'medium';
+            this.mapTextScale = 1.3;
+        } else if (size === 'large') {
+            this.mapTextSize = 'large';
+            this.mapTextScale = 1.6;
+        } else {
+            this.mapTextSize = 'small';
+            this.mapTextScale = 1.0;
+        }
+        const textSizePills = this.querySelectorAll('#bwm-text-size-filter .bwm-pill-btn');
+        textSizePills.forEach(btn => {
+            if (btn.getAttribute('data-text-size') === this.mapTextSize) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+        this.draw();
     }
 
     connectedCallback() {
@@ -3292,6 +3331,14 @@ class BibleWordMap extends HTMLElement {
                 btn.classList.add('active');
                 this.similarityLabelsMode = btn.getAttribute('data-sim-labels') || 'hover';
                 this.draw();
+            });
+        });
+
+        const textSizePills = this.querySelectorAll('#bwm-text-size-filter .bwm-pill-btn');
+        textSizePills.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const size = btn.getAttribute('data-text-size') || 'small';
+                this.setMapTextSize(size);
             });
         });
 
@@ -7577,8 +7624,9 @@ class BibleWordMap extends HTMLElement {
                 // Avoid rendering label if endpoints are too close or within node bubbles on screen
                 let sourceR = l.source.canvasR || 6;
                 let targetR = l.target.canvasR || 6;
+                let textScale = this.mapTextScale || 1.0;
                 let screenGap = (dist - sourceR - targetR) * this.transform.k;
-                if (screenGap < 18) return;
+                if (screenGap < (18 * Math.min(textScale, 1.25))) return;
 
                 let isHovered = Boolean(this.hoveredNode && (l.source === this.hoveredNode || l.target === this.hoveredNode));
                 let pctStr = (sim * 100).toFixed(2) + '%';
@@ -7598,11 +7646,11 @@ class BibleWordMap extends HTMLElement {
                 this.ctx.rotate(angle);
                 this.ctx.scale(1 / this.transform.k, 1 / this.transform.k);
 
-                let fontSize = 8.5;
+                let fontSize = 8.5 * textScale;
                 this.ctx.font = `500 ${fontSize}px ${this.colors.font || 'sans-serif'}`;
                 let tw = this.ctx.measureText(pctStr).width;
-                let padX = 3.5;
-                let padY = 1.5;
+                let padX = 3.5 * textScale;
+                let padY = 1.5 * textScale;
                 let w = tw + padX * 2;
                 let h = fontSize + padY * 2;
                 let r = h / 2;
@@ -7721,63 +7769,65 @@ class BibleWordMap extends HTMLElement {
                 this.ctx.translate(n.x, n.y);
                 this.ctx.scale(1 / this.transform.k, 1 / this.transform.k);
                 
+                let textScale = this.mapTextScale || 1.0;
+
                 if (n.isVerse) {
-                    let fontSize = n.isFocusedVerse ? 13 : 11;
+                    let fontSize = (n.isFocusedVerse ? 13 : 11) * textScale;
                     this.ctx.font = `bold ${fontSize}px ${this.colors.font}`;
                     this.ctx.textAlign = "center";
                     this.ctx.textBaseline = "top";
                     let currentR = (isHighlighted) ? n.canvasR * 1.25 : n.canvasR;
-                    let yOffset = (currentR * this.transform.k) + 3;
+                    let yOffset = (currentR * this.transform.k) + (3 * textScale);
                     let displayTitle = n.formattedRef || formatVerseRef(n.id);
                     
-                    this.ctx.lineWidth = 3.5;
+                    this.ctx.lineWidth = 3.5 * textScale;
                     this.ctx.strokeStyle = this.colors.bg;
                     this.ctx.strokeText(displayTitle, 0, yOffset);
                     
                     this.ctx.fillStyle = this.colors.text;
                     this.ctx.fillText(displayTitle, 0, yOffset);
                     
-                    let subFontSize = 9;
+                    let subFontSize = 9 * textScale;
                     this.ctx.font = `${subFontSize}px ${this.colors.font}`;
-                    let subOffset = yOffset + fontSize + 2;
-                    this.ctx.lineWidth = 2.5;
+                    let subOffset = yOffset + fontSize + (2 * textScale);
+                    this.ctx.lineWidth = 2.5 * textScale;
                     this.ctx.strokeStyle = this.colors.bg;
                     this.ctx.strokeText(n.genre, 0, subOffset);
                     this.ctx.fillStyle = this.colors.textMuted || '#888888';
                     this.ctx.fillText(n.genre, 0, subOffset);
                 } else if (n.isBook) {
-                    let fontSize = n.isFocusedBook ? 15 : 12;
+                    let fontSize = (n.isFocusedBook ? 15 : 12) * textScale;
                     this.ctx.font = `bold ${fontSize}px ${this.colors.font}`;
                     this.ctx.textAlign = "center";
                     this.ctx.textBaseline = "top";
                     let currentR = (isHighlighted) ? n.canvasR * 1.2 : n.canvasR;
-                    let yOffset = (currentR * this.transform.k) + 3;
+                    let yOffset = (currentR * this.transform.k) + (3 * textScale);
                     
-                    this.ctx.lineWidth = 3.5;
+                    this.ctx.lineWidth = 3.5 * textScale;
                     this.ctx.strokeStyle = this.colors.bg;
                     this.ctx.strokeText(n.name, 0, yOffset);
                     
                     this.ctx.fillStyle = this.colors.text;
                     this.ctx.fillText(n.name, 0, yOffset);
                     
-                    let subFontSize = 9;
+                    let subFontSize = 9 * textScale;
                     this.ctx.font = `${subFontSize}px ${this.colors.font}`;
-                    let subOffset = yOffset + fontSize + 2;
-                    this.ctx.lineWidth = 2.5;
+                    let subOffset = yOffset + fontSize + (2 * textScale);
+                    this.ctx.lineWidth = 2.5 * textScale;
                     this.ctx.strokeStyle = this.colors.bg;
                     this.ctx.strokeText(n.genre, 0, subOffset);
                     this.ctx.fillStyle = this.colors.textMuted || '#888888';
                     this.ctx.fillText(n.genre, 0, subOffset);
                 } else {
-                    let fontSize = n.isKw ? 14 : 11;
+                    let fontSize = (n.isKw ? 14 : 11) * textScale;
                     this.ctx.font = `${fontSize}px ${this.colors.font}`;
                     this.ctx.textAlign = "center";
                     this.ctx.textBaseline = "top";
                     let currentR = (isHighlighted) ? n.canvasR * 1.4 : n.canvasR;
-                    let yOffset = (currentR * this.transform.k) + 2;
+                    let yOffset = (currentR * this.transform.k) + (2 * textScale);
                     
                     // Draw a solid halo background for the text to improve readability over layered lines/dots
-                    this.ctx.lineWidth = 3;
+                    this.ctx.lineWidth = 3 * textScale;
                     this.ctx.strokeStyle = this.colors.bg;
                     let displayW = this.formatWord(n.w, n.pos);
                     this.ctx.strokeText(displayW, 0, yOffset);
@@ -7799,11 +7849,11 @@ class BibleWordMap extends HTMLElement {
                     }
 
                     if (subText) {
-                        let posFontSize = n.isKw ? 11 : 9;
+                        let posFontSize = (n.isKw ? 11 : 9) * textScale;
                         this.ctx.font = `${posFontSize}px ${this.colors.font}`;
-                        let posOffset = yOffset + fontSize + 1;
+                        let posOffset = yOffset + fontSize + (1 * textScale);
                         
-                        this.ctx.lineWidth = 2.5;
+                        this.ctx.lineWidth = 2.5 * textScale;
                         this.ctx.strokeStyle = this.colors.bg;
                         this.ctx.strokeText(subText, 0, posOffset);
                         

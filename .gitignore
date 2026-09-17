@@ -2,6 +2,8 @@ data/*
 !data/output/
 !data/output/*.json
 data/output/*_raw*.json
+!data/analysis/
+!data/analysis/*.json
 !data/.gitkeep
 parser/target/
 pipeline/venv/
@@ -10,6 +12,7 @@ pipeline/__pycache__/
 !package.json
 !package-lock.json
 !data/output/*.json
+!data/analysis/*.json
 data/output/*_raw*.json
 .DS_Store
 web/data

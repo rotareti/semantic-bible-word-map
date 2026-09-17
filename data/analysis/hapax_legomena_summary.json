@@ -1,0 +1,60 @@
+{
+  "BSB": {
+    "total_tokens": 726693,
+    "total_unique_vocab": 11887,
+    "hapax_count": 3644,
+    "hapax_percentage": 30.66,
+    "pos_counts": {
+      "PROPN": 1196,
+      "ADV": 172,
+      "NOUN": 1189,
+      "ADP": 5,
+      "INTJ": 7,
+      "VERB": 548,
+      "ADJ": 514,
+      "DET": 5,
+      "CCONJ": 2,
+      "X": 1,
+      "PRON": 2,
+      "NUM": 1,
+      "AUX": 1,
+      "SCONJ": 1
+    }
+  },
+  "LXX": {
+    "total_tokens": 725123,
+    "total_unique_vocab": 15722,
+    "hapax_count": 6488,
+    "hapax_percentage": 41.27,
+    "pos_counts": {
+      "NUM": 32,
+      "NOUN": 1552,
+      "ADV": 238,
+      "PROPN": 2515,
+      "VERB": 1297,
+      "ADJ": 814,
+      "INTJ": 4,
+      "CCONJ": 7,
+      "ADP": 14,
+      "PRON": 5,
+      "PART": 7,
+      "DET": 3
+    }
+  },
+  "VUL": {
+    "total_tokens": 611868,
+    "total_unique_vocab": 16628,
+    "hapax_count": 6168,
+    "hapax_percentage": 37.09,
+    "pos_counts": {
+      "NOUN": 5025,
+      "PROPN": 623,
+      "ADJ": 137,
+      "VERB": 326,
+      "ADV": 53,
+      "DET": 1,
+      "PRON": 2,
+      "NUM": 1
+    }
+  }
+}
