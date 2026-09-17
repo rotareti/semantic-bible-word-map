@@ -3080,7 +3080,7 @@ class BibleWordMap extends HTMLElement {
             this.foundation = 'bsb';
         }
 
-        const vParam = '?v=9.2.0';
+        const vParam = '?v=9.2.1';
         if (this.foundation === 'lxx') {
             this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -3654,7 +3654,7 @@ class BibleWordMap extends HTMLElement {
             this.foundation = 'bsb';
         }
 
-        const vParam = '?v=9.2.0';
+        const vParam = '?v=9.2.1';
         if (this.foundation === 'lxx') {
             this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -3789,6 +3789,10 @@ class BibleWordMap extends HTMLElement {
                         let ref = parts[0];
                         let en = parts[1] || '';
                         let el = parts[2] || '';
+                        if (!el && parts.length === 2 && /[\u0370-\u03ff\u1f00-\u1fff]/.test(en) && !/[a-zA-Z]{3,}/.test(en)) {
+                            el = en;
+                            en = '';
+                        }
                         this.verseTextMap.set(ref, en);
                         if (el) this.verseGreekMap.set(ref, el);
                     }
@@ -3827,6 +3831,10 @@ class BibleWordMap extends HTMLElement {
                         let ref = parts[0];
                         let en = parts[1] || '';
                         let el = parts[2] || '';
+                        if (!el && parts.length === 2 && /[\u0370-\u03ff\u1f00-\u1fff]/.test(en) && !/[a-zA-Z]{3,}/.test(en)) {
+                            el = en;
+                            en = '';
+                        }
                         this.verseTextMap.set(ref, en);
                         if (el) this.verseGreekMap.set(ref, el);
                     }
@@ -4098,7 +4106,7 @@ class BibleWordMap extends HTMLElement {
             return this._englishSemanticData;
         }
 
-        const vParam = '?v=9.2.0';
+        const vParam = '?v=9.2.1';
         const wordmapSrc = this.getAttribute('src-2d-bsb') || this.getAttribute('src-2d') || ('data/output/wordmap_2d.json' + vParam);
         const versesSrc = this.getAttribute('src-verses-bsb') || this.getAttribute('src-verses') || ('data/output/verse_index.json' + vParam);
         const versemapSrc = this.getAttribute('src-versemap-bsb') || this.getAttribute('src-versemap') || ('data/output/versemap_2d.json' + vParam);
@@ -4863,23 +4871,27 @@ class BibleWordMap extends HTMLElement {
                 let swVerses = this.wordToVerses ? (this.wordToVerses[sw] || []) : [];
                 let intersection = myVerses.filter(vId => swVerses.includes(vId));
                 if (intersection.length > 0) {
+                    let swPoint = this.data2d ? this.data2d.find(d => d.id === sw) : null;
+                    let linkSim = (n.v && swPoint && swPoint.v) ? this.cosineSimilarity(n.v, swPoint.v) : (sw === n.sourceKw ? n.sim : 0);
                     this.allSearchLinks.push({
                         source: n.id,
                         target: sw,
                         type: 'direct',
                         intersection: intersection,
-                        sim: n.sim
+                        sim: linkSim
                     });
                     if (sw === n.sourceKw) linkedToSourceKw = true;
                 }
             });
             
             if (!linkedToSourceKw) {
+                let sourceKwPoint = this.data2d ? this.data2d.find(d => d.id === n.sourceKw) : null;
+                let linkSim = (n.v && sourceKwPoint && sourceKwPoint.v) ? this.cosineSimilarity(n.v, sourceKwPoint.v) : n.sim;
                 this.allSearchLinks.push({
                     source: n.id,
                     target: n.sourceKw,
                     type: 'indirect',
-                    sim: n.sim
+                    sim: linkSim
                 });
             }
         });
@@ -5065,7 +5077,7 @@ class BibleWordMap extends HTMLElement {
             vulPill.classList.toggle('active', foundation === 'vul');
         }
 
-        const vParam = '?v=9.2.0';
+        const vParam = '?v=9.2.1';
         if (foundation === 'lxx') {
             this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -5493,25 +5505,41 @@ class BibleWordMap extends HTMLElement {
                 let swVerses = this.wordToVerses ? (this.wordToVerses[sw] || []) : [];
                 let intersection = myVerses.filter(vId => swVerses.includes(vId));
                 if (intersection.length > 0) {
-                    let link = {
-                        source: s.point.id, target: sw, type: 'direct', intersection: intersection, sim: s.sim
-                    };
-                    this.allSearchLinks.push(link);
+                    let alreadyHasLink = this.allSearchLinks.some(l => {
+                        let src = (typeof l.source === 'object' && l.source !== null) ? l.source.id : l.source;
+                        let tgt = (typeof l.target === 'object' && l.target !== null) ? l.target.id : l.target;
+                        return (src === s.point.id && tgt === sw) || (src === sw && tgt === s.point.id);
+                    });
+                    if (!alreadyHasLink) {
+                        let swPoint = this.data2d ? this.data2d.find(d => d.id === sw) : null;
+                        let linkSim = (s.point.v && swPoint && swPoint.v) ? this.cosineSimilarity(s.point.v, swPoint.v) : (sw === p.id ? s.sim : 0);
+                        let link = {
+                            source: s.point.id, target: sw, type: 'direct', intersection: intersection, sim: linkSim
+                        };
+                        this.allSearchLinks.push(link);
+                        
+                        let activeNode = this.nodes.find(n => n.id === s.point.id);
+                        if (activeNode) this.links.push(link);
+                    }
                     if (sw === p.id) linkedToSourceKw = true;
-                    
-                    let activeNode = this.nodes.find(n => n.id === s.point.id);
-                    if (activeNode) this.links.push(link);
                 }
             });
             
             if (!linkedToSourceKw) {
-                let link = {
-                    source: s.point.id, target: p.id, type: 'indirect', sim: s.sim
-                };
-                this.allSearchLinks.push(link);
-                
-                let activeNode = this.nodes.find(n => n.id === s.point.id);
-                if (activeNode) this.links.push(link);
+                let alreadyHasLink = this.allSearchLinks.some(l => {
+                    let src = (typeof l.source === 'object' && l.source !== null) ? l.source.id : l.source;
+                    let tgt = (typeof l.target === 'object' && l.target !== null) ? l.target.id : l.target;
+                    return (src === s.point.id && tgt === p.id) || (src === p.id && tgt === s.point.id);
+                });
+                if (!alreadyHasLink) {
+                    let link = {
+                        source: s.point.id, target: p.id, type: 'indirect', sim: s.sim
+                    };
+                    this.allSearchLinks.push(link);
+                    
+                    let activeNode = this.nodes.find(n => n.id === s.point.id);
+                    if (activeNode) this.links.push(link);
+                }
             }
         });
         
@@ -5520,15 +5548,20 @@ class BibleWordMap extends HTMLElement {
         this.nodes.forEach(n => {
             if (n.isKw) return;
             
-            let hasLinkToNewKw = this.allSearchLinks.some(l => l.source === n.id && (l.target === p.id || l.target.id === p.id));
+            let hasLinkToNewKw = this.allSearchLinks.some(l => {
+                let src = (typeof l.source === 'object' && l.source !== null) ? l.source.id : l.source;
+                let tgt = (typeof l.target === 'object' && l.target !== null) ? l.target.id : l.target;
+                return (src === n.id && tgt === p.id) || (src === p.id && tgt === n.id);
+            });
             if (hasLinkToNewKw) return;
             
             let myVerses = this.wordToVerses ? (this.wordToVerses[n.id] || []) : [];
             let intersection = myVerses.filter(vId => newKwVerses.includes(vId));
             
             if (intersection.length > 0) {
+                let linkSim = (n.v && p.v) ? this.cosineSimilarity(n.v, p.v) : 0;
                 let link = {
-                    source: n.id, target: p.id, type: 'direct', intersection: intersection, sim: n.sim || 0
+                    source: n.id, target: p.id, type: 'direct', intersection: intersection, sim: linkSim
                 };
                 this.allSearchLinks.push(link);
                 this.links.push(link);
@@ -7085,6 +7118,10 @@ class BibleWordMap extends HTMLElement {
 
         let verseText = this.verseTextMap ? (this.verseTextMap.get(verse.id) || '') : '';
         let greekText = this.verseGreekMap ? (this.verseGreekMap.get(verse.id) || '') : '';
+        if (!greekText && /[\u0370-\u03ff\u1f00-\u1fff]/.test(verseText) && !/[a-zA-Z]{3,}/.test(verseText)) {
+            greekText = verseText;
+            verseText = '';
+        }
 
         let crossrefsList = Array.isArray(verse.r) ? verse.r : [];
         let crossrefsHtml = crossrefsList.slice(0, 16).map(cr => {
@@ -7223,16 +7260,16 @@ class BibleWordMap extends HTMLElement {
                 </div>
             </div>
             <div class="bwm-window-body">
-                ${verseText ? `
+                ${(verseText || greekText) ? `
                 <div class="bwm-verse-text-box">
                     <div class="bwm-verse-text-header">
-                        <span style="font-size:0.7em; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; opacity:0.65;">English Translation</span>
-                        ${greekText ? `<button type="button" class="bwm-window-pill ${this.showGreekOriginal ? 'active' : ''}" id="bwm-btn-toggle-greek" style="font-size:0.7em; padding:2px 8px; cursor:pointer;" title="Toggle ${this.foundation === 'vul' ? 'Latin Vulgate' : 'Greek original'} text">&#128220; ${this.foundation === 'vul' ? 'Latin Vulgate' : 'Greek Original'}</button>` : ''}
+                        <span style="font-size:0.7em; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; opacity:0.65;">${verseText ? 'English Translation' : (this.foundation === 'vul' ? 'Latin Clementine Vulgate' : 'Septuagint / Greek NT')}</span>
+                        ${(verseText && greekText) ? `<button type="button" class="bwm-window-pill ${this.showGreekOriginal ? 'active' : ''}" id="bwm-btn-toggle-greek" style="font-size:0.7em; padding:2px 8px; cursor:pointer;" title="Toggle ${this.foundation === 'vul' ? 'Latin Vulgate' : 'Greek original'} text">&#128220; ${this.foundation === 'vul' ? 'Latin Vulgate' : 'Greek Original'}</button>` : ''}
                     </div>
-                    <div class="bwm-verse-english-text">${verseText}</div>
+                    ${verseText ? `<div class="bwm-verse-english-text">${verseText}</div>` : ''}
                     ${greekText ? `
-                    <div class="bwm-verse-greek-box" id="bwm-verse-greek-box" style="display: ${this.showGreekOriginal ? 'block' : 'none'};">
-                        <div class="bwm-verse-greek-label">${this.foundation === 'vul' ? 'Clementine Latin Vulgate' : 'Septuagint / Greek NT'}</div>
+                    <div class="bwm-verse-greek-box" id="bwm-verse-greek-box" style="display: ${(this.showGreekOriginal || !verseText) ? 'block' : 'none'};">
+                        ${verseText ? `<div class="bwm-verse-greek-label">${this.foundation === 'vul' ? 'Clementine Latin Vulgate' : 'Septuagint / Greek NT'}</div>` : ''}
                         <div class="bwm-verse-greek-text">${greekText}</div>
                     </div>` : ''}
                 </div>` : ''}
@@ -7635,11 +7672,21 @@ class BibleWordMap extends HTMLElement {
 
             linksToLabel.forEach(l => {
                 if (!l.source || !l.target || l.source.x === undefined || l.target.x === undefined) return;
-                let sim = (typeof l.sim === 'number' && l.sim > 0)
-                    ? l.sim
-                    : (l.source.v && l.target.v
-                        ? this.cosineSimilarity(l.source.v, l.target.v)
-                        : (l.source.sim || l.target.sim || 0));
+                let sNode = (typeof l.source === 'object' && l.source !== null) ? l.source : (this.nodes ? this.nodes.find(n => n.id === l.source) : null);
+                let tNode = (typeof l.target === 'object' && l.target !== null) ? l.target : (this.nodes ? this.nodes.find(n => n.id === l.target) : null);
+                let sVec = sNode ? (sNode.v || (this.data2d ? (this.data2d.find(d => d.id === sNode.id) || {}).v : null)) : null;
+                let tVec = tNode ? (tNode.v || (this.data2d ? (this.data2d.find(d => d.id === tNode.id) || {}).v : null)) : null;
+
+                let sim = 0;
+                if (sVec && tVec) {
+                    sim = this.cosineSimilarity(sVec, tVec);
+                } else if (typeof l.sim === 'number' && l.sim > 0) {
+                    sim = l.sim;
+                } else if (sNode && typeof sNode.sim === 'number' && sNode.sim > 0) {
+                    sim = sNode.sim;
+                } else if (tNode && typeof tNode.sim === 'number' && tNode.sim > 0) {
+                    sim = tNode.sim;
+                }
                 if (sim <= 0 || sim >= 0.9999) return;
 
                 let dx = l.target.x - l.source.x;
@@ -8909,6 +8956,10 @@ class BibleWordMap extends HTMLElement {
             let ref = parts[0];
             let english = parts[1] || '';
             let origText = parts[2] || '';
+            if (!origText && /[\u0370-\u03ff\u1f00-\u1fff]/.test(english) && !/[a-zA-Z]{3,}/.test(english)) {
+                origText = english;
+                english = '';
+            }
             if (!english.trim() && origText.trim()) {
                 english = origText;
                 origText = '';
