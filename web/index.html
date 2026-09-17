@@ -14,11 +14,6 @@
     <header style="position: relative; z-index: 20000;">
         <div class="header-row">
             <h1><span class="header-title-text" id="header-title-text" role="button" tabindex="0" title="Reset to landscape view">Semantic Bible</span> <span class="header-version">v9.1.0</span></h1>
-            <div class="view-mode-pill-group">
-                <button type="button" class="view-mode-pill active" id="view-mode-words" data-mode="words">Words</button>
-                <button type="button" class="view-mode-pill" id="view-mode-verses" data-mode="verses">Verses</button>
-                <button type="button" class="view-mode-pill" id="view-mode-books" data-mode="books">Books</button>
-            </div>
         </div>
     </header>
     <main>
@@ -50,38 +45,6 @@
                     e.preventDefault();
                     handleTitleReset();
                 }
-            });
-        }
-
-        // View Mode Toggle (Words / Verses / Books)
-        const wordsBtn = document.getElementById('view-mode-words');
-        const versesBtn = document.getElementById('view-mode-verses');
-        const booksBtn = document.getElementById('view-mode-books');
-
-        function setModePills(activeBtn) {
-            [wordsBtn, versesBtn, booksBtn].forEach(b => {
-                if (b) b.classList.toggle('active', b === activeBtn);
-            });
-        }
-
-        if (wordsBtn) {
-            wordsBtn.addEventListener('click', () => {
-                setModePills(wordsBtn);
-                if (mapEl && mapEl.setViewMode) mapEl.setViewMode('words');
-            });
-        }
-
-        if (versesBtn) {
-            versesBtn.addEventListener('click', () => {
-                setModePills(versesBtn);
-                if (mapEl && mapEl.setViewMode) mapEl.setViewMode('verses');
-            });
-        }
-
-        if (booksBtn) {
-            booksBtn.addEventListener('click', () => {
-                setModePills(booksBtn);
-                if (mapEl && mapEl.setViewMode) mapEl.setViewMode('books');
             });
         }
     </script>

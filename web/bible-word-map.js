@@ -1238,6 +1238,7 @@ class BibleWordMap extends HTMLElement {
                     border-color: var(--bwm-node-hover);
                     font-weight: 600;
                 }
+                #bwm-view-mode-filter,
                 #bwm-verse-mode-filter,
                 #bwm-foundation-filter,
                 #bwm-testament-filter,
@@ -1255,6 +1256,7 @@ class BibleWordMap extends HTMLElement {
                     flex-wrap: nowrap;
                     margin-top: 10px;
                 }
+                #bwm-view-mode-filter .bwm-pill-btn,
                 #bwm-verse-mode-filter .bwm-pill-btn,
                 #bwm-foundation-filter .bwm-pill-btn,
                 #bwm-testament-filter .bwm-pill-btn,
@@ -1273,6 +1275,7 @@ class BibleWordMap extends HTMLElement {
                     white-space: nowrap;
                     font-family: var(--bwm-font);
                 }
+                #bwm-view-mode-filter .bwm-pill-btn:hover,
                 #bwm-verse-mode-filter .bwm-pill-btn:hover,
                 #bwm-foundation-filter .bwm-pill-btn:hover,
                 #bwm-testament-filter .bwm-pill-btn:hover,
@@ -1280,6 +1283,7 @@ class BibleWordMap extends HTMLElement {
                     background: transparent;
                     color: var(--bwm-text);
                 }
+                #bwm-view-mode-filter .bwm-pill-btn.active,
                 #bwm-verse-mode-filter .bwm-pill-btn.active,
                 #bwm-foundation-filter .bwm-pill-btn.active,
                 #bwm-testament-filter .bwm-pill-btn.active,
@@ -2770,6 +2774,17 @@ class BibleWordMap extends HTMLElement {
                                 <div class="bwm-empty-state">No words selected.</div>
                             </div>
                         </div>
+                        <div class="bwm-drawer-section" id="bwm-view-mode-section">
+                            <div class="bwm-drawer-section-header">
+                                <h4>View Mode</h4>
+                            </div>
+                            <div class="bwm-pill-group" id="bwm-view-mode-filter">
+                                <button type="button" class="bwm-pill-btn active" id="view-mode-words" data-mode="words" title="Word semantic landscape">Words</button>
+                                <button type="button" class="bwm-pill-btn" id="view-mode-verses" data-mode="verses" title="Verse cross-reference constellations">Verses</button>
+                                <button type="button" class="bwm-pill-btn" id="view-mode-books" data-mode="books" title="Biblical canon space">Books</button>
+                            </div>
+                            <div class="bwm-drawer-hint" id="bwm-view-mode-hint">Switch canvas between words, verses, and books.</div>
+                        </div>
                         <div class="bwm-drawer-section" id="bwm-verse-mode-section" style="display: none;">
                             <div class="bwm-drawer-section-header">
                                 <h4>Verse Connections Mode</h4>
@@ -3232,6 +3247,16 @@ class BibleWordMap extends HTMLElement {
             });
         }
 
+        const viewModePills = this.querySelectorAll('#bwm-view-mode-filter .bwm-pill-btn');
+        viewModePills.forEach(btn => {
+            btn.addEventListener('click', () => {
+                let mode = btn.getAttribute('data-mode');
+                if (mode) {
+                    this.setViewMode(mode);
+                }
+            });
+        });
+
         const foundationPills = this.querySelectorAll('#bwm-foundation-filter .bwm-pill-btn');
         foundationPills.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -3598,32 +3623,35 @@ class BibleWordMap extends HTMLElement {
         let isVersesInit = (currentMode === 'verses' || view === 'verses' || Boolean(verses));
         let isBooksInit = !isVersesInit && (currentMode === 'books' || view === 'books' || Boolean(books));
 
-        const wordsBtn = document.getElementById('view-mode-words');
-        const booksBtn = document.getElementById('view-mode-books');
-        const versesBtn = document.getElementById('view-mode-verses');
+        const wordsBtn = this.querySelector('#view-mode-words') || document.getElementById('view-mode-words');
+        const booksBtn = this.querySelector('#view-mode-books') || document.getElementById('view-mode-books');
+        const versesBtn = this.querySelector('#view-mode-verses') || document.getElementById('view-mode-verses');
 
         if (isVersesInit) {
-            if (wordsBtn && booksBtn && versesBtn) {
-                wordsBtn.classList.remove('active');
-                booksBtn.classList.remove('active');
-                versesBtn.classList.add('active');
-            }
+            if (wordsBtn) wordsBtn.classList.remove('active');
+            if (booksBtn) booksBtn.classList.remove('active');
+            if (versesBtn) versesBtn.classList.add('active');
             this.viewMode = 'verses';
+            if (this.verseModeSection) this.verseModeSection.style.display = 'block';
+            let activeHeading = this.querySelector('#bwm-active-heading');
+            if (activeHeading) activeHeading.textContent = 'Active Verses';
             this.showLoading('Loading Biblical Verses & Cross-References...', 'verses');
         } else if (isBooksInit) {
-            if (wordsBtn && booksBtn && versesBtn) {
-                wordsBtn.classList.remove('active');
-                booksBtn.classList.add('active');
-                versesBtn.classList.remove('active');
-            }
+            if (wordsBtn) wordsBtn.classList.remove('active');
+            if (booksBtn) booksBtn.classList.add('active');
+            if (versesBtn) versesBtn.classList.remove('active');
             this.viewMode = 'books';
+            if (this.verseModeSection) this.verseModeSection.style.display = 'none';
+            let activeHeading = this.querySelector('#bwm-active-heading');
+            if (activeHeading) activeHeading.textContent = 'Active Books';
             this.showLoading('Loading Biblical Books & Themes...', 'books');
         } else {
-            if (wordsBtn && booksBtn && versesBtn) {
-                wordsBtn.classList.add('active');
-                booksBtn.classList.remove('active');
-                versesBtn.classList.remove('active');
-            }
+            if (wordsBtn) wordsBtn.classList.add('active');
+            if (booksBtn) booksBtn.classList.remove('active');
+            if (versesBtn) versesBtn.classList.remove('active');
+            if (this.verseModeSection) this.verseModeSection.style.display = 'none';
+            let activeHeading = this.querySelector('#bwm-active-heading');
+            if (activeHeading) activeHeading.textContent = 'Active Words';
             this.showLoading('Loading Bible Word Map...', 'words');
         }
 
@@ -5556,15 +5584,13 @@ class BibleWordMap extends HTMLElement {
 
         this.viewMode = mode;
 
-        // Keep header pills in sync with viewMode
-        const wordsBtn = document.getElementById('view-mode-words');
-        const booksBtn = document.getElementById('view-mode-books');
-        const versesBtn = document.getElementById('view-mode-verses');
-        if (wordsBtn && booksBtn && versesBtn) {
-            wordsBtn.classList.toggle('active', mode === 'words');
-            booksBtn.classList.toggle('active', mode === 'books');
-            versesBtn.classList.toggle('active', mode === 'verses');
-        }
+        // Keep view mode pills in sync with viewMode
+        const wordsBtn = this.querySelector('#view-mode-words') || document.getElementById('view-mode-words');
+        const booksBtn = this.querySelector('#view-mode-books') || document.getElementById('view-mode-books');
+        const versesBtn = this.querySelector('#view-mode-verses') || document.getElementById('view-mode-verses');
+        if (wordsBtn) wordsBtn.classList.toggle('active', mode === 'words');
+        if (booksBtn) booksBtn.classList.toggle('active', mode === 'books');
+        if (versesBtn) versesBtn.classList.toggle('active', mode === 'verses');
 
         this.hideRadialMenu();
         this.hideVersesPanel();
