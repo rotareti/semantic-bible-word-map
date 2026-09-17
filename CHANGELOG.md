@@ -1,5 +1,21 @@
 # Changelog
 
+## [9.2.0] - 2026-09-16
+### Added
+- **Multi-Word Phrase Centroid Search:** Entering 2 or more words in the search bar dynamically computes the vector centroid across 100D semantic embeddings and suggests the closest 5 biblical verses in real time with cosine similarity percentages and full citations.
+- **Universal English Centroid Projection:** Centroid calculation automatically projects against the Berean Standard Bible (BSB) semantic map regardless of whether the user is viewing BSB, LXX, or VUL, labeling suggestions with `(BSB)` and automatically switching to the English canon upon selection.
+- **Search Bar Loading Spinner:** Added a responsive CSS loading spinner inside the search input wrapper providing visual feedback during asynchronous centroid computation.
+- **Expandable Verse Snippets in Study Panels:** Added an interactive dropdown chevron button (`▼`/`▲`) on verse cards across Words and Verses study panels, allowing users to expand and read complete verse passages inline and collapse back without losing map position.
+- **Unified Segmented Pill Toggles Across Verses & Books:** Extended the standardized segmented pill toggle design (`[ − | + ]`) to verse cards, cross-reference rows, Book Inspector headers, and sibling book chips.
+- **Canon-Preserving Title Reset:** Clicking "Semantic Bible" in the header smoothly returns to the word view landscape with all keywords cleared, while preserving the user's active canon selection (BSB, LXX, or VUL).
+
+### Changed
+- **Relocated View Mode into Options Panel:** Moved the "Words, Verses, Books" view mode toggle from the top header into the Options panel, positioned under Active Words and above Semantic Foundation as a unified segmented pill toggle.
+- **Streamlined Minimal Header:** Cleaned up the main page header to display a centered title and version tag without clutter or mobile viewport overflow.
+- **Segmented Testament Filter (4 Options):** Converted the Testament Filter in the Options panel to a 4-option segmented pill toggle (`All`, `Old`, `New`, `Both`).
+- **Compact Verse Connections Toggle:** Converted the Verse Connections Mode in the Options panel to a compact segmented pill toggle (`🔗 References`, `✦ Words`).
+- **Search Suggestion Focus Management:** Automatically closes the search recovery/suggestions dropdown when the Options panel hamburger button is clicked.
+
 ## [9.1.0] - 2026-09-15
 ### Added
 - **Fullscreen Particle Loading Animation:** Expanded the initial loading animation to fill the entire map container with a responsive dynamic constellation of floating semantic particles and connective pulses.
