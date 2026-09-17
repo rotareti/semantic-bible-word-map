@@ -3956,14 +3956,16 @@ class BibleWordMap extends HTMLElement {
     }
 
     cosineSimilarity(a, b) {
+        if (!Array.isArray(a) || !Array.isArray(b) || a.length === 0 || a.length !== b.length) return 0;
         let dot = 0, normA = 0, normB = 0;
         for (let i = 0; i < a.length; i++) {
             dot += a[i] * b[i];
             normA += a[i] * a[i];
             normB += b[i] * b[i];
         }
-        if (normA === 0 || normB === 0) return 0;
-        return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+        if (normA === 0 || normB === 0 || isNaN(dot)) return 0;
+        let res = dot / (Math.sqrt(normA) * Math.sqrt(normB));
+        return (isNaN(res) || !isFinite(res)) ? 0 : res;
     }
 
     getBookVerses(wordId, bookCode) {
@@ -7645,6 +7647,7 @@ class BibleWordMap extends HTMLElement {
             if (this.similarityLabelsMode === 'all') {
                 this.links.forEach(l => {
                     if (!l.source || !l.target || l.source.x === undefined || l.target.x === undefined) return;
+                    if (l.type === 'verse-word') return;
                     let matchSource = this.matchesTestament(l.source.t || l.source.testament);
                     let matchTarget = this.matchesTestament(l.target.t || l.target.testament);
                     if (!matchSource || !matchTarget) return;
@@ -7654,13 +7657,14 @@ class BibleWordMap extends HTMLElement {
                 let hoveredIsKey = this.isKeyNode(this.hoveredNode);
                 this.links.forEach(l => {
                     if (!l.source || !l.target || l.source.x === undefined || l.target.x === undefined) return;
+                    if (l.type === 'verse-word') return;
                     let matchSource = this.matchesTestament(l.source.t || l.source.testament);
                     let matchTarget = this.matchesTestament(l.target.t || l.target.testament);
                     if (!matchSource || !matchTarget) return;
                     if (l.source === this.hoveredNode || l.target === this.hoveredNode) {
                         if (hoveredIsKey) {
                             let other = (l.source === this.hoveredNode) ? l.target : l.source;
-                            if (this.isKeyNode(other) || l.type === 'kw-kw' || l.type === 'book-book') {
+                            if (this.isKeyNode(other) || l.type === 'kw-kw' || l.type === 'book-book' || l.type === 'verse-crossref') {
                                 linksToLabel.add(l);
                             }
                         } else {
@@ -7672,13 +7676,14 @@ class BibleWordMap extends HTMLElement {
 
             linksToLabel.forEach(l => {
                 if (!l.source || !l.target || l.source.x === undefined || l.target.x === undefined) return;
+                if (l.type === 'verse-word') return;
                 let sNode = (typeof l.source === 'object' && l.source !== null) ? l.source : (this.nodes ? this.nodes.find(n => n.id === l.source) : null);
                 let tNode = (typeof l.target === 'object' && l.target !== null) ? l.target : (this.nodes ? this.nodes.find(n => n.id === l.target) : null);
-                let sVec = sNode ? (sNode.v || (this.data2d ? (this.data2d.find(d => d.id === sNode.id) || {}).v : null)) : null;
-                let tVec = tNode ? (tNode.v || (this.data2d ? (this.data2d.find(d => d.id === tNode.id) || {}).v : null)) : null;
+                let sVec = (sNode && Array.isArray(sNode.v)) ? sNode.v : (this.data2d ? ((this.data2d.find(d => d.id === (sNode ? sNode.id : l.source)) || {}).v) : null);
+                let tVec = (tNode && Array.isArray(tNode.v)) ? tNode.v : (this.data2d ? ((this.data2d.find(d => d.id === (tNode ? tNode.id : l.target)) || {}).v) : null);
 
                 let sim = 0;
-                if (sVec && tVec) {
+                if (Array.isArray(sVec) && Array.isArray(tVec)) {
                     sim = this.cosineSimilarity(sVec, tVec);
                 } else if (typeof l.sim === 'number' && l.sim > 0) {
                     sim = l.sim;
@@ -7687,7 +7692,7 @@ class BibleWordMap extends HTMLElement {
                 } else if (tNode && typeof tNode.sim === 'number' && tNode.sim > 0) {
                     sim = tNode.sim;
                 }
-                if (sim <= 0 || sim >= 0.9999) return;
+                if (!sim || isNaN(sim) || !isFinite(sim) || sim <= 0 || sim >= 0.9999) return;
 
                 let dx = l.target.x - l.source.x;
                 let dy = l.target.y - l.source.y;

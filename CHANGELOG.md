@@ -1,5 +1,20 @@
 # Changelog
 
+## [9.2.1] - 2026-09-17
+### Added
+- **Complete English Translations for Septuagint (LXX) Verses:** Fully integrated Brenton Septuagint English translations for all Old Testament verses and Berean Standard Bible English translations for all New Testament verses across all 36,802 Septuagint verses, paired directly with original Septuagint Greek text.
+- **English with Expandable Greek in LXX Study Panel:** All verse cards in the Study Panel Verses tab for the Septuagint now show English translations by default, with original Greek text expandable inline underneath (matching the Clementine Vulgate behavior).
+- **Dual English Translation & Original Language Box in Verses View:** Verses View now displays the English translation at the top with a dedicated toggleable original language box underneath (Septuagint / Greek NT or Clementine Latin Vulgate), active by default.
+- **Responsive Map Text Size Pill Toggle:** Added a 3-way segmented pill toggle (`Small`, `Medium`, `Large`) in the Options drawer allowing users to scale text labels and percentage bubbles on the map, with responsive defaults (`Medium` on desktop, `Small` on mobile).
+- **Optimal Dimensionality & Linguistic Topology Studies:** Published comprehensive empirical research reports in `docs/` detailing the mathematical validation of 100D semantic vector spaces (`06-optimal-dimensionality-study.md`), 2nd-person pronoun topological clustering (`01-pronoun-topology-faith.md`), and hapax legomena distribution across canons (`02-hapax-legomena-analysis.md`).
+
+### Fixed
+- **Multi-Keyword Link Similarity Calculation:** Fixed a bug where neighbor nodes connected to multiple keywords copied identical maximum similarity percentages across all connecting lines. Lines now compute and display distinct, accurate pairwise cosine similarity to each connected keyword, perfectly matching the Study Panel badges.
+- **Removed Irrelevant Similarity Percentages on Constituent Word Links in Verses Mode:** Excluded `verse-word` links in Verses View Word Mode from displaying similarity percentages, as constituent word connections represent lexical membership rather than vector similarity.
+- **Eliminated `NaN%` Percentage Labels:** Hardened `cosineSimilarity` to validate array inputs and dimension matching, and safeguarded canvas link label rendering to prevent `NaN` or non-numeric values from ever rendering on the canvas.
+- **Mobile Drawer Viewport Constraint:** Constrained the maximum height of all mobile bottom sheets (`min(72vh, calc(100% - var(--bwm-top-bar-height, 52px) - 14px))`) to ensure mobile drawers and cards never overflow upward into the top search bar.
+- **Asset Cache Busting (`v=9.2.1`):** Bumped cache-buster query parameter to `?v=9.2.1` across all HTML links and runtime data fetch requests, ensuring browsers immediately invalidate stale cached data indices.
+
 ## [9.2.0] - 2026-09-16
 ### Added
 - **Multi-Word Phrase Centroid Search:** Entering 2 or more words in the search bar dynamically computes the vector centroid across 100D semantic embeddings and suggests the closest 5 biblical verses in real time with cosine similarity percentages and full citations.
