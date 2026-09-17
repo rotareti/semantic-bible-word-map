@@ -538,8 +538,10 @@ class BibleWordMap extends HTMLElement {
         this.viewMode = 'words';
         this.testamentFilter = 'all';
         this.similarityLabelsMode = 'hover'; // 'off' | 'hover' | 'all'
-        this.mapTextSize = 'small'; // 'small' | 'medium' | 'large'
-        this.mapTextScale = 1.0;
+        const isMobileScreen = (typeof window !== 'undefined' && window.innerWidth <= 768);
+        this.mapTextSize = isMobileScreen ? 'small' : 'medium'; // 'small' | 'medium' | 'large'
+        this.mapTextScale = isMobileScreen ? 1.0 : 1.3;
+        this._userSelectedTextSize = false;
         this.isSearchMode = false;
         this.searchedWords = [];
         this.nodes = [];
@@ -2466,14 +2468,14 @@ class BibleWordMap extends HTMLElement {
                         right: 0 !important;
                         width: 100% !important;
                         max-width: 100% !important;
-                        max-height: min(78vh, calc(100% - 16px)) !important;
+                        max-height: min(72vh, calc(100% - var(--bwm-top-bar-height, 52px) - 14px)) !important;
                         height: auto !important;
                         border-radius: 16px 16px 0 0 !important;
                         border-top: 1px solid var(--bwm-border) !important;
                         border-bottom: none !important;
                         border-left: none !important;
                         border-right: none !important;
-                        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35) !important;
+                        box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.25) !important;
                         background-color: rgba(255, 255, 255, 0.95) !important;
                         background-color: color-mix(in srgb, var(--bwm-bg) 95%, transparent) !important;
                         backdrop-filter: blur(16px) !important;
@@ -2850,9 +2852,9 @@ class BibleWordMap extends HTMLElement {
                                 <h4>Map Text Size</h4>
                             </div>
                             <div class="bwm-pill-group" id="bwm-text-size-filter">
-                                <button type="button" class="bwm-pill-btn active" data-text-size="small" title="Default font size">Small</button>
-                                <button type="button" class="bwm-pill-btn" data-text-size="medium" title="Medium font size (+30%)">Medium</button>
-                                <button type="button" class="bwm-pill-btn" data-text-size="large" title="Large font size (+60%)">Large</button>
+                                <button type="button" class="bwm-pill-btn ${this.mapTextSize === 'small' ? 'active' : ''}" data-text-size="small" title="Default on mobile">Small</button>
+                                <button type="button" class="bwm-pill-btn ${this.mapTextSize === 'medium' ? 'active' : ''}" data-text-size="medium" title="Medium font size (default on desktop)">Medium</button>
+                                <button type="button" class="bwm-pill-btn ${this.mapTextSize === 'large' ? 'active' : ''}" data-text-size="large" title="Large font size (+60%)">Large</button>
                             </div>
                             <div class="bwm-drawer-hint">Scale words, percentages, and labels on the map canvas.</div>
                         </div>
@@ -3032,7 +3034,20 @@ class BibleWordMap extends HTMLElement {
         }
     }
 
-    setMapTextSize(size) {
+    updateTopBarHeight() {
+        if (!this.topBar) {
+            this.topBar = this.querySelector('.bwm-top-bar');
+        }
+        if (this.topBar) {
+            const h = Math.ceil(this.topBar.getBoundingClientRect().height || this.topBar.offsetHeight || 52);
+            this.style.setProperty('--bwm-top-bar-height', `${h}px`);
+        }
+    }
+
+    setMapTextSize(size, isUserAction = true) {
+        if (isUserAction) {
+            this._userSelectedTextSize = true;
+        }
         if (size === 'medium') {
             this.mapTextSize = 'medium';
             this.mapTextScale = 1.3;
@@ -3085,6 +3100,8 @@ class BibleWordMap extends HTMLElement {
         
         this.canvas = this.querySelector('canvas');
         this.ctx = this.canvas.getContext('2d');
+        this.topBar = this.querySelector('.bwm-top-bar');
+        this.updateTopBarHeight();
         this.tooltip = this.querySelector('.bwm-tooltip');
         this.loading = this.querySelector('.bwm-loading');
         this.loadingText = this.querySelector('#bwm-loading-text');
@@ -3338,7 +3355,7 @@ class BibleWordMap extends HTMLElement {
         textSizePills.forEach(btn => {
             btn.addEventListener('click', () => {
                 const size = btn.getAttribute('data-text-size') || 'small';
-                this.setMapTextSize(size);
+                this.setMapTextSize(size, true);
             });
         });
 
@@ -3584,6 +3601,14 @@ class BibleWordMap extends HTMLElement {
     }
 
     resize() {
+        this.updateTopBarHeight();
+        if (!this._userSelectedTextSize) {
+            const isMobile = window.innerWidth <= 768;
+            const targetSize = isMobile ? 'small' : 'medium';
+            if (this.mapTextSize !== targetSize) {
+                this.setMapTextSize(targetSize, false);
+            }
+        }
         if (window.innerWidth <= 768) {
             let hasActiveCard = (this.wordCard && this.wordCard.classList.contains('visible')) ||
                                 (this.bookCard && this.bookCard.classList.contains('visible')) ||
@@ -8467,7 +8492,7 @@ class BibleWordMap extends HTMLElement {
                 if (dy > 0) {
                     card.style.transform = `translateY(${dy}px)`;
                 } else {
-                    card.style.transform = `translateY(${dy * 0.2}px)`;
+                    card.style.transform = `translateY(${Math.max(-4, dy * 0.1)}px)`;
                 }
             }
         };
@@ -8552,7 +8577,7 @@ class BibleWordMap extends HTMLElement {
                 if (dy > 0) {
                     card.style.transform = `translateY(${dy}px)`;
                 } else {
-                    card.style.transform = `translateY(${dy * 0.2}px)`;
+                    card.style.transform = `translateY(${Math.max(-4, dy * 0.1)}px)`;
                 }
             };
 
@@ -8883,9 +8908,14 @@ class BibleWordMap extends HTMLElement {
             let parts = v.split('|');
             let ref = parts[0];
             let english = parts[1] || '';
-            let greek = parts[2] || '';
-            let isExpandable = english.length > 110 || Boolean(greek);
+            let origText = parts[2] || '';
+            if (!english.trim() && origText.trim()) {
+                english = origText;
+                origText = '';
+            }
+            let isExpandable = english.length > 110 || Boolean(origText);
             let snippet = english.length > 110 ? english.slice(0, 107) + '...' : english;
+            let origLabel = (this.foundation === 'vul') ? 'Latin Clementine Vulgate' : 'Septuagint / Greek NT';
             return `
                 <div class="bwm-verse-item" data-verse-id="${id}" style="margin: 4px 0; padding: 6px 0; border-bottom: 1px solid var(--bwm-border);">
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
@@ -8898,7 +8928,7 @@ class BibleWordMap extends HTMLElement {
                         </button>` : ''}
                     </div>
                     <div class="bwm-verse-item-english" data-snippet="${escapeHtml(snippet)}" data-full="${escapeHtml(english)}" style="font-size:0.85em; opacity:0.95; line-height:1.4; display:inline-block; margin-top:2px;">${snippet}</div>
-                    ${greek ? `<div class="bwm-verse-item-original" style="display:none;">${escapeHtml(greek)}</div>` : ''}
+                    ${origText ? `<div class="bwm-verse-item-original" style="display:none;"><span style="font-size:0.75em; opacity:0.6; text-transform:uppercase; letter-spacing:0.04em; display:block; margin-bottom:2px; font-family:var(--bwm-font);">${origLabel}</span>${escapeHtml(origText)}</div>` : ''}
                 </div>
             `;
         };
