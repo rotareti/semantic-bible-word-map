@@ -13,7 +13,26 @@
 <body>
     <header style="position: relative; z-index: 20000;">
         <div class="header-row">
-            <h1><span class="header-title-text" id="header-title-text" role="button" tabindex="0" title="Reset to word landscape">Semantic Bible</span> <span class="header-version">v9.2.1</span></h1>
+            <div class="header-left">
+                <a href="./" class="header-home-link" id="header-home-link" title="Reset to default map">
+                    <svg class="header-home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2.5 12L12 4.2l9.5 7.8"></path>
+                        <path d="M5.5 10V16"></path>
+                        <path d="M18.5 10V16"></path>
+                    </svg>
+                    <span class="header-title-text">Semantic Bible</span>
+                </a>
+                <span class="header-version">v9.2.1</span>
+            </div>
+            <div class="header-right">
+                <button type="button" class="header-share-btn" id="header-share-btn" title="Copy shortened URL to clipboard">
+                    <span class="header-share-text" id="header-share-text">Share</span>
+                    <svg class="header-share-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                    </svg>
+                </button>
+            </div>
         </div>
     </header>
     <main>
@@ -26,26 +45,85 @@
     <script>
         const mapEl = document.querySelector('bible-word-map');
 
-        // Title click: go back to word view with no keywords, holding current canon
-        const titleBtn = document.getElementById('header-title-text');
-        if (titleBtn) {
-            const handleTitleReset = () => {
-                if (mapEl && mapEl.hideLegendWindow) {
-                    mapEl.hideLegendWindow();
+        // Home link click: reset to clean default map with no URL parameters
+        const homeLink = document.getElementById('header-home-link');
+        if (homeLink) {
+            const handleHomeReset = (e) => {
+                e.preventDefault();
+                if (window.history && window.history.replaceState) {
+                    window.history.replaceState(null, '', window.location.pathname);
                 }
-                if (mapEl && mapEl.resetToWordView) {
-                    mapEl.resetToWordView();
-                } else if (mapEl && mapEl.setViewMode) {
-                    mapEl.setViewMode('words', true);
-                } else if (mapEl && mapEl.clearAllKeywords) {
-                    mapEl.clearAllKeywords();
+                if (mapEl) {
+                    if (mapEl.hideLegendWindow) mapEl.hideLegendWindow();
+                    if (mapEl.hideRadialMenu) mapEl.hideRadialMenu();
+                    if (mapEl.hideVersesPanel) mapEl.hideVersesPanel();
+                    if (mapEl.hideCanonUsageModal) mapEl.hideCanonUsageModal();
+                    if (mapEl.hideVerseCard) mapEl.hideVerseCard();
+                    if (mapEl.hideWordInspector) mapEl.hideWordInspector();
+                    if (mapEl.hideBookCard) mapEl.hideBookCard();
+                    mapEl.searchedWords = [];
+                    mapEl.drawerWords = [];
+                    mapEl.searchedBooks = [];
+                    mapEl.drawerBooks = [];
+                    mapEl.searchedVerses = [];
+                    mapEl.drawerVerses = [];
+                    mapEl.selectedVerse = null;
+                    mapEl.selectedBook = null;
+                    mapEl.isSearchMode = false;
+                    if (mapEl.searchInput) mapEl.searchInput.value = '';
+                    if (mapEl.updateClearBtnVisibility) mapEl.updateClearBtnVisibility();
+                    if (mapEl.renderActiveWords) mapEl.renderActiveWords();
+
+                    if (mapEl.foundation !== 'bsb') {
+                        mapEl.setSemanticFoundation('bsb', true);
+                    } else if (mapEl.viewMode !== 'words') {
+                        mapEl.setViewMode('words', true);
+                    } else {
+                        mapEl.buildAllWordsGraph();
+                    }
+                    mapEl.updateUrl({});
                 }
             };
-            titleBtn.addEventListener('click', handleTitleReset);
-            titleBtn.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleTitleReset();
+            homeLink.addEventListener('click', handleHomeReset);
+        }
+
+        // Share button: copy current clean URL to clipboard
+        const shareBtn = document.getElementById('header-share-btn');
+        const shareText = document.getElementById('header-share-text');
+        if (shareBtn) {
+            const fallbackCopy = (text, cb) => {
+                try {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.position = 'fixed';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.focus();
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    if (cb) cb();
+                } catch (e) {}
+            };
+            shareBtn.addEventListener('click', () => {
+                const shareUrl = window.location.href;
+                const copySuccess = () => {
+                    if (shareText) {
+                        const orig = shareText.textContent;
+                        shareText.textContent = 'Copied!';
+                        shareBtn.classList.add('copied');
+                        setTimeout(() => {
+                            shareText.textContent = orig;
+                            shareBtn.classList.remove('copied');
+                        }, 2000);
+                    }
+                };
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(shareUrl).then(copySuccess).catch(() => {
+                        fallbackCopy(shareUrl, copySuccess);
+                    });
+                } else {
+                    fallbackCopy(shareUrl, copySuccess);
                 }
             });
         }

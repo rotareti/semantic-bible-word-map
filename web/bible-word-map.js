@@ -2767,21 +2767,12 @@ class BibleWordMap extends HTMLElement {
                         <div class="bwm-drawer-close" id="bwm-drawer-close">&times;</div>
                     </div>
                     <div class="bwm-drawer-content">
-                        <div class="bwm-drawer-action-row" style="display: flex; gap: 8px; margin-bottom: 20px;">
-                            <button type="button" class="bwm-drawer-legend-btn" id="bwm-drawer-legend-btn" title="Open Map Guide &amp; Legend" style="margin-bottom: 0; flex: 1; padding: 10px 12px; font-size: 0.88em;">
-                                <span>Show Legend</span>
-                                <svg class="bwm-chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
-                                    <polyline points="9 18 15 12 9 6"></polyline>
-                                </svg>
-                            </button>
-                            <button type="button" class="bwm-drawer-legend-btn" id="bwm-drawer-share-btn" title="Copy shortened URL to clipboard" style="margin-bottom: 0; flex: 1; padding: 10px 12px; font-size: 0.88em;">
-                                <span id="bwm-drawer-share-text">Share Link</span>
-                                <svg class="bwm-share-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
-                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                                </svg>
-                            </button>
-                        </div>
+                        <button type="button" class="bwm-drawer-legend-btn" id="bwm-drawer-legend-btn" title="Open Map Guide &amp; Legend">
+                            <span>Show Legend</span>
+                            <svg class="bwm-chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </button>
                         <div class="bwm-drawer-section">
                             <div class="bwm-drawer-section-header">
                                 <h4 id="bwm-active-heading">Active Words</h4>
@@ -3561,37 +3552,11 @@ class BibleWordMap extends HTMLElement {
         this.legendBackBtn = this.querySelector('#bwm-legend-back-btn');
         this.legendCloseBtn = this.querySelector('#bwm-legend-close-btn');
         this.drawerLegendBtn = this.querySelector('#bwm-drawer-legend-btn');
-        this.drawerShareBtn = this.querySelector('#bwm-drawer-share-btn');
-        this.drawerShareText = this.querySelector('#bwm-drawer-share-text');
 
         if (this.drawerLegendBtn) {
             this.drawerLegendBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.showLegendWindow();
-            });
-        }
-        if (this.drawerShareBtn) {
-            this.drawerShareBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const shareUrl = window.location.href;
-                const copySuccess = () => {
-                    if (this.drawerShareText) {
-                        const origText = this.drawerShareText.textContent;
-                        this.drawerShareText.textContent = 'Copied!';
-                        this.drawerShareBtn.classList.add('copied');
-                        setTimeout(() => {
-                            this.drawerShareText.textContent = origText;
-                            this.drawerShareBtn.classList.remove('copied');
-                        }, 2000);
-                    }
-                };
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(shareUrl).then(copySuccess).catch(() => {
-                        this.fallbackCopyText(shareUrl, copySuccess);
-                    });
-                } else {
-                    this.fallbackCopyText(shareUrl, copySuccess);
-                }
             });
         }
         if (this.legendBackBtn) {
