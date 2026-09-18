@@ -1357,16 +1357,16 @@ class BibleWordMap extends HTMLElement {
                 }
                 .bwm-loading.bwm-loading-collapsing {
                     pointer-events: none !important;
-                    background-color: transparent !important;
+                    opacity: 0 !important;
                     backdrop-filter: none !important;
                     -webkit-backdrop-filter: none !important;
-                    transition: background-color 700ms ease-out, opacity var(--bwm-collapse-dur, 1200ms) cubic-bezier(0.4, 0, 1, 1) !important;
+                    transition: opacity var(--bwm-collapse-dur, 950ms) cubic-bezier(0.25, 0.1, 0.25, 1) !important;
                 }
                 .bwm-loading.bwm-loading-collapsing .bwm-loading-status,
                 .bwm-loading.bwm-loading-collapsing .bwm-loading-tip {
                     opacity: 0 !important;
                     transform: scale(0.92) !important;
-                    transition: opacity 0.22s ease, transform 0.22s ease !important;
+                    transition: opacity 0.18s ease, transform 0.18s ease !important;
                     pointer-events: none !important;
                 }
                 .bwm-loading-visual {
@@ -5101,8 +5101,8 @@ class BibleWordMap extends HTMLElement {
             return;
         }
 
-        // Fast load (< 2000ms): smooth collapse transition over 1.2s to prevent abrasive flash
-        const collapseDur = 1200;
+        // Fast load (< 2000ms): smooth collapse transition over 950ms to prevent abrasive flash
+        const collapseDur = 950;
         this.loading.style.setProperty('--bwm-collapse-dur', `${collapseDur}ms`);
         this.loading.classList.remove('bwm-loading-fadeout');
         this.loading.classList.add('bwm-loading-collapsing');
@@ -10234,15 +10234,30 @@ class BibleWordMap extends HTMLElement {
 
         let isCollapsing = false;
         let collapseStartTime = 0;
-        let collapseDuration = 1200;
+        let collapseDuration = 950;
         let collapseCallback = null;
+        let collapseParticles = null;
 
-        this._triggerParticleCollapse = (duration = 1200, onComplete) => {
+        const getScreenPos = (node) => {
+            if (!node || typeof node.x !== 'number' || typeof node.y !== 'number') return null;
+            if (this.transform) {
+                const k = this.transform.k || 1;
+                const tx = this.transform.x || 0;
+                const ty = this.transform.y || 0;
+                const sx = (typeof this.transform.applyX === 'function') ? this.transform.applyX(node.x) : (node.x * k + tx);
+                const sy = (typeof this.transform.applyY === 'function') ? this.transform.applyY(node.y) : (node.y * k + ty);
+                if (Number.isFinite(sx) && Number.isFinite(sy)) return { x: sx, y: sy };
+            }
+            return { x: node.x, y: node.y };
+        };
+
+        this._triggerParticleCollapse = (duration = 950, onComplete) => {
             if (isCollapsing) return;
             isCollapsing = true;
             collapseStartTime = performance.now();
             collapseDuration = duration;
             collapseCallback = onComplete;
+            collapseParticles = null;
             if (this.loadingTip) this.loadingTip.classList.remove('visible');
         };
         
@@ -10270,51 +10285,60 @@ class BibleWordMap extends HTMLElement {
             ctx.clearRect(0, 0, width, height);
 
             if (isCollapsing) {
+                if (!collapseParticles) {
+                    // Identify keyword centers (word mode keywords, book centers, or verse centers)
+                    const kwNodes = (this.nodes || []).filter(n => n && (n.isKw || n.isTargetBook || n.isTargetVerse || n.isVerseCenter));
+                    collapseParticles = particles.map((p, idx) => {
+                        let targetNode = null;
+                        if (kwNodes.length > 0) {
+                            let bestDistSq = Infinity;
+                            for (let kn of kwNodes) {
+                                const pos = getScreenPos(kn);
+                                if (pos) {
+                                    const dx = p.x - pos.x;
+                                    const dy = p.y - pos.y;
+                                    const dSq = dx * dx + dy * dy;
+                                    if (dSq < bestDistSq) {
+                                        bestDistSq = dSq;
+                                        targetNode = kn;
+                                    }
+                                }
+                            }
+                            if (!targetNode) targetNode = kwNodes[idx % kwNodes.length];
+                        }
+                        return {
+                            p,
+                            startX: p.x,
+                            startY: p.y,
+                            targetNode
+                        };
+                    });
+                }
+
                 const progress = Math.min(1, (now - collapseStartTime) / collapseDuration);
-                // Halo contraction curve: stays wide initially, then smoothly accelerates inwards toward center
-                const easeR = Math.max(0, 1 - Math.pow(progress, 1.5));
-                // Smooth orbital spin: ~1.2 graceful revolutions during the contraction
-                const spin = progress * Math.PI * 2.4;
+                // Smooth cubic ease-out deceleration towards keyword centers
+                const ease = 1 - Math.pow(1 - progress, 3);
+                // Simultaneously fade out particles as they converge
+                const alpha = Math.max(0, 1 - progress);
 
-                const curRx = Math.min(width * 0.30, 220) * easeR;
-                const curRy = Math.min(height * 0.22, 110) * easeR;
+                // Drop connecting lines: zero lines rendered during exit transition
 
-                for (let i = 0; i < particles.length; i++) {
-                    const p = particles[i];
-                    const targetAngle = (i / particles.length) * Math.PI * 2 + spin;
-                    const targetX = cx + Math.cos(targetAngle) * curRx;
-                    const targetY = cy + Math.sin(targetAngle) * curRy;
-                    // Ease gently toward the contracting halo ring
-                    const followSpeed = 0.08 + progress * 0.12;
-                    p.x += (targetX - p.x) * followSpeed;
-                    p.y += (targetY - p.y) * followSpeed;
-                }
-
-                // Draw the glowing halo ring connecting all particles in a single closed polygon path (O(N))
-                const ringAlpha = Math.max(0, (1 - Math.pow(progress, 1.4)) * 0.35);
-                if (ringAlpha > 0.01 && particles.length > 2) {
-                    ctx.beginPath();
-                    for (let i = 0; i < particles.length; i++) {
-                        const p = particles[i];
-                        if (i === 0) ctx.moveTo(p.x, p.y);
-                        else ctx.lineTo(p.x, p.y);
+                ctx.globalAlpha = alpha;
+                for (let item of collapseParticles) {
+                    let tx = cx;
+                    let ty = cy;
+                    if (item.targetNode) {
+                        const pos = getScreenPos(item.targetNode);
+                        if (pos) {
+                            tx = pos.x;
+                            ty = pos.y;
+                        }
                     }
-                    ctx.closePath();
-                    ctx.strokeStyle = `rgba(150, 150, 150, ${ringAlpha})`;
-                    ctx.lineWidth = 1.2;
-                    ctx.stroke();
-                }
-
-                // Draw particles: remain 100% solid & vibrant for the first 65% of the contraction,
-                // and only gently dissolve as they converge into the central point
-                const particleAlpha = progress < 0.65 ? 1.0 : Math.max(0, 1 - (progress - 0.65) / 0.35);
-                ctx.globalAlpha = particleAlpha;
-                for (let i = 0; i < particles.length; i++) {
-                    const p = particles[i];
-                    ctx.fillStyle = p.color;
+                    const curX = item.startX + (tx - item.startX) * ease;
+                    const curY = item.startY + (ty - item.startY) * ease;
+                    ctx.fillStyle = item.p.color;
                     ctx.beginPath();
-                    const r = Math.max(0.8, p.radius * (1 - progress * 0.35));
-                    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+                    ctx.arc(curX, curY, item.p.radius, 0, Math.PI * 2);
                     ctx.fill();
                 }
                 ctx.globalAlpha = 1.0;
