@@ -1358,17 +1358,15 @@ class BibleWordMap extends HTMLElement {
                 .bwm-loading.bwm-loading-collapsing {
                     pointer-events: none !important;
                     background-color: transparent !important;
-                    backdrop-filter: blur(0px) !important;
-                    -webkit-backdrop-filter: blur(0px) !important;
-                    transition: background-color var(--bwm-collapse-dur, 1200ms) cubic-bezier(0.16, 1, 0.3, 1),
-                                backdrop-filter var(--bwm-collapse-dur, 1200ms) cubic-bezier(0.16, 1, 0.3, 1),
-                                -webkit-backdrop-filter var(--bwm-collapse-dur, 1200ms) cubic-bezier(0.16, 1, 0.3, 1) !important;
+                    backdrop-filter: none !important;
+                    -webkit-backdrop-filter: none !important;
+                    transition: background-color 700ms ease-out, opacity var(--bwm-collapse-dur, 1200ms) cubic-bezier(0.4, 0, 1, 1) !important;
                 }
                 .bwm-loading.bwm-loading-collapsing .bwm-loading-status,
                 .bwm-loading.bwm-loading-collapsing .bwm-loading-tip {
                     opacity: 0 !important;
                     transform: scale(0.92) !important;
-                    transition: opacity 0.28s ease, transform 0.28s ease !important;
+                    transition: opacity 0.22s ease, transform 0.22s ease !important;
                     pointer-events: none !important;
                 }
                 .bwm-loading-visual {
@@ -10168,7 +10166,7 @@ class BibleWordMap extends HTMLElement {
         const colors = (isBooks || isVerses) ? booksColors : wordsColors;
         
         const area = width * height;
-        const numParticles = Math.min(100, Math.max(45, Math.floor(area / 11000)));
+        const numParticles = Math.min(42, Math.max(28, Math.floor(area / 24000)));
         const particles = [];
         
         for (let i = 0; i < numParticles; i++) {
@@ -10238,7 +10236,6 @@ class BibleWordMap extends HTMLElement {
         let collapseStartTime = 0;
         let collapseDuration = 1200;
         let collapseCallback = null;
-        let collapseParticles = null;
 
         this._triggerParticleCollapse = (duration = 1200, onComplete) => {
             if (isCollapsing) return;
@@ -10247,27 +10244,6 @@ class BibleWordMap extends HTMLElement {
             collapseDuration = duration;
             collapseCallback = onComplete;
             if (this.loadingTip) this.loadingTip.classList.remove('visible');
-
-            const dims = getDims();
-            const curCx = dims.w / 2;
-            const curCy = dims.h / 2;
-
-            collapseParticles = particles.map(p => {
-                const dx = p.x - curCx;
-                const dy = p.y - curCy;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                const angle = Math.atan2(dy, dx);
-                const swirlAngle = (Math.random() - 0.5) * Math.PI * 0.9;
-                return {
-                    p,
-                    startX: p.x,
-                    startY: p.y,
-                    startRadius: p.radius,
-                    initialDist: dist,
-                    initialAngle: angle,
-                    swirlAngle
-                };
-            });
         };
         
         const updateTipText = () => {
@@ -10295,60 +10271,53 @@ class BibleWordMap extends HTMLElement {
 
             if (isCollapsing) {
                 const progress = Math.min(1, (now - collapseStartTime) / collapseDuration);
-                // Harmonic easeInOutCubic for organic acceleration out of ambient drift into central coalescence
-                const easeInOut = progress < 0.5 
-                    ? 4 * progress * progress * progress 
-                    : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-                const rotEase = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+                // Halo contraction curve: stays wide initially, then smoothly accelerates inwards toward center
+                const easeR = Math.max(0, 1 - Math.pow(progress, 1.5));
+                // Smooth orbital spin: ~1.2 graceful revolutions during the contraction
+                const spin = progress * Math.PI * 2.4;
 
-                const curCx = width / 2;
-                const curCy = height / 2;
+                const curRx = Math.min(width * 0.30, 220) * easeR;
+                const curRy = Math.min(height * 0.22, 110) * easeR;
 
-                for (let item of collapseParticles) {
-                    const curDist = item.initialDist * (1 - easeInOut);
-                    const curAngle = item.initialAngle + item.swirlAngle * rotEase;
-                    item.p.x = curCx + Math.cos(curAngle) * curDist;
-                    item.p.y = curCy + Math.sin(curAngle) * curDist;
-                    item.p.currentAlpha = Math.max(0, 1 - Math.pow(progress, 1.8));
-                    item.p.currentRadius = Math.max(0.6, item.startRadius * (1 - progress * 0.45));
+                for (let i = 0; i < particles.length; i++) {
+                    const p = particles[i];
+                    const targetAngle = (i / particles.length) * Math.PI * 2 + spin;
+                    const targetX = cx + Math.cos(targetAngle) * curRx;
+                    const targetY = cy + Math.sin(targetAngle) * curRy;
+                    // Ease gently toward the contracting halo ring
+                    const followSpeed = 0.08 + progress * 0.12;
+                    p.x += (targetX - p.x) * followSpeed;
+                    p.y += (targetY - p.y) * followSpeed;
                 }
 
-                // Draw connecting lines with fading alpha
-                const baseDist = Math.min(110, Math.max(65, Math.min(width, height) * 0.13));
-                const maxDist = baseDist * (1 - easeInOut * 0.4);
-                ctx.lineWidth = 1;
-                const lineProgressAlpha = Math.max(0, (1 - Math.pow(progress, 1.2)) * 0.35);
-                if (lineProgressAlpha > 0.01) {
+                // Draw the glowing halo ring connecting all particles in a single closed polygon path (O(N))
+                const ringAlpha = Math.max(0, (1 - Math.pow(progress, 1.4)) * 0.35);
+                if (ringAlpha > 0.01 && particles.length > 2) {
+                    ctx.beginPath();
                     for (let i = 0; i < particles.length; i++) {
-                        for (let j = i + 1; j < particles.length; j++) {
-                            const p1 = particles[i];
-                            const p2 = particles[j];
-                            const dx = p1.x - p2.x;
-                            const dy = p1.y - p2.y;
-                            const dist = Math.sqrt(dx * dx + dy * dy);
-                            if (dist < maxDist) {
-                                const alpha = (1 - dist / maxDist) * lineProgressAlpha;
-                                ctx.strokeStyle = `rgba(150, 150, 150, ${alpha})`;
-                                ctx.beginPath();
-                                ctx.moveTo(p1.x, p1.y);
-                                ctx.lineTo(p2.x, p2.y);
-                                ctx.stroke();
-                            }
-                        }
+                        const p = particles[i];
+                        if (i === 0) ctx.moveTo(p.x, p.y);
+                        else ctx.lineTo(p.x, p.y);
                     }
+                    ctx.closePath();
+                    ctx.strokeStyle = `rgba(150, 150, 150, ${ringAlpha})`;
+                    ctx.lineWidth = 1.2;
+                    ctx.stroke();
                 }
 
-                // Draw collapsing particles with custom alpha
-                for (let item of collapseParticles) {
-                    const p = item.p;
-                    ctx.save();
-                    ctx.globalAlpha = p.currentAlpha !== undefined ? p.currentAlpha : 1;
+                // Draw particles: remain 100% solid & vibrant for the first 65% of the contraction,
+                // and only gently dissolve as they converge into the central point
+                const particleAlpha = progress < 0.65 ? 1.0 : Math.max(0, 1 - (progress - 0.65) / 0.35);
+                ctx.globalAlpha = particleAlpha;
+                for (let i = 0; i < particles.length; i++) {
+                    const p = particles[i];
                     ctx.fillStyle = p.color;
                     ctx.beginPath();
-                    ctx.arc(p.x, p.y, p.currentRadius || p.radius, 0, Math.PI * 2);
+                    const r = Math.max(0.8, p.radius * (1 - progress * 0.35));
+                    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
                     ctx.fill();
-                    ctx.restore();
                 }
+                ctx.globalAlpha = 1.0;
 
                 if (progress >= 1) {
                     if (collapseCallback) {
@@ -10452,26 +10421,30 @@ class BibleWordMap extends HTMLElement {
                 }
             }
             
-            // Draw connecting lines between close particles
-            const baseDist = Math.min(110, Math.max(65, Math.min(width, height) * 0.13));
+            // Draw connecting lines between close particles in a single batched pass
+            const baseDist = Math.min(100, Math.max(60, Math.min(width, height) * 0.12));
             const maxDist = (state === STATE_GRAVITATE || state === STATE_SHOW_TIP) ? baseDist * 0.75 : baseDist;
+            const maxDistSq = maxDist * maxDist;
             ctx.lineWidth = 1;
+            ctx.strokeStyle = 'rgba(150, 150, 150, 0.22)';
+            ctx.beginPath();
+            let hasLines = false;
             for (let i = 0; i < particles.length; i++) {
+                const p1 = particles[i];
                 for (let j = i + 1; j < particles.length; j++) {
-                    const p1 = particles[i];
                     const p2 = particles[j];
                     const dx = p1.x - p2.x;
                     const dy = p1.y - p2.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    if (dist < maxDist) {
-                        const alpha = (1 - dist / maxDist) * 0.32;
-                        ctx.strokeStyle = `rgba(150, 150, 150, ${alpha})`;
-                        ctx.beginPath();
+                    const distSq = dx * dx + dy * dy;
+                    if (distSq < maxDistSq) {
                         ctx.moveTo(p1.x, p1.y);
                         ctx.lineTo(p2.x, p2.y);
-                        ctx.stroke();
+                        hasLines = true;
                     }
                 }
+            }
+            if (hasLines) {
+                ctx.stroke();
             }
             
             // Draw particles
