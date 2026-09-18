@@ -5518,13 +5518,23 @@ class BibleWordMap extends HTMLElement {
         // Sort other nodes by similarity descending
         otherNodes.sort((a, b) => b.sim - a.sim);
         
-        // Let keywords freely float but gently pull them together and center them
-        kwNodes.forEach(n => {
-            n.x = (Math.random() - 0.5) * 20;
-            n.y = (Math.random() - 0.5) * 20;
-            delete n.fx;
-            delete n.fy;
-        });
+        // Freeze and stabilize keyword positions so incoming neighbors do not push them
+        if (kwNodes.length === 1) {
+            kwNodes[0].x = 0;
+            kwNodes[0].y = 0;
+            kwNodes[0].fx = 0;
+            kwNodes[0].fy = 0;
+        } else {
+            // Distribute multiple keywords symmetrically around center
+            kwNodes.forEach((n, idx) => {
+                const angle = (idx / kwNodes.length) * Math.PI * 2;
+                const r = 70;
+                n.x = Math.cos(angle) * r;
+                n.y = Math.sin(angle) * r;
+                delete n.fx;
+                delete n.fy;
+            });
+        }
         
         // Add kw-kw links based on true similarity
         for (let i = 0; i < kwNodes.length; i++) {
@@ -5553,17 +5563,29 @@ class BibleWordMap extends HTMLElement {
         
         this.simulation = d3.forceSimulation(this.nodes)
             .randomSource(LCG)
+            .velocityDecay(0.45)
             .force("link", d3.forceLink(this.links).id(d => d.id).distance(d => {
                 if (d.type === 'kw-kw') return Math.max(80, (1 - d.sim) * 400);
-                return d.type === 'direct' ? Math.max(30, (1 - d.sim) * 150) : Math.max(60, (1 - d.sim) * 250);
+                return d.type === 'direct' ? Math.max(35, (1 - d.sim) * 150) : Math.max(65, (1 - d.sim) * 250);
             }).strength(d => d.type === 'kw-kw' ? 1.5 : 0.6))
-            .force("charge", d3.forceManyBody().strength(-200))
-            .force("collide", d3.forceCollide().radius(d => d.isKw ? 25 : 12))
-            .force("center", d3.forceCenter(0, 0).strength(0.05))
+            .force("charge", d3.forceManyBody().strength(-180))
+            .force("collide", d3.forceCollide().radius(d => d.isKw ? 26 : 13))
+            .force("center", d3.forceCenter(0, 0).strength(0.04))
             .on("tick", () => {
                 this.updateDynamicZoom();
                 this.draw();
             });
+
+        // For multiple keywords, let them quickly relax to their mutual distance then pin them
+        if (kwNodes.length > 1) {
+            for (let i = 0; i < 40; i++) {
+                this.simulation.tick();
+            }
+            kwNodes.forEach(n => {
+                n.fx = n.x;
+                n.fy = n.y;
+            });
+        }
             
         this.pendingNodes = [];
         this.enqueueNodes(otherNodes);
@@ -5576,6 +5598,7 @@ class BibleWordMap extends HTMLElement {
         
         if (this.spawnInterval) return; // already running
         
+        this._spawnCounter = 0;
         let batchSize = 3;
         this.spawnInterval = setInterval(() => {
             if (this.pendingNodes.length === 0) {
@@ -5585,24 +5608,38 @@ class BibleWordMap extends HTMLElement {
             }
             
             let batch = this.pendingNodes.splice(0, batchSize);
+            const now = performance.now();
             
             batch.forEach(n => {
                 let cw = this.logicalWidth || 800;
                 let ch = this.logicalHeight || 600;
                 let sourceNode = this.nodes.find(node => node.id === n.sourceKw);
-                let startX = sourceNode ? sourceNode.x : this.transform.invertX(cw/2);
-                let startY = sourceNode ? sourceNode.y : this.transform.invertY(ch/2);
-                n.x = startX + (Math.random() - 0.5) * 12;
-                n.y = startY + (Math.random() - 0.5) * 12;
+                let startX = sourceNode ? sourceNode.x : 0;
+                let startY = sourceNode ? sourceNode.y : 0;
+                
+                // Golden spiral distribution (phyllotaxis: angle ≈ 137.508° / 2.399963 rad)
+                const angle = (this._spawnCounter || 0) * 2.399963;
+                this._spawnCounter = (this._spawnCounter || 0) + 1;
+                
+                // Pre-position near natural resting orbit outside keyword collision radius (26 + 13 = 39px)
+                const baseDist = (n.isBookWord || this.viewMode === 'books')
+                    ? Math.max(45, (1 - (n.sim || 0.8)) * 180)
+                    : Math.max(42, (1 - (n.sim || 0.8)) * 150);
+                
+                const dist = baseDist + (Math.random() - 0.5) * 8;
+                n.x = startX + Math.cos(angle) * dist;
+                n.y = startY + Math.sin(angle) * dist;
+                n.spawnTime = now;
                 this.nodes.push(n);
                 
-                let nodeLinks = this.allSearchLinks.filter(l => l.source === n.id);
+                let nodeLinks = this.allSearchLinks.filter(l => l.source === n.id || (typeof l.source === 'object' && l.source.id === n.id));
+                nodeLinks.forEach(l => { l.spawnTime = now; });
                 this.links.push(...nodeLinks);
             });
             
             this.simulation.nodes(this.nodes);
             this.simulation.force("link").links(this.links);
-            this.simulation.alpha(0.3).restart();
+            this.simulation.alpha(0.09).restart();
             
         }, 50); 
     }
@@ -6237,27 +6274,39 @@ class BibleWordMap extends HTMLElement {
             this.spawnInterval = null;
         }
 
-        let bookNodes = foundBooks.map(b => ({
-            id: b.code,
-            code: b.code,
-            name: b.name,
-            w: b.name,
-            testament: b.testament,
-            t: b.testament,
-            genre: b.genre,
-            order: b.order,
-            verses: b.verses,
-            total_words: b.total_words,
-            v: b.v,
-            isBook: true,
-            isPrimaryBook: true,
-            isKw: true,
-            top_words: b.top_words,
-            closest_words: b.closest_words,
-            nearest_books: b.nearest_books,
-            x: (Math.random() - 0.5) * 40,
-            y: (Math.random() - 0.5) * 40
-        }));
+        let bookNodes = foundBooks.map((b, idx) => {
+            let node = {
+                id: b.code,
+                code: b.code,
+                name: b.name,
+                w: b.name,
+                testament: b.testament,
+                t: b.testament,
+                genre: b.genre,
+                order: b.order,
+                verses: b.verses,
+                total_words: b.total_words,
+                v: b.v,
+                isBook: true,
+                isPrimaryBook: true,
+                isKw: true,
+                top_words: b.top_words,
+                closest_words: b.closest_words,
+                nearest_books: b.nearest_books,
+                x: 0,
+                y: 0
+            };
+            if (foundBooks.length === 1) {
+                node.fx = 0;
+                node.fy = 0;
+            } else {
+                const angle = (idx / foundBooks.length) * Math.PI * 2;
+                const r = 90;
+                node.x = Math.cos(angle) * r;
+                node.y = Math.sin(angle) * r;
+            }
+            return node;
+        });
 
         let bookLinks = [];
         for (let i = 0; i < bookNodes.length; i++) {
@@ -6373,18 +6422,29 @@ class BibleWordMap extends HTMLElement {
         const LCG = d3.randomLcg(42);
         this.simulation = d3.forceSimulation(this.nodes)
             .randomSource(LCG)
+            .velocityDecay(0.45)
             .force("link", d3.forceLink(this.links).id(d => d.id).distance(d => {
                 if (d.type === 'book-book') return Math.max(120, (1 - d.sim) * 500);
                 if (d.isDirect === false || d.type === 'indirect') return 80 + (1 - (d.sim || 0.8)) * 200;
                 return Math.max(35, (1 - (d.sim || 0.8)) * 180);
             }).strength(d => d.type === 'book-book' ? 1.5 : (d.isDirect ? 0.8 : 0.4)))
-            .force("charge", d3.forceManyBody().strength(d => d.isBook ? -400 : -65))
+            .force("charge", d3.forceManyBody().strength(d => d.isBook ? -380 : -60))
             .force("collide", d3.forceCollide().radius(d => d.isBook ? 36 : 14))
-            .force("center", d3.forceCenter(0, 0).strength(0.05))
+            .force("center", d3.forceCenter(0, 0).strength(0.04))
             .on("tick", () => {
                 this.updateDynamicZoom();
                 this.draw();
             });
+
+        if (bookNodes.length > 1) {
+            for (let i = 0; i < 40; i++) {
+                this.simulation.tick();
+            }
+            bookNodes.forEach(b => {
+                b.fx = b.x;
+                b.fy = b.y;
+            });
+        }
 
         this.pendingNodes = [];
         this.enqueueNodes(wordNodes);
@@ -7124,9 +7184,9 @@ class BibleWordMap extends HTMLElement {
         }
         if (!foundVerses || foundVerses.length === 0) return;
 
-        let primaryNodes = foundVerses.map(v => {
+        let primaryNodes = foundVerses.map((v, idx) => {
             let meta = parseVerseMeta(v);
-            return {
+            let node = {
                 id: v.id,
                 ref: v.id,
                 formattedRef: formatVerseRef(v.id),
@@ -7137,8 +7197,8 @@ class BibleWordMap extends HTMLElement {
                 genre: getVerseGenre(v.id),
                 testament: getVerseTestament(v.id),
                 t: getVerseTestament(v.id),
-                x: (Math.random() - 0.5) * 40,
-                y: (Math.random() - 0.5) * 40,
+                x: 0,
+                y: 0,
                 isVerse: true,
                 isFocusedVerse: true,
                 isKw: true,
@@ -7147,6 +7207,16 @@ class BibleWordMap extends HTMLElement {
                 r: v.r,
                 words: v.w
             };
+            if (foundVerses.length === 1) {
+                node.fx = 0;
+                node.fy = 0;
+            } else {
+                const angle = (idx / foundVerses.length) * Math.PI * 2;
+                const r = 80;
+                node.x = Math.cos(angle) * r;
+                node.y = Math.sin(angle) * r;
+            }
+            return node;
         });
 
         let primaryIds = new Set(primaryNodes.map(n => n.id));
@@ -7252,16 +7322,27 @@ class BibleWordMap extends HTMLElement {
             const LCG = d3.randomLcg(42);
             this.simulation = d3.forceSimulation(this.nodes)
                 .randomSource(LCG)
+                .velocityDecay(0.45)
                 .force("link", d3.forceLink(this.links).id(d => d.id).distance(d => {
                     return Math.max(65, (1 - (d.sim || 0.8)) * 320);
                 }).strength(0.85))
-                .force("charge", d3.forceManyBody().strength(d => d.isFocusedVerse ? -360 : -90))
+                .force("charge", d3.forceManyBody().strength(d => d.isFocusedVerse ? -360 : -85))
                 .force("collide", d3.forceCollide().radius(d => d.isFocusedVerse ? 30 : 18))
-                .force("center", d3.forceCenter(0, 0).strength(0.06))
+                .force("center", d3.forceCenter(0, 0).strength(0.04))
                 .on("tick", () => {
                     this.updateDynamicZoom();
                     this.draw();
                 });
+
+            if (primaryNodes.length > 1) {
+                for (let i = 0; i < 40; i++) {
+                    this.simulation.tick();
+                }
+                primaryNodes.forEach(p => {
+                    p.fx = p.x;
+                    p.fy = p.y;
+                });
+            }
         } else {
             // Words constellation view
             let wordMap = new Map();
@@ -7303,11 +7384,15 @@ class BibleWordMap extends HTMLElement {
                 });
             });
 
-            let wordNodes = Array.from(wordMap.values()).map(w => ({
-                ...w,
-                x: (Math.random() - 0.5) * 50,
-                y: (Math.random() - 0.5) * 50
-            }));
+            let wordNodes = Array.from(wordMap.values()).map((w, idx) => {
+                const angle = idx * 2.399963;
+                const r = 55 + (Math.random() - 0.5) * 6;
+                return {
+                    ...w,
+                    x: Math.cos(angle) * r,
+                    y: Math.sin(angle) * r
+                };
+            });
 
             this.nodes = [...primaryNodes, ...wordNodes];
             this.links = wordLinks;
@@ -7324,14 +7409,25 @@ class BibleWordMap extends HTMLElement {
             const LCG = d3.randomLcg(42);
             this.simulation = d3.forceSimulation(this.nodes)
                 .randomSource(LCG)
+                .velocityDecay(0.45)
                 .force("link", d3.forceLink(this.links).id(d => d.id).distance(55).strength(0.8))
                 .force("charge", d3.forceManyBody().strength(d => d.isFocusedVerse ? -380 : -50))
                 .force("collide", d3.forceCollide().radius(d => d.isFocusedVerse ? 30 : 14))
-                .force("center", d3.forceCenter(0, 0).strength(0.06))
+                .force("center", d3.forceCenter(0, 0).strength(0.04))
                 .on("tick", () => {
                     this.updateDynamicZoom();
                     this.draw();
                 });
+
+            if (primaryNodes.length > 1) {
+                for (let i = 0; i < 40; i++) {
+                    this.simulation.tick();
+                }
+                primaryNodes.forEach(p => {
+                    p.fx = p.x;
+                    p.fy = p.y;
+                });
+            }
         }
 
         this.showVerseCard(this.selectedVerse || foundVerses[0], foundVerses);
@@ -7869,6 +7965,13 @@ class BibleWordMap extends HTMLElement {
                 this.ctx.globalAlpha = Math.min(this.ctx.globalAlpha, 0.05);
             }
             
+            if (l.spawnTime) {
+                let linkAge = performance.now() - l.spawnTime;
+                if (linkAge < 250) {
+                    this.ctx.globalAlpha *= Math.min(1, Math.max(0.05, linkAge / 250));
+                }
+            }
+            
             let dx = l.target.x - l.source.x;
             let dy = l.target.y - l.source.y;
             let dist = Math.sqrt(dx*dx + dy*dy);
@@ -8060,6 +8163,13 @@ class BibleWordMap extends HTMLElement {
                 this.ctx.globalAlpha = Math.min(this.ctx.globalAlpha, 0.06);
             }
             
+            if (n.spawnTime) {
+                let nodeAge = performance.now() - n.spawnTime;
+                if (nodeAge < 250) {
+                    this.ctx.globalAlpha *= Math.min(1, Math.max(0.05, nodeAge / 250));
+                }
+            }
+            
             let drawR = n.canvasR;
             if (isHighlighted) {
                 drawR = n.canvasR * (n.isBook ? 1.2 : (n.isVerse ? 1.25 : 1.4));
@@ -8093,7 +8203,14 @@ class BibleWordMap extends HTMLElement {
                 this.ctx.stroke();
             }
             
-            this.ctx.globalAlpha = 1.0;
+            let labelAlpha = 1.0;
+            if (n.spawnTime) {
+                let nodeAge = performance.now() - n.spawnTime;
+                if (nodeAge < 250) {
+                    labelAlpha = Math.min(1, Math.max(0.05, nodeAge / 250));
+                }
+            }
+            this.ctx.globalAlpha = labelAlpha;
             
             let showLabel = n.isVerse || n.isBook || (matchesT && (this.isSearchMode || n.isKw || autoShowLabels || n.isBookWord || n.isVerseWord || isHighlighted));
             if (showLabel) {
