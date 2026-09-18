@@ -1922,6 +1922,40 @@ class BibleWordMap extends HTMLElement {
                     font-style: italic;
                 }
 
+                .bwm-zoom-extents-btn {
+                    position: absolute;
+                    bottom: 20px;
+                    right: 20px;
+                    z-index: 850;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 36px;
+                    height: 36px;
+                    padding: 0;
+                    background-color: rgba(255, 255, 255, 0.92);
+                    background-color: color-mix(in srgb, var(--bwm-bg) 92%, transparent);
+                    backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
+                    border: 1px solid var(--bwm-border);
+                    border-radius: 50%;
+                    color: var(--bwm-text);
+                    cursor: pointer;
+                    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+                    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+                    opacity: 0.88;
+                }
+                .bwm-zoom-extents-btn:hover {
+                    opacity: 1;
+                    background-color: var(--bwm-btn-bg);
+                    color: var(--bwm-node-hover, #2563eb);
+                    transform: scale(1.08);
+                    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+                }
+                .bwm-zoom-extents-btn:active {
+                    transform: scale(0.94);
+                }
+
                 /* Verses Internal Elements */
                 .bwm-verses-content {
                     line-height: 1.5;
@@ -2532,6 +2566,13 @@ class BibleWordMap extends HTMLElement {
                         white-space: nowrap;
                     }
 
+                    .bwm-zoom-extents-btn {
+                        bottom: 16px;
+                        right: 16px;
+                        width: 34px;
+                        height: 34px;
+                    }
+
                     .bwm-canon-row-book {
                         width: 105px;
                     }
@@ -2897,6 +2938,14 @@ class BibleWordMap extends HTMLElement {
                         <span class="bwm-book-card-reopen-icon">📖</span>
                         <span class="bwm-book-card-reopen-text">Verse Info</span>
                     </button>
+                    <button type="button" class="bwm-zoom-extents-btn" id="bwm-zoom-extents-btn" aria-label="Zoom to fit extents" title="Zoom extents (Recenter map)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17">
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <polyline points="9 21 3 21 3 15"></polyline>
+                            <polyline points="21 15 21 21 15 21"></polyline>
+                            <polyline points="3 9 3 3 9 3"></polyline>
+                        </svg>
+                    </button>
                 </div>
                 <div class="bwm-radial-menu" id="bwm-radial-menu"></div>
                 <div class="bwm-window-card bwm-word-card" id="bwm-word-card"></div>
@@ -3184,6 +3233,16 @@ class BibleWordMap extends HTMLElement {
             this.verseReopenBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
             this.verseReopenBtn.addEventListener('mousedown', (e) => e.stopPropagation());
             this.verseReopenBtn.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+        }
+        this.zoomExtentsBtn = this.querySelector('#bwm-zoom-extents-btn');
+        if (this.zoomExtentsBtn) {
+            this.zoomExtentsBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.zoomExtents();
+            });
+            this.zoomExtentsBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
+            this.zoomExtentsBtn.addEventListener('mousedown', (e) => e.stopPropagation());
+            this.zoomExtentsBtn.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
         }
         this.verseModeSection = this.querySelector('#bwm-verse-mode-section');
         const btnModeRefs = this.querySelector('#bwm-btn-mode-refs');
@@ -5849,9 +5908,9 @@ class BibleWordMap extends HTMLElement {
         let cw = this.logicalWidth || 800;
         let ch = this.logicalHeight || 600;
         
-        // Target scale to fit the bounds with some padding
-        let targetScale = 0.8 / Math.max(dx / cw, dy / ch);
-        targetScale = Math.min(targetScale, 3); // don't zoom in too crazy close
+        // Target scale to fit the bounds with some padding (0.92 fills the canvas space nicely)
+        let targetScale = 0.92 / Math.max(dx / cw, dy / ch);
+        targetScale = Math.min(targetScale, 3.5); // don't zoom in too crazy close
         
         // Smoothly interpolate current transform towards target transform
         let k = this.transform.k + (targetScale - this.transform.k) * 0.05;
@@ -5867,6 +5926,41 @@ class BibleWordMap extends HTMLElement {
         
         // Silently update d3 zoom state to match our programmatic panning
         this.canvas.__zoom = newTransform;
+    }
+
+    getZoomExtentsTransform(paddingFactor = 0.92) {
+        if (!this.nodes || this.nodes.length === 0) return null;
+        let minX = d3.min(this.nodes, d => d.x);
+        let maxX = d3.max(this.nodes, d => d.x);
+        let minY = d3.min(this.nodes, d => d.y);
+        let maxY = d3.max(this.nodes, d => d.y);
+        
+        let dx = maxX - minX || 1;
+        let dy = maxY - minY || 1;
+        let cx = (minX + maxX) / 2;
+        let cy = (minY + maxY) / 2;
+        
+        let cw = this.logicalWidth || 800;
+        let ch = this.logicalHeight || 600;
+        
+        let targetScale = paddingFactor / Math.max(dx / cw, dy / ch);
+        targetScale = Math.min(targetScale, 3.5);
+        
+        let tx = cw / 2 - targetScale * cx;
+        let ty = ch / 2 - targetScale * cy;
+        return d3.zoomIdentity.translate(tx, ty).scale(targetScale);
+    }
+
+    zoomExtents(duration = 600) {
+        if (this.radialMenuNode) this.hideRadialMenu();
+        const targetTransform = this.getZoomExtentsTransform(0.92);
+        if (!targetTransform || !this.zoom || !this.canvas) return;
+        this.userInteracted = false;
+        d3.select(this.canvas)
+            .transition()
+            .duration(duration)
+            .ease(d3.easeCubicOut)
+            .call(this.zoom.transform, targetTransform);
     }
 
     buildAllWordsGraph() {
@@ -5886,7 +5980,7 @@ class BibleWordMap extends HTMLElement {
         let dy = maxY - minY || 1;
         let x = (minX + maxX) / 2;
         let y = (minY + maxY) / 2;
-        let scale = 0.85 / Math.max(dx / cw, dy / ch);
+        let scale = 0.92 / Math.max(dx / cw, dy / ch);
         
         this.transform = d3.zoomIdentity.translate(cw / 2 - scale * x, ch / 2 - scale * y).scale(scale);
         d3.select(this.canvas).call(this.zoom.transform, this.transform);
@@ -6144,7 +6238,7 @@ class BibleWordMap extends HTMLElement {
         let dy = maxY - minY || 1;
         let cx = (minX + maxX) / 2;
         let cy = (minY + maxY) / 2;
-        let scale = 0.82 / Math.max(dx / cw, dy / ch);
+        let scale = 0.90 / Math.max(dx / cw, dy / ch);
 
         this.transform = d3.zoomIdentity.translate(cw / 2 - scale * cx, ch / 2 - scale * cy).scale(scale);
         d3.select(this.canvas).call(this.zoom.transform, this.transform);
@@ -7168,7 +7262,7 @@ class BibleWordMap extends HTMLElement {
         let dy = maxY - minY || 1;
         let cx = (minX + maxX) / 2;
         let cy = (minY + maxY) / 2;
-        let scale = 0.82 / Math.max(dx / cw, dy / ch);
+        let scale = 0.90 / Math.max(dx / cw, dy / ch);
 
         this.transform = d3.zoomIdentity.translate(cw / 2 - scale * cx, ch / 2 - scale * cy).scale(scale);
         d3.select(this.canvas).call(this.zoom.transform, this.transform);
