@@ -1355,6 +1355,22 @@ class BibleWordMap extends HTMLElement {
                     opacity: 0;
                     pointer-events: none;
                 }
+                .bwm-loading.bwm-loading-collapsing {
+                    pointer-events: none !important;
+                    background-color: transparent !important;
+                    backdrop-filter: blur(0px) !important;
+                    -webkit-backdrop-filter: blur(0px) !important;
+                    transition: background-color var(--bwm-collapse-dur, 1200ms) cubic-bezier(0.16, 1, 0.3, 1),
+                                backdrop-filter var(--bwm-collapse-dur, 1200ms) cubic-bezier(0.16, 1, 0.3, 1),
+                                -webkit-backdrop-filter var(--bwm-collapse-dur, 1200ms) cubic-bezier(0.16, 1, 0.3, 1) !important;
+                }
+                .bwm-loading.bwm-loading-collapsing .bwm-loading-status,
+                .bwm-loading.bwm-loading-collapsing .bwm-loading-tip {
+                    opacity: 0 !important;
+                    transform: scale(0.92) !important;
+                    transition: opacity 0.28s ease, transform 0.28s ease !important;
+                    pointer-events: none !important;
+                }
                 .bwm-loading-visual {
                     position: absolute;
                     top: 0;
@@ -5034,11 +5050,14 @@ class BibleWordMap extends HTMLElement {
 
     showLoading(text = 'Loading Bible Word Map...', type = 'words') {
         if (!this.loading) return;
+        this._loadingStartTime = performance.now();
         if (this._loadingFadeTimeout) {
             clearTimeout(this._loadingFadeTimeout);
             this._loadingFadeTimeout = null;
         }
-        this.loading.classList.remove('bwm-loading-fadeout');
+        this._triggerParticleCollapse = null;
+        this.loading.classList.remove('bwm-loading-fadeout', 'bwm-loading-collapsing');
+        this.loading.style.removeProperty('--bwm-collapse-dur');
         if (this.loadingText) {
             this.loadingText.textContent = text;
         } else {
@@ -5055,15 +5074,50 @@ class BibleWordMap extends HTMLElement {
             clearTimeout(this._loadingFadeTimeout);
             this._loadingFadeTimeout = null;
         }
-        this.loading.classList.add('bwm-loading-fadeout');
-        this._loadingFadeTimeout = setTimeout(() => {
+
+        const elapsed = performance.now() - (this._loadingStartTime || 0);
+
+        // Near-instant cache hit or synchronous switch (< 80ms): dismiss immediately with no flash
+        if (elapsed < 80) {
             this.stopLoadingAnimation();
             if (this.loading) {
                 this.loading.style.display = 'none';
-                this.loading.classList.remove('bwm-loading-fadeout');
+                this.loading.classList.remove('bwm-loading-fadeout', 'bwm-loading-collapsing');
+                this.loading.style.removeProperty('--bwm-collapse-dur');
+            }
+            return;
+        }
+
+        // Slow load (>= 2000ms): user has already waited, jump straight to content in 250ms
+        if (elapsed >= 2000 || !this._triggerParticleCollapse) {
+            this.loading.classList.remove('bwm-loading-collapsing');
+            this.loading.classList.add('bwm-loading-fadeout');
+            this._loadingFadeTimeout = setTimeout(() => {
+                this.stopLoadingAnimation();
+                if (this.loading) {
+                    this.loading.style.display = 'none';
+                    this.loading.classList.remove('bwm-loading-fadeout');
+                }
+                this._loadingFadeTimeout = null;
+            }, 250);
+            return;
+        }
+
+        // Fast load (< 2000ms): smooth collapse transition over 1.2s to prevent abrasive flash
+        const collapseDur = 1200;
+        this.loading.style.setProperty('--bwm-collapse-dur', `${collapseDur}ms`);
+        this.loading.classList.remove('bwm-loading-fadeout');
+        this.loading.classList.add('bwm-loading-collapsing');
+
+        this._triggerParticleCollapse(collapseDur, () => {
+            this.stopLoadingAnimation();
+            if (this.loading) {
+                this.loading.style.display = 'none';
+                this.loading.classList.remove('bwm-loading-collapsing');
+                this.loading.style.removeProperty('--bwm-collapse-dur');
             }
             this._loadingFadeTimeout = null;
-        }, 250);
+        });
     }
 
     parseWordId(id) {
@@ -10179,6 +10233,42 @@ class BibleWordMap extends HTMLElement {
         
         let state = STATE_FLOAT;
         let stateStartTime = performance.now();
+
+        let isCollapsing = false;
+        let collapseStartTime = 0;
+        let collapseDuration = 1200;
+        let collapseCallback = null;
+        let collapseParticles = null;
+
+        this._triggerParticleCollapse = (duration = 1200, onComplete) => {
+            if (isCollapsing) return;
+            isCollapsing = true;
+            collapseStartTime = performance.now();
+            collapseDuration = duration;
+            collapseCallback = onComplete;
+            if (this.loadingTip) this.loadingTip.classList.remove('visible');
+
+            const dims = getDims();
+            const curCx = dims.w / 2;
+            const curCy = dims.h / 2;
+
+            collapseParticles = particles.map(p => {
+                const dx = p.x - curCx;
+                const dy = p.y - curCy;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx);
+                const swirlAngle = (Math.random() - 0.5) * Math.PI * 0.9;
+                return {
+                    p,
+                    startX: p.x,
+                    startY: p.y,
+                    startRadius: p.radius,
+                    initialDist: dist,
+                    initialAngle: angle,
+                    swirlAngle
+                };
+            });
+        };
         
         const updateTipText = () => {
             if (this.loadingTip) {
@@ -10202,6 +10292,76 @@ class BibleWordMap extends HTMLElement {
             
             const elapsed = now - stateStartTime;
             ctx.clearRect(0, 0, width, height);
+
+            if (isCollapsing) {
+                const progress = Math.min(1, (now - collapseStartTime) / collapseDuration);
+                // Harmonic easeInOutCubic for organic acceleration out of ambient drift into central coalescence
+                const easeInOut = progress < 0.5 
+                    ? 4 * progress * progress * progress 
+                    : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+                const rotEase = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+                const curCx = width / 2;
+                const curCy = height / 2;
+
+                for (let item of collapseParticles) {
+                    const curDist = item.initialDist * (1 - easeInOut);
+                    const curAngle = item.initialAngle + item.swirlAngle * rotEase;
+                    item.p.x = curCx + Math.cos(curAngle) * curDist;
+                    item.p.y = curCy + Math.sin(curAngle) * curDist;
+                    item.p.currentAlpha = Math.max(0, 1 - Math.pow(progress, 1.8));
+                    item.p.currentRadius = Math.max(0.6, item.startRadius * (1 - progress * 0.45));
+                }
+
+                // Draw connecting lines with fading alpha
+                const baseDist = Math.min(110, Math.max(65, Math.min(width, height) * 0.13));
+                const maxDist = baseDist * (1 - easeInOut * 0.4);
+                ctx.lineWidth = 1;
+                const lineProgressAlpha = Math.max(0, (1 - Math.pow(progress, 1.2)) * 0.35);
+                if (lineProgressAlpha > 0.01) {
+                    for (let i = 0; i < particles.length; i++) {
+                        for (let j = i + 1; j < particles.length; j++) {
+                            const p1 = particles[i];
+                            const p2 = particles[j];
+                            const dx = p1.x - p2.x;
+                            const dy = p1.y - p2.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            if (dist < maxDist) {
+                                const alpha = (1 - dist / maxDist) * lineProgressAlpha;
+                                ctx.strokeStyle = `rgba(150, 150, 150, ${alpha})`;
+                                ctx.beginPath();
+                                ctx.moveTo(p1.x, p1.y);
+                                ctx.lineTo(p2.x, p2.y);
+                                ctx.stroke();
+                            }
+                        }
+                    }
+                }
+
+                // Draw collapsing particles with custom alpha
+                for (let item of collapseParticles) {
+                    const p = item.p;
+                    ctx.save();
+                    ctx.globalAlpha = p.currentAlpha !== undefined ? p.currentAlpha : 1;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.currentRadius || p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+
+                if (progress >= 1) {
+                    if (collapseCallback) {
+                        const cb = collapseCallback;
+                        collapseCallback = null;
+                        cb();
+                    }
+                    return;
+                }
+
+                this.loadingAnimId = requestAnimationFrame(animate);
+                return;
+            }
             
             if (state === STATE_FLOAT) {
                 if (this.loadingTip) this.loadingTip.classList.remove('visible');
@@ -10329,6 +10489,7 @@ class BibleWordMap extends HTMLElement {
     }
 
     stopLoadingAnimation() {
+        this._triggerParticleCollapse = null;
         if (this.loadingAnimId) {
             cancelAnimationFrame(this.loadingAnimId);
             this.loadingAnimId = null;
