@@ -1,5 +1,19 @@
 # Changelog
 
+## [9.2.2] - 2026-09-18
+### Added
+- **Compact URL Parameter Encoding & Share Button:** Added compact, human-readable URL query encoding (`m=` for mode, `c=` for canon, `b=` for book, `ch=` for chapter, `v=` for verse, `kw=` for keywords) with backward-compatible legacy parameter decoding and a dedicated top-header "Share" button with clipboard notification.
+- **Top Header Home Navigation:** Added a modern minimalist home outline icon adjacent to "Semantic Bible" in the top header that resets the view to the default map without query parameters.
+- **Chapter-Aware URL Query Architecture:** Extended URL query parsing infrastructure to seamlessly support upcoming chapter modes and future patristic text additions.
+
+### Changed
+- **Stabilized Keyword Anchors (`fx`, `fy`):** Pinned keyword centers in Word Mode, Books View, and Verses View, ensuring keywords remain rock-solid focal anchors that incoming neighbors never shove or displace. Multiple keywords run an initial 40-tick relaxation to settle to their mutual semantic distance before coordinate pinning.
+- **Golden-Spiral Radial Neighbor Spawning:** Replaced internal collision-box node spawning with phyllotaxis golden-spiral radial placement outside the keyword collision boundary, eliminating explosive repulsion kicks.
+- **Viscous Damping & Gentle Reheating:** Reduced wave reheating energy from `alpha(0.3)` to `alpha(0.09)` and increased simulation fluid drag (`velocityDecay(0.45)`), creating smooth, fluid motion as words glide into their semantic orbits.
+- **Smooth Spawn Fade:** Newly spawned nodes, labels, and connecting links smoothly bloom into view over 250ms rather than popping in abruptly.
+- **Simplified Loading Exit Transition:** Streamlined loading exit animation to direct, clean particle convergence toward keyword centers, dropping connecting lines immediately on exit and eliminating `backdrop-filter` GPU shader overhead.
+- **Asset Cache Busting (`v=9.2.2`):** Bumped cache-buster query parameter to `?v=9.2.2` across stylesheet links, custom element scripts, and runtime data fetch requests.
+
 ## [9.2.1] - 2026-09-17
 ### Added
 - **Complete English Translations for Septuagint (LXX) Verses:** Fully integrated Brenton Septuagint English translations for all Old Testament verses and Berean Standard Bible English translations for all New Testament verses across all 36,802 Septuagint verses, paired directly with original Septuagint Greek text.
