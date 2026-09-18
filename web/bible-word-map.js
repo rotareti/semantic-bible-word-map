@@ -2767,12 +2767,21 @@ class BibleWordMap extends HTMLElement {
                         <div class="bwm-drawer-close" id="bwm-drawer-close">&times;</div>
                     </div>
                     <div class="bwm-drawer-content">
-                        <button type="button" class="bwm-drawer-legend-btn" id="bwm-drawer-legend-btn" title="Open Map Guide &amp; Legend">
-                            <span>Show Legend</span>
-                            <svg class="bwm-chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
-                                <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                        </button>
+                        <div class="bwm-drawer-action-row" style="display: flex; gap: 8px; margin-bottom: 20px;">
+                            <button type="button" class="bwm-drawer-legend-btn" id="bwm-drawer-legend-btn" title="Open Map Guide &amp; Legend" style="margin-bottom: 0; flex: 1; padding: 10px 12px; font-size: 0.88em;">
+                                <span>Show Legend</span>
+                                <svg class="bwm-chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </button>
+                            <button type="button" class="bwm-drawer-legend-btn" id="bwm-drawer-share-btn" title="Copy shortened URL to clipboard" style="margin-bottom: 0; flex: 1; padding: 10px 12px; font-size: 0.88em;">
+                                <span id="bwm-drawer-share-text">Share Link</span>
+                                <svg class="bwm-share-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                                </svg>
+                            </button>
+                        </div>
                         <div class="bwm-drawer-section">
                             <div class="bwm-drawer-section-header">
                                 <h4 id="bwm-active-heading">Active Words</h4>
@@ -3071,11 +3080,13 @@ class BibleWordMap extends HTMLElement {
 
     connectedCallback() {
         let urlParams = new URLSearchParams(window.location.search);
-        let baseParam = (urlParams.get('canon') || urlParams.get('base') || urlParams.get('foundation') || this.getAttribute('foundation') || 'bsb').toLowerCase();
-        if (baseParam === 'lxx') {
+        let baseParam = (urlParams.get('c') || urlParams.get('canon') || urlParams.get('base') || urlParams.get('foundation') || this.getAttribute('foundation') || 'bsb').toLowerCase();
+        if (baseParam === 'lxx' || baseParam === 'l') {
             this.foundation = 'lxx';
-        } else if (baseParam === 'vul' || baseParam === 'vulgata' || baseParam === 'vulgate') {
+        } else if (baseParam === 'vul' || baseParam === 'v' || baseParam === 'vulgata' || baseParam === 'vulgate') {
             this.foundation = 'vul';
+        } else if (baseParam === 'af' || baseParam === 'pat') {
+            this.foundation = baseParam;
         } else {
             this.foundation = 'bsb';
         }
@@ -3550,11 +3561,37 @@ class BibleWordMap extends HTMLElement {
         this.legendBackBtn = this.querySelector('#bwm-legend-back-btn');
         this.legendCloseBtn = this.querySelector('#bwm-legend-close-btn');
         this.drawerLegendBtn = this.querySelector('#bwm-drawer-legend-btn');
+        this.drawerShareBtn = this.querySelector('#bwm-drawer-share-btn');
+        this.drawerShareText = this.querySelector('#bwm-drawer-share-text');
 
         if (this.drawerLegendBtn) {
             this.drawerLegendBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.showLegendWindow();
+            });
+        }
+        if (this.drawerShareBtn) {
+            this.drawerShareBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const shareUrl = window.location.href;
+                const copySuccess = () => {
+                    if (this.drawerShareText) {
+                        const origText = this.drawerShareText.textContent;
+                        this.drawerShareText.textContent = 'Copied!';
+                        this.drawerShareBtn.classList.add('copied');
+                        setTimeout(() => {
+                            this.drawerShareText.textContent = origText;
+                            this.drawerShareBtn.classList.remove('copied');
+                        }, 2000);
+                    }
+                };
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(shareUrl).then(copySuccess).catch(() => {
+                        this.fallbackCopyText(shareUrl, copySuccess);
+                    });
+                } else {
+                    this.fallbackCopyText(shareUrl, copySuccess);
+                }
             });
         }
         if (this.legendBackBtn) {
@@ -3645,11 +3682,13 @@ class BibleWordMap extends HTMLElement {
 
     async loadData() {
         let params = new URLSearchParams(window.location.search);
-        let baseParam = (params.get('canon') || params.get('base') || params.get('foundation') || this.foundation || 'bsb').toLowerCase();
-        if (baseParam === 'lxx') {
+        let baseParam = (params.get('c') || params.get('canon') || params.get('base') || params.get('foundation') || this.foundation || 'bsb').toLowerCase();
+        if (baseParam === 'lxx' || baseParam === 'l') {
             this.foundation = 'lxx';
-        } else if (baseParam === 'vul' || baseParam === 'vulgata' || baseParam === 'vulgate') {
+        } else if (baseParam === 'vul' || baseParam === 'v' || baseParam === 'vulgata' || baseParam === 'vulgate') {
             this.foundation = 'vul';
+        } else if (baseParam === 'af' || baseParam === 'pat') {
+            this.foundation = baseParam;
         } else {
             this.foundation = 'bsb';
         }
@@ -3681,19 +3720,77 @@ class BibleWordMap extends HTMLElement {
             vulPill.classList.toggle('active', this.foundation === 'vul');
         }
 
-        let view = params.get('view');
-        let books = params.get('books') || params.get('book');
-        let verses = params.get('verses') || params.get('verse');
-        let keywords = params.get('keywords') || params.get('keyword') || params.get('words') || params.get('word');
+        let modeParam = (params.get('m') || params.get('view') || params.get('mode') || '').toLowerCase();
+        let view = (modeParam === 'v' || modeParam === 'verses' || modeParam === 'verse')
+            ? 'verses'
+            : (modeParam === 'ch' || modeParam === 'chapters' || modeParam === 'chapter' || modeParam === 'chap')
+                ? 'chapters'
+                : (modeParam === 'b' || modeParam === 'books' || modeParam === 'book')
+                    ? 'books'
+                    : (modeParam === 'w' || modeParam === 'words' || modeParam === 'word')
+                        ? 'words'
+                        : undefined;
+
+        let books = params.get('b') || params.get('books') || params.get('book');
+        let chapters = params.get('ch') || params.get('chapters') || params.get('chapter') || params.get('chap');
+        let verses = params.get('v') || params.get('vs') || params.get('verses') || params.get('verse');
+        let keywords = params.get('w') || params.get('k') || params.get('keywords') || params.get('keyword') || params.get('words') || params.get('word');
+
+        // Verse connection mode option (?vc=r | w)
+        let vcParam = (params.get('vc') || params.get('verse_mode') || params.get('connections') || '').toLowerCase();
+        if (vcParam === 'w' || vcParam === 'words') {
+            this.verseViewMode = 'words';
+        } else if (vcParam === 'r' || vcParam === 'refs' || vcParam === 'crossref') {
+            this.verseViewMode = 'refs';
+        }
+
+        // Testament filter option (?t=all | ot | nt | both)
+        let tParam = (params.get('t') || params.get('testament') || params.get('filter') || '').toLowerCase();
+        if (['all', 'ot', 'nt', 'both'].includes(tParam)) {
+            this.testamentFilter = tParam;
+            const filterBtns = this.querySelectorAll('#bwm-testament-filter button');
+            filterBtns.forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-testament') === tParam));
+        }
+
+        // Similarity labels option (?s=off | h | a)
+        let sParam = (params.get('s') || params.get('sim') || params.get('similarity') || '').toLowerCase();
+        if (sParam === 'off') {
+            this.similarityLabelsMode = 'off';
+        } else if (sParam === 'a' || sParam === 'all' || sParam === 'showall') {
+            this.similarityLabelsMode = 'all';
+        } else if (sParam === 'h' || sParam === 'hover') {
+            this.similarityLabelsMode = 'hover';
+        }
+        const simBtns = this.querySelectorAll('#bwm-sim-labels-filter button');
+        simBtns.forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-sim-labels') === this.similarityLabelsMode));
+
+        // Map text scale option (?ts=s | m | l)
+        let tsParam = (params.get('ts') || params.get('scale') || params.get('font') || '').toLowerCase();
+        if (tsParam === 's' || tsParam === 'small') {
+            this.mapTextSize = 'small';
+        } else if (tsParam === 'm' || tsParam === 'medium') {
+            this.mapTextSize = 'medium';
+        } else if (tsParam === 'l' || tsParam === 'large') {
+            this.mapTextSize = 'large';
+        }
+        const tsBtns = this.querySelectorAll('#bwm-text-size-filter button');
+        tsBtns.forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-text-size') === this.mapTextSize));
+
+        if (chapters) {
+            this.searchedChapters = this.parseChapterQuery(chapters);
+        }
+
         this.updateUrl({
-            view: view || undefined,
-            books: books || undefined,
-            verses: verses || undefined,
-            keywords: keywords || undefined
+            m: view || undefined,
+            b: books || undefined,
+            ch: chapters || undefined,
+            v: verses || undefined,
+            w: keywords || undefined
         });
-        let currentMode = this.viewMode || view || (verses ? 'verses' : (books ? 'books' : 'words'));
+        let currentMode = this.viewMode || view || (verses ? 'verses' : (chapters ? 'chapters' : (books ? 'books' : 'words')));
         let isVersesInit = (currentMode === 'verses' || view === 'verses' || Boolean(verses));
-        let isBooksInit = !isVersesInit && (currentMode === 'books' || view === 'books' || Boolean(books));
+        let isChaptersInit = !isVersesInit && (currentMode === 'chapters' || view === 'chapters' || Boolean(chapters));
+        let isBooksInit = !isVersesInit && !isChaptersInit && (currentMode === 'books' || view === 'books' || Boolean(books));
 
         const wordsBtn = this.querySelector('#view-mode-words') || document.getElementById('view-mode-words');
         const booksBtn = this.querySelector('#view-mode-books') || document.getElementById('view-mode-books');
@@ -5049,19 +5146,116 @@ class BibleWordMap extends HTMLElement {
         return BIBLE_BOOKS_BSB;
     }
 
+    fallbackCopyText(text, cb) {
+        try {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.opacity = '0';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            if (cb) cb();
+        } catch (err) {}
+    }
+
     updateUrl(paramsObj = {}) {
         try {
             let url = new URL(window.location.href);
             url.search = '';
-            let canon = paramsObj.canon || this.foundation || 'bsb';
-            url.searchParams.set('canon', canon);
-            for (let [k, v] of Object.entries(paramsObj)) {
-                if (k === 'canon') continue;
-                if (v !== null && v !== undefined && v !== '') {
-                    url.searchParams.set(k, v);
-                }
+
+            // 1. Canon (c) - omit default 'bsb'
+            let canon;
+            if ('c' in paramsObj) canon = paramsObj.c;
+            else if ('canon' in paramsObj) canon = paramsObj.canon;
+            else if ('base' in paramsObj) canon = paramsObj.base;
+            else if ('foundation' in paramsObj) canon = paramsObj.foundation;
+            else canon = this.foundation;
+            if (canon && canon !== 'bsb') {
+                url.searchParams.set('c', canon);
             }
-            let searchStr = url.search ? url.search : '';
+
+            // 2. View Mode (m) - omit default 'words'
+            let rawMode;
+            if ('m' in paramsObj) rawMode = paramsObj.m;
+            else if ('view' in paramsObj) rawMode = paramsObj.view;
+            else if ('mode' in paramsObj) rawMode = paramsObj.mode;
+            else rawMode = this.viewMode;
+            let mode = rawMode ? rawMode.toLowerCase() : 'words';
+            if (mode === 'verses' || mode === 'v') {
+                url.searchParams.set('m', 'v');
+            } else if (mode === 'chapters' || mode === 'chapter' || mode === 'ch') {
+                url.searchParams.set('m', 'ch');
+            } else if (mode === 'books' || mode === 'b') {
+                url.searchParams.set('m', 'b');
+            }
+
+            // 3. Words (w)
+            let words;
+            if ('w' in paramsObj) words = paramsObj.w;
+            else if ('keywords' in paramsObj) words = paramsObj.keywords;
+            else if ('keyword' in paramsObj) words = paramsObj.keyword;
+            else if ('words' in paramsObj) words = paramsObj.words;
+            else if ('k' in paramsObj) words = paramsObj.k;
+            else if ((mode === 'words' || mode === 'w') && this.searchedWords && this.searchedWords.length > 0) words = this.searchedWords.join(',');
+            if (words && (mode === 'words' || mode === 'w')) {
+                url.searchParams.set('w', words);
+            }
+
+            // 4. Verses (v) - format with dot notation (GEN.1.1) to eliminate spaces
+            let verses;
+            if ('v' in paramsObj) verses = paramsObj.v;
+            else if ('verses' in paramsObj) verses = paramsObj.verses;
+            else if ('verse' in paramsObj) verses = paramsObj.verse;
+            else if ('vs' in paramsObj) verses = paramsObj.vs;
+            else if ((mode === 'verses' || mode === 'v') && this.searchedVerses && this.searchedVerses.length > 0) verses = this.searchedVerses.join(',');
+            if (verses && (mode === 'verses' || mode === 'v')) {
+                let cleanVerses = verses.split(',').map(v => v.trim().replace(/\s+/g, '.').replace(/:/g, '.')).filter(v => v).join(',');
+                if (cleanVerses) url.searchParams.set('v', cleanVerses);
+            }
+
+            // 5. Chapters (ch)
+            let chapters;
+            if ('ch' in paramsObj) chapters = paramsObj.ch;
+            else if ('chapters' in paramsObj) chapters = paramsObj.chapters;
+            else if ('chapter' in paramsObj) chapters = paramsObj.chapter;
+            else if ('chap' in paramsObj) chapters = paramsObj.chap;
+            else if ((mode === 'chapters' || mode === 'ch') && this.searchedChapters && this.searchedChapters.length > 0) chapters = this.searchedChapters.join(',');
+            if (chapters && (mode === 'chapters' || mode === 'ch')) {
+                let cleanChapters = chapters.split(',').map(c => c.trim().replace(/\s+/g, '.')).filter(c => c).join(',');
+                if (cleanChapters) url.searchParams.set('ch', cleanChapters);
+            }
+
+            // 6. Books (b)
+            let books;
+            if ('b' in paramsObj) books = paramsObj.b;
+            else if ('books' in paramsObj) books = paramsObj.books;
+            else if ('book' in paramsObj) books = paramsObj.book;
+            else if ((mode === 'books' || mode === 'b') && this.searchedBooks && this.searchedBooks.length > 0) books = this.searchedBooks.join(',');
+            if (books && (mode === 'books' || mode === 'b')) {
+                url.searchParams.set('b', books);
+            }
+
+            // Optional configurations (only include if non-default)
+            if (paramsObj.vc && paramsObj.vc !== 'refs' && paramsObj.vc !== 'r') {
+                url.searchParams.set('vc', paramsObj.vc);
+            } else if (this.verseViewMode === 'words' && (mode === 'verses' || mode === 'v')) {
+                url.searchParams.set('vc', 'w');
+            }
+            if (paramsObj.t && paramsObj.t !== 'all') {
+                url.searchParams.set('t', paramsObj.t);
+            } else if (this.testamentFilter && this.testamentFilter !== 'all') {
+                url.searchParams.set('t', this.testamentFilter);
+            }
+            if (paramsObj.s && paramsObj.s !== 'hover' && paramsObj.s !== 'h') {
+                url.searchParams.set('s', paramsObj.s);
+            } else if (this.similarityLabelsMode && this.similarityLabelsMode !== 'hover') {
+                url.searchParams.set('s', (this.similarityLabelsMode === 'all') ? 'a' : 'off');
+            }
+
+            let searchStr = url.search ? url.search.replace(/%2C/gi, ',') : '';
             window.history.replaceState(null, '', url.pathname + searchStr);
         } catch (e) {}
     }
@@ -6669,7 +6863,7 @@ class BibleWordMap extends HTMLElement {
             norm = norm.replace(/\b3rd\b/g, '3').replace(/\bthird\b/g, '3');
             norm = norm.replace(/\bsong of songs\b/g, 'songofsolomon');
 
-            let m = norm.match(/^(?:((?:[123]\s*)?[a-z]+(?:\s+of\s+[a-z]+)?)\s+)?(\d+)(?:[:\s.](\d+)(?:-(\d+))?)?$/i);
+            let m = norm.match(/^(?:((?:[123]\s*)?[a-z]+(?:\s+of\s+[a-z]+)?)[\s.]+)?(\d+)(?:[:\s.](\d+)(?:-(\d+))?)?$/i);
             if (m) {
                 let bStr = m[1];
                 let chap = parseInt(m[2], 10);
@@ -6710,6 +6904,52 @@ class BibleWordMap extends HTMLElement {
                     let ref = `${bookCode} 1:1`;
                     if (!results.includes(ref)) results.push(ref);
                     lastBook = bookCode;
+                }
+            }
+        }
+        return results;
+    }
+
+    parseChapterQuery(query) {
+        if (!query) return [];
+        let parts = query.trim().split(/[,;]+|\s+and\s+/i);
+        let results = [];
+        let lastBook = null;
+
+        for (let raw of parts) {
+            let trimmed = raw.trim();
+            if (!trimmed) continue;
+            let norm = trimmed.toLowerCase();
+            norm = norm.replace(/\b1st\b/g, '1').replace(/\bfirst\b/g, '1');
+            norm = norm.replace(/\b2nd\b/g, '2').replace(/\bsecond\b/g, '2');
+            norm = norm.replace(/\b3rd\b/g, '3').replace(/\bthird\b/g, '3');
+            norm = norm.replace(/\bsong of songs\b/g, 'songofsolomon');
+
+            let m = norm.match(/^(?:((?:[123]\s*)?[a-z]+(?:\s+of\s+[a-z]+)?)[\s.]+)?(\d+)(?:[:\s.](\d+))?$/i);
+            if (m) {
+                let bStr = m[1];
+                let chap = parseInt(m[2], 10);
+                let bookCode = null;
+
+                if (bStr) {
+                    let cleanB = bStr.replace(/\s+/g, '');
+                    bookCode = BOOK_ALIASES[cleanB];
+                    if (!bookCode) {
+                        for (let [alias, code] of Object.entries(BOOK_ALIASES)) {
+                            if (cleanB.startsWith(alias)) {
+                                bookCode = code;
+                                break;
+                            }
+                        }
+                    }
+                    if (bookCode) lastBook = bookCode;
+                } else if (lastBook) {
+                    bookCode = lastBook;
+                }
+
+                if (bookCode) {
+                    let ref = `${bookCode}.${chap}`;
+                    if (!results.includes(ref)) results.push(ref);
                 }
             }
         }

@@ -1,6 +1,6 @@
 # URL Structure and Shortening Specification
 
-This specification documents the URL state architecture, parameter encoding scheme, compression evaluation, and backward-compatibility guidelines for the Semantic Bible Word Map.
+This specification documents the URL state architecture, parameter encoding scheme, compression evaluation, backward-compatibility guidelines, and future expansion roadmap (Chapter Mode and Patristic corpora) for the Semantic Bible Word Map.
 
 ---
 
@@ -22,7 +22,7 @@ Currently, state is serialized with full-length descriptive query keys and unpru
 ### Problems with Verbose URLs
 1. **Visual Clutter in Sharing:** Long URLs look cumbersome when pasted into chat applications, emails, forum posts, or academic citations.
 2. **Redundant Default Parameters:** The application redundantly writes `canon=bsb` even though Berean Standard Bible is the default foundation.
-3. **Repetitive Key Names:** Keys like `keywords=`, `verses=`, `books=`, and `foundation=` consume 7 to 9 characters each before values even begin.
+3. **Repetitive Key Names:** Keys like `keywords=`, `verses=`, `books=`, and `foundation=` consume 6 to 9 characters each before values even begin.
 
 ---
 
@@ -56,16 +56,23 @@ Adopt **Approach B (Compact Semantic Query Parameters)** as the standard, canoni
 
 ---
 
-## 3. Proposed Parameter Specification
+## 3. Four-Tier Text Hierarchy & Proposed Parameter Specification
+
+The Semantic Bible Word Map is structured around a natural 4-tier biblical and literary hierarchy:
+1. **Books / Works (`b`):** Macro thematic clusters and book centroids (e.g., `GEN`, `MAT`, `ROM`).
+2. **Chapters (`ch`):** Meso narrative units and pericopes (e.g., `GEN.1`, `MAT.5`, `ROM.8`).
+3. **Verses / Sections (`v` or `vs`):** Micro semantic cross-references (e.g., `GEN.1.1`, `JHN.1.1`).
+4. **Words (`w` or `k`):** Lexical lemma embeddings and semantic neighbors (e.g., `faith`, `grace`).
 
 ### 3.1 Parameter Key Dictionary
 
 | Category | Canonical Short Key | Legacy / Accepted Aliases (Input) | Values & Syntax | Default (Omitted if Default) |
 | :--- | :--- | :--- | :--- | :--- |
-| **Canon / Foundation** | `c` | `canon`, `base`, `foundation` | `bsb` (or `b`), `lxx` (or `l`), `vul` (or `v`) | `bsb` |
-| **View Mode** | `m` | `view`, `mode`, `v` | `w` (`words`), `v` (`verses`), `b` (`books`) | `w` (`words`) |
+| **Canon / Foundation** | `c` | `canon`, `base`, `foundation` | `bsb` (or `b`), `lxx` (or `l`), `vul` (or `v`), `af`, `pat` | `bsb` |
+| **View Mode** | `m` | `view`, `mode` | `w` (`words`), `v` (`verses`), `ch` (`chapters`), `b` (`books`) | `w` (`words`) |
 | **Active Words / Keywords** | `w` | `keywords`, `keyword`, `words`, `word`, `k` | Comma-separated words or IDs (`faith`, `grace_NOUN`) | None (empty) |
 | **Active Verses** | `v` | `verses`, `verse`, `vs` | Comma-separated verse IDs (`GEN.1.1`, `JHN.1.1`) | None (empty) |
+| **Active Chapters** | `ch` | `chapters`, `chapter`, `chap` | Comma-separated chapter IDs (`GEN.1`, `MAT.5`) | None (empty) |
 | **Active Books** | `b` | `books`, `book` | Comma-separated 3-letter codes (`GEN`, `EXO`) | None (empty) |
 | **Verse Connections Mode** | `vc` | `verse_mode`, `connections` | `r` (`crossref`), `w` (`words`) | `r` (`crossref`) |
 | **Testament Filter** | `t` | `testament`, `filter` | `all`, `ot`, `nt`, `both` | `all` |
@@ -73,50 +80,76 @@ Adopt **Approach B (Compact Semantic Query Parameters)** as the standard, canoni
 | **Map Text Scale** | `ts` | `scale`, `font` | `s` (`small`), `m` (`medium`), `l` (`large`) | Responsive default |
 
 > [!NOTE]
-> Distinguishing View Mode from Active Verses:
-> In the table above, `m` represents Mode (`w` for Words, `v` for Verses, `b` for Books) and `v` represents Active Verses (e.g., `v=GEN.1.1`). To ensure zero ambiguity, the parser also accepts `vs` for verses and `view` for mode.
+> Distinguishing Mode from Entities:
+> - `m` is the parameter key for View Mode (`w`, `v`, `ch`, `b`).
+> - `v` (or `vs`) is the parameter key for Active Verses (e.g., `v=GEN.1.1`).
+> - `ch` is the parameter key for Active Chapters (e.g., `ch=GEN.1`).
+> - `b` is the parameter key for Active Books (e.g., `b=GEN`).
+> - `w` is the parameter key for Active Words (e.g., `w=faith`).
+> Because the keys are distinct, there is zero ambiguity between `m=v` (Verses Mode) and `v=GEN.1.1` (Active Verse).
 
 ---
 
-## 4. Value Optimization Strategies
+## 4. Architectural Extensibility: Patristic / Early Church Corpora
 
-In addition to shortening parameter keys, significant compression can be achieved by optimizing the serialized values:
+A future goal is the potential integration of universal early church father writings (the Apostolic Fathers: Clement of Rome, Ignatius of Antioch, Polycarp of Smyrna, the Didache, the Shepherd of Hermas, Epistle of Barnabas, etc.).
 
-### 4.1 Omission of Defaults
+### 4.1 Avoiding Client and Server Bloat
+The application is purely static (hosted on GitHub Pages with client-side D3 / Canvas rendering). Zero server-side processing is required.
+- Current biblical foundations (`bsb`, `lxx`, `vul`) do not load concurrently; each dataset is fetched asynchronously **only when the user selects that foundation**.
+- Patristic corpora (`c=af` for Apostolic Fathers or `c=pat` for Patristic texts) will follow the exact same modular architecture:
+  - When viewing biblical canons, zero patristic data is transferred.
+  - When switching to Patristic mode, only `wordmap_2d_af.json`, `verse_index_af.json`, and `bookmap_2d_af.json` are fetched.
+  - Client memory footprint remains constant.
+
+### 4.2 Isomorphic 4-Tier Hierarchy in Patristic Literature
+Patristic texts follow the exact same structural hierarchy as biblical texts:
+- **Works / Books (`b`):** `1CLE` (1 Clement), `2CLE` (2 Clement), `DID` (Didache), `IGN.EPH` (Ignatius to the Ephesians), `POL.PHP` (Polycarp to the Philippians), `HER.VIS` (Shepherd of Hermas: Visions).
+- **Chapters (`ch`):** `1CLE.1`, `DID.7`, `IGN.EPH.4`.
+- **Verses / Sections (`v`):** `1CLE.1.1`, `DID.7.1`, `IGN.EPH.4.1`.
+- **Words (`w`):** Greek and English lexical lemmas (`agape`, `episkopos`, `martyria`).
+
+Because the URL parameter schema (`c`, `m`, `b`, `ch`, `v`, `w`) represents this universal hierarchy, no structural changes to the URL architecture will be necessary when patristic texts are introduced.
+
+---
+
+## 5. Value Optimization Strategies
+
+In addition to shortening parameter keys, significant compression is achieved by optimizing serialized values:
+
+### 5.1 Omission of Defaults
 If a parameter matches its application default, it is omitted entirely from the URL string:
 - Default canon: `bsb` -> omit `c=`
 - Default view mode: `words` -> omit `m=`
 - Default testament filter: `all` -> omit `t=`
 - Default similarity labels: `hover` -> omit `s=`
 
-### 4.2 POS Tag Stripping
-When users search for standard lexical terms, the internal node ID appends part-of-speech tags (e.g., `faith_NOUN`, `love_VERB`).
-- If a word is unambiguous or represents the primary lexical entry, write `w=faith` rather than `w=faith_NOUN`.
-- The parser resolves `faith` directly to the corresponding node in `data2d`. If a specific part of speech is required, write `w=faith_NOUN`.
-
-### 4.3 Multi-Value Delimiters
+### 5.2 Multi-Value Delimiters
 Multiple entities are joined with standard commas (`,`), which require no URL percent-encoding in modern browser query strings:
 - Multiple words: `w=faith,hope,love`
 - Multiple books: `b=GEN,EXO,LEV`
+- Multiple chapters: `ch=GEN.1,MAT.5,ROM.8`
 - Multiple verses: `v=GEN.1.1,JHN.1.1`
 
 ---
 
-## 5. Before and After Comparisons
+## 6. Before and After Comparisons
 
 | Scenario | Current Verbose URL (v9.2.1) | Proposed Compact URL | Character Reduction |
 | :--- | :--- | :--- | :--- |
 | **Base App Launch** | `?canon=bsb` (10 chars) | *(empty query)* (0 chars) | **-100%** |
 | **LXX Canon Root** | `?canon=lxx` (10 chars) | `?c=lxx` (6 chars) | **-40.0%** |
-| **Single Word (BSB)** | `?canon=bsb&keywords=faith_NOUN` (31 chars) | `?w=faith` (8 chars) | **-74.2%** |
-| **Single Word (LXX)** | `?canon=lxx&keywords=faith_NOUN` (31 chars) | `?c=lxx&w=faith` (14 chars) | **-54.8%** |
-| **Multi-Word Comparison (BSB)** | `?canon=bsb&keywords=faith_NOUN,love_NOUN,hope_NOUN` (52 chars) | `?w=faith,love,hope` (18 chars) | **-65.4%** |
+| **Single Word (BSB)** | `?canon=bsb&keywords=faith_NOUN` (31 chars) | `?w=faith_NOUN` (14 chars) | **-54.8%** |
+| **Single Word (LXX)** | `?canon=lxx&keywords=faith_NOUN` (31 chars) | `?c=lxx&w=faith_NOUN` (20 chars) | **-35.5%** |
+| **Multi-Word (BSB)** | `?canon=bsb&keywords=faith_NOUN,love_NOUN` (42 chars) | `?w=faith_NOUN,love_NOUN` (23 chars) | **-45.2%** |
 | **Verse Mode (Genesis 1:1 in LXX)** | `?canon=lxx&view=verses&verses=GEN.1.1` (37 chars) | `?c=lxx&m=v&v=GEN.1.1` (20 chars) | **-45.9%** |
+| **Chapter Mode (Future: Genesis 1 in BSB)** | `?view=chapters&chapters=GEN.1` (30 chars) | `?m=ch&ch=GEN.1` (14 chars) | **-53.3%** |
 | **Book Mode (Genesis & Exodus in VUL)** | `?canon=vul&view=books&books=GEN,EXO` (35 chars) | `?c=vul&m=b&b=GEN,EXO` (20 chars) | **-42.9%** |
+| **Patristic Work (Future: Didache in AF)** | `?canon=af&view=books&books=DID` (29 chars) | `?c=af&m=b&b=DID` (15 chars) | **-48.3%** |
 
 ---
 
-## 6. Backward Compatibility Guarantee
+## 7. Backward Compatibility Guarantee
 
 All legacy URLs and bookmarks will continue to function indefinitely. The deserialization logic follows a strict fallback cascade:
 
@@ -134,13 +167,16 @@ const canon = (
 const modeParam = (params.get('m') || params.get('view') || params.get('mode') || '').toLowerCase();
 const mode = (modeParam === 'v' || modeParam === 'verses')
     ? 'verses'
-    : (modeParam === 'b' || modeParam === 'books')
-        ? 'books'
-        : 'words';
+    : (modeParam === 'ch' || modeParam === 'chapters' || modeParam === 'chapter')
+        ? 'chapters'
+        : (modeParam === 'b' || modeParam === 'books')
+            ? 'books'
+            : 'words';
 
 // Universal Entity Resolution
 const words = params.get('w') || params.get('k') || params.get('keywords') || params.get('keyword') || params.get('words') || params.get('word');
 const verses = params.get('v') || params.get('vs') || params.get('verses') || params.get('verse');
+const chapters = params.get('ch') || params.get('chapters') || params.get('chapter') || params.get('chap');
 const books = params.get('b') || params.get('books') || params.get('book');
 ```
 
@@ -148,13 +184,17 @@ When serializing state back to the address bar (`updateUrl`), only the canonical
 
 ---
 
-## 7. Implementation Roadmap
+## 8. Implementation Steps
 
-1. **Step 1: Universal Parameter Parser & Serializer:**
-   - Refactor `updateUrl()` and parameter extraction in [`web/bible-word-map.js`](file:///home/josh/code/semantic-lxx-word-map/web/bible-word-map.js) to adopt the bidirectional dictionary.
+1. **Refactor `updateUrl()` and Startup Parameter Resolution in [`web/bible-word-map.js`](file:///home/josh/code/semantic-lxx-word-map/web/bible-word-map.js):**
+   - Implement the bidirectional dictionary.
+   - Accept all legacy parameter names (`view`, `canon`, `keywords`, `verses`, `books`).
+   - Support `chapters` / `ch` mode and active chapters.
+   - Support future canon identifiers (`af`, `pat`).
    - Omit default values (`c=bsb`, `m=w`).
-2. **Step 2: Add Native "Share View" / Copy Link Action:**
-   - Provide a quick 1-click "Copy Link" button in the top bar or Options drawer that copies the clean, shortened URL to the system clipboard with visual toast confirmation.
-3. **Step 3: Verification:**
-   - Verify that all legacy URLs load with complete accuracy.
-   - Verify that new compact URLs parse and restore state cleanly across all three canons (BSB, LXX, VUL) and all three view modes (Words, Verses, Books).
+2. **Add "Copy Share Link" Button:**
+   - Add a quick 1-click "Copy Link" action in the UI (e.g., in the Options drawer and/or header) that copies the current shortened URL to the clipboard with an interactive toast notification.
+3. **Automated Verification:**
+   - Verify that legacy URLs (`?canon=lxx&view=verses&verses=GEN.1.1`) continue to load with 100% accuracy.
+   - Verify that compact URLs (`?c=lxx&m=v&v=GEN.1.1`, `?w=faith_NOUN`, `?c=vul&m=b&b=GEN`) load and display correctly.
+   - Verify that navigating between canons, modes, and words updates the address bar cleanly.
