@@ -3287,6 +3287,192 @@ class BibleWordMap extends HTMLElement {
                 .bwm-legend-tips strong {
                     color: var(--bwm-text);
                 }
+                .bwm-legend-about-link {
+                    color: var(--bwm-node-hover, #2563eb);
+                    font-weight: 600;
+                    text-decoration: underline;
+                    text-underline-offset: 3px;
+                    cursor: pointer;
+                }
+                .bwm-legend-about-link:hover {
+                    opacity: 0.85;
+                }
+
+                /* 8. Full Map Space About Window */
+                .bwm-about-overlay {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background-color: var(--bwm-bg);
+                    background-color: color-mix(in srgb, var(--bwm-bg) 98%, transparent);
+                    backdrop-filter: blur(20px);
+                    -webkit-backdrop-filter: blur(20px);
+                    z-index: 10060;
+                    display: flex;
+                    flex-direction: column;
+                    opacity: 0;
+                    pointer-events: none;
+                    transform: scale(0.985);
+                    transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+                    color: var(--bwm-text);
+                    font-family: var(--bwm-font);
+                    box-sizing: border-box;
+                }
+                .bwm-about-overlay.visible {
+                    opacity: 1;
+                    pointer-events: auto;
+                    transform: scale(1);
+                }
+                .bwm-about-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 12px 20px;
+                    border-bottom: 1px solid var(--bwm-border);
+                    background: color-mix(in srgb, var(--bwm-bg) 96%, transparent);
+                    flex-shrink: 0;
+                    gap: 12px;
+                }
+                .bwm-about-back-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    background: color-mix(in srgb, var(--bwm-bg) 85%, var(--bwm-text) 6%);
+                    border: 1px solid var(--bwm-border);
+                    color: var(--bwm-text);
+                    border-radius: 6px;
+                    padding: 6px 12px;
+                    font-size: 0.85em;
+                    font-weight: 600;
+                    cursor: pointer;
+                    font-family: var(--bwm-font);
+                    transition: background 0.15s, border-color 0.15s, color 0.15s;
+                }
+                .bwm-about-back-btn:hover {
+                    background: var(--bwm-btn-hover);
+                    color: var(--bwm-node-hover);
+                    border-color: var(--bwm-node-hover);
+                }
+                .bwm-about-title {
+                    margin: 0;
+                    font-size: 1.15em;
+                    font-weight: 700;
+                    letter-spacing: -0.01em;
+                    color: var(--bwm-text);
+                }
+                .bwm-about-close-btn {
+                    background: none;
+                    border: none;
+                    font-size: 1.6em;
+                    line-height: 1;
+                    color: var(--bwm-text-muted);
+                    cursor: pointer;
+                    padding: 4px 8px;
+                    border-radius: 6px;
+                    transition: color 0.15s, background 0.15s;
+                }
+                .bwm-about-close-btn:hover {
+                    color: var(--bwm-text);
+                    background: var(--bwm-btn-hover);
+                }
+                .bwm-about-body {
+                    flex: 1;
+                    overflow-y: auto;
+                    overflow-x: hidden;
+                    padding: 24px 28px 48px 28px;
+                    -webkit-overflow-scrolling: touch;
+                }
+                .bwm-about-content {
+                    max-width: 860px;
+                    margin: 0 auto;
+                    line-height: 1.68;
+                    font-size: 0.95em;
+                }
+                .bwm-about-content h2 {
+                    font-size: 1.35em;
+                    font-weight: 700;
+                    margin: 32px 0 12px 0;
+                    padding-bottom: 8px;
+                    border-bottom: 1px solid var(--bwm-border);
+                    color: var(--bwm-text);
+                }
+                .bwm-about-content h2:first-of-type {
+                    margin-top: 8px;
+                }
+                .bwm-about-content h3 {
+                    font-size: 1.1em;
+                    font-weight: 600;
+                    margin: 20px 0 8px 0;
+                    color: var(--bwm-text);
+                }
+                .bwm-about-content p {
+                    margin: 10px 0;
+                    color: var(--bwm-text);
+                }
+                .bwm-about-content ul, .bwm-about-content ol {
+                    margin: 10px 0;
+                    padding-left: 22px;
+                }
+                .bwm-about-content li {
+                    margin: 6px 0;
+                }
+                .bwm-about-card {
+                    background: color-mix(in srgb, var(--bwm-bg) 75%, var(--bwm-text) 3%);
+                    border: 1px solid var(--bwm-border);
+                    border-radius: 8px;
+                    padding: 16px 20px;
+                    margin: 16px 0;
+                }
+                .bwm-about-card-title {
+                    font-weight: 700;
+                    font-size: 1.05em;
+                    margin-bottom: 6px;
+                    color: var(--bwm-text);
+                }
+                .bwm-about-source-link {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 10px 18px;
+                    border-radius: 8px;
+                    background: color-mix(in srgb, var(--bwm-node-hover) 12%, var(--bwm-bg));
+                    border: 1px solid color-mix(in srgb, var(--bwm-node-hover) 40%, transparent);
+                    color: var(--bwm-node-hover);
+                    text-decoration: none;
+                    font-weight: 600;
+                    font-size: 0.95em;
+                    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+                    margin-top: 12px;
+                }
+                .bwm-about-source-link:hover {
+                    background: color-mix(in srgb, var(--bwm-node-hover) 22%, var(--bwm-bg));
+                    border-color: var(--bwm-node-hover);
+                    transform: translateY(-1px);
+                }
+                @media (max-width: 768px) {
+                    .bwm-about-header {
+                        padding: 10px 14px;
+                    }
+                    .bwm-about-body {
+                        padding: 16px 16px 36px 16px;
+                    }
+                    .bwm-about-content {
+                        font-size: 0.9em;
+                        line-height: 1.6;
+                    }
+                    .bwm-about-content h2 {
+                        font-size: 1.2em;
+                        margin: 24px 0 10px 0;
+                    }
+                    .bwm-about-content h3 {
+                        font-size: 1.02em;
+                    }
+                    .bwm-about-card {
+                        padding: 12px 14px;
+                    }
+                }
             </style>
             <div class="bwm-container">
                 <div class="bwm-top-bar">
@@ -3482,7 +3668,7 @@ class BibleWordMap extends HTMLElement {
                     <div class="bwm-legend-body">
                         <div class="bwm-legend-content">
                             <div class="bwm-legend-intro">
-                                Explore the Holy Scriptures through a semantic lens. Switch between the Berean Standard Bible (BSB), Greek Septuagint / New Testament (LXX), and Latin Clementine Vulgate (VUL) in Options. Each dot represents a word, biblical book, or verse centroid, and physical distance indicates semantic proximity based on biblical usage.
+                                Explore the Holy Scriptures through a semantic lens. Switch between the Berean Standard Bible (BSB), Greek Septuagint / New Testament (LXX), and Latin Clementine Vulgate (VUL). Each dot represents a word, verse, chapter, or biblical book centroid, and physical distance indicates semantic proximity based on biblical usage. To understand more, see <a href="#" class="bwm-legend-about-link" id="bwm-legend-about-link">About</a>.
                             </div>
                             <div class="bwm-legend-grid">
                                 <div class="bwm-legend-card">
@@ -3595,6 +3781,159 @@ class BibleWordMap extends HTMLElement {
                                     </ul>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bwm-about-overlay" id="bwm-about-overlay">
+                    <div class="bwm-about-header">
+                        <button type="button" class="bwm-about-back-btn" id="bwm-about-back-btn" aria-label="Back to Map View" title="Back to Map View">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+                                <polyline points="15 18 9 12 15 6"></polyline>
+                            </svg>
+                            <span>Map View</span>
+                        </button>
+                        <h3 class="bwm-about-title">About Semantic Bible</h3>
+                        <button type="button" class="bwm-about-close-btn" id="bwm-about-close-btn" aria-label="Close About" title="Close About">&times;</button>
+                    </div>
+                    <div class="bwm-about-body">
+                        <div class="bwm-about-content">
+                            <p>
+                                Explore the Holy Scriptures through a semantic lens across three historical textual foundations: the <strong>Berean Standard Bible (BSB)</strong> in English, the ancient Greek <strong>Septuagint and Greek New Testament (LXX)</strong>, and the Latin <strong>Clementine Vulgate (VUL)</strong>.
+                            </p>
+                            <p>
+                                Every point on the map represents a word lemma, verse, chapter, or biblical book centroid. Physical distance across the canvas represents semantic proximity based entirely on contextual biblical usage.
+                            </p>
+
+                            <h2>1. General Theory and Methodology</h2>
+                            <h3>Distributional Semantics and Word Embeddings</h3>
+                            <p>
+                                The foundational premise of Semantic Bible rests on distributional linguistics, summarized by British linguist J. R. Firth: <em>"You shall know a word by the company it keeps."</em>
+                            </p>
+                            <p>
+                                Rather than relying on modern theological commentary or human editorial categorization, the semantic relationships in this project were generated directly from the biblical texts:
+                            </p>
+                            <ol>
+                                <li><strong>Corpus Extraction:</strong> Text corpora were extracted from clean scripture sources across the Old Testament and New Testament, stripping modern apparatus, footnotes, and translator headings.</li>
+                                <li><strong>Morphological Lemmatization:</strong> Words in the original languages (Greek and Latin) were parsed into their dictionary base forms (lemmas) and tagged with parts of speech (e.g. nouns, verbs, adjectives, proper names) to unite inflected grammatical forms.</li>
+                                <li><strong>Continuous Vector Training:</strong> Using Gensim's Word2Vec Skip-gram architecture with negative sampling, the system trained 100-dimensional dense semantic vectors. A sliding window of 5 words captured immediate collocations, grammatical dependencies, and recurring thematic phrases throughout the canon.</li>
+                                <li><strong>Contextual Centroids:</strong> Words that repeatedly appear in similar literary and theological environments develop similar mathematical vectors. For instance, words relating to sacrifice, priesthood, and altar naturally converge because they share overlapping narrative and ritual contexts.</li>
+                            </ol>
+
+                            <h3>Dimensionality Reduction (100D to 2D)</h3>
+                            <p>
+                                A 100-dimensional vector space captures rich semantic relationships, but human perception operates in two dimensions. To visualize this space:
+                            </p>
+                            <ul>
+                                <li>High-dimensional vectors were projected onto a 2D plane using UMAP (Uniform Manifold Approximation and Projection) combined with calibrated force-directed physics.</li>
+                                <li>The projection optimizes for local neighborhood fidelity (trustworthiness &gt; 0.83 and continuity &gt; 0.90), keeping words that are close in 100 dimensions close on the 2D canvas.</li>
+                                <li>Connecting lines visually indicate significant relationships: solid lines represent direct primary neighbors, while dashed lines represent secondary semantic bridges. Numerical badges display the exact high-dimensional cosine similarity (e.g. <code>84.5%</code>).</li>
+                            </ul>
+
+                            <h3>Multi-Level Semantic Hierarchy</h3>
+                            <p>Semantic Bible provides four complementary viewing modes:</p>
+                            <ul>
+                                <li><strong>Word Mode:</strong> The atomic vocabulary map (over 8,200 English terms, 9,200 Greek lemmas, and 10,400 Latin lemmas).</li>
+                                <li><strong>Verses View:</strong> 31,000+ biblical verses projected as multi-word centroids computed by averaging constituent lemma vectors, revealing how entire biblical passages cluster thematically.</li>
+                                <li><strong>Chapters Mode:</strong> 1,189 chapter centroids illustrating high-level narrative movements and thematic transitions across books.</li>
+                                <li><strong>Books Mode:</strong> Macro-landmarks representing the comprehensive vocabulary and theological center of gravity for each book of the canon.</li>
+                                <li><strong>Dynamic Phrase Centroids:</strong> When querying two or three words together (e.g. "faith righteousness", "grace truth peace"), the engine calculates the dynamic 100D vector average in real time and locates the nearest biblical verses.</li>
+                            </ul>
+
+                            <h2>2. Limitations of the Map</h2>
+                            <p>
+                                While the semantic map offers a fresh, data-driven window into scripture, it is a statistical model with specific methodological boundaries that users should keep in mind:
+                            </p>
+
+                            <h3>Vocabulary Sparsity and Frequency Thresholds</h3>
+                            <p>
+                                In any natural language corpus, word frequencies follow Zipf's law: a tiny fraction of words account for the majority of text, while a large percentage appear very rarely.
+                            </p>
+                            <div class="bwm-about-card">
+                                <div class="bwm-about-card-title">Empirical Corpus Analysis: Hapax Legomena</div>
+                                <ul>
+                                    <li><strong>BSB (English):</strong> 30.66% of all unique words (3,644 terms) are <em>hapax legomena</em> (occur only once in the Bible).</li>
+                                    <li><strong>LXX (Greek):</strong> 41.27% of all unique words (6,488 terms) occur only once.</li>
+                                    <li><strong>VUL (Latin):</strong> 37.09% of all unique words (6,168 terms) occur only once.</li>
+                                </ul>
+                            </div>
+                            <p>
+                                <strong>Why words with frequency &lt; 3 are filtered out:</strong><br>
+                                Word2Vec requires repeated, diverse context windows to triangulate a stable semantic vector. If a word only appears once or twice (such as an obscure Persian loanword, a rare gem in Aaron's breastplate, or a specific geographic landmark), its vector is dominated by the immediate verse in which it happens to sit, rather than reflecting a generalizable theological meaning. Including single-occurrence words would produce misleading clusters. Therefore, the map requires a minimum frequency threshold of <code>count &gt;= 3</code> for inclusion on the 2D canvas.
+                            </p>
+                            <p>
+                                <strong>Interpreting words with low frequency (3 to 5 occurrences):</strong><br>
+                                Words that appear only 3, 4, or 5 times are included on the map, but their positions are heavily influenced by those few specific passages. For example, a rare word occurring three times in Leviticus will be positioned close to the ritual vocabulary of that specific section of the law. Users should inspect the Study Panel to review all occurrences and evaluate the context of low-frequency terms.
+                            </p>
+
+                            <h3>Polysemy and Homographs</h3>
+                            <p>
+                                In this model, each distinct lemma corresponds to a single point in the 2D coordinate space. In reality, biblical words often carry multiple distinct meanings depending on context:
+                            </p>
+                            <ul>
+                                <li>The Greek word <em>pneuma</em> (<em>πνεῦμα</em>) can mean physical "breath", natural "wind", or the "Holy Spirit".</li>
+                                <li>The English word <em>temple</em> can refer to Solomon's physical stone sanctuary, a pagan shrine, or the metaphorical human body in Pauline theology.</li>
+                            </ul>
+                            <p>
+                                Because each word has one composite vector, its position represents a weighted average of all its biblical usages. The point gravitates toward the dominant usage across the canon rather than splitting into multiple separate points.
+                            </p>
+
+                            <h3>2D Projection Distortion</h3>
+                            <p>
+                                Squashing 100 dimensions of semantic nuance onto a 2D flat plane inevitably causes some geometric compromise:
+                            </p>
+                            <ul>
+                                <li>Two dots that appear near each other on the 2D screen may occasionally have lower high-dimensional similarity than their visual distance suggests (a projection artifact known as "crowding").</li>
+                                <li>Conversely, two closely related words may be pushed slightly apart to resolve physics collisions.</li>
+                                <li><strong>Remedy:</strong> Always rely on the connecting lines, the cosine similarity percentages (<code>##.#%</code>), and the Study Panel cross-references, which always calculate relationships directly from the uncompressed 100D vector space.</li>
+                            </ul>
+
+                            <h3>Translation vs. Original Language Perspective</h3>
+                            <p>
+                                The English (BSB) map reflects the vocabulary of a modern English translation. While translations strive for accuracy, English words inevitably smooth over distinctions present in ancient Hebrew, Aramaic, and Greek. By switching between the Berean Standard Bible, the Septuagint, and the Clementine Vulgate in the Options drawer, users can compare how semantic structures manifest across different linguistic traditions.
+                            </p>
+
+                            <h2>3. Real Discovery Examples</h2>
+                            <ol>
+                                <li>
+                                    <strong>The Covenantal Cluster:</strong> Searching for "covenant" reveals immediate high-similarity clustering with "promise", "oath", "sworn", "inheritance", and "statute". In both the Old Testament and New Testament, these legal and relational terms form a dense, cohesive semantic family.
+                                </li>
+                                <li>
+                                    <strong>Cross-Canon Parallels:</strong> Examining "faith" in English connects to "righteousness", "believe", and "grace". Switching to the Greek Septuagint and New Testament reveals <em>pistis</em> (<em>πίστις</em>) occupying a structurally identical position relative to <em>charis</em> (<em>χάρις</em>, grace) and <em>dikaiosyne</em> (<em>δικαιοσύνη</em>, righteousness), while the Latin Clementine Vulgate shows <em>fides</em> connected to <em>iustitia</em> and <em>gratia</em>.
+                                </li>
+                                <li>
+                                    <strong>Multi-Word Dynamic Centroids:</strong> Searching for the two-word phrase "mercy truth" immediately calculates the centroid between both concepts and highlights Psalm 85:10 (<em>"Mercy and truth are met together; righteousness and peace have kissed each other"</em>), demonstrating how the model surfaces poetic and theological synthesis.
+                                </li>
+                            </ol>
+
+                            <h2>4. Open Source Attribution and Data Sources</h2>
+                            <div class="bwm-about-card">
+                                <ul>
+                                    <li><strong>Berean Standard Bible (BSB):</strong> English text, verse indexing, and interlinear mapping tables. Dedicated to the public domain.</li>
+                                    <li><strong>Septuaginta (LXX, Rahlfs 1935):</strong> Alfred Rahlfs' 1935 edition of the Greek Septuagint with CATSS / CCAT morphological tagging and lemmatization (IOSCS / University of Pennsylvania).</li>
+                                    <li><strong>Brenton Septuagint Translation:</strong> Sir Lancelot C. L. Brenton's 1851 English translation of the Greek Septuagint (Public Domain).</li>
+                                    <li><strong>STEPBible TBESG Lexicon:</strong> Translators Brief Lexicon of Extended Strong's for Greek (Tyndale House Cambridge, CC BY 4.0).</li>
+                                    <li><strong>SBL Greek New Testament (SBLGNT):</strong> Edited by Michael W. Holmes (Society of Biblical Literature and Logos Bible Software, CC BY 4.0).</li>
+                                    <li><strong>OpenScriptures Strong's Dictionary:</strong> Original language definitions and Strong's concordances (CC BY 4.0).</li>
+                                    <li><strong>Clementina Vulgata &amp; Douay-Rheims Translation:</strong> Biblia Sacra Vulgata (Clementine edition) with parallel Douay-Rheims English translation.</li>
+                                    <li><strong>William Whitaker's WORDS:</strong> Latin morphological and lexical dictionary (Public Domain).</li>
+                                    <li><strong>PROIEL Latin Treebank of the Vulgate:</strong> Jerome's Vulgate text with gold-standard lemmatization and Universal Dependencies UPOS tagging (University of Oslo, CC BY-NC-SA 3.0 / CC BY 4.0).</li>
+                                    <li><strong>CLTK Latin Lemmatizer:</strong> Classical Language Toolkit lemmatizer tables for Latin texts.</li>
+                                    <li><strong>D3.js:</strong> Interactive physics simulation and vector canvas rendering by Mike Bostock (BSD 3-Clause).</li>
+                                </ul>
+                            </div>
+
+                            <h2>5. Source Code</h2>
+                            <p>
+                                The full source code, data extraction pipelines, and machine learning models are freely available on GitHub:
+                            </p>
+                            <p>
+                                <a href="https://github.com/rotareti/semantic-bible-word-map" target="_blank" rel="noopener noreferrer" class="bwm-about-source-link">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                                        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                                    </svg>
+                                    <span>GitHub Repository: rotareti/semantic-bible-word-map</span>
+                                </a>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -4103,6 +4442,10 @@ class BibleWordMap extends HTMLElement {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 let handled = false;
+                if (this.aboutOverlay && this.aboutOverlay.classList.contains('visible')) {
+                    this.hideAboutOverlay();
+                    handled = true;
+                }
                 if (this.drawer && this.drawer.classList.contains('open') && !this.isOptionsPanelPinned) {
                     this.closeDrawer();
                     handled = true;
@@ -4263,6 +4606,17 @@ class BibleWordMap extends HTMLElement {
         this.legendBackBtn = this.querySelector('#bwm-legend-back-btn');
         this.legendCloseBtn = this.querySelector('#bwm-legend-close-btn');
         this.drawerLegendBtn = this.querySelector('#bwm-drawer-legend-btn');
+        this.legendAboutLink = this.querySelector('#bwm-legend-about-link');
+
+        this.aboutOverlay = this.querySelector('#bwm-about-overlay');
+        this.aboutBackBtn = this.querySelector('#bwm-about-back-btn');
+        this.aboutCloseBtn = this.querySelector('#bwm-about-close-btn');
+
+        if (this.aboutOverlay) {
+            this.aboutOverlay.addEventListener('click', (e) => e.stopPropagation());
+            this.aboutOverlay.addEventListener('pointerdown', (e) => e.stopPropagation());
+            this.aboutOverlay.addEventListener('mousedown', (e) => e.stopPropagation());
+        }
 
         if (this.drawerLegendBtn) {
             this.drawerLegendBtn.addEventListener('click', (e) => {
@@ -4280,6 +4634,25 @@ class BibleWordMap extends HTMLElement {
             this.legendCloseBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.hideLegendWindow();
+            });
+        }
+        if (this.legendAboutLink) {
+            this.legendAboutLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.showAboutOverlay();
+            });
+        }
+        if (this.aboutBackBtn) {
+            this.aboutBackBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.hideAboutOverlay();
+            });
+        }
+        if (this.aboutCloseBtn) {
+            this.aboutCloseBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.hideAboutOverlay();
             });
         }
         
@@ -8003,6 +8376,25 @@ class BibleWordMap extends HTMLElement {
     hideLegendWindow() {
         if (!this.legendOverlay) return;
         this.legendOverlay.classList.remove('visible');
+    }
+
+    showAboutOverlay() {
+        if (!this.aboutOverlay) return;
+        this.closeSearchRecovery();
+        this.closeActiveInfoWindows(true);
+        this.hideRadialMenu();
+        this.closeDrawer(true);
+        this.hideLegendWindow();
+        this.aboutOverlay.classList.add('visible');
+        const body = this.aboutOverlay.querySelector('.bwm-about-body');
+        if (body) {
+            body.scrollTop = 0;
+        }
+    }
+
+    hideAboutOverlay() {
+        if (!this.aboutOverlay) return;
+        this.aboutOverlay.classList.remove('visible');
     }
 
     openDrawer() {

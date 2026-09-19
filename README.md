@@ -2,6 +2,8 @@
 
 This project generates a semantic word-proximity map of the Bible using natural language processing and visualizes it in a web browser.
 
+For a comprehensive guide to the underlying distributional semantic theory, dimensionality reduction methodology, frequency filtering thresholds, and project limitations, see the [About Documentation](ABOUT.md).
+
 ## Architecture
 
 The pipeline consists of three main components:
