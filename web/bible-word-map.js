@@ -1687,12 +1687,17 @@ class BibleWordMap extends HTMLElement {
                     opacity: 1;
                     pointer-events: auto;
                 }
-                .bwm-window-card.pinned {
+                .bwm-window-card.pinned.visible {
                     transform: translateX(0) !important;
                     opacity: 1 !important;
                     pointer-events: auto !important;
                     box-shadow: -2px 0 12px rgba(0, 0, 0, 0.08);
                     border-left: 1px solid var(--bwm-border);
+                }
+                .bwm-window-card:not(.visible) {
+                    transform: translateX(105%) !important;
+                    opacity: 0 !important;
+                    pointer-events: none !important;
                 }
 
                 .bwm-word-pane {
@@ -5991,8 +5996,21 @@ class BibleWordMap extends HTMLElement {
         }
         
         this.renderActiveWords();
+
+        this.hideVerseCard();
+        this.hideChapterCard();
+        this.hideBookCard();
+
         if (window.innerWidth <= 768) {
             this.hideWordInspector();
+        } else if (this.isStudyPanelPinned || (this.wordCard && this.wordCard.classList.contains('visible'))) {
+            let primaryId = this.searchedWords && this.searchedWords[0];
+            let primaryNode = (this.allSearchNodes && this.allSearchNodes.find(n => n.id === primaryId))
+                || (foundPoints && foundPoints[0])
+                || (this.data2d && this.data2d.find(d => d.id === primaryId));
+            if (primaryNode) {
+                this.showWordInspector(primaryNode, this.lastWordInspectorTab || 'verses');
+            }
         }
         this.runSimulation();
     }
@@ -6056,6 +6074,7 @@ class BibleWordMap extends HTMLElement {
         this.hideChapterCard();
         this.hideWordInspector();
         this.hideBookCard();
+        if (this.isStudyPanelPinned) this.unpinStudyPanel();
         this.inspectorNode = null;
         this.hoveredNode = null;
         this.buildAllWordsGraph();
@@ -7185,6 +7204,7 @@ class BibleWordMap extends HTMLElement {
         this.selectedBook = null;
         this.selectedVerse = null;
         this.selectedChapter = null;
+        this.hideWordInspector();
         this.hideBookCard();
         this.hideVerseCard();
         this.hideChapterCard();
@@ -7813,6 +7833,8 @@ class BibleWordMap extends HTMLElement {
         this.hideBookCard();
         this.hideWordInspector();
         this.hideVerseCard();
+        this.hideChapterCard();
+        if (this.isStudyPanelPinned) this.unpinStudyPanel();
         this.inspectorNode = null;
         this.hoveredNode = null;
         if (this.reopenBtn) {
@@ -8050,6 +8072,7 @@ class BibleWordMap extends HTMLElement {
         }
         this.hideWordInspector();
         this.hideVerseCard();
+        this.hideChapterCard();
         this.hideRadialMenu();
         this.selectedBook = book;
         let genreColor = GENRE_COLORS[book.genre] || '#3b82f6';
@@ -8237,7 +8260,7 @@ class BibleWordMap extends HTMLElement {
 
     hideBookCard() {
         if (this.bookCard) {
-            this.bookCard.classList.remove('visible');
+            this.bookCard.classList.remove('visible', 'pinned');
             this.bookCard.style.transform = '';
             this.bookCard.style.transition = '';
             this.bookCard.style.opacity = '';
@@ -9039,6 +9062,7 @@ class BibleWordMap extends HTMLElement {
         this.hideChapterCard();
         this.hideWordInspector();
         this.hideBookCard();
+        if (this.isStudyPanelPinned) this.unpinStudyPanel();
         this.inspectorNode = null;
         this.hoveredNode = null;
         if (this.chapterReopenBtn) this.chapterReopenBtn.style.display = 'none';
@@ -9724,7 +9748,7 @@ class BibleWordMap extends HTMLElement {
 
     hideChapterCard() {
         if (this.chapterCard) {
-            this.chapterCard.classList.remove('visible');
+            this.chapterCard.classList.remove('visible', 'pinned');
             this.chapterCard.style.transform = '';
             this.chapterCard.style.transition = '';
             this.chapterCard.style.opacity = '';
@@ -10177,6 +10201,7 @@ class BibleWordMap extends HTMLElement {
         }
         this.hideWordInspector();
         this.hideBookCard();
+        this.hideChapterCard();
         this.hideRadialMenu();
         this.selectedVerse = verse;
 
@@ -10532,7 +10557,7 @@ class BibleWordMap extends HTMLElement {
 
     hideVerseCard() {
         if (this.verseCard) {
-            this.verseCard.classList.remove('visible');
+            this.verseCard.classList.remove('visible', 'pinned');
             this.verseCard.style.transform = '';
             this.verseCard.style.transition = '';
             this.verseCard.style.opacity = '';
@@ -10617,6 +10642,8 @@ class BibleWordMap extends HTMLElement {
         this.hideVerseCard();
         this.hideWordInspector();
         this.hideBookCard();
+        this.hideChapterCard();
+        if (this.isStudyPanelPinned) this.unpinStudyPanel();
         this.inspectorNode = null;
         this.hoveredNode = null;
         if (this.verseReopenBtn) this.verseReopenBtn.style.display = 'none';
@@ -12120,7 +12147,7 @@ class BibleWordMap extends HTMLElement {
 
     hideWordInspector() {
         if (this.wordCard) {
-            this.wordCard.classList.remove('visible');
+            this.wordCard.classList.remove('visible', 'pinned');
             this.wordCard.style.transform = '';
             this.wordCard.style.transition = '';
             this.wordCard.style.opacity = '';
