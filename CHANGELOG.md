@@ -1,5 +1,18 @@
 # Changelog
 
+## [10.0.0] - 2026-09-18
+### Added
+- **Chapters Mode Semantic Landscape:** Introduced Chapters Mode providing an interactive semantic landscape of all 1,189 biblical chapters across the Berean Standard Bible, Septuagint, and Clementine Vulgate. Computed 100D semantic chapter centroids with real-time dynamic projections, nearest neighbors, canon-wide cross-references, and full chapter reader integration.
+- **Sequential Verse and Chapter Navigation Chevrons:** Added large, flat navigation chevrons (`<` and `>`) flanking verse and chapter references in both the Verse Study Panel and Chapter Study Panel headers. Enables rapid context exploration and peeking ahead or back without changing canvas zoom or camera framing, complete with canonical boundary clamping at Genesis 1:1 and Revelation 22:21.
+- **Mobile Swipe Gestures:** Integrated native left and right touch swipe gestures on mobile devices (`<= 768px`) across the Verse Study Panel and Chapter Study Panel, advancing or rewinding verses and chapters fluidly while concealing desktop chevrons for an uncluttered mobile interface.
+- **Unified Cross-Reference Verse Cards in Word Study Panel:** Upgraded the Verses tab of the Word Study Panel from plain text rows to modern interactive cross-reference cards featuring dedicated background and border contrast, clickable canonical verse citations that open the Verse Study Panel, book genre color badges, and inline passage expansion.
+- **Dynamic Zoom Extents Recenter Button:** Added a glassy recentering button in the lower right corner of the canvas that smoothly returns the camera to ideal framing with a 600ms cubic-out transition whenever the user pans or zooms away from default bounds.
+
+### Changed
+- **Professional Study Panel Tab Styling:** Removed informal emoji icons and redundant hard-coded item counts from tab titles across Word, Verse, Chapter, and Book study panels (such as `Reader`, `Related`, `Refs`, `Words`, `Verses`, `Language`, `Usage`, `Neighbors`), achieving a clean, elegant, and scholarly aesthetic.
+- **Subtab Selection Persistence:** Maintained active subtab selections across sequential chapter and verse navigation so readers stay focused on their preferred view (e.g. Reader, Cross-References, or Related Chapters).
+- **Asset Cache Busting (`v=10.0.0`):** Bumped cache-buster query parameter to `?v=10.0.0` across stylesheet links, custom element scripts, and runtime data fetch requests.
+
 ## [9.2.2] - 2026-09-18
 ### Added
 - **Compact URL Parameter Encoding & Share Button:** Added compact, human-readable URL query encoding (`m=` for mode, `c=` for canon, `b=` for book, `ch=` for chapter, `v=` for verse, `kw=` for keywords) with backward-compatible legacy parameter decoding and a dedicated top-header "Share" button with clipboard notification.
