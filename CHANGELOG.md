@@ -1,5 +1,24 @@
 # Changelog
 
+## [10.4.0] - 2026-09-19
+### Added
+- **Full Map Space About Overlay:** Introduced a comprehensive in-app About view accessible via the bottom footer and Explore Legend:
+  - Covers the entire canvas, search bar, Options drawer, Study Panel, and Legend with a sleek backdrop blur and responsive card layout.
+  - Keeps the top header (with title, version, theme toggle, and share link) and footer visible and interactive above the overlay.
+  - Provides intuitive dismissal via "Map View" back button, close button (`×`), `Escape` key, or clicking the home title.
+- **Comprehensive Methodology & Limitations Documentation:** Added in-depth educational sections to both the in-app About view and repository `ABOUT.md`:
+  - Distributional semantics (J. R. Firth), lemmatization, 100D Word2Vec Skip-gram embeddings, and calibrated UMAP 2D projections.
+  - Multi-level semantic hierarchy across Word Mode, Verses View, Chapters Mode, Books Mode, and dynamic multi-word phrase centroids.
+  - Empirical corpus findings on Zipf's law and *hapax legomena* (BSB: 30.66%, LXX: 41.27%, VUL: 37.09%), explanation for filtering threshold (`count >= 3`), and guidance for interpreting rare terms (3 to 5 occurrences).
+  - Caveats regarding polysemy/homograph single-vector averaging, 2D projection crowding, and translation nuances.
+  - Real discovery examples including the covenantal cluster, cross-canon alignments (*faith* / *pistis* / *fides*), and dynamic phrase centroid matching (Psalm 85:10).
+  - Attribution for open source datasets (BSB, Septuaginta Rahlfs 1935 / CATSS, Brenton, STEPBible TBESG, SBLGNT, OpenScriptures Strong's, Clementine Vulgate & Douay-Rheims, William Whitaker's WORDS, PROIEL Latin Treebank, CLTK, D3.js) and GitHub repository link.
+
+### Changed
+- **Explore Legend Brief Update:** Updated the brief description in the Legend overlay to clearly explain multi-level centroids and physical semantic proximity, concluding with a direct link to the About view.
+- **Footer Refinement:** Replaced the raw GitHub source link in the bottom footer with a styled "About" button while retaining the scripture quote (*"Freely you have received; freely give."*, Matthew 10:8).
+- **Asset Cache Busting (`v=10.4.0`):** Bumped cache-buster query parameter to `?v=10.4.0` across stylesheet links, custom element scripts, and runtime data fetch requests.
+
 ## [10.3.0] - 2026-09-19
 ### Added
 - **Theme Mode Toggle Button:** Added a theme mode button directly to the left of the Share button in the page header. Features include:
