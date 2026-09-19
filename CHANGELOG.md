@@ -1,5 +1,18 @@
 # Changelog
 
+## [10.1.0] - 2026-09-19
+### Added
+- **Desktop Panel Pinning:** Introduced persistent pinning for the Options drawer and Study Panel on desktop viewports. Pin toggles (`📌`) allow users to dock either panel (viewports >= 1024px) or both panels simultaneously (viewports >= 1300px), with dynamic canvas camera recentering that automatically frames the semantic visualization in the remaining visible canvas space.
+- **Cross-Canon Search Discovery Suggestions:** Added cross-canon search recovery suggestions across the Berean Standard Bible, Septuagint, and Clementine Vulgate. When a query has no direct matches in the active canon, the search dropdown suggests matching terms from sister canons, allowing one-click switching directly to the matching term and canon.
+- **3-Word Dynamic Phrase Centroid Search:** Extended multi-word dynamic semantic centroid computation to support 3-word phrases in addition to 2-word queries, projecting 100D vector centroids in real time to locate the closest biblical verses across the canon.
+
+### Changed
+- **Study Panel Navigation Synchronization & Stacking:** Synchronized the Study Panel to follow user navigation seamlessly when pinned. Clicking "Read Chapter", searching another chapter (e.g. "Isa 53"), or searching another keyword (e.g. "faith") while pinned smoothly updates the Study Panel content to the active entity without closing. Fixed Study Panel stacking order so inactive cards are cleanly hidden off-screen, ensuring the active card always renders top-most.
+- **High-Contrast Indirect Link Badges:** Redesigned the "Indirect link" badge styling across light and dark modes with high-contrast text, borders, and backgrounds for immediate visual distinction of bridged semantic connections.
+- **Study Panel Header Similarity Decluttering:** Removed redundant `##.#% similarity to ...` badges from the top title line across Word Mode, Verses View, Chapters Mode, and Books Mode study panels, keeping header titles clean and legible while preserving detailed similarity scores in subtabs, cards, and list rows.
+- **Calibrated Zoom Extents Margins:** Refined Zoom Extents bounding box calculations and margin padding across mobile and desktop displays to ensure all nodes and labels remain comfortably within the visible viewport bounds.
+- **Asset Cache Busting (`v=10.1.0`):** Bumped cache-buster query parameter to `?v=10.1.0` across stylesheet links, custom element scripts, and runtime data fetch requests.
+
 ## [10.0.0] - 2026-09-18
 ### Added
 - **Chapters Mode Semantic Landscape:** Introduced Chapters Mode providing an interactive semantic landscape of all 1,189 biblical chapters across the Berean Standard Bible, Septuagint, and Clementine Vulgate. Computed 100D semantic chapter centroids with real-time dynamic projections, nearest neighbors, canon-wide cross-references, and full chapter reader integration.
