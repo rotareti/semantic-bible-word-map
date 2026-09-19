@@ -2,6 +2,7 @@
 
 ## [10.1.0] - 2026-09-19
 ### Added
+- **Top "Read Chapter >" Navigation Button:** Added a prominent "Read Chapter >" button with a rightward chevron directly in the Verse Study Panel header, enabling immediate one-tap chapter navigation and auto-scrolling to the active verse without scrolling past long lists of cross-references and constituent words.
 - **Desktop Panel Pinning:** Introduced persistent pinning for the Options drawer and Study Panel on desktop viewports. Pin toggles (`📌`) allow users to dock either panel (viewports >= 1024px) or both panels simultaneously (viewports >= 1300px), with dynamic canvas camera recentering that automatically frames the semantic visualization in the remaining visible canvas space.
 - **Cross-Canon Search Discovery Suggestions:** Added cross-canon search recovery suggestions across the Berean Standard Bible, Septuagint, and Clementine Vulgate. When a query has no direct matches in the active canon, the search dropdown suggests matching terms from sister canons, allowing one-click switching directly to the matching term and canon.
 - **3-Word Dynamic Phrase Centroid Search:** Extended multi-word dynamic semantic centroid computation to support 3-word phrases in addition to 2-word queries, projecting 100D vector centroids in real time to locate the closest biblical verses across the canon.
@@ -12,6 +13,10 @@
 - **Study Panel Header Similarity Decluttering:** Removed redundant `##.#% similarity to ...` badges from the top title line across Word Mode, Verses View, Chapters Mode, and Books Mode study panels, keeping header titles clean and legible while preserving detailed similarity scores in subtabs, cards, and list rows.
 - **Calibrated Zoom Extents Margins:** Refined Zoom Extents bounding box calculations and margin padding across mobile and desktop displays to ensure all nodes and labels remain comfortably within the visible viewport bounds.
 - **Asset Cache Busting (`v=10.1.0`):** Bumped cache-buster query parameter to `?v=10.1.0` across stylesheet links, custom element scripts, and runtime data fetch requests.
+
+### Fixed
+- **GitHub Pages Deployment Workflow for Chapters Mode Data:** Added `chaptermap_2d.json`, `chaptermap_2d_lxx.json`, and `chaptermap_2d_vul.json` to the GitHub Actions `pages.yml` site packaging step, resolving HTTP 404 errors when loading or searching chapters on the deployed production site.
+- **Asynchronous Chapter Search Resilience:** Enhanced `searchChapters` and `showChapterCard` to gracefully wait for in-flight chapter data promises when users execute direct chapter queries or click chapter search suggestions.
 
 ## [10.0.0] - 2026-09-18
 ### Added
