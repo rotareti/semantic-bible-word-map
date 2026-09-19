@@ -642,8 +642,8 @@ class BibleWordMap extends HTMLElement {
         this.verseRefsPerVerse = 16;
         this.verseWordsPerVerse = 6;
         this.searchRecoveryPopover = null;
-        this._uniqueWordList = null;
-        this._uniqueWordListSource = null;
+        this.isOptionsPanelPinned = false;
+        this.isStudyPanelPinned = false;
         
         this.innerHTML = `
             <style>
@@ -1207,6 +1207,46 @@ class BibleWordMap extends HTMLElement {
                 .bwm-drawer.open {
                     left: 0;
                 }
+                .bwm-drawer.pinned {
+                    left: 0;
+                    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08);
+                    border-right: 1px solid var(--bwm-border);
+                }
+                .bwm-panel-pin-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 26px;
+                    height: 26px;
+                    padding: 0;
+                    border-radius: 6px;
+                    border: 1px solid transparent;
+                    background: transparent;
+                    color: var(--bwm-text-muted);
+                    cursor: pointer;
+                    transition: all 0.18s ease;
+                }
+                .bwm-panel-pin-btn:hover {
+                    color: var(--bwm-text);
+                    background: var(--bwm-btn-hover);
+                    border-color: var(--bwm-border);
+                }
+                .bwm-panel-pin-btn.pinned,
+                .bwm-panel-pin-btn.is-active {
+                    color: var(--bwm-node-hover, #2563eb);
+                    background: rgba(37, 99, 235, 0.12);
+                    border-color: rgba(37, 99, 235, 0.35);
+                }
+                .bwm-panel-pin-btn.pinned svg,
+                .bwm-panel-pin-btn.is-active svg {
+                    fill: currentColor;
+                    transform: rotate(-30deg);
+                }
+                @media (max-width: 1023px) {
+                    .bwm-panel-pin-btn {
+                        display: none !important;
+                    }
+                }
                 .bwm-drawer-header {
                     display: flex;
                     justify-content: space-between;
@@ -1647,6 +1687,13 @@ class BibleWordMap extends HTMLElement {
                     opacity: 1;
                     pointer-events: auto;
                 }
+                .bwm-window-card.pinned {
+                    transform: translateX(0) !important;
+                    opacity: 1 !important;
+                    pointer-events: auto !important;
+                    box-shadow: -2px 0 12px rgba(0, 0, 0, 0.08);
+                    border-left: 1px solid var(--bwm-border);
+                }
 
                 .bwm-word-pane {
                     display: flex;
@@ -1801,6 +1848,25 @@ class BibleWordMap extends HTMLElement {
                         background: rgba(96, 165, 250, 0.15);
                         color: #60a5fa !important;
                         border-color: rgba(96, 165, 250, 0.35);
+                    }
+                }
+                .bwm-window-badge-indirect {
+                    display: inline-flex;
+                    align-items: center;
+                    font-size: 0.74em;
+                    font-weight: 600;
+                    letter-spacing: 0.2px;
+                    padding: 2px 8px;
+                    border-radius: 12px;
+                    border: 1px dashed #2563eb;
+                    color: #1d4ed8 !important;
+                    background: rgba(37, 99, 235, 0.12) !important;
+                }
+                @media (prefers-color-scheme: dark) {
+                    bible-word-map .bwm-window-badge-indirect {
+                        border-color: #60a5fa;
+                        color: #93c5fd !important;
+                        background: rgba(96, 165, 250, 0.18) !important;
                     }
                 }
                 .bwm-book-badge {
@@ -3136,7 +3202,10 @@ class BibleWordMap extends HTMLElement {
                     <div class="bwm-sheet-handle"></div>
                     <div class="bwm-drawer-header">
                         <h3>Options</h3>
-                        <div class="bwm-drawer-close" id="bwm-drawer-close">&times;</div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            ${this.renderPinButton('options')}
+                            <div class="bwm-drawer-close" id="bwm-drawer-close">&times;</div>
+                        </div>
                     </div>
                     <div class="bwm-drawer-content">
                         <button type="button" class="bwm-drawer-legend-btn" id="bwm-drawer-legend-btn" title="Open Map Guide &amp; Legend">
@@ -3541,6 +3610,21 @@ class BibleWordMap extends HTMLElement {
             this.chapterCard.addEventListener('mousedown', (e) => e.stopPropagation());
             this.setupMobileSwipeToDismiss(this.chapterCard, () => this.hideChapterCard());
         }
+
+        this.addEventListener('click', (e) => {
+            const pinBtn = e.target.closest('.bwm-panel-pin-btn');
+            if (pinBtn) {
+                e.stopPropagation();
+                e.preventDefault();
+                const panelType = pinBtn.getAttribute('data-pin-panel');
+                if (panelType === 'options') {
+                    this.togglePinOptionsPanel();
+                } else {
+                    this.togglePinStudyPanel();
+                }
+            }
+        }, true);
+
         this.reopenBtn = this.querySelector('#bwm-book-card-reopen');
         if (this.reopenBtn) {
             this.reopenBtn.addEventListener('click', (e) => {
@@ -3885,7 +3969,7 @@ class BibleWordMap extends HTMLElement {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 let handled = false;
-                if (this.drawer && this.drawer.classList.contains('open')) {
+                if (this.drawer && this.drawer.classList.contains('open') && !this.isOptionsPanelPinned) {
                     this.closeDrawer();
                     handled = true;
                 }
@@ -3893,7 +3977,7 @@ class BibleWordMap extends HTMLElement {
                     this.hideLegendWindow();
                     handled = true;
                 }
-                if (this.closeActiveInfoWindows()) {
+                if (!this.isStudyPanelPinned && this.closeActiveInfoWindows()) {
                     handled = true;
                 }
                 if (handled) {
@@ -4024,14 +4108,20 @@ class BibleWordMap extends HTMLElement {
             this.drawerToggle.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.closeSearchRecovery();
-                this.toggleDrawer();
+                if (this.isOptionsPanelPinned) {
+                    this.unpinOptionsPanel();
+                    this.closeDrawer(true);
+                } else {
+                    this.toggleDrawer();
+                }
             });
         }
         
         if (this.drawerClose) {
             this.drawerClose.addEventListener('click', (e) => {
                 e.stopPropagation();
-                this.closeDrawer();
+                this.unpinOptionsPanel();
+                this.closeDrawer(true);
             });
         }
 
@@ -4110,6 +4200,21 @@ class BibleWordMap extends HTMLElement {
                 this.closeDrawer();
             }
         }
+
+        if (window.innerWidth < 1024) {
+            if (this.isOptionsPanelPinned) {
+                this.unpinOptionsPanel();
+                this.closeDrawer(true);
+            }
+            if (this.isStudyPanelPinned) {
+                this.unpinStudyPanel();
+                this.closeActiveInfoWindows(true);
+            }
+        } else if (window.innerWidth < 1300 && this.isOptionsPanelPinned && this.isStudyPanelPinned) {
+            this.unpinOptionsPanel();
+            this.closeDrawer(true);
+        }
+        this.updatePinButtonStates();
         let rect = this.canvas.parentElement.getBoundingClientRect();
         let dpr = window.devicePixelRatio || 1;
         
@@ -6841,15 +6946,19 @@ class BibleWordMap extends HTMLElement {
         const isMobile = (window.innerWidth <= 768 || cw <= 768);
         const pad = isMobile ? 0.88 : 0.92;
         
+        let leftMargin = (this.isOptionsPanelPinned && !isMobile) ? 300 : 0;
+        let rightMargin = (this.isStudyPanelPinned && !isMobile) ? 440 : 0;
+        let effectiveCw = Math.max(cw - leftMargin - rightMargin, 300);
+        
         // Target scale to fit bounds with responsive padding
-        let targetScale = pad / Math.max(dx / cw, dy / ch);
+        let targetScale = pad / Math.max(dx / effectiveCw, dy / ch);
         const maxScale = isMobile ? 2.2 : 2.6;
         targetScale = Math.min(targetScale, maxScale);
         
         // Smoothly interpolate current transform towards target transform
         let k = this.transform.k + (targetScale - this.transform.k) * 0.05;
         
-        let targetX = cw / 2 - k * cx;
+        let targetX = (leftMargin + effectiveCw / 2) - k * cx;
         let targetY = ch / 2 - k * cy;
         
         let tx = this.transform.x + (targetX - this.transform.x) * 0.05;
@@ -6896,13 +7005,17 @@ class BibleWordMap extends HTMLElement {
         const defaultPadding = isMobile ? 0.88 : 0.92;
         const pad = (paddingFactor !== undefined) ? paddingFactor : defaultPadding;
         
-        let targetScale = pad / Math.max(dx / cw, dy / ch);
+        let leftMargin = (this.isOptionsPanelPinned && !isMobile) ? 300 : 0;
+        let rightMargin = (this.isStudyPanelPinned && !isMobile) ? 440 : 0;
+        let effectiveCw = Math.max(cw - leftMargin - rightMargin, 300);
+        
+        let targetScale = pad / Math.max(dx / effectiveCw, dy / ch);
         if (this.isSearchMode) {
             const maxScale = isMobile ? 2.2 : 2.6;
             targetScale = Math.min(targetScale, maxScale);
         }
         
-        let tx = cw / 2 - targetScale * cx;
+        let tx = (leftMargin + effectiveCw / 2) - targetScale * cx;
         let ty = ch / 2 - targetScale * cy;
         return d3.zoomIdentity.translate(tx, ty).scale(targetScale);
     }
@@ -7737,12 +7850,17 @@ class BibleWordMap extends HTMLElement {
         this.drawer.style.transition = '';
         this.drawer.style.opacity = '';
         this.drawer.classList.add('open');
+        if (this.isOptionsPanelPinned) {
+            this.drawer.classList.add('pinned');
+        }
         if (this.drawerToggle) this.drawerToggle.classList.add('active');
+        this.updatePinButtonStates();
     }
 
-    closeDrawer() {
+    closeDrawer(force = false) {
         if (!this.drawer) return;
-        this.drawer.classList.remove('open');
+        if (this.isOptionsPanelPinned && !force) return;
+        this.drawer.classList.remove('open', 'pinned');
         this.drawer.style.transform = '';
         this.drawer.style.transition = '';
         this.drawer.style.opacity = '';
@@ -7753,14 +7871,24 @@ class BibleWordMap extends HTMLElement {
         if (!this.drawer) return;
         this.closeSearchRecovery();
         if (this.drawer.classList.contains('open')) {
-            this.closeDrawer();
+            if (this.isOptionsPanelPinned) {
+                this.unpinOptionsPanel();
+            }
+            this.closeDrawer(true);
         } else {
             this.openDrawer();
         }
     }
 
-    closeActiveInfoWindows() {
+    closeActiveInfoWindows(force = false) {
         let closedAny = false;
+        if (this.legendOverlay && this.legendOverlay.classList.contains('visible')) {
+            this.hideLegendWindow();
+            closedAny = true;
+        }
+        if (this.isStudyPanelPinned && !force) {
+            return closedAny;
+        }
         if (this.wordCard && this.wordCard.classList.contains('visible')) {
             this.hideWordInspector();
             closedAny = true;
@@ -7777,11 +7905,138 @@ class BibleWordMap extends HTMLElement {
             this.hideChapterCard();
             closedAny = true;
         }
-        if (this.legendOverlay && this.legendOverlay.classList.contains('visible')) {
-            this.hideLegendWindow();
-            closedAny = true;
-        }
         return closedAny;
+    }
+
+    renderPinButton(panelType = 'study') {
+        const isPinned = panelType === 'options' ? this.isOptionsPanelPinned : this.isStudyPanelPinned;
+        const title = isPinned ? 'Unpin panel' : 'Pin panel (keep open)';
+        const activeCls = isPinned ? 'pinned is-active' : '';
+        const ariaPressed = isPinned ? 'true' : 'false';
+        const idAttr = panelType === 'options' ? 'id="bwm-drawer-pin-btn"' : '';
+        return `
+            <button type="button" class="bwm-panel-pin-btn ${activeCls}" ${idAttr} data-pin-panel="${panelType}" title="${title}" aria-pressed="${ariaPressed}" aria-label="${title}">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="17" x2="12" y2="22"></line>
+                    <path d="M5 17h14l-2-7V4h1V2H6v2h1v6l-2 7z"></path>
+                </svg>
+            </button>
+        `;
+    }
+
+    canPinOptions() {
+        return window.innerWidth >= 1024 && (!this.isStudyPanelPinned || window.innerWidth >= 1300);
+    }
+
+    canPinStudy() {
+        return window.innerWidth >= 1024 && (!this.isOptionsPanelPinned || window.innerWidth >= 1300);
+    }
+
+    togglePinOptionsPanel() {
+        if (!this.canPinOptions() && !this.isOptionsPanelPinned) {
+            if (this.isStudyPanelPinned && window.innerWidth >= 1024) {
+                this.unpinStudyPanel();
+            } else {
+                return;
+            }
+        }
+        if (this.isOptionsPanelPinned) {
+            this.unpinOptionsPanel();
+        } else {
+            this.pinOptionsPanel();
+        }
+    }
+
+    pinOptionsPanel() {
+        if (window.innerWidth < 1024) return;
+        if (this.isStudyPanelPinned && window.innerWidth < 1300) {
+            this.unpinStudyPanel();
+        }
+        this.isOptionsPanelPinned = true;
+        this.openDrawer();
+        if (this.drawer) {
+            this.drawer.classList.add('pinned');
+        }
+        this.updatePinButtonStates();
+        this.zoomExtents(400);
+    }
+
+    unpinOptionsPanel() {
+        this.isOptionsPanelPinned = false;
+        if (this.drawer) {
+            this.drawer.classList.remove('pinned');
+        }
+        this.updatePinButtonStates();
+        this.zoomExtents(400);
+    }
+
+    togglePinStudyPanel() {
+        if (!this.canPinStudy() && !this.isStudyPanelPinned) {
+            if (this.isOptionsPanelPinned && window.innerWidth >= 1024) {
+                this.unpinOptionsPanel();
+            } else {
+                return;
+            }
+        }
+        if (this.isStudyPanelPinned) {
+            this.unpinStudyPanel();
+        } else {
+            this.pinStudyPanel();
+        }
+    }
+
+    pinStudyPanel() {
+        if (window.innerWidth < 1024) return;
+        if (this.isOptionsPanelPinned && window.innerWidth < 1300) {
+            this.unpinOptionsPanel();
+        }
+        this.isStudyPanelPinned = true;
+        const activeCard = this.getActiveStudyCard();
+        if (activeCard) {
+            activeCard.classList.add('pinned');
+            activeCard.classList.add('visible');
+        }
+        this.updatePinButtonStates();
+        this.zoomExtents(400);
+    }
+
+    unpinStudyPanel() {
+        this.isStudyPanelPinned = false;
+        [this.wordCard, this.verseCard, this.chapterCard, this.bookCard].forEach(card => {
+            if (card) card.classList.remove('pinned');
+        });
+        this.updatePinButtonStates();
+        this.zoomExtents(400);
+    }
+
+    updatePinButtonStates() {
+        const canPinOpts = this.canPinOptions();
+        const canPinStd = this.canPinStudy();
+
+        const drawerPinBtn = this.querySelector('#bwm-drawer-pin-btn');
+        if (drawerPinBtn) {
+            drawerPinBtn.classList.toggle('pinned', this.isOptionsPanelPinned);
+            drawerPinBtn.classList.toggle('is-active', this.isOptionsPanelPinned);
+            drawerPinBtn.setAttribute('aria-pressed', this.isOptionsPanelPinned ? 'true' : 'false');
+            drawerPinBtn.title = this.isOptionsPanelPinned ? 'Unpin Options panel' : 'Pin Options panel';
+            drawerPinBtn.style.display = (canPinOpts || this.isOptionsPanelPinned) ? '' : 'none';
+        }
+
+        const studyPinBtns = this.querySelectorAll('.bwm-panel-pin-btn[data-pin-panel="study"]');
+        studyPinBtns.forEach(btn => {
+            btn.classList.toggle('pinned', this.isStudyPanelPinned);
+            btn.classList.toggle('is-active', this.isStudyPanelPinned);
+            btn.setAttribute('aria-pressed', this.isStudyPanelPinned ? 'true' : 'false');
+            btn.title = this.isStudyPanelPinned ? 'Unpin Study panel' : 'Pin Study panel';
+            btn.style.display = (canPinStd || this.isStudyPanelPinned) ? '' : 'none';
+        });
+    }
+
+    getActiveStudyCard() {
+        if (this.viewMode === 'verses') return this.verseCard;
+        if (this.viewMode === 'chapters') return this.chapterCard;
+        if (this.viewMode === 'books') return this.bookCard;
+        return this.wordCard;
     }
 
     updateBackdrop() {
@@ -7847,63 +8102,6 @@ class BibleWordMap extends HTMLElement {
             return `<span class="bwm-book-chip" style="border-left: 3px solid ${posColor};" title="${titleStr}"><b>${this.formatWord(tw.w, pos)}</b>${posLabel}</span>`;
         }).join('');
 
-        let isPrimaryBook = Boolean(this.searchedBooks && this.searchedBooks.includes(book.code));
-        let simBadgeHtml = '';
-        if (isPrimaryBook) {
-            if (this.searchedBooks && this.searchedBooks.length > 1) {
-                let otherSim = 0;
-                let otherName = '';
-                this.searchedBooks.filter(c => c !== book.code).forEach(oC => {
-                    let link = this.links ? this.links.find(l =>
-                        (l.source && (l.source.code === book.code || l.source === book.code) && l.target && (l.target.code === oC || l.target === oC)) ||
-                        (l.target && (l.target.code === book.code || l.target === book.code) && l.source && (l.source.code === oC || l.source === oC))
-                    ) : null;
-                    let s = link && typeof link.sim === 'number' ? link.sim : 0;
-                    if (s > otherSim && s < 0.9999) {
-                        otherSim = s;
-                        let oBook = this.booksData ? this.booksData.books.find(b => b.code === oC) : null;
-                        otherName = oBook ? oBook.name : oC;
-                    }
-                });
-                if (otherSim > 0) {
-                    let label = `${(otherSim * 100).toFixed(2)}% similarity to <b>${otherName}</b>`;
-                    simBadgeHtml = `<span class="bwm-window-badge bwm-window-badge-sim" title="Similarity">${label}</span>`;
-                }
-            }
-        } else if (this.searchedBooks && this.searchedBooks.length > 0) {
-            let bestSim = 0;
-            let targetName = '';
-            if (book.nearest_books) {
-                book.nearest_books.forEach(nb => {
-                    if (this.searchedBooks.includes(nb.code) && nb.sim > bestSim) {
-                        bestSim = nb.sim;
-                        let oBook = this.booksData ? this.booksData.books.find(b => b.code === nb.code) : null;
-                        targetName = oBook ? oBook.name : nb.code;
-                    }
-                });
-            }
-            if (bestSim === 0 && this.links) {
-                this.searchedBooks.forEach(otherCode => {
-                    for (let l of this.links) {
-                        let matches = (l.source && (l.source.code === book.code || l.source === book.code) && l.target && (l.target.code === otherCode || l.target === otherCode)) ||
-                                      (l.target && (l.target.code === book.code || l.target === book.code) && l.source && (l.source.code === otherCode || l.source === otherCode));
-                        if (matches) {
-                            let s = (typeof l.sim === 'number' && l.sim > 0) ? l.sim : 0;
-                            if (s > bestSim && s < 0.9999) {
-                                bestSim = s;
-                                let oBook = this.booksData ? this.booksData.books.find(b => b.code === otherCode) : null;
-                                targetName = oBook ? oBook.name : otherCode;
-                            }
-                        }
-                    }
-                });
-            }
-            if (bestSim > 0) {
-                let label = targetName ? `${(bestSim * 100).toFixed(2)}% similarity to <b>${targetName}</b>` : `${(bestSim * 100).toFixed(2)}% similarity`;
-                simBadgeHtml = `<span class="bwm-window-badge bwm-window-badge-sim" title="Similarity">${label}</span>`;
-            }
-        }
-
         let isBookActive = Boolean(this.searchedBooks && this.searchedBooks.includes(book.code));
         let bookActionHtml = this.renderPillToggle({
             isActive: isBookActive,
@@ -7923,13 +8121,13 @@ class BibleWordMap extends HTMLElement {
                         <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;">
                             <span class="bwm-window-badge" style="background: ${genreColor};">${book.genre}</span>
                             <span class="bwm-window-subtitle-inline">${book.testament === 'OT' ? 'Old Testament' : 'New Testament'}</span>
-                            ${simBadgeHtml}
                         </div>
                         <h3 class="bwm-window-title">${book.name}</h3>
                         <div class="bwm-window-subtitle">${book.verses.toLocaleString()} verses &bull; ${book.total_words.toLocaleString()} words</div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         ${bookActionHtml}
+                        ${this.renderPinButton('study')}
                         <button type="button" class="bwm-window-close" id="bwm-book-card-close" title="Dismiss">&times;</button>
                     </div>
                 </div>
@@ -7965,12 +8163,16 @@ class BibleWordMap extends HTMLElement {
         this.bookCard.style.transition = '';
         this.bookCard.style.opacity = '';
         this.bookCard.classList.add('visible');
+        if (this.isStudyPanelPinned) {
+            this.bookCard.classList.add('pinned');
+        }
         this.updateBackdrop();
 
         let closeBtn = this.bookCard.querySelector('#bwm-book-card-close');
         if (closeBtn) {
             closeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                this.unpinStudyPanel();
                 this.hideBookCard();
             });
         }
@@ -7979,6 +8181,7 @@ class BibleWordMap extends HTMLElement {
         if (dismissBtn) {
             dismissBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                this.unpinStudyPanel();
                 this.hideBookCard();
             });
         }
@@ -9296,6 +9499,7 @@ class BibleWordMap extends HTMLElement {
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         ${chapterActionHtml}
+                        ${this.renderPinButton('study')}
                         <button type="button" class="bwm-window-close" id="bwm-chapter-card-close" title="Dismiss">&times;</button>
                     </div>
                 </div>
@@ -9324,16 +9528,19 @@ class BibleWordMap extends HTMLElement {
         this.chapterCard.style.transition = '';
         this.chapterCard.style.opacity = '';
         this.chapterCard.classList.add('visible');
+        if (this.isStudyPanelPinned) {
+            this.chapterCard.classList.add('pinned');
+        }
 
         this.attachChapterCardEvents(activeChapters, cRecord, targetVerseRef);
     }
 
     attachChapterCardEvents(activeChapters, cRecord, targetVerseRef) {
         let closeBtn = this.chapterCard.querySelector('#bwm-chapter-card-close');
-        if (closeBtn) closeBtn.addEventListener('click', (e) => { e.stopPropagation(); this.hideChapterCard(); });
+        if (closeBtn) closeBtn.addEventListener('click', (e) => { e.stopPropagation(); this.unpinStudyPanel(); this.hideChapterCard(); });
 
         let dismissBtn = this.chapterCard.querySelector('#bwm-btn-dismiss-chapter-card');
-        if (dismissBtn) dismissBtn.addEventListener('click', (e) => { e.stopPropagation(); this.hideChapterCard(); });
+        if (dismissBtn) dismissBtn.addEventListener('click', (e) => { e.stopPropagation(); this.unpinStudyPanel(); this.hideChapterCard(); });
 
         let resetBtn = this.chapterCard.querySelector('#bwm-btn-reset-chapters');
         if (resetBtn) resetBtn.addEventListener('click', (e) => { e.stopPropagation(); this.resetChaptersView(); });
@@ -10078,54 +10285,6 @@ class BibleWordMap extends HTMLElement {
             title: isAlreadyActive ? 'Remove verse from map' : 'Add verse to map'
         });
 
-        let simBadgeHtml = '';
-        if (isAlreadyActive) {
-            if (this.searchedVerses && this.searchedVerses.length > 1) {
-                let otherSim = 0;
-                let otherRef = '';
-                this.searchedVerses.filter(id => id !== verse.id).forEach(oId => {
-                    let link = this.links ? this.links.find(l =>
-                        (l.source && (l.source.id === verse.id || l.source === verse.id) && l.target && (l.target.id === oId || l.target === oId)) ||
-                        (l.target && (l.target.id === verse.id || l.target === verse.id) && l.source && (l.source.id === oId || l.source === oId))
-                    ) : null;
-                    let s = link && typeof link.sim === 'number' ? link.sim : 0;
-                    if (s > otherSim && s < 0.9999) {
-                        otherSim = s;
-                        otherRef = formatVerseRef(oId);
-                    }
-                });
-                if (otherSim > 0) {
-                    simBadgeHtml = `<span class="bwm-window-badge bwm-window-badge-sim" title="Similarity to ${otherRef}">${(otherSim * 100).toFixed(2)}% similarity to <b>${otherRef}</b></span>`;
-                }
-            }
-        } else {
-            let simVal = (typeof verse.sim === 'number' && verse.sim > 0 && verse.sim < 0.9999) ? verse.sim : null;
-            let targetRef = '';
-            if (this.links && this.links.length > 0) {
-                let bestSim = 0;
-                this.links.forEach(l => {
-                    let isSource = (l.source === verse || (l.source && l.source.id === verse.id));
-                    let isTarget = (l.target === verse || (l.target && l.target.id === verse.id));
-                    if (isSource || isTarget) {
-                        let other = isSource ? l.target : l.source;
-                        let otherId = (typeof other === 'object' && other) ? other.id : other;
-                        if (this.searchedVerses && this.searchedVerses.includes(otherId)) {
-                            let s = (typeof l.sim === 'number' && l.sim > 0) ? l.sim : 0;
-                            if (s > bestSim && s < 0.9999) {
-                                bestSim = s;
-                                targetRef = formatVerseRef(otherId);
-                            }
-                        }
-                    }
-                });
-                if (bestSim > 0) simVal = bestSim;
-            }
-            if (typeof simVal === 'number' && simVal > 0) {
-                let label = targetRef ? `${(simVal * 100).toFixed(2)}% similarity to <b>${targetRef}</b>` : `${(simVal * 100).toFixed(2)}% similarity`;
-                simBadgeHtml = `<span class="bwm-window-badge bwm-window-badge-sim" title="Similarity">${label}</span>`;
-            }
-        }
-
         this.verseCard.innerHTML = `
             <div class="bwm-sheet-handle"></div>
             ${tabsHtml}
@@ -10135,7 +10294,6 @@ class BibleWordMap extends HTMLElement {
                         <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;">
                             <span class="bwm-window-badge" style="background: ${genreColor};">${genre}</span>
                             <span class="bwm-window-subtitle-inline">${testament === 'OT' ? 'Old Testament' : 'New Testament'}</span>
-                            ${simBadgeHtml}
                         </div>
                         <div class="bwm-verse-nav-header">
                             <button type="button" class="bwm-verse-nav-chevron" id="bwm-verse-prev-btn" title="${prevVerse ? `Previous: ${formatVerseRef(prevVerse)}` : 'First verse'}" ${!prevVerse ? 'disabled' : ''} aria-label="Previous verse">
@@ -10153,6 +10311,7 @@ class BibleWordMap extends HTMLElement {
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         ${verseActionHtml}
+                        ${this.renderPinButton('study')}
                         <button type="button" class="bwm-window-close" id="bwm-verse-card-close" title="Dismiss">&times;</button>
                     </div>
                 </div>
@@ -10208,9 +10367,16 @@ class BibleWordMap extends HTMLElement {
         this.verseCard.style.transition = '';
         this.verseCard.style.opacity = '';
         this.verseCard.classList.add('visible');
+        if (this.isStudyPanelPinned) {
+            this.verseCard.classList.add('pinned');
+        }
 
         let closeBtn = this.verseCard.querySelector('#bwm-verse-card-close');
-        if (closeBtn) closeBtn.addEventListener('click', (e) => { e.stopPropagation(); this.hideVerseCard(); });
+        if (closeBtn) closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (this.isStudyPanelPinned) this.unpinStudyPanel();
+            this.hideVerseCard();
+        });
 
         // Previous / Next verse navigation chevrons and swipe
         let prevBtn = this.verseCard.querySelector('#bwm-verse-prev-btn');
@@ -10291,7 +10457,11 @@ class BibleWordMap extends HTMLElement {
         }
 
         let dismissBtn = this.verseCard.querySelector('#bwm-btn-dismiss-verse-card');
-        if (dismissBtn) dismissBtn.addEventListener('click', (e) => { e.stopPropagation(); this.hideVerseCard(); });
+        if (dismissBtn) dismissBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (this.isStudyPanelPinned) this.unpinStudyPanel();
+            this.hideVerseCard();
+        });
 
         let resetBtn = this.verseCard.querySelector('#bwm-btn-reset-verses');
         if (resetBtn) resetBtn.addEventListener('click', (e) => { e.stopPropagation(); this.resetVersesView(); });
@@ -11166,7 +11336,9 @@ class BibleWordMap extends HTMLElement {
                 } else if (this.hoveredNode.isVerseWord) {
                     if (isDesktop) {
                         if (this.wordCard && this.wordCard.classList.contains('visible') && this.inspectorNode === this.hoveredNode) {
-                            this.hideWordInspector();
+                            if (!this.isStudyPanelPinned) {
+                                this.hideWordInspector();
+                            }
                         } else {
                             this.showWordInspector(this.hoveredNode, this.lastWordInspectorTab || 'verses');
                         }
@@ -11222,7 +11394,9 @@ class BibleWordMap extends HTMLElement {
                 } else if (this.hoveredNode.isChapterWord) {
                     if (isDesktop) {
                         if (this.wordCard && this.wordCard.classList.contains('visible') && this.inspectorNode === this.hoveredNode) {
-                            this.hideWordInspector();
+                            if (!this.isStudyPanelPinned) {
+                                this.hideWordInspector();
+                            }
                         } else {
                             this.showWordInspector(this.hoveredNode, this.lastWordInspectorTab || 'verses');
                         }
@@ -11271,7 +11445,9 @@ class BibleWordMap extends HTMLElement {
                 } else if (this.hoveredNode.isBookWord) {
                     if (isDesktop) {
                         if (this.wordCard && this.wordCard.classList.contains('visible') && this.inspectorNode === this.hoveredNode) {
-                            this.hideWordInspector();
+                            if (!this.isStudyPanelPinned) {
+                                this.hideWordInspector();
+                            }
                         } else {
                             this.showWordInspector(this.hoveredNode, this.lastWordInspectorTab || 'verses');
                         }
@@ -11298,7 +11474,9 @@ class BibleWordMap extends HTMLElement {
         if (this.hoveredNode) {
             if (isDesktop) {
                 if (this.wordCard && this.wordCard.classList.contains('visible') && this.inspectorNode === this.hoveredNode) {
-                    this.hideWordInspector();
+                    if (!this.isStudyPanelPinned) {
+                        this.hideWordInspector();
+                    }
                 } else {
                     this.showWordInspector(this.hoveredNode, this.lastWordInspectorTab || 'verses');
                 }
@@ -12172,47 +12350,7 @@ class BibleWordMap extends HTMLElement {
         }
 
         let isNodeKw = Boolean(node.isKw || (activeKwIds.length > 0 && activeKwIds.includes(node.id)));
-        let targetKwIds = [];
-
-        if (isNodeKw) {
-            // If there are multiple key words, then each key word shows similarity to every other key word.
-            // If there is only one key word, there are no other words for it to show similarity to.
-            if (activeKwIds.length > 1) {
-                targetKwIds = activeKwIds.filter(id => id !== node.id);
-            }
-        } else if (activeKwIds.length > 0) {
-            // Neighbor words show similarity to the key words on the map
-            targetKwIds = [...activeKwIds];
-        }
-
         let nodeVec = node.v || (this.data2d ? (this.data2d.find(d => d.id === node.id) || {}).v : null);
-        let simItems = [];
-
-        targetKwIds.forEach(tId => {
-            let tKwNode = this.nodes ? this.nodes.find(n => n.id === tId) : null;
-            let tKwVec = tKwNode ? tKwNode.v : (this.data2d ? (this.data2d.find(d => d.id === tId) || {}).v : null);
-
-            let s = null;
-            if (nodeVec && tKwVec) {
-                s = this.cosineSimilarity(nodeVec, tKwVec);
-            } else if (node.sourceKw === tId && typeof node.sim === 'number' && node.sim > 0 && node.sim < 0.9999) {
-                s = node.sim;
-            }
-
-            if (typeof s === 'number' && s > 0 && s < 0.9999) {
-                let { word: tWord, pos: tPos } = this.parseWordId(tId);
-                let formattedTWord = this.formatWord(tWord, tPos);
-                simItems.push({
-                    id: tId,
-                    name: formattedTWord,
-                    sim: s
-                });
-            }
-        });
-
-        // Sort similarity items by similarity descending (highest similarity first)
-        simItems.sort((a, b) => b.sim - a.sim);
-
         let isIndirectLink = false;
         if (this.isSearchMode && !isNodeKw && this.allSearchLinks) {
             let activeLink = this.allSearchLinks.find(l => {
@@ -12225,13 +12363,8 @@ class BibleWordMap extends HTMLElement {
             }
         }
 
-        let simBadgesHtml = simItems.map(item => {
-            let pctStr = (item.sim * 100).toFixed(2);
-            return `<span class="bwm-window-badge bwm-window-badge-sim" title="Semantic cosine similarity: ${pctStr}% to ${item.name}">${pctStr}% similarity to <b>${item.name}</b></span>`;
-        }).join('');
-
         let indirectBadgeHtml = isIndirectLink 
-            ? `<span class="bwm-window-badge" style="border: 1px dashed var(--bwm-node-hover); color: var(--bwm-node-hover); background: rgba(96, 165, 250, 0.08);" title="Connected by contextual semantic proximity rather than direct verse co-occurrence">Indirect link</span>`
+            ? `<span class="bwm-window-badge bwm-window-badge-indirect" title="Connected by contextual semantic proximity rather than direct verse co-occurrence">Indirect link</span>`
             : '';
 
         let headerHtml = `
@@ -12242,7 +12375,6 @@ class BibleWordMap extends HTMLElement {
                         <div style="display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;">
                             <h3 class="bwm-window-title" style="margin: 0;">${displayW}</h3>
                             ${node.pos ? `<span class="bwm-window-subtitle-inline">(${node.pos.toLowerCase()})</span>` : ''}
-                            ${simBadgesHtml}
                             ${indirectBadgeHtml}
                             <span class="bwm-window-badge" id="bwm-word-occ-badge">${occBadgeText}</span>
                             ${booksBadgeText ? `<span class="bwm-window-badge-muted" id="bwm-word-books-badge">${booksBadgeText}</span>` : ''}
@@ -12251,6 +12383,7 @@ class BibleWordMap extends HTMLElement {
                     </div>
                     <div style="display:flex; align-items:center; gap:8px;">
                         ${actionBtnHtml}
+                        ${this.renderPinButton('study')}
                         <button type="button" class="bwm-window-close" id="bwm-word-close" title="Close inspector">&times;</button>
                     </div>
                 </div>
@@ -12905,12 +13038,16 @@ class BibleWordMap extends HTMLElement {
         this.wordCard.style.opacity = '';
         this.wordCard.innerHTML = headerHtml + versesPaneHtml + origPaneHtml + canonPaneHtml + neighborsPaneHtml;
         this.wordCard.classList.add('visible');
+        if (this.isStudyPanelPinned) {
+            this.wordCard.classList.add('pinned');
+        }
 
         // Close button
         const closeBtn = this.wordCard.querySelector('#bwm-word-close');
         if (closeBtn) {
             closeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                if (this.isStudyPanelPinned) this.unpinStudyPanel();
                 this.hideWordInspector();
             });
         }
