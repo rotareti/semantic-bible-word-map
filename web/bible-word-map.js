@@ -669,7 +669,8 @@ class BibleWordMap extends HTMLElement {
                     --bwm-font: system-ui, -apple-system, sans-serif;
                 }
                 @media (prefers-color-scheme: dark) {
-                    bible-word-map {
+                    :root:not([data-theme="light"]) bible-word-map,
+                    bible-word-map:not([data-theme="light"]) {
                         --bwm-bg: #121212;
                         --bwm-input-bg: #1e1e1e;
                         --bwm-input-focus-bg: #161b22;
@@ -682,6 +683,38 @@ class BibleWordMap extends HTMLElement {
                         --bwm-node-default: #999999;
                         --bwm-tooltip-link: #60a5fa;
                     }
+                }
+                :root[data-theme="dark"] bible-word-map,
+                bible-word-map[data-theme="dark"] {
+                    --bwm-bg: #121212;
+                    --bwm-input-bg: #1e1e1e;
+                    --bwm-input-focus-bg: #161b22;
+                    --bwm-btn-bg: #21262d;
+                    --bwm-btn-hover: #30363d;
+                    --bwm-text: #e0e0e0;
+                    --bwm-text-muted: #8b949e;
+                    --bwm-border: #333333;
+                    --bwm-badge-bg: rgba(255, 255, 255, 0.08);
+                    --bwm-node-default: #999999;
+                    --bwm-tooltip-link: #60a5fa;
+                }
+                :root[data-theme="light"] bible-word-map,
+                bible-word-map[data-theme="light"] {
+                    --bwm-bg: #ffffff;
+                    --bwm-input-bg: #f9fafb;
+                    --bwm-input-focus-bg: #ffffff;
+                    --bwm-btn-bg: #f9fafb;
+                    --bwm-btn-hover: #e5e7eb;
+                    --bwm-text: #333333;
+                    --bwm-text-muted: #666666;
+                    --bwm-border: #e5e7eb;
+                    --bwm-badge-bg: rgba(0, 0, 0, 0.05);
+                    --bwm-node-default: #888888;
+                    --bwm-node-kw: #d32f2f;
+                    --bwm-node-hover: #2563eb;
+                    --bwm-link-direct: rgba(40, 167, 69, 0.6);
+                    --bwm-link-indirect: rgba(150, 150, 150, 0.2);
+                    --bwm-tooltip-link: #2563eb;
                 }
                 .bwm-container {
                     display: flex;
@@ -1869,11 +1902,18 @@ class BibleWordMap extends HTMLElement {
                     margin-left: 3px;
                 }
                 @media (prefers-color-scheme: dark) {
-                    bible-word-map .bwm-window-badge-sim {
+                    :root:not([data-theme="light"]) bible-word-map .bwm-window-badge-sim,
+                    bible-word-map:not([data-theme="light"]) .bwm-window-badge-sim {
                         background: rgba(96, 165, 250, 0.15);
                         color: #60a5fa !important;
                         border-color: rgba(96, 165, 250, 0.35);
                     }
+                }
+                :root[data-theme="dark"] bible-word-map .bwm-window-badge-sim,
+                bible-word-map[data-theme="dark"] .bwm-window-badge-sim {
+                    background: rgba(96, 165, 250, 0.15);
+                    color: #60a5fa !important;
+                    border-color: rgba(96, 165, 250, 0.35);
                 }
                 .bwm-window-badge-indirect {
                     display: inline-flex;
@@ -1888,11 +1928,18 @@ class BibleWordMap extends HTMLElement {
                     background: rgba(37, 99, 235, 0.12) !important;
                 }
                 @media (prefers-color-scheme: dark) {
-                    bible-word-map .bwm-window-badge-indirect {
+                    :root:not([data-theme="light"]) bible-word-map .bwm-window-badge-indirect,
+                    bible-word-map:not([data-theme="light"]) .bwm-window-badge-indirect {
                         border-color: #60a5fa;
                         color: #93c5fd !important;
                         background: rgba(96, 165, 250, 0.18) !important;
                     }
+                }
+                :root[data-theme="dark"] bible-word-map .bwm-window-badge-indirect,
+                bible-word-map[data-theme="dark"] .bwm-window-badge-indirect {
+                    border-color: #60a5fa;
+                    color: #93c5fd !important;
+                    background: rgba(96, 165, 250, 0.18) !important;
                 }
                 .bwm-book-badge {
                     display: inline-flex;
@@ -2889,12 +2936,20 @@ class BibleWordMap extends HTMLElement {
                     -webkit-box-decoration-break: clone;
                 }
                 @media (prefers-color-scheme: dark) {
-                    bible-word-map .bwm-verse-kw-highlight {
+                    :root:not([data-theme="light"]) bible-word-map .bwm-verse-kw-highlight,
+                    bible-word-map:not([data-theme="light"]) .bwm-verse-kw-highlight {
                         background-color: rgba(96, 165, 250, 0.22);
                         background-color: color-mix(in srgb, var(--bwm-node-hover, #60a5fa) 22%, transparent);
                         border-bottom-color: rgba(96, 165, 250, 0.55);
                         border-bottom-color: color-mix(in srgb, var(--bwm-node-hover, #60a5fa) 55%, transparent);
                     }
+                }
+                :root[data-theme="dark"] bible-word-map .bwm-verse-kw-highlight,
+                bible-word-map[data-theme="dark"] .bwm-verse-kw-highlight {
+                    background-color: rgba(96, 165, 250, 0.22);
+                    background-color: color-mix(in srgb, var(--bwm-node-hover, #60a5fa) 22%, transparent);
+                    border-bottom-color: rgba(96, 165, 250, 0.55);
+                    border-bottom-color: color-mix(in srgb, var(--bwm-node-hover, #60a5fa) 55%, transparent);
                 }
 
                 /* Mobile Bottom Sheet Unification Across ALL Windows */
@@ -3607,7 +3662,7 @@ class BibleWordMap extends HTMLElement {
             this.foundation = 'bsb';
         }
 
-        const vParam = '?v=10.2.0';
+        const vParam = '?v=10.3.0';
         if (this.foundation === 'lxx') {
             this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -3632,6 +3687,30 @@ class BibleWordMap extends HTMLElement {
         this.ctx = this.canvas.getContext('2d');
         this.topBar = this.querySelector('.bwm-top-bar');
         this.updateTopBarHeight();
+
+        // Theme change detection for canvas redraw
+        const mediaDark = window.matchMedia('(prefers-color-scheme: dark)');
+        this._onSchemeChange = () => {
+            if (!document.documentElement.getAttribute('data-theme')) {
+                this.draw();
+            }
+        };
+        if (mediaDark.addEventListener) {
+            mediaDark.addEventListener('change', this._onSchemeChange);
+        } else if (mediaDark.addListener) {
+            mediaDark.addListener(this._onSchemeChange);
+        }
+
+        // MutationObserver to watch data-theme changes on documentElement
+        this._themeObserver = new MutationObserver((mutations) => {
+            for (const m of mutations) {
+                if (m.type === 'attributes' && m.attributeName === 'data-theme') {
+                    this.draw();
+                    break;
+                }
+            }
+        });
+        this._themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
         this.tooltip = this.querySelector('.bwm-tooltip');
         this.loading = this.querySelector('.bwm-loading');
         this.loadingText = this.querySelector('#bwm-loading-text');
@@ -4311,7 +4390,7 @@ class BibleWordMap extends HTMLElement {
             this.foundation = 'bsb';
         }
 
-        const vParam = '?v=10.2.0';
+        const vParam = '?v=10.3.0';
         if (this.foundation === 'lxx') {
             this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -4981,7 +5060,7 @@ class BibleWordMap extends HTMLElement {
             return this._englishSemanticData;
         }
 
-        const vParam = '?v=10.2.0';
+        const vParam = '?v=10.3.0';
         const wordmapSrc = this.getAttribute('src-2d-bsb') || this.getAttribute('src-2d') || ('data/output/wordmap_2d.json' + vParam);
         const versesSrc = this.getAttribute('src-verses-bsb') || this.getAttribute('src-verses') || ('data/output/verse_index.json' + vParam);
         const versemapSrc = this.getAttribute('src-versemap-bsb') || this.getAttribute('src-versemap') || ('data/output/versemap_2d.json' + vParam);
@@ -5047,7 +5126,7 @@ class BibleWordMap extends HTMLElement {
         if (this._cachedWordmaps[foundation]) {
             return this._cachedWordmaps[foundation];
         }
-        const vParam = '?v=10.2.0';
+        const vParam = '?v=10.3.0';
         let src = '';
         if (foundation === 'lxx') {
             src = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
@@ -6396,7 +6475,7 @@ class BibleWordMap extends HTMLElement {
             vulPill.classList.toggle('active', foundation === 'vul');
         }
 
-        const vParam = '?v=10.2.0';
+        const vParam = '?v=10.3.0';
         if (foundation === 'lxx') {
             this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);

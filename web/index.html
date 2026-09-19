@@ -5,7 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="color-scheme" content="light dark">
     <title>Semantic Bible</title>
-    <link rel="stylesheet" href="styles.css?v=10.2.0">
+    <script>
+        (function() {
+            try {
+                const saved = localStorage.getItem('bwm-theme');
+                if (saved === 'dark' || saved === 'light') {
+                    document.documentElement.setAttribute('data-theme', saved);
+                    document.documentElement.style.colorScheme = saved;
+                }
+            } catch(e) {}
+        })();
+    </script>
+    <link rel="stylesheet" href="styles.css?v=10.3.0">
     <!-- Load D3.js for high-performance physics and canvas rendering -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="icon" type="image/jpeg" href="favicon.jpg">
@@ -22,9 +33,27 @@
                     </svg>
                     <span class="header-title-text">Semantic Bible</span>
                 </a>
-                <span class="header-version">v10.2.0</span>
+                <span class="header-version">v10.3.0</span>
             </div>
             <div class="header-right">
+                <button type="button" class="header-theme-btn" id="header-theme-btn" title="Toggle theme (light / dark)" aria-label="Toggle theme">
+                    <svg class="header-theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <g class="theme-icon-sun">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </g>
+                        <g class="theme-icon-moon">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </g>
+                    </svg>
+                </button>
                 <button type="button" class="header-share-btn" id="header-share-btn" title="Copy shortened URL to clipboard">
                     <span class="header-share-text" id="header-share-text">Share</span>
                     <svg class="header-share-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -36,12 +65,12 @@
         </div>
     </header>
     <main>
-        <bible-word-map foundation="bsb" src-2d="data/output/wordmap_2d.json?v=10.2.0" src-verses="data/output/verse_index.json?v=10.2.0" src-books="data/output/bookmap_2d.json?v=10.2.0" src-versemap="data/output/versemap_2d.json?v=10.2.0" src-chapters="data/output/chaptermap_2d.json?v=10.2.0" src-2d-bsb="data/output/wordmap_2d.json?v=10.2.0" src-verses-bsb="data/output/verse_index.json?v=10.2.0" src-books-bsb="data/output/bookmap_2d.json?v=10.2.0" src-versemap-bsb="data/output/versemap_2d.json?v=10.2.0" src-chapters-bsb="data/output/chaptermap_2d.json?v=10.2.0" src-2d-lxx="data/output/wordmap_2d_lxx.json?v=10.2.0" src-verses-lxx="data/output/verse_index_lxx.json?v=10.2.0" src-books-lxx="data/output/bookmap_2d_lxx.json?v=10.2.0" src-versemap-lxx="data/output/versemap_2d_lxx.json?v=10.2.0" src-chapters-lxx="data/output/chaptermap_2d_lxx.json?v=10.2.0" src-2d-vul="data/output/wordmap_2d_vul.json?v=10.2.0" src-verses-vul="data/output/verse_index_vul.json?v=10.2.0" src-books-vul="data/output/bookmap_2d_vul.json?v=10.2.0" src-versemap-vul="data/output/versemap_2d_vul.json?v=10.2.0" src-chapters-vul="data/output/chaptermap_2d_vul.json?v=10.2.0"></bible-word-map>
+        <bible-word-map foundation="bsb" src-2d="data/output/wordmap_2d.json?v=10.3.0" src-verses="data/output/verse_index.json?v=10.3.0" src-books="data/output/bookmap_2d.json?v=10.3.0" src-versemap="data/output/versemap_2d.json?v=10.3.0" src-chapters="data/output/chaptermap_2d.json?v=10.3.0" src-2d-bsb="data/output/wordmap_2d.json?v=10.3.0" src-verses-bsb="data/output/verse_index.json?v=10.3.0" src-books-bsb="data/output/bookmap_2d.json?v=10.3.0" src-versemap-bsb="data/output/versemap_2d.json?v=10.3.0" src-chapters-bsb="data/output/chaptermap_2d.json?v=10.3.0" src-2d-lxx="data/output/wordmap_2d_lxx.json?v=10.3.0" src-verses-lxx="data/output/verse_index_lxx.json?v=10.3.0" src-books-lxx="data/output/bookmap_2d_lxx.json?v=10.3.0" src-versemap-lxx="data/output/versemap_2d_lxx.json?v=10.3.0" src-chapters-lxx="data/output/chaptermap_2d_lxx.json?v=10.3.0" src-2d-vul="data/output/wordmap_2d_vul.json?v=10.3.0" src-verses-vul="data/output/verse_index_vul.json?v=10.3.0" src-books-vul="data/output/bookmap_2d_vul.json?v=10.3.0" src-versemap-vul="data/output/versemap_2d_vul.json?v=10.3.0" src-chapters-vul="data/output/chaptermap_2d_vul.json?v=10.3.0"></bible-word-map>
     </main>
     <footer>
         <a href="https://github.com/rotareti/semantic-bible-word-map" target="_blank">View source on GitHub</a> <span style="margin: 0 10px; color: var(--text-muted); vertical-align: middle;">|</span> <i style="color: var(--text-muted);">"Freely you have received; freely give."</i>
     </footer>
-    <script src="bible-word-map.js?v=10.2.0" type="module"></script>
+    <script src="bible-word-map.js?v=10.3.0" type="module"></script>
     <script>
         const mapEl = document.querySelector('bible-word-map');
 
@@ -130,6 +159,60 @@
                     fallbackCopy(shareUrl, copySuccess);
                 }
             });
+        }
+
+        // Theme mode button: default to system theme with toggle between light and dark
+        const themeBtn = document.getElementById('header-theme-btn');
+        const getSystemTheme = () => window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        const getEffectiveTheme = () => document.documentElement.getAttribute('data-theme') || getSystemTheme();
+
+        const updateThemeUI = (theme) => {
+            const effective = theme || getEffectiveTheme();
+            if (themeBtn) {
+                const nextTheme = effective === 'dark' ? 'light' : 'dark';
+                themeBtn.setAttribute('title', `Switch to ${nextTheme} theme (Alt+click to follow system)`);
+                themeBtn.setAttribute('aria-label', `Switch to ${nextTheme} theme`);
+            }
+        };
+
+        if (themeBtn) {
+            updateThemeUI();
+
+            themeBtn.addEventListener('click', (e) => {
+                if (e.altKey) {
+                    try { localStorage.removeItem('bwm-theme'); } catch(err) {}
+                    document.documentElement.removeAttribute('data-theme');
+                    const sys = getSystemTheme();
+                    document.documentElement.style.colorScheme = sys;
+                    updateThemeUI(sys);
+                    if (mapEl && mapEl.draw) mapEl.draw();
+                    return;
+                }
+
+                const current = getEffectiveTheme();
+                const next = current === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', next);
+                document.documentElement.style.colorScheme = next;
+                try { localStorage.setItem('bwm-theme', next); } catch(err) {}
+                updateThemeUI(next);
+                if (mapEl && mapEl.draw) mapEl.draw();
+            });
+
+            // Listen for system theme changes when user has not manually overridden theme
+            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            const handleMediaChange = () => {
+                if (!document.documentElement.getAttribute('data-theme')) {
+                    const sys = getSystemTheme();
+                    document.documentElement.style.colorScheme = sys;
+                    updateThemeUI(sys);
+                    if (mapEl && mapEl.draw) mapEl.draw();
+                }
+            };
+            if (mediaQuery.addEventListener) {
+                mediaQuery.addEventListener('change', handleMediaChange);
+            } else if (mediaQuery.addListener) {
+                mediaQuery.addListener(handleMediaChange);
+            }
         }
     </script>
 </body>

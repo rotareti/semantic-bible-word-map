@@ -1,5 +1,17 @@
 # Changelog
 
+## [10.3.0] - 2026-09-19
+### Added
+- **Theme Mode Toggle Button:** Added a theme mode button directly to the left of the Share button in the page header. Features include:
+  - Defaults to the system theme (`prefers-color-scheme`) on initial visit, automatically adapting to the user's OS light or dark appearance.
+  - Allows manual toggling between light and dark themes with persistent preference storage in local storage.
+  - Displays a clean, professional vector icon that smoothly transitions between a Moon icon (in light theme, indicating switch to dark) and a Sun icon (in dark theme, indicating switch to light) with hover rotation.
+  - Alt-clicking the theme button resets the preference back to following the system appearance.
+  - Dynamically redraws the map canvas and updates all custom element variables, headers, and UI panels upon theme change with zero page reload or flash of unstyled content (FOUC).
+
+### Changed
+- **Asset Cache Busting (`v=10.3.0`):** Bumped cache-buster query parameter to `?v=10.3.0` across stylesheet links, custom element scripts, and runtime data fetch requests.
+
 ## [10.2.0] - 2026-09-19
 ### Added
 - **Automatic Study Panel Opening on Desktop:** When searching for an entity or selecting a search suggestion on desktop viewports (>= 1024px), the Study Panel now automatically opens to reveal comprehensive details, definitions, and verses while keeping the visualization interactive. Mobile displays (< 1024px) keep the panel closed after search to preserve full-screen map touch interaction.
