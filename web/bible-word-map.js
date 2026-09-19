@@ -1810,15 +1810,17 @@ class BibleWordMap extends HTMLElement {
                     display: inline-flex;
                     align-items: center;
                     gap: 5px;
-                    font-size: 0.82em;
-                    padding: 4px 11px;
+                    font-size: 0.8em;
+                    padding: 3px 9px;
                     font-weight: 500;
                     cursor: pointer;
+                    white-space: nowrap;
+                    flex-shrink: 0;
                 }
                 .bwm-btn-read-chapter-top svg {
                     display: block;
-                    width: 13px;
-                    height: 13px;
+                    width: 12px;
+                    height: 12px;
                     transition: transform 0.15s ease;
                 }
                 .bwm-btn-read-chapter-top:hover svg {
@@ -2231,6 +2233,9 @@ class BibleWordMap extends HTMLElement {
                 }
                 .bwm-chapter-card.visible {
                     display: flex;
+                }
+                .bwm-chapter-card .bwm-window-body {
+                    overflow-y: hidden;
                 }
                 .bwm-chapter-pane {
                     display: none;
@@ -3575,7 +3580,7 @@ class BibleWordMap extends HTMLElement {
             this.foundation = 'bsb';
         }
 
-        const vParam = '?v=10.1.0';
+        const vParam = '?v=10.1.1';
         if (this.foundation === 'lxx') {
             this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -4279,7 +4284,7 @@ class BibleWordMap extends HTMLElement {
             this.foundation = 'bsb';
         }
 
-        const vParam = '?v=10.1.0';
+        const vParam = '?v=10.1.1';
         if (this.foundation === 'lxx') {
             this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -4949,7 +4954,7 @@ class BibleWordMap extends HTMLElement {
             return this._englishSemanticData;
         }
 
-        const vParam = '?v=10.1.0';
+        const vParam = '?v=10.1.1';
         const wordmapSrc = this.getAttribute('src-2d-bsb') || this.getAttribute('src-2d') || ('data/output/wordmap_2d.json' + vParam);
         const versesSrc = this.getAttribute('src-verses-bsb') || this.getAttribute('src-verses') || ('data/output/verse_index.json' + vParam);
         const versemapSrc = this.getAttribute('src-versemap-bsb') || this.getAttribute('src-versemap') || ('data/output/versemap_2d.json' + vParam);
@@ -5015,7 +5020,7 @@ class BibleWordMap extends HTMLElement {
         if (this._cachedWordmaps[foundation]) {
             return this._cachedWordmaps[foundation];
         }
-        const vParam = '?v=10.1.0';
+        const vParam = '?v=10.1.1';
         let src = '';
         if (foundation === 'lxx') {
             src = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
@@ -6360,7 +6365,7 @@ class BibleWordMap extends HTMLElement {
             vulPill.classList.toggle('active', foundation === 'vul');
         }
 
-        const vParam = '?v=10.1.0';
+        const vParam = '?v=10.1.1';
         if (foundation === 'lxx') {
             this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -7283,13 +7288,18 @@ class BibleWordMap extends HTMLElement {
                 this.showLoading('Loading Biblical Verses & Cross-References...', 'verses');
                 if (this.versemapPromise) {
                     this.versemapPromise.then(data => {
-                        if (data && data.verses) {
-                            this.versemapData = data;
-                            this.versemapLookup = new Map(data.verses.map(v => [v.id, v]));
+                        if (data && (data.verses || Array.isArray(data))) {
+                            let vList = data.verses || data;
+                            this.versemapData = data.verses ? data : { count: vList.length, verses: vList };
+                            this.versemapLookup = new Map(vList.map(v => [v.id, v]));
                         }
                         if (this.viewMode === 'verses') {
                             this.hideLoading();
-                            this.buildVersesGraph();
+                            if (this.searchedVerses && this.searchedVerses.length > 0) {
+                                this.searchVerses(true);
+                            } else {
+                                this.buildVersesGraph();
+                            }
                         }
                     }).catch(() => {
                         if (this.viewMode === 'verses') this.hideLoading();
@@ -9691,6 +9701,8 @@ class BibleWordMap extends HTMLElement {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 let ref = btn.getAttribute('data-jump-verse');
+                if (this.viewMode !== 'verses') this.setViewMode('verses');
+                this.selectVerse(ref);
                 let target = this.versemapLookup ? this.versemapLookup.get(ref) : { id: ref };
                 this.showVerseCard(target, [target]);
             });
@@ -9787,13 +9799,20 @@ class BibleWordMap extends HTMLElement {
             });
         });
 
-        // Auto-scroll to target verse row if specified
+        // Auto-scroll to target verse row if specified (scrolling only the reader pane, never parent containers)
         if (targetVerseRef) {
             setTimeout(() => {
                 let row = this.chapterCard.querySelector(`.bwm-chapter-verse-row[data-verse-ref="${targetVerseRef}"]`);
-                if (row) {
-                    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                let pane = this.chapterCard.querySelector('#bwm-chap-pane-reader');
+                if (row && pane) {
+                    const paneRect = pane.getBoundingClientRect();
+                    const rowRect = row.getBoundingClientRect();
+                    const delta = (rowRect.top - paneRect.top) - (paneRect.height / 2) + (rowRect.height / 2);
+                    pane.scrollTo({ top: pane.scrollTop + delta, behavior: 'smooth' });
                     row.classList.add('highlighted');
+                }
+                if (this.container) {
+                    this.container.scrollTop = 0;
                 }
             }, 60);
         }
@@ -9823,7 +9842,21 @@ class BibleWordMap extends HTMLElement {
     }
 
     searchVerses(useExplicitCodes = false) {
-        if (!this.versemapData || !this.versemapData.verses) return;
+        if (!this.versemapData || !this.versemapData.verses || !this.versemapLookup || this.versemapLookup.size === 0) {
+            if (this.versemapPromise) {
+                this.versemapPromise.then(data => {
+                    if (data) {
+                        let vList = data.verses || (Array.isArray(data) ? data : null);
+                        if (vList) {
+                            this.versemapData = data.verses ? data : { count: vList.length, verses: vList };
+                            this.versemapLookup = new Map(vList.map(v => [v.id, v]));
+                        }
+                        this.searchVerses(useExplicitCodes);
+                    }
+                });
+            }
+            return;
+        }
         this.hoveredNode = null;
         let foundVerses = [];
 
@@ -10367,8 +10400,8 @@ class BibleWordMap extends HTMLElement {
             <div class="bwm-sheet-handle"></div>
             ${tabsHtml}
             <div class="bwm-window-header">
-                <div class="bwm-window-header-top">
-                    <div>
+                <div class="bwm-window-header-top" style="align-items: flex-start;">
+                    <div style="min-width: 0; flex: 1;">
                         <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;">
                             <span class="bwm-window-badge" style="background: ${genreColor};">${genre}</span>
                             <span class="bwm-window-subtitle-inline">${testament === 'OT' ? 'Old Testament' : 'New Testament'}</span>
@@ -10387,19 +10420,19 @@ class BibleWordMap extends HTMLElement {
                             </button>
                         </div>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        ${verseActionHtml}
-                        ${this.renderPinButton('study')}
-                        <button type="button" class="bwm-window-close" id="bwm-verse-card-close" title="Dismiss">&times;</button>
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            ${verseActionHtml}
+                            ${this.renderPinButton('study')}
+                            <button type="button" class="bwm-window-close" id="bwm-verse-card-close" title="Dismiss">&times;</button>
+                        </div>
+                        <button type="button" class="bwm-window-pill bwm-btn-read-chapter-top" id="bwm-btn-read-chapter-top" title="Read entire chapter verse-by-verse">
+                            <span>Read Chapter</span>
+                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </button>
                     </div>
-                </div>
-                <div class="bwm-verse-header-subrow" style="display: flex; align-items: center; justify-content: flex-start; gap: 8px; margin-top: 4px;">
-                    <button type="button" class="bwm-window-pill bwm-btn-read-chapter-top" id="bwm-btn-read-chapter-top" title="Read entire chapter verse-by-verse">
-                        <span>Read Chapter</span>
-                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <polyline points="9 18 15 12 9 6"></polyline>
-                        </svg>
-                    </button>
                 </div>
             </div>
             <div class="bwm-window-body">
@@ -10509,6 +10542,7 @@ class BibleWordMap extends HTMLElement {
             let meta = parseVerseMeta(verse);
             let chapterCode = `${meta.b}.${meta.c}`;
             this.setViewMode('chapters');
+            this.selectChapter(chapterCode, false);
             this.showChapterCard(chapterCode, verse.id);
         };
 
@@ -12139,7 +12173,7 @@ class BibleWordMap extends HTMLElement {
             startTime = performance.now();
             isDragging = false;
 
-            scrollEl = touch.target.closest('.bwm-window-body, .bwm-verses-body, .bwm-canon-list, .bwm-book-chip-list, .bwm-drawer-content');
+            scrollEl = touch.target.closest('.bwm-chapter-pane, .bwm-chapter-reader, .bwm-window-body, .bwm-verses-body, .bwm-canon-list, .bwm-book-chip-list, .bwm-drawer-content');
             if (scrollEl) {
                 canDrag = (scrollEl.scrollTop <= 0);
             } else {
@@ -13303,6 +13337,8 @@ class BibleWordMap extends HTMLElement {
                     e.stopPropagation();
                     e.preventDefault();
                     let ref = jumpBtn.getAttribute('data-jump-verse');
+                    if (this.viewMode !== 'verses') this.setViewMode('verses');
+                    this.selectVerse(ref);
                     let target = this.versemapLookup ? this.versemapLookup.get(ref) : null;
                     if (!target) target = { id: ref };
                     this.showVerseCard(target, [target]);

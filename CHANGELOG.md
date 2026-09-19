@@ -1,5 +1,19 @@
 # Changelog
 
+## [10.1.1] - 2026-09-19
+### Changed
+- **Verse Study Panel Header Layout:** Repositioned the "Read Chapter >" navigation button to sit in the top-right header section horizontally across from the verse reference and navigation chevrons, directly below the panel control actions (`[ - | + ]`, pin toggle, and dismiss button), saving vertical space and keeping the verse title prominent.
+- **Cross-Entity Map Mode Synchronization:** Synchronized map mode transitions when navigating between entities in the Study Panel:
+  - Jumping from a word or chapter to a verse (e.g. from the Word Study Panel Verses tab or Chapter Study Panel reader and cross-references) switches the canvas to Verses View and focuses directly on that verse constellation.
+  - Jumping from a verse to a full chapter (via "Read Chapter") switches the canvas to Chapters Mode and builds the focused chapter constellation rather than the generic landmark overview.
+  - Navigating sequentially within the same entity type (via prev/next chevrons or mobile swipe gestures) continues to update the Study Panel in place without changing map mode or camera position.
+- **Asset Cache Busting (`v=10.1.1`):** Bumped cache-buster query parameter to `?v=10.1.1` across stylesheet links, custom element scripts, and runtime data fetch requests.
+
+### Fixed
+- **Mobile Map Displacement and Search Bar Clipping:** Fixed a layout bug on mobile screens where clicking "Read Chapter" shifted the map canvas upward from the bottom and shoved the search bar off-screen under the header bar. Replaced ancestor-affecting `Element.scrollIntoView()` with container-scoped relative `pane.scrollTo()` and enforced top-level container scroll stability.
+- **Mobile Chapter Reader Touch Scroll Lock:** Fixed an issue where downward touch scrolling inside the Chapter Study Panel reader was intercepted as a modal swipe-to-dismiss gesture. Added the chapter reader pane to swipe-to-dismiss scroll container detection and constrained chapter card body overflow.
+- **Asynchronous Verses Search Resilience:** Added promise resolution fallbacks to `searchVerses` and `setViewMode('verses')` to ensure verse queries and jumps execute reliably if the verse index is still loading over the network.
+
 ## [10.1.0] - 2026-09-19
 ### Added
 - **Top "Read Chapter >" Navigation Button:** Added a prominent "Read Chapter >" button with a rightward chevron directly in the Verse Study Panel header, enabling immediate one-tap chapter navigation and auto-scrolling to the active verse without scrolling past long lists of cross-references and constituent words.
