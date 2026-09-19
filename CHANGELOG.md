@@ -1,5 +1,18 @@
 # Changelog
 
+## [10.2.0] - 2026-09-19
+### Added
+- **Automatic Study Panel Opening on Desktop:** When searching for an entity or selecting a search suggestion on desktop viewports (>= 1024px), the Study Panel now automatically opens to reveal comprehensive details, definitions, and verses while keeping the visualization interactive. Mobile displays (< 1024px) keep the panel closed after search to preserve full-screen map touch interaction.
+- **Dynamic Camera Viewport Centering:** Shifted the default and search camera focus on desktop viewports when the Study Panel is open so the target node or constellation is centered squarely in the visible canvas area rather than partially obscured behind the 480px panel. Closing or dismissing the Study Panel smoothly recenters the camera across the full viewport width.
+- **Visible Map Zoom Extents Anchoring:** Dynamically shifts the Zoom Extents button leftward when the Study Panel is open on desktop (offsetting by panel width + margin) so the control remains accessible in the bottom-right corner of the visible map without overlapping the panel.
+- **Multilingual Verse Keyword Highlighting:** Added subtle keyword highlighting in verses across the Study Panel in Word Mode:
+  - Highlights English keyword occurrences in verse body text and smart snippets with custom tinted styling.
+  - In Septuagint (LXX) and Clementine Vulgate (VUL) foundations, matching Greek and Latin words in the original language text beneath the English translation are automatically detected and highlighted using accent normalization and morphological stem matching.
+  - Smart snippet generation centers the preview snippet around the first keyword match to guarantee immediate keyword visibility in cross-reference lists.
+
+### Changed
+- **Asset Cache Busting (`v=10.2.0`):** Bumped cache-buster query parameter to `?v=10.2.0` across stylesheet links, custom element scripts, and runtime data fetch requests.
+
 ## [10.1.1] - 2026-09-19
 ### Changed
 - **Verse Study Panel Header Layout:** Repositioned the "Read Chapter >" navigation button to sit in the top-right header section horizontally across from the verse reference and navigation chevrons, directly below the panel control actions (`[ - | + ]`, pin toggle, and dismiss button), saving vertical space and keeping the verse title prominent.

@@ -3607,7 +3607,7 @@ class BibleWordMap extends HTMLElement {
             this.foundation = 'bsb';
         }
 
-        const vParam = '?v=10.1.1';
+        const vParam = '?v=10.2.0';
         if (this.foundation === 'lxx') {
             this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -4311,7 +4311,7 @@ class BibleWordMap extends HTMLElement {
             this.foundation = 'bsb';
         }
 
-        const vParam = '?v=10.1.1';
+        const vParam = '?v=10.2.0';
         if (this.foundation === 'lxx') {
             this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -4981,7 +4981,7 @@ class BibleWordMap extends HTMLElement {
             return this._englishSemanticData;
         }
 
-        const vParam = '?v=10.1.1';
+        const vParam = '?v=10.2.0';
         const wordmapSrc = this.getAttribute('src-2d-bsb') || this.getAttribute('src-2d') || ('data/output/wordmap_2d.json' + vParam);
         const versesSrc = this.getAttribute('src-verses-bsb') || this.getAttribute('src-verses') || ('data/output/verse_index.json' + vParam);
         const versemapSrc = this.getAttribute('src-versemap-bsb') || this.getAttribute('src-versemap') || ('data/output/versemap_2d.json' + vParam);
@@ -5047,7 +5047,7 @@ class BibleWordMap extends HTMLElement {
         if (this._cachedWordmaps[foundation]) {
             return this._cachedWordmaps[foundation];
         }
-        const vParam = '?v=10.1.1';
+        const vParam = '?v=10.2.0';
         let src = '';
         if (foundation === 'lxx') {
             src = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
@@ -6396,7 +6396,7 @@ class BibleWordMap extends HTMLElement {
             vulPill.classList.toggle('active', foundation === 'vul');
         }
 
-        const vParam = '?v=10.1.1';
+        const vParam = '?v=10.2.0';
         if (foundation === 'lxx') {
             this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -8252,6 +8252,88 @@ class BibleWordMap extends HTMLElement {
         if (start > 0) snippet = '...' + snippet;
         if (end < text.length) snippet = snippet + '...';
         return snippet;
+    }
+
+    stripGreekAccents(s) {
+        return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    }
+
+    getGreekStem(lemma) {
+        let s = this.stripGreekAccents(lemma).replace(/[^α-ω]/g, '');
+        if (s.length <= 3) return s;
+        const endings = [
+            'ματος', 'ματων', 'μασιν', 'μασι',
+            'εως', 'εων', 'εσιν', 'οις', 'ους', 'αις', 'οιν', 'αιν',
+            'ουσι', 'ουσιν', 'ομεν', 'ετε', 'οντα', 'οντες', 'οντων', 'ουσαι',
+            'ισσα', 'ιδος', 'ιδων', 'ισιν',
+            'ος', 'ον', 'ου', 'ῳ', 'οι', 'ων', 'ας', 'ης', 'ην', 'αν', 'ις', 'ιν', 'ει', 'ες',
+            'υς', 'υν', 'εα', 'υι',
+            'ω', 'ας', 'α'
+        ];
+        for (const end of endings) {
+            if (s.endsWith(end) && s.length - end.length >= 2) {
+                return s.slice(0, -end.length);
+            }
+        }
+        return s.length > 4 ? s.slice(0, -1) : s;
+    }
+
+    getLatinStem(lemma) {
+        let s = (lemma || '').trim().toLowerCase().replace(/[^a-z]/g, '');
+        if (s.length <= 3) return s;
+        const endings = [
+            'orum', 'arum', 'ebam', 'ebat', 'ebant', 'erunt', 'isset', 'issent',
+            'ibus', 'ium', 'iis', 'iae', 'iam', 'ias',
+            'us', 'um', 'is', 'em', 'es', 'ei', 'ui', 'am', 'as', 'os', 'ae', 'unt',
+            'a', 'e', 'i', 'o', 'u'
+        ];
+        for (const end of endings) {
+            if (s.endsWith(end) && s.length - end.length >= 3) {
+                return s.slice(0, -end.length);
+            }
+        }
+        return s.length > 4 ? s.slice(0, -1) : s;
+    }
+
+    highlightOriginalKeywordsInVerse(text, origLemmas) {
+        if (!text) return '';
+        if (!origLemmas || origLemmas.length === 0) return escapeHtml(text);
+        
+        const targets = [];
+        for (const raw of origLemmas) {
+            if (!raw) continue;
+            const isGreek = /[\u0370-\u03ff\u1f00-\u1fff]/.test(raw);
+            if (isGreek) {
+                const norm = this.stripGreekAccents(raw).replace(/[^α-ω]/g, '');
+                const stem = this.getGreekStem(norm);
+                if (norm) targets.push({ type: 'greek', norm, stem });
+            } else {
+                const norm = raw.toLowerCase().replace(/[^a-z]/g, '');
+                const stem = this.getLatinStem(norm);
+                if (norm) targets.push({ type: 'latin', norm, stem });
+            }
+        }
+        if (targets.length === 0) return escapeHtml(text);
+
+        const tokens = text.split(/([\s.,;:··!?'’"()«»\[\]\/\-]+)/);
+        return tokens.map(token => {
+            const isGreekTok = /[\u0370-\u03ff\u1f00-\u1fff]/.test(token);
+            let matched = false;
+            if (isGreekTok) {
+                const nTok = this.stripGreekAccents(token).replace(/[^α-ω]/g, '');
+                if (nTok.length >= 2) {
+                    matched = targets.some(t => t.type === 'greek' && (nTok === t.norm || (t.stem.length >= 2 && nTok.startsWith(t.stem))));
+                }
+            } else {
+                const nTok = token.toLowerCase().replace(/[^a-z]/g, '');
+                if (nTok.length >= 2) {
+                    matched = targets.some(t => t.type === 'latin' && (nTok === t.norm || (t.stem.length >= 3 && nTok.startsWith(t.stem))));
+                }
+            }
+            return matched 
+                ? `<mark class="bwm-verse-kw-highlight">${escapeHtml(token)}</mark>`
+                : escapeHtml(token);
+        }).join('');
     }
 
     updateBackdrop() {
@@ -10491,6 +10573,25 @@ class BibleWordMap extends HTMLElement {
             verseText = '';
         }
 
+        let activeKws = [];
+        let origLemmas = [];
+        if (this.viewMode === 'words' && Array.isArray(this.searchedWords)) {
+            for (const sId of this.searchedWords) {
+                if (!sId) continue;
+                const parsed = this.parseWordId(sId);
+                if (parsed && parsed.word && !activeKws.includes(parsed.word)) {
+                    activeKws.push(parsed.word);
+                }
+                let sNode = (this.allSearchNodes && this.allSearchNodes.find(n => n.id === sId))
+                    || (this.data2d && this.data2d.find(d => d.id === sId));
+                if (sNode && sNode.original && Array.isArray(sNode.original)) {
+                    sNode.original.forEach(o => {
+                        if (o.lemma && !origLemmas.includes(o.lemma)) origLemmas.push(o.lemma);
+                    });
+                }
+            }
+        }
+
         let crossrefsList = Array.isArray(verse.r) ? verse.r : [];
         let crossrefsHtml = crossrefsList.slice(0, 16).map(cr => {
             let crId = getNeighborId(cr);
@@ -10502,6 +10603,8 @@ class BibleWordMap extends HTMLElement {
             let crGreek = this.verseGreekMap ? (this.verseGreekMap.get(crId) || '') : '';
             let isExpandable = crText.length > 110 || Boolean(crGreek);
             let snippet = crText.length > 110 ? crText.slice(0, 107) + '...' : crText;
+            let snippetHtml = (activeKws.length > 0 && snippet) ? this.highlightKeywordsInVerse(snippet, activeKws) : escapeHtml(snippet);
+            let crGreekHtml = (origLemmas.length > 0 && crGreek) ? this.highlightOriginalKeywordsInVerse(crGreek, origLemmas) : escapeHtml(crGreek);
             let pct = Math.round((crSim || 0.8) * 100);
             let isAlreadyActive = Boolean(this.searchedVerses && this.searchedVerses.includes(crId));
             let crActionHtml = this.renderPillToggle({
@@ -10531,8 +10634,8 @@ class BibleWordMap extends HTMLElement {
                     </div>
                     ${snippet ? `
                     <div class="bwm-crossref-body">
-                        <div class="bwm-crossref-snippet" data-snippet="${escapeHtml(snippet)}" data-full="${escapeHtml(crText)}">${snippet}</div>
-                        ${crGreek ? `<div class="bwm-crossref-original" style="display:none;">${escapeHtml(crGreek)}</div>` : ''}
+                        <div class="bwm-crossref-snippet" data-snippet="${escapeHtml(snippet)}" data-full="${escapeHtml(crText)}">${snippetHtml}</div>
+                        ${crGreek ? `<div class="bwm-crossref-original" style="display:none;">${crGreekHtml}</div>` : ''}
                     </div>` : ''}
                 </div>
             `;
@@ -10550,6 +10653,9 @@ class BibleWordMap extends HTMLElement {
             return `<span class="bwm-book-chip" style="border-left: 3px solid ${posColor};" title="Constituent content word"><b>${displayW}</b> <span style="opacity:0.5;font-size:0.8em;">(${pos ? pos.toLowerCase() : ''})</span></span>`;
         }).join('');
 
+        let verseTextDisplay = (activeKws.length > 0 && verseText) ? this.highlightKeywordsInVerse(verseText, activeKws) : escapeHtml(verseText);
+        let greekTextDisplay = (origLemmas.length > 0 && greekText) ? this.highlightOriginalKeywordsInVerse(greekText, origLemmas) : escapeHtml(greekText);
+
         let isAlreadyActive = Boolean(this.searchedVerses && this.searchedVerses.includes(verse.id));
         let verseActionHtml = this.renderPillToggle({
             isActive: isAlreadyActive,
@@ -10564,19 +10670,20 @@ class BibleWordMap extends HTMLElement {
             <div class="bwm-sheet-handle"></div>
             ${tabsHtml}
             <div class="bwm-window-header">
-                <div class="bwm-window-header-top" style="align-items: flex-start;">
-                    <div style="min-width: 0; flex: 1;">
-                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;">
-                            <span class="bwm-window-badge" style="background: ${genreColor};">${genre}</span>
-                            <span class="bwm-window-subtitle-inline">${testament === 'OT' ? 'Old Testament' : 'New Testament'}</span>
+                <div class="bwm-window-header-top">
+                    <div class="bwm-window-title-group">
+                        <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;">
+                            <h3 class="bwm-window-title" style="margin: 0;">${formattedRef}</h3>
+                            <span class="bwm-book-badge" style="background:${genreColor};">${genre}</span>
+                            <span class="bwm-window-badge-muted">${testament === 'OT' ? 'Old Testament' : 'New Testament'}</span>
                         </div>
-                        <div class="bwm-verse-nav-header">
+                        <div class="bwm-verse-nav-controls" style="display: flex; align-items: center; gap: 4px; margin-top: 4px;">
                             <button type="button" class="bwm-verse-nav-chevron" id="bwm-verse-prev-btn" title="${prevVerse ? `Previous: ${formatVerseRef(prevVerse)}` : 'First verse'}" ${!prevVerse ? 'disabled' : ''} aria-label="Previous verse">
                                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                     <polyline points="15 18 9 12 15 6"></polyline>
                                 </svg>
                             </button>
-                            <h3 class="bwm-window-title" style="margin: 0; line-height: 1.2;">${formattedRef}</h3>
+                            <span class="bwm-verse-nav-current">${formattedRef}</span>
                             <button type="button" class="bwm-verse-nav-chevron" id="bwm-verse-next-btn" title="${nextVerse ? `Next: ${formatVerseRef(nextVerse)}` : 'Last verse'}" ${!nextVerse ? 'disabled' : ''} aria-label="Next verse">
                                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                     <polyline points="9 18 15 12 9 6"></polyline>
@@ -10606,11 +10713,11 @@ class BibleWordMap extends HTMLElement {
                         <span style="font-size:0.7em; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; opacity:0.65;">${verseText ? 'English Translation' : (this.foundation === 'vul' ? 'Latin Clementine Vulgate' : 'Septuagint / Greek NT')}</span>
                         ${(verseText && greekText) ? `<button type="button" class="bwm-window-pill ${this.showGreekOriginal ? 'active' : ''}" id="bwm-btn-toggle-greek" style="font-size:0.7em; padding:2px 8px; cursor:pointer;" title="Toggle ${this.foundation === 'vul' ? 'Latin Vulgate' : 'Greek original'} text">${this.foundation === 'vul' ? 'Latin Vulgate' : 'Greek Original'}</button>` : ''}
                     </div>
-                    ${verseText ? `<div class="bwm-verse-english-text">${verseText}</div>` : ''}
+                    ${verseText ? `<div class="bwm-verse-english-text">${verseTextDisplay}</div>` : ''}
                     ${greekText ? `
                     <div class="bwm-verse-greek-box" id="bwm-verse-greek-box" style="display: ${(this.showGreekOriginal || !verseText) ? 'block' : 'none'};">
                         ${verseText ? `<div class="bwm-verse-greek-label">${this.foundation === 'vul' ? 'Clementine Latin Vulgate' : 'Septuagint / Greek NT'}</div>` : ''}
-                        <div class="bwm-verse-greek-text">${greekText}</div>
+                        <div class="bwm-verse-greek-text">${greekTextDisplay}</div>
                     </div>` : ''}
                 </div>` : ''}
                 <div>
@@ -12708,6 +12815,25 @@ class BibleWordMap extends HTMLElement {
             }
         }
 
+        let origLemmas = [];
+        if (node && node.original && Array.isArray(node.original)) {
+            node.original.forEach(o => {
+                if (o.lemma && !origLemmas.includes(o.lemma)) origLemmas.push(o.lemma);
+            });
+        }
+        if (this.viewMode === 'words' && Array.isArray(this.searchedWords)) {
+            for (const sId of this.searchedWords) {
+                if (!sId) continue;
+                let sNode = (this.allSearchNodes && this.allSearchNodes.find(n => n.id === sId))
+                    || (this.data2d && this.data2d.find(d => d.id === sId));
+                if (sNode && sNode.original && Array.isArray(sNode.original)) {
+                    sNode.original.forEach(o => {
+                        if (o.lemma && !origLemmas.includes(o.lemma)) origLemmas.push(o.lemma);
+                    });
+                }
+            }
+        }
+
         const buildVerseItemHtml = (id) => {
             let v = this.verses[id] || '';
             let parts = v.split('|');
@@ -12729,6 +12855,7 @@ class BibleWordMap extends HTMLElement {
             let snippet = this.getSmartSnippet(english, highlightKws, 110);
             let snippetHtml = this.highlightKeywordsInVerse(snippet, highlightKws);
             let fullHtml = this.highlightKeywordsInVerse(english, highlightKws);
+            let origHtml = origText ? this.highlightOriginalKeywordsInVerse(origText, origLemmas) : '';
             let origLabel = (this.foundation === 'vul') ? 'Latin Clementine Vulgate' : 'Septuagint / Greek NT';
             return `
                 <div class="bwm-crossref-card bwm-verse-item" data-verse-id="${id}" style="margin: 6px 0;">
@@ -12749,7 +12876,7 @@ class BibleWordMap extends HTMLElement {
                     ${snippet ? `
                     <div class="bwm-crossref-body">
                         <div class="bwm-verse-item-english bwm-crossref-snippet" data-snippet-html="${escapeHtml(snippetHtml)}" data-full-html="${escapeHtml(fullHtml)}" data-snippet="${escapeHtml(snippet)}" data-full="${escapeHtml(english)}">${snippetHtml}</div>
-                        ${origText ? `<div class="bwm-verse-item-original bwm-crossref-original" style="display:none;"><span style="font-size:0.75em; opacity:0.6; text-transform:uppercase; letter-spacing:0.04em; display:block; margin-bottom:2px; font-family:var(--bwm-font);">${origLabel}</span>${escapeHtml(origText)}</div>` : ''}
+                        ${origText ? `<div class="bwm-verse-item-original bwm-crossref-original" style="display:none;"><span style="font-size:0.75em; opacity:0.6; text-transform:uppercase; letter-spacing:0.04em; display:block; margin-bottom:2px; font-family:var(--bwm-font);">${origLabel}</span>${origHtml}</div>` : ''}
                     </div>` : ''}
                 </div>
             `;
