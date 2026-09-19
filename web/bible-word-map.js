@@ -4627,8 +4627,17 @@ class BibleWordMap extends HTMLElement {
                 if (this._pendingKeywordSearch) {
                     let target = this._pendingKeywordSearch;
                     this._pendingKeywordSearch = null;
-                    if (this.searchInput) this.searchInput.value = target;
-                    this.searchWord(false, true);
+                    let p = this.data2d ? (this.data2d.find(d => d.id === target) || this.findMatchesForWordToken(target)[0]) : null;
+                    if (p) {
+                        this.searchedWords = [p.id];
+                        this.drawerWords = [p.id];
+                        let { word, pos } = this.parseWordId(p.id);
+                        if (this.searchInput) this.searchInput.value = this.formatWord(word, pos);
+                        this.searchWord(true);
+                    } else {
+                        if (this.searchInput) this.searchInput.value = target.split('_')[0];
+                        this.searchWord(false, true);
+                    }
                 } else if (this.searchedWords && this.searchedWords.length > 0) {
                     let baseWords = [...new Set(this.searchedWords.map(id => {
                         let { word, pos } = this.parseWordId(id);
@@ -4870,6 +4879,84 @@ class BibleWordMap extends HTMLElement {
         }
     }
 
+    async getWordmapForFoundation(foundation) {
+        if (!this._cachedWordmaps) this._cachedWordmaps = {};
+        if (this.foundation === foundation && this.data2d) {
+            return this.data2d;
+        }
+        if (this._cachedWordmaps[foundation]) {
+            return this._cachedWordmaps[foundation];
+        }
+        const vParam = '?v=10.0.0';
+        let src = '';
+        if (foundation === 'lxx') {
+            src = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
+        } else if (foundation === 'vul') {
+            src = this.getAttribute('src-2d-vul') || ('data/output/wordmap_2d_vul.json' + vParam);
+        } else {
+            src = this.getAttribute('src-2d-bsb') || this.getAttribute('src-2d') || ('data/output/wordmap_2d.json' + vParam);
+        }
+        try {
+            const data = await fetch(src).then(r => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json();
+            });
+            this._cachedWordmaps[foundation] = data;
+            return data;
+        } catch (e) {
+            console.warn(`Could not load wordmap for ${foundation}:`, e);
+            return null;
+        }
+    }
+
+    async findMatchesInAlternateCanons(token) {
+        if (!token) return [];
+        const altCanons = ['bsb', 'lxx', 'vul'].filter(f => f !== this.foundation);
+        const canonLabels = {
+            bsb: { name: 'Berean Standard Bible', sub: 'English', tag: 'BSB', color: '#60a5fa', bg: 'rgba(59, 130, 246, 0.15)', border: 'rgba(59, 130, 246, 0.35)' },
+            lxx: { name: 'Septuagint & Greek NT', sub: 'Greek / English', tag: 'LXX', color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)', border: 'rgba(16, 185, 129, 0.35)' },
+            vul: { name: 'Clementine Vulgate', sub: 'Latin / English', tag: 'VUL', color: '#c084fc', bg: 'rgba(168, 85, 247, 0.15)', border: 'rgba(168, 85, 247, 0.35)' }
+        };
+
+        const results = [];
+        for (const canon of altCanons) {
+            const data2d = await this.getWordmapForFoundation(canon);
+            if (!data2d) continue;
+            const tLow = token.toLowerCase();
+            let matches = data2d.filter(d => d.w && d.w.toLowerCase() === tLow);
+            if (matches.length === 0) {
+                matches = data2d.filter(d => d.id && d.id.toLowerCase() === tLow);
+            }
+            if (matches.length === 0) {
+                matches = data2d.filter(d => d.w && d.w.toLowerCase().split(/[\s-]+/).includes(tLow));
+            }
+            if (matches.length === 0) {
+                matches = data2d.filter(d => {
+                    if (!d.original || !Array.isArray(d.original)) return false;
+                    return d.original.some(o => {
+                        if (o.lemma && o.lemma.toLowerCase() === tLow) return true;
+                        if (o.translit && o.translit.toLowerCase() === tLow) return true;
+                        if (o.strongs) {
+                            let sLow = o.strongs.toLowerCase();
+                            if (sLow === tLow || sLow === 'g' + tLow || sLow === 'h' + tLow) return true;
+                        }
+                        return false;
+                    });
+                });
+            }
+            if (matches.length > 0) {
+                matches.sort((a, b) => (b.f || 0) - (a.f || 0));
+                results.push({
+                    canon,
+                    meta: canonLabels[canon],
+                    bestMatch: matches[0],
+                    allMatches: matches
+                });
+            }
+        }
+        return results;
+    }
+
     async findCentroidVerses(query, topN = 4) {
         const engData = await this.getEnglishSemanticData();
         if (!engData || !engData.versemapLookup || !engData.verses || !engData.data2d) {
@@ -5005,7 +5092,7 @@ class BibleWordMap extends HTMLElement {
 
             let rawTokens = q.split(/[\s,]+/).filter(Boolean);
             let detectedVerse = detectVerseReference(q);
-            let isMultiWordQuery = !detectedVerse && rawTokens.length >= 4;
+            let isMultiWordQuery = !detectedVerse && rawTokens.length >= 3;
             let centroidResult = null;
 
             if (isMultiWordQuery) {
@@ -5043,6 +5130,23 @@ class BibleWordMap extends HTMLElement {
                             Semantic phrase matching is calculated against the English (BSB) map. Selecting a verse will automatically switch to the BSB canon.
                         </div>
                     `;
+                }
+
+                if (rawTokens.length === 3) {
+                    if (centroidResult.matchedTokens.length >= 3) {
+                        html += `
+                            <div class="bwm-recovery-hint" style="padding: 6px 10px; margin: 4px 0 8px 0; font-size: 0.8em; color: var(--bwm-text-muted); background: var(--bwm-input-bg); border-radius: 6px; border: 1px solid var(--bwm-border); line-height: 1.45;">
+                                💡 <strong>Dynamic Search Tip:</strong> Matched all 3 keywords. You can explore them in Words Mode or browse matching verses below. Adding 4 or more words can help perform an even deeper dynamic semantic search.
+                            </div>
+                        `;
+                    } else if (centroidResult.matchedTokens.length === 2) {
+                        let matchedWordsStr = centroidResult.matchedTokens.map(m => m.token).join(', ');
+                        html += `
+                            <div class="bwm-recovery-hint" style="padding: 6px 10px; margin: 4px 0 8px 0; font-size: 0.8em; color: var(--bwm-text-muted); background: var(--bwm-input-bg); border-radius: 6px; border: 1px solid var(--bwm-border); line-height: 1.45;">
+                                💡 <strong>Dynamic Search Tip:</strong> Matched 2 of 3 words (&ldquo;${escapeHtml(matchedWordsStr)}&rdquo;). Adding 4 or more words can help perform an even deeper dynamic search across the biblical text.
+                            </div>
+                        `;
+                    }
                 }
 
                 const renderWordsCard = () => {
@@ -5111,6 +5215,12 @@ class BibleWordMap extends HTMLElement {
             let exactWordMatches = (this.data2d && this.findMatchesForWordToken(q)) || [];
             let directWordMatch = exactWordMatches.length > 0 ? exactWordMatches[0] : null;
             let hasDirectWordMatch = Boolean(directWordMatch);
+
+            let altCanonMatches = [];
+            if (!hasDirectWordMatch && !detectedVerse && !detectedBook) {
+                altCanonMatches = await this.findMatchesInAlternateCanons(q);
+                if (this._searchRecoverySeq !== recoverySeq) return;
+            }
 
             // Handle multi-word tokens in words mode (only if not a detected verse or book)
             let multiTokenSuggestions = null;
@@ -5280,6 +5390,53 @@ class BibleWordMap extends HTMLElement {
                             <div class="bwm-recovery-action-desc">This query is a canonical word. Explore its semantic constellation and usage in Words Mode.</div>
                         </div>
                         <button type="button" class="bwm-recovery-action-btn" id="bwm-recovery-btn-word" data-word="${escapeHtml(displayWord)}">${btnText}</button>
+                    </div>
+                `;
+            }
+
+            // SECTION: Alternate Canon Detection Action
+            if (altCanonMatches && altCanonMatches.length > 0) {
+                hasContent = true;
+                html += `
+                    <div class="bwm-recovery-section">
+                        <div class="bwm-recovery-section-label">Found in Other Canons:</div>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                `;
+                for (let am of altCanonMatches) {
+                    let m = am.bestMatch;
+                    let meta = am.meta;
+                    let displayW = this.formatWord(m.w, m.pos);
+                    let badgeParts = [];
+                    if (m.original && Array.isArray(m.original) && m.original[0] && m.original[0].lemma) {
+                        badgeParts.push(m.original[0].lemma);
+                    }
+                    if (m.pos) badgeParts.push(m.pos.toLowerCase());
+                    if (m.f) badgeParts.push(`${m.f}x`);
+                    let badgeText = badgeParts.length > 0 ? `(${badgeParts.join(', ')})` : '';
+                    html += `
+                        <div class="bwm-recovery-action-card">
+                            <div class="bwm-recovery-action-info">
+                                <div class="bwm-recovery-action-title">
+                                    ✦ &ldquo;${escapeHtml(displayW)}&rdquo; <span style="font-size: 0.85em; opacity: 0.7;">${escapeHtml(badgeText)}</span>
+                                    <span class="bwm-recovery-canon-tag" style="background:${meta.bg}; color:${meta.color}; border:1px solid ${meta.border}; font-weight:700; padding:2px 7px; border-radius:6px; font-size:0.75em; margin-left:6px;">${meta.tag}</span>
+                                </div>
+                                <div class="bwm-recovery-action-desc">
+                                    Matches canonical vocabulary in the ${escapeHtml(meta.name)} (${escapeHtml(meta.sub)}). Switch to ${escapeHtml(meta.tag)} to explore its semantic constellation.
+                                </div>
+                            </div>
+                            <button type="button" class="bwm-recovery-action-btn bwm-recovery-btn-switch-canon" data-switch-canon="${am.canon}" data-search-word="${escapeHtml(m.id || displayW)}">
+                                Switch to ${escapeHtml(meta.tag)} &amp; Search &rarr;
+                            </button>
+                        </div>
+                    `;
+                }
+                html += `</div></div>`;
+            }
+
+            if (rawTokens.length === 3 && (!centroidResult || centroidResult.matchedTokens.length < 2) && (!altCanonMatches || altCanonMatches.length === 0)) {
+                html += `
+                    <div class="bwm-recovery-hint" style="padding: 6px 10px; margin: 4px 0 8px 0; font-size: 0.8em; color: var(--bwm-text-muted); background: var(--bwm-input-bg); border-radius: 6px; border: 1px solid var(--bwm-border); line-height: 1.45;">
+                        💡 <strong>Dynamic Search Tip:</strong> Searching with 4 or more words (or a known Scripture phrase) helps perform a dynamic semantic search, or try searching individual keywords.
                     </div>
                 `;
             }
@@ -5468,6 +5625,20 @@ class BibleWordMap extends HTMLElement {
                 this.searchWord();
             });
         });
+
+        const altCanonBtns = this.searchRecoveryPopover.querySelectorAll('.bwm-recovery-btn-switch-canon');
+        altCanonBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const targetCanon = btn.getAttribute('data-switch-canon');
+                const wordTarget = btn.getAttribute('data-search-word');
+                this.closeSearchRecovery();
+                this.setViewMode('words');
+                this._pendingKeywordSearch = wordTarget;
+                if (this.searchInput) this.searchInput.value = wordTarget.split('_')[0];
+                this.setSemanticFoundation(targetCanon, true);
+            });
+        });
         } finally {
             this.setSearchSpinner(false);
         }
@@ -5531,7 +5702,8 @@ class BibleWordMap extends HTMLElement {
             }
 
             let queryTokens = query.split(/[\s,]+/).filter(w => w);
-            if (!directKeywordSearch && queryTokens.length >= 4) {
+            let hasCommas = originalQuery.includes(',');
+            if (!directKeywordSearch && queryTokens.length >= 3 && !hasCommas) {
                 this.updateClearBtnVisibility();
                 this.showSearchRecovery(originalQuery, 'words');
                 return;
@@ -5701,6 +5873,7 @@ class BibleWordMap extends HTMLElement {
 
         this.isSearchMode = true;
         this.userInteracted = false;
+        this._nodesBounds = null;
         
         let baseWords = [...new Set(this.searchedWords.map(id => {
             let { word, pos } = this.parseWordId(id);
@@ -6665,10 +6838,13 @@ class BibleWordMap extends HTMLElement {
         
         let cw = this.logicalWidth || 800;
         let ch = this.logicalHeight || 600;
+        const isMobile = (window.innerWidth <= 768 || cw <= 768);
+        const pad = isMobile ? 0.88 : 0.92;
         
-        // Target scale to fit the bounds with some padding (0.92 fills the canvas space nicely)
-        let targetScale = 0.92 / Math.max(dx / cw, dy / ch);
-        targetScale = Math.min(targetScale, 3.5); // don't zoom in too crazy close
+        // Target scale to fit bounds with responsive padding
+        let targetScale = pad / Math.max(dx / cw, dy / ch);
+        const maxScale = isMobile ? 2.2 : 2.6;
+        targetScale = Math.min(targetScale, maxScale);
         
         // Smoothly interpolate current transform towards target transform
         let k = this.transform.k + (targetScale - this.transform.k) * 0.05;
@@ -6686,10 +6862,15 @@ class BibleWordMap extends HTMLElement {
         this.canvas.__zoom = newTransform;
     }
 
-    getZoomExtentsTransform(paddingFactor = 0.90) {
+    getZoomExtentsTransform(paddingFactor) {
         if (!this.nodes || this.nodes.length === 0) return null;
         let minX, maxX, minY, maxY;
-        if (this._nodesBounds && (!this.simulation || this.simulation.alpha() < 0.05)) {
+        if (this.isSearchMode) {
+            minX = d3.min(this.nodes, d => d.x);
+            maxX = d3.max(this.nodes, d => d.x);
+            minY = d3.min(this.nodes, d => d.y);
+            maxY = d3.max(this.nodes, d => d.y);
+        } else if (this._nodesBounds) {
             minX = this._nodesBounds.minX;
             maxX = this._nodesBounds.maxX;
             minY = this._nodesBounds.minY;
@@ -6711,10 +6892,14 @@ class BibleWordMap extends HTMLElement {
         
         let cw = this.logicalWidth || 800;
         let ch = this.logicalHeight || 600;
+        const isMobile = (window.innerWidth <= 768 || cw <= 768);
+        const defaultPadding = isMobile ? 0.88 : 0.92;
+        const pad = (paddingFactor !== undefined) ? paddingFactor : defaultPadding;
         
-        let targetScale = paddingFactor / Math.max(dx / cw, dy / ch);
+        let targetScale = pad / Math.max(dx / cw, dy / ch);
         if (this.isSearchMode) {
-            targetScale = Math.min(targetScale, 3.5);
+            const maxScale = isMobile ? 2.2 : 2.6;
+            targetScale = Math.min(targetScale, maxScale);
         }
         
         let tx = cw / 2 - targetScale * cx;
@@ -6743,7 +6928,7 @@ class BibleWordMap extends HTMLElement {
             return;
         }
 
-        const target = this.getZoomExtentsTransform(0.90);
+        const target = this.getZoomExtentsTransform();
         if (!target) {
             this.zoomExtentsBtn.classList.remove('visible');
             return;
@@ -6764,7 +6949,7 @@ class BibleWordMap extends HTMLElement {
 
     zoomExtents(duration = 600) {
         if (this.radialMenuNode) this.hideRadialMenu();
-        const targetTransform = this.getZoomExtentsTransform(0.90);
+        const targetTransform = this.getZoomExtentsTransform();
         if (!targetTransform || !this.zoom || !this.canvas) return;
         this.userInteracted = false;
         d3.select(this.canvas)
@@ -7232,6 +7417,7 @@ class BibleWordMap extends HTMLElement {
         this.selectedBook = foundBooks[0];
         this.isSearchMode = true;
         this.userInteracted = false;
+        this._nodesBounds = null;
 
         this.searchInput.value = foundBooks.map(b => b.name).join(", ");
         this.updateClearBtnVisibility();
@@ -8176,6 +8362,7 @@ class BibleWordMap extends HTMLElement {
         }
         this.isSearchMode = true;
         this.userInteracted = false;
+        this._nodesBounds = null;
 
         this.searchInput.value = foundChapters.map(r => formatChapterRef(r)).join(", ");
         this.updateClearBtnVisibility();
@@ -9403,6 +9590,7 @@ class BibleWordMap extends HTMLElement {
         }
         this.isSearchMode = true;
         this.userInteracted = false;
+        this._nodesBounds = null;
 
         this.searchInput.value = foundVerses.map(r => formatVerseRef(r)).join(", ");
         this.updateClearBtnVisibility();
