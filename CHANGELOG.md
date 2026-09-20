@@ -2,7 +2,7 @@
 
 ## [10.4.0] - 2026-09-19
 ### Added
-- **Full Map Space About Overlay:** Introduced a comprehensive in-app About view accessible via the bottom footer and Explore Legend:
+- **Full Map Space About Overlay:** Introduced a comprehensive in-app About view accessible via the bottom footer:
   - Covers the entire canvas, search bar, Options drawer, Study Panel, and Legend with a sleek backdrop blur and responsive card layout.
   - Keeps the top header (with title, version, theme toggle, and share link) and footer visible and interactive above the overlay.
   - Provides intuitive dismissal via "Map View" back button, close button (`×`), `Escape` key, or clicking the home title.
@@ -16,8 +16,9 @@
 
 ### Changed
 - **Radial Menu Dark Mode Contrast:** Lightened the background of the quick actions radial menu buttons in dark mode from near-black to an elevated slate disc (`rgba(92, 107, 128, 0.94)`) with a translucent white border and depth shadow, ensuring circular button silhouettes and icons remain distinct against the dark map canvas without disappearing.
-- **Explore Legend Brief Update:** Updated the brief description in the Legend overlay to clearly explain multi-level centroids and physical semantic proximity, concluding with a direct link to the About view.
-- **Footer Refinement:** Replaced the raw GitHub source link in the bottom footer with a styled "About" button while retaining the scripture quote (*"Freely you have received; freely give."*, Matthew 10:8).
+- **Explore Legend Brief Update:** Updated the brief description in the Legend overlay to clearly explain multi-level centroids and physical semantic proximity without external link dependencies, maintaining strict component encapsulation for embedding `<bible-word-map>` and search bar into external sites.
+- **Footer Refinement:** Replaced the raw GitHub source link in the bottom footer with a styled "About" button and cleaned up the scripture quote to display cleanly as *"Freely you have received; freely give."*.
+- **Desktop & Mobile Spacing Refinements:** Increased header padding on desktop viewports for a balanced, spacious top bar alongside the theme toggle and share controls; reduced excessive footer padding on desktop; and tightened vertical spacing above the footer text on mobile screens to eliminate awkward gaps under the map container.
 - **Asset Cache Busting (`v=10.4.0`):** Bumped cache-buster query parameter to `?v=10.4.0` across stylesheet links, custom element scripts, and runtime data fetch requests.
 
 ## [10.3.0] - 2026-09-19

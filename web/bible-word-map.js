@@ -3319,16 +3319,6 @@ class BibleWordMap extends HTMLElement {
                 .bwm-legend-tips strong {
                     color: var(--bwm-text);
                 }
-                .bwm-legend-about-link {
-                    color: var(--bwm-node-hover, #2563eb);
-                    font-weight: 600;
-                    text-decoration: underline;
-                    text-underline-offset: 3px;
-                    cursor: pointer;
-                }
-                .bwm-legend-about-link:hover {
-                    opacity: 0.85;
-                }
 
                 /* 8. Full Map Space About Window */
                 .bwm-about-overlay {
@@ -3700,7 +3690,7 @@ class BibleWordMap extends HTMLElement {
                     <div class="bwm-legend-body">
                         <div class="bwm-legend-content">
                             <div class="bwm-legend-intro">
-                                Explore the Holy Scriptures through a semantic lens. Switch between the Berean Standard Bible (BSB), Greek Septuagint / New Testament (LXX), and Latin Clementine Vulgate (VUL). Each dot represents a word, verse, chapter, or biblical book centroid, and physical distance indicates semantic proximity based on biblical usage. To understand more, see <a href="#" class="bwm-legend-about-link" id="bwm-legend-about-link">About</a>.
+                                Explore the Holy Scriptures through a semantic lens. Switch between the Berean Standard Bible (BSB), Greek Septuagint / New Testament (LXX), and Latin Clementine Vulgate (VUL). Each dot represents a word, verse, chapter, or biblical book centroid, and physical distance indicates semantic proximity based on biblical usage.
                             </div>
                             <div class="bwm-legend-grid">
                                 <div class="bwm-legend-card">
@@ -4638,7 +4628,6 @@ class BibleWordMap extends HTMLElement {
         this.legendBackBtn = this.querySelector('#bwm-legend-back-btn');
         this.legendCloseBtn = this.querySelector('#bwm-legend-close-btn');
         this.drawerLegendBtn = this.querySelector('#bwm-drawer-legend-btn');
-        this.legendAboutLink = this.querySelector('#bwm-legend-about-link');
 
         this.aboutOverlay = this.querySelector('#bwm-about-overlay');
         this.aboutBackBtn = this.querySelector('#bwm-about-back-btn');
@@ -4666,13 +4655,6 @@ class BibleWordMap extends HTMLElement {
             this.legendCloseBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.hideLegendWindow();
-            });
-        }
-        if (this.legendAboutLink) {
-            this.legendAboutLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this.showAboutOverlay();
             });
         }
         if (this.aboutBackBtn) {
