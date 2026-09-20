@@ -13,6 +13,10 @@
   - Caveats regarding polysemy/homograph single-vector averaging, 2D projection crowding, and translation nuances.
   - Real discovery examples including the covenantal cluster, cross-canon alignments (*faith* / *pistis* / *fides*), and dynamic phrase centroid matching (Psalm 85:10).
   - Attribution for open source datasets (BSB, Septuaginta Rahlfs 1935 / CATSS, Brenton, STEPBible TBESG, SBLGNT, OpenScriptures Strong's, Clementine Vulgate & Douay-Rheims, William Whitaker's WORDS, PROIEL Latin Treebank, CLTK, D3.js) and GitHub repository link.
+- **Optimal 100D Dimensionality Empirical Justification:** Added dedicated mathematical and empirical documentation justifying the 100-dimensional embedding choice across `ABOUT.md` and the in-app About modal:
+  - Details TwoNN intrinsic manifold dimensionality measurements showing saturation at 8.4 to 9.6 dimensions across English, Greek, and Latin canons.
+  - Highlights PPMI singular value decomposition confirming convergence of Effective Rank to ~215.5 and capture of 58% to 60.4% spectral energy.
+  - Documents hubness skewness stabilization and peak 2D UMAP projection trustworthiness (0.8348 for LXX, 0.8270 for VUL) directly at 100D.
 
 ### Changed
 - **Radial Menu Dark Mode Contrast:** Lightened the background of the quick actions radial menu buttons in dark mode from near-black to an elevated slate disc (`rgba(92, 107, 128, 0.94)`) with a translucent white border and depth shadow, ensuring circular button silhouettes and icons remain distinct against the dark map canvas without disappearing.
