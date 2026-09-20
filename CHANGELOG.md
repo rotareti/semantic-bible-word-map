@@ -1,5 +1,19 @@
 # Changelog
 
+## [11.0.0] - 2026-09-19
+### Added
+- **Paradigmatic Semantics Word2Vec Model (Window 50):** Transitioned the embedding training architecture from a narrow 5-word syntagmatic window to an expanded 50-word context envelope (a 10x increase) across the Berean Standard Bible, Septuagint, and Clementine Vulgate:
+  - Spans the entire verse envelope (covering 98% of biblical verses), allowing words to interact across the full thematic unit rather than immediate local phrases.
+  - Decouples titular nouns from formulaic historical names (e.g. *priest* shifts away from specific names like *Zadok* or *Jehoiada* toward institutional and cultic vocabulary like *consecrated*, *priesthood*, *cleansing*, *Levites*, *office*, and *atonement*).
+  - Uncovers deep covenantal and legal relationships (e.g. *covenant* connects directly with *commandments*, *ark*, *treaty*, *tablet*, *guarantee*, *mediator*, and *obsolete*).
+  - Strengthens soteriological synthesis (e.g. *justify* surfaces *predestine* and *reconciliation*, mirroring Romans 8:30).
+  - Shifts virtue spaces toward relational community attributes (e.g. *love* surfaces *brotherly*, *tenderhearted*, *harmony*, and *unity*).
+- **Paradigmatic Semantics Empirical Study (`docs/09-paradigmatic-window50-study.md`):** Added a comprehensive research study documenting the theoretical framework, mathematical comparisons across six biblical categories, and verse length distribution analysis.
+
+### Changed
+- **About Documentation Update:** Updated `ABOUT.md` and the in-app About modal to explain the 50-word paradigmatic context envelope.
+- **Asset Cache Busting (`v=11.0.0`):** Bumped cache-buster query parameter to `?v=11.0.0` across stylesheet links, custom element scripts, and runtime data fetch requests.
+
 ## [10.4.0] - 2026-09-19
 ### Added
 - **Full Map Space About Overlay:** Introduced a comprehensive in-app About view accessible via the bottom footer:

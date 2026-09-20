@@ -3837,7 +3837,7 @@ class BibleWordMap extends HTMLElement {
                             <ol>
                                 <li><strong>Corpus Extraction:</strong> Text corpora were extracted from clean scripture sources across the Old Testament and New Testament, stripping modern apparatus, footnotes, and translator headings.</li>
                                 <li><strong>Morphological Lemmatization:</strong> Words in the original languages (Greek and Latin) were parsed into their dictionary base forms (lemmas) and tagged with parts of speech (e.g. nouns, verbs, adjectives, proper names) to unite inflected grammatical forms.</li>
-                                <li><strong>Continuous Vector Training:</strong> Using Gensim's Word2Vec Skip-gram architecture with negative sampling, the system trained 100-dimensional dense semantic vectors. A sliding window of 5 words captured immediate collocations, grammatical dependencies, and recurring thematic phrases throughout the canon.</li>
+                                <li><strong>Continuous Vector Training (Paradigmatic 50-Word Window):</strong> Using Gensim's Word2Vec Skip-gram architecture with negative sampling, the system trains 100-dimensional dense semantic vectors using a 50-word context envelope. While a small 5-word window captures immediate local syntax (titular collocations like <em>King Sennacherib</em> or <em>Eleazar the priest</em>), the expanded 50-word window covers the entire verse envelope (spanning 98% of all biblical verses), capturing rich <strong>paradigmatic and thematic semantics</strong> (e.g. <em>priest</em> connecting to <em>consecrated</em>, <em>priesthood</em>, <em>atonement</em>, and <em>Levites</em>; <em>covenant</em> connecting to <em>commandments</em>, <em>treaty</em>, <em>tablet</em>, <em>guarantee</em>, and <em>mediator</em>).</li>
                                 <li><strong>Contextual Centroids:</strong> Words that repeatedly appear in similar literary and theological environments develop similar mathematical vectors. For instance, words relating to sacrifice, priesthood, and altar naturally converge because they share overlapping narrative and ritual contexts.</li>
                             </ol>
 
@@ -4037,7 +4037,7 @@ class BibleWordMap extends HTMLElement {
             this.foundation = 'bsb';
         }
 
-        const vParam = '?v=10.4.0';
+        const vParam = '?v=11.0.0';
         if (this.foundation === 'lxx') {
             this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -4791,7 +4791,7 @@ class BibleWordMap extends HTMLElement {
             this.foundation = 'bsb';
         }
 
-        const vParam = '?v=10.4.0';
+        const vParam = '?v=11.0.0';
         if (this.foundation === 'lxx') {
             this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -5461,7 +5461,7 @@ class BibleWordMap extends HTMLElement {
             return this._englishSemanticData;
         }
 
-        const vParam = '?v=10.4.0';
+        const vParam = '?v=11.0.0';
         const wordmapSrc = this.getAttribute('src-2d-bsb') || this.getAttribute('src-2d') || ('data/output/wordmap_2d.json' + vParam);
         const versesSrc = this.getAttribute('src-verses-bsb') || this.getAttribute('src-verses') || ('data/output/verse_index.json' + vParam);
         const versemapSrc = this.getAttribute('src-versemap-bsb') || this.getAttribute('src-versemap') || ('data/output/versemap_2d.json' + vParam);
@@ -5527,7 +5527,7 @@ class BibleWordMap extends HTMLElement {
         if (this._cachedWordmaps[foundation]) {
             return this._cachedWordmaps[foundation];
         }
-        const vParam = '?v=10.4.0';
+        const vParam = '?v=11.0.0';
         let src = '';
         if (foundation === 'lxx') {
             src = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
@@ -6876,7 +6876,7 @@ class BibleWordMap extends HTMLElement {
             vulPill.classList.toggle('active', foundation === 'vul');
         }
 
-        const vParam = '?v=10.4.0';
+        const vParam = '?v=11.0.0';
         if (foundation === 'lxx') {
             this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
