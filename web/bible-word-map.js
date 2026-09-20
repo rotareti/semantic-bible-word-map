@@ -666,6 +666,13 @@ class BibleWordMap extends HTMLElement {
                     --bwm-link-direct: rgba(40, 167, 69, 0.6);
                     --bwm-link-indirect: rgba(150, 150, 150, 0.2);
                     --bwm-tooltip-link: #2563eb;
+                    --bwm-radial-bg: rgba(26, 26, 26, 0.88);
+                    --bwm-radial-hover: rgba(51, 51, 51, 0.95);
+                    --bwm-radial-border: 1px solid rgba(255, 255, 255, 0.15);
+                    --bwm-radial-color: #ffffff;
+                    --bwm-radial-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+                    --bwm-radial-label-bg: rgba(0, 0, 0, 0.85);
+                    --bwm-radial-label-border: none;
                     --bwm-font: system-ui, -apple-system, sans-serif;
                 }
                 @media (prefers-color-scheme: dark) {
@@ -682,6 +689,13 @@ class BibleWordMap extends HTMLElement {
                         --bwm-badge-bg: rgba(255, 255, 255, 0.08);
                         --bwm-node-default: #999999;
                         --bwm-tooltip-link: #60a5fa;
+                        --bwm-radial-bg: rgba(92, 107, 128, 0.94);
+                        --bwm-radial-hover: rgba(125, 143, 168, 0.98);
+                        --bwm-radial-border: 1px solid rgba(255, 255, 255, 0.32);
+                        --bwm-radial-color: #ffffff;
+                        --bwm-radial-shadow: 0 3px 12px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
+                        --bwm-radial-label-bg: rgba(15, 23, 42, 0.95);
+                        --bwm-radial-label-border: 1px solid rgba(255, 255, 255, 0.22);
                     }
                 }
                 :root[data-theme="dark"] bible-word-map,
@@ -697,6 +711,13 @@ class BibleWordMap extends HTMLElement {
                     --bwm-badge-bg: rgba(255, 255, 255, 0.08);
                     --bwm-node-default: #999999;
                     --bwm-tooltip-link: #60a5fa;
+                    --bwm-radial-bg: rgba(92, 107, 128, 0.94);
+                    --bwm-radial-hover: rgba(125, 143, 168, 0.98);
+                    --bwm-radial-border: 1px solid rgba(255, 255, 255, 0.32);
+                    --bwm-radial-color: #ffffff;
+                    --bwm-radial-shadow: 0 3px 12px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
+                    --bwm-radial-label-bg: rgba(15, 23, 42, 0.95);
+                    --bwm-radial-label-border: 1px solid rgba(255, 255, 255, 0.22);
                 }
                 :root[data-theme="light"] bible-word-map,
                 bible-word-map[data-theme="light"] {
@@ -715,6 +736,13 @@ class BibleWordMap extends HTMLElement {
                     --bwm-link-direct: rgba(40, 167, 69, 0.6);
                     --bwm-link-indirect: rgba(150, 150, 150, 0.2);
                     --bwm-tooltip-link: #2563eb;
+                    --bwm-radial-bg: rgba(26, 26, 26, 0.88);
+                    --bwm-radial-hover: rgba(51, 51, 51, 0.95);
+                    --bwm-radial-border: 1px solid rgba(255, 255, 255, 0.15);
+                    --bwm-radial-color: #ffffff;
+                    --bwm-radial-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+                    --bwm-radial-label-bg: rgba(0, 0, 0, 0.85);
+                    --bwm-radial-label-border: none;
                 }
                 .bwm-container {
                     display: flex;
@@ -1135,8 +1163,9 @@ class BibleWordMap extends HTMLElement {
                     width: 36px;
                     height: 36px;
                     border-radius: 50%;
-                    background: rgba(26, 26, 26, 0.85);
-                    color: #ffffff;
+                    background: var(--bwm-radial-bg, rgba(26, 26, 26, 0.88));
+                    border: var(--bwm-radial-border, 1px solid rgba(255, 255, 255, 0.15));
+                    color: var(--bwm-radial-color, #ffffff);
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -1144,19 +1173,20 @@ class BibleWordMap extends HTMLElement {
                     pointer-events: auto;
                     font-size: 18px;
                     font-weight: bold;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-                    transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+                    box-shadow: var(--bwm-radial-shadow, 0 2px 8px rgba(0,0,0,0.3));
+                    transition: transform 0.15s ease-out, opacity 0.15s ease-out, background-color 0.15s ease, border-color 0.15s ease;
                     transform: scale(0);
                     opacity: 0;
                     user-select: none;
                     -webkit-user-select: none;
+                    box-sizing: border-box;
                 }
                 .bwm-radial-item.visible {
                     transform: scale(1);
                     opacity: 1;
                 }
                 .bwm-radial-item:hover {
-                    background: rgba(51, 51, 51, 0.9);
+                    background: var(--bwm-radial-hover, rgba(51, 51, 51, 0.95));
                     transform: scale(1.15);
                     z-index: 100;
                 }
@@ -1173,7 +1203,8 @@ class BibleWordMap extends HTMLElement {
                     font-size: 11px;
                     font-weight: 600;
                     color: #ffffff;
-                    background: rgba(0, 0, 0, 0.85);
+                    background: var(--bwm-radial-label-bg, rgba(0, 0, 0, 0.85));
+                    border: var(--bwm-radial-label-border, none);
                     padding: 3px 7px;
                     border-radius: 4px;
                     pointer-events: none;
@@ -1181,6 +1212,7 @@ class BibleWordMap extends HTMLElement {
                     transition: opacity 0.15s;
                     z-index: 101;
                     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+                    box-sizing: border-box;
                 }
                 .bwm-radial-item.pos-bottom .bwm-radial-label {
                     top: calc(100% + 6px);

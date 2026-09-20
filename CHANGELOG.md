@@ -15,6 +15,7 @@
   - Attribution for open source datasets (BSB, Septuaginta Rahlfs 1935 / CATSS, Brenton, STEPBible TBESG, SBLGNT, OpenScriptures Strong's, Clementine Vulgate & Douay-Rheims, William Whitaker's WORDS, PROIEL Latin Treebank, CLTK, D3.js) and GitHub repository link.
 
 ### Changed
+- **Radial Menu Dark Mode Contrast:** Lightened the background of the quick actions radial menu buttons in dark mode from near-black to an elevated slate disc (`rgba(92, 107, 128, 0.94)`) with a translucent white border and depth shadow, ensuring circular button silhouettes and icons remain distinct against the dark map canvas without disappearing.
 - **Explore Legend Brief Update:** Updated the brief description in the Legend overlay to clearly explain multi-level centroids and physical semantic proximity, concluding with a direct link to the About view.
 - **Footer Refinement:** Replaced the raw GitHub source link in the bottom footer with a styled "About" button while retaining the scripture quote (*"Freely you have received; freely give."*, Matthew 10:8).
 - **Asset Cache Busting (`v=10.4.0`):** Bumped cache-buster query parameter to `?v=10.4.0` across stylesheet links, custom element scripts, and runtime data fetch requests.
