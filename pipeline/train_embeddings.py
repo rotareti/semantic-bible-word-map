@@ -26,8 +26,8 @@ if __name__ == '__main__':
     print("Training Word2Vec model...")
     sentences = MySentences(data_paths)
     
-    # Train a Skip-gram model with window=50 (10x envelope for paradigmatic semantics)
-    model = Word2Vec(sentences=sentences, vector_size=100, window=50, min_count=2, workers=4, sg=1, epochs=10, seed=42)
+    # Train a Skip-gram model with window=50 (paradigmatic semantics with tuned subsampling and negative sampling)
+    model = Word2Vec(sentences=sentences, vector_size=100, window=50, min_count=2, workers=8, sg=1, epochs=10, seed=42, sample=1e-4, negative=10)
     
     model.save('data/processed/word2vec.model')
     print("Model saved to data/processed/word2vec.model")

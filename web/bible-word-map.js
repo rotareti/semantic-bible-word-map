@@ -3837,7 +3837,7 @@ class BibleWordMap extends HTMLElement {
                             <ol>
                                 <li><strong>Corpus Extraction:</strong> Text corpora were extracted from clean scripture sources across the Old Testament and New Testament, stripping modern apparatus, footnotes, and translator headings.</li>
                                 <li><strong>Morphological Lemmatization:</strong> Words in the original languages (Greek and Latin) were parsed into their dictionary base forms (lemmas) and tagged with parts of speech (e.g. nouns, verbs, adjectives, proper names) to unite inflected grammatical forms.</li>
-                                <li><strong>Continuous Vector Training (Paradigmatic 50-Word Window):</strong> Using Gensim's Word2Vec Skip-gram architecture with negative sampling, the system trains 100-dimensional dense semantic vectors using a 50-word context envelope. While a small 5-word window captures immediate local syntax (titular collocations like <em>King Sennacherib</em> or <em>Eleazar the priest</em>), the expanded 50-word window covers the entire verse envelope (spanning 98% of all biblical verses), capturing rich <strong>paradigmatic and thematic semantics</strong> (e.g. <em>priest</em> connecting to <em>consecrated</em>, <em>priesthood</em>, <em>atonement</em>, and <em>Levites</em>; <em>covenant</em> connecting to <em>commandments</em>, <em>treaty</em>, <em>tablet</em>, <em>guarantee</em>, and <em>mediator</em>).</li>
+                                <li><strong>Continuous Vector Training (Paradigmatic 50-Word Window &amp; Calibrated Hyperparameters):</strong> Using Gensim's Word2Vec Skip-gram architecture with negative sampling, the system trains 100-dimensional dense semantic vectors using an expansive 50-word context envelope. While a small 5-word window captures immediate local syntax (titular collocations like <em>King Sennacherib</em> or <em>Eleazar the priest</em>), the 50-word window covers the entire verse envelope (spanning 98% of all biblical verses), capturing rich <strong>paradigmatic and thematic semantics</strong>. To counter the gravitational pull of high-frequency narrative glue words across wide windows, the architecture applies calibrated <strong>subsampling</strong> (<code>sample=1e-4</code>) and elevated <strong>negative sampling</strong> (<code>negative=10</code>). This suppresses narrative noise, sharpens conceptual boundaries, and elevates cultic, covenantal, and doctrinal vocabulary (e.g. <em>priest</em> connecting to <em>office</em>, <em>consecrated</em>, and <em>atonement</em>; <em>covenant</em> connecting to <em>commandments</em> and <em>transgress</em>; <em>justify</em> connecting to <em>credit</em>, <em>demonstrate</em>, and <em>guarantee</em>).</li>
                                 <li><strong>Contextual Centroids:</strong> Words that repeatedly appear in similar literary and theological environments develop similar mathematical vectors. For instance, words relating to sacrifice, priesthood, and altar naturally converge because they share overlapping narrative and ritual contexts.</li>
                             </ol>
 
@@ -3862,6 +3862,18 @@ class BibleWordMap extends HTMLElement {
                                     <li><strong>PPMI Spectral Energy &amp; Effective Rank:</strong> Singular Value Decomposition (SVD) of co-occurrence matrices showed an Effective Rank of ~215.5 across all three corpora. The 100-dimensional subspace captures 58% to 60.4% of total semantic spectral energy (reaching the majority milestone of 60.36% in BSB, 58.68% in LXX, and 58.77% in VUL). Moving to 150D consumes 50% more memory while capturing only diminishing tail eigenvalues.</li>
                                     <li><strong>Hubness and Distance Concentration:</strong> High-dimensional spaces suffer from distance concentration, causing spurious "hub" words to falsely dominate nearest-neighbor lists. Measurements showed that while 97D caused an acute hub spike in BSB (maximum hub count of 156 with skewness 2.848), 100D stabilized the topology (maximum hub count dropped to 102 with skewness 2.451).</li>
                                     <li><strong>Peak 2D UMAP Projection Fidelity:</strong> Downstream UMAP Trustworthiness (<em>k</em>=15) was benchmarked across all candidate dimensions. In both Greek (LXX) and Latin (VUL), 2D Trustworthiness peaked directly at 100D (0.8348 for LXX, 0.8270 for VUL), degrading at 150D and 200D due to high-dimensional distance concentration.</li>
+                                </ul>
+                            </div>
+
+                            <h3>Word2Vec Hyperparameter Optimization</h3>
+                            <p>
+                                In broad 50-word context windows, frequent narrative glue words (such as <em>city</em>, <em>crowd</em>, <em>go</em>, <em>come</em>, <em>say</em>) can exert excessive gravitational pull over rarer thematic vocabulary. An empirical grid search evaluated subsampling thresholds and negative sampling rates:
+                            </p>
+                            <div class="bwm-about-card">
+                                <div class="bwm-about-card-title">Empirical Hyperparameter Findings</div>
+                                <ul>
+                                    <li><strong>Aggressive Subsampling (<code>sample=1e-4</code>):</strong> Evaluated against default (<code>1e-3</code>) and ultra-aggressive (<code>1e-5</code>) thresholds. Ultra-aggressive downsampling (<code>1e-5</code>) discarded over 80% to 95% of common words, starving the Skip-gram architecture and triggering catastrophic vector collapse (degenerate top-5 cosine similarities of ~0.984 across unrelated terms). In contrast, <code>1e-4</code> represents the optimal sweet spot: it dampens narrative glue without impairing theological vocabulary, doubling training throughput and tightening average top-5 neighbor similarity from 0.657 to 0.700.</li>
+                                    <li><strong>Elevated Negative Sampling (<code>negative=10</code>):</strong> Raising negative samples from 5 to 10 forces the model to work harder to differentiate words sharing broad narrative settings. This crisply isolates conceptual domains (such as soteriological justification, cultic priesthood, and covenant fidelity) while suppressing spurious narrative associations.</li>
                                 </ul>
                             </div>
 
@@ -4037,7 +4049,7 @@ class BibleWordMap extends HTMLElement {
             this.foundation = 'bsb';
         }
 
-        const vParam = '?v=11.0.0';
+        const vParam = '?v=11.1.0';
         if (this.foundation === 'lxx') {
             this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -4791,7 +4803,7 @@ class BibleWordMap extends HTMLElement {
             this.foundation = 'bsb';
         }
 
-        const vParam = '?v=11.0.0';
+        const vParam = '?v=11.1.0';
         if (this.foundation === 'lxx') {
             this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -5461,7 +5473,7 @@ class BibleWordMap extends HTMLElement {
             return this._englishSemanticData;
         }
 
-        const vParam = '?v=11.0.0';
+        const vParam = '?v=11.1.0';
         const wordmapSrc = this.getAttribute('src-2d-bsb') || this.getAttribute('src-2d') || ('data/output/wordmap_2d.json' + vParam);
         const versesSrc = this.getAttribute('src-verses-bsb') || this.getAttribute('src-verses') || ('data/output/verse_index.json' + vParam);
         const versemapSrc = this.getAttribute('src-versemap-bsb') || this.getAttribute('src-versemap') || ('data/output/versemap_2d.json' + vParam);
@@ -5527,7 +5539,7 @@ class BibleWordMap extends HTMLElement {
         if (this._cachedWordmaps[foundation]) {
             return this._cachedWordmaps[foundation];
         }
-        const vParam = '?v=11.0.0';
+        const vParam = '?v=11.1.0';
         let src = '';
         if (foundation === 'lxx') {
             src = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
@@ -6876,7 +6888,7 @@ class BibleWordMap extends HTMLElement {
             vulPill.classList.toggle('active', foundation === 'vul');
         }
 
-        const vParam = '?v=11.0.0';
+        const vParam = '?v=11.1.0';
         if (foundation === 'lxx') {
             this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);

@@ -1,5 +1,17 @@
 # Changelog
 
+## [11.1.0] - 2026-09-19
+### Added
+- **Word2Vec Hyperparameter Optimization (`sample=1e-4`, `negative=10`):** Tuned embedding hyperparameters across the Berean Standard Bible, Septuagint, and Clementine Vulgate:
+  - Aggressive Subsampling (`sample=1e-4`): Down-samples high-frequency narrative glue words (such as *city*, *crowd*, *go*, *come*, *say*), breaking their gravitational pull in wide context windows and enabling rarer theological terms to cluster tightly.
+  - Negative Sampling Expansion (`negative=10`): Increased negative samples from 5 to 10 to sharpen discrimination between broad narrative co-occurrence and true conceptual affinity, boosting average top-5 neighbor similarity from 0.657 to 0.700.
+  - Retrained all three language models and regenerated the entire coordinate cascade (word maps, verse indices, verse centroids, chapter centroids, and book centroids).
+- **Hyperparameter Tuning Empirical Study (`docs/10-word2vec-hyperparameter-tuning.md`):** Comprehensive research study documenting grid search evaluations across subsampling thresholds (`1e-3`, `1e-4`, `1e-5`) and negative sampling rates (`5`, `10`, `15`), detailing how `1e-5` triggers severe vector collapse and confirming `sample=1e-4, negative=10` as the optimal configuration.
+
+### Changed
+- **About Documentation Update:** Updated `ABOUT.md` and the in-app About modal with hyperparameter calibration findings and qualitative neighbor comparisons across soteriological, cultic, and covenantal vocabulary.
+- **Asset Cache Busting (`v=11.1.0`):** Bumped cache-buster query parameter to `?v=11.1.0` across stylesheet links, custom element scripts, and runtime data fetch requests.
+
 ## [11.0.0] - 2026-09-19
 ### Added
 - **Paradigmatic Semantics Word2Vec Model (Window 50):** Transitioned the embedding training architecture from a narrow 5-word syntagmatic window to an expanded 50-word context envelope (a 10x increase) across the Berean Standard Bible, Septuagint, and Clementine Vulgate:

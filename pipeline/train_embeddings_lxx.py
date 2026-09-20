@@ -26,8 +26,8 @@ if __name__ == '__main__':
     print("Training Word2Vec model for Greek Septuagint & Greek NT...")
     sentences = MySentences(data_paths)
 
-    # Train Skip-gram model with 100 dimensions, window=50, min_count=2, epochs=15
-    model = Word2Vec(sentences=sentences, vector_size=100, window=50, min_count=2, workers=4, sg=1, epochs=15, seed=42)
+    # Train Skip-gram model with 100 dimensions, window=50, min_count=2, epochs=15, sample=1e-4, negative=10
+    model = Word2Vec(sentences=sentences, vector_size=100, window=50, min_count=2, workers=8, sg=1, epochs=15, seed=42, sample=1e-4, negative=10)
 
     output_model = 'data/processed/word2vec_lxx.model'
     model.save(output_model)
