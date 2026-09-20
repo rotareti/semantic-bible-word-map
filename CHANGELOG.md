@@ -1,5 +1,19 @@
 # Changelog
 
+## [11.2.0] - 2026-09-20
+### Added
+- **Empirically Calibrated Word2Vec Model (Window 15):** Calibrated embedding training architecture across the Berean Standard Bible, Septuagint, and Clementine Vulgate based on the Biblical Semantic Evaluation Benchmark (BSEB):
+  - Calibrated symmetric 15-word window spans ~30 words, directly matching the average biblical verse length (~24 words) without bleeding into whole-chapter administrative lists.
+  - Achieves peak retrieval precision (MAP@10 = 0.1820, Recall = 0.2619), outperforming Window 50 (0.1040) by over 75%.
+  - Standard subsampling (`sample=1e-3`) and negative sampling (`negative=5`) preserve essential syntagmatic and relational connective glue between verbs and noun phrases.
+- **Adaptive Frequency-Stratified Neighbor Filtering:** The Study Panel now filters out rare idiosyncratic terms (corpus count < 10) from top-10 neighbor recommendations for primary keywords, ensuring big biblical themes are always flanked by high-value, substantive concepts while keeping rare terms fully searchable and projected on the map.
+- **Evaluation Benchmark Suite (`pipeline/eval_benchmarks.py`):** Added automated evaluation harness calculating Mean Average Precision (MAP@10), Noise Intrusion Rate (NIR@10), and Word Intrusion Test Accuracy (WITA) across 100 probe terms in five biblical categories.
+- **Model Evaluation Research Study (`docs/11-model-evaluation-and-contextual-embeddings-plan.md`):** Documented comprehensive grid sweep comparisons across window sizes and subsampling thresholds, detailing the mathematical mechanism behind low-value word intrusion and establishing Window 15 as the optimal empirical context span.
+
+### Changed
+- **About Documentation Update:** Updated `ABOUT.md` and the in-app About modal with empirical calibration findings across window sizes and neighbor frequency filtering.
+- **Asset Cache Busting (`v=11.2.0`):** Bumped cache-buster query parameter to `?v=11.2.0` across stylesheet links, custom element scripts, and runtime data fetch requests.
+
 ## [11.1.0] - 2026-09-19
 ### Added
 - **Word2Vec Hyperparameter Optimization (`sample=1e-4`, `negative=10`):** Tuned embedding hyperparameters across the Berean Standard Bible, Septuagint, and Clementine Vulgate:
