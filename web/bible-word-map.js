@@ -1115,6 +1115,295 @@ class BibleWordMap extends HTMLElement {
                     color: var(--bwm-text-muted);
                     line-height: 1.4;
                 }
+                /* Contextual Sense Nodes & Suggestions */
+                .bwm-search-suggestions-popover {
+                    position: absolute;
+                    top: calc(100% + 8px);
+                    left: 0;
+                    width: 100%;
+                    max-width: 520px;
+                    max-height: min(65vh, calc(100dvh - 140px));
+                    overflow-y: auto;
+                    -webkit-overflow-scrolling: touch;
+                    overscroll-behavior: contain;
+                    z-index: 10032;
+                    background-color: var(--bwm-bg);
+                    background-color: color-mix(in srgb, var(--bwm-bg) 96%, transparent);
+                    backdrop-filter: blur(16px);
+                    -webkit-backdrop-filter: blur(16px);
+                    border: 1px solid color-mix(in srgb, #a855f7 30%, var(--bwm-border));
+                    border-radius: 12px;
+                    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+                    padding: 12px 14px;
+                    box-sizing: border-box;
+                    display: none;
+                    flex-direction: column;
+                    gap: 10px;
+                    animation: bwmPopoverFadeIn 0.15s ease-out;
+                }
+                .bwm-suggestions-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 8px;
+                    padding-bottom: 6px;
+                    border-bottom: 1px solid var(--bwm-border);
+                }
+                .bwm-suggestions-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                }
+                .bwm-suggestion-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    padding: 8px 12px;
+                    border-radius: 8px;
+                    background: var(--bwm-btn-bg);
+                    border: 1px solid var(--bwm-border);
+                    cursor: pointer;
+                    transition: all 0.15s ease;
+                }
+                .bwm-suggestion-item:hover {
+                    background: color-mix(in srgb, #a855f7 12%, var(--bwm-btn-hover));
+                    border-color: #a855f7;
+                    transform: translateY(-1px);
+                    box-shadow: 0 2px 8px rgba(168, 85, 247, 0.15);
+                }
+                .bwm-suggestion-sense {
+                    border-left: 3px solid #a855f7;
+                }
+                .bwm-suggestion-icon {
+                    font-size: 1.1rem;
+                    flex-shrink: 0;
+                }
+                .bwm-suggestion-text {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2px;
+                    flex: 1;
+                    min-width: 0;
+                }
+                .bwm-suggestion-title {
+                    font-size: 0.9rem;
+                    color: var(--bwm-text);
+                }
+                .bwm-suggestion-meta {
+                    font-size: 0.78rem;
+                    color: var(--bwm-text-muted);
+                    font-weight: normal;
+                }
+                .bwm-suggestion-desc {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 0.78rem;
+                    color: var(--bwm-text-muted);
+                }
+                .bwm-suggestion-count {
+                    font-weight: 600;
+                    color: var(--bwm-text);
+                }
+                .bwm-suggestion-testament {
+                    background: var(--bwm-badge-bg);
+                    padding: 1px 6px;
+                    border-radius: 4px;
+                    font-size: 0.74rem;
+                }
+                .bwm-sense-ai-badge {
+                    background: linear-gradient(135deg, #8b5cf6, #ec4899);
+                    color: #ffffff;
+                    font-size: 0.70rem;
+                    font-weight: 700;
+                    padding: 2px 7px;
+                    border-radius: 10px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.4px;
+                    display: inline-block;
+                    line-height: 1.2;
+                }
+                .bwm-sense-disambiguation-card {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    padding: 12px 14px;
+                    margin: 8px 0 12px 0;
+                    border-radius: 10px;
+                    background: color-mix(in srgb, #8b5cf6 6%, var(--bwm-btn-bg));
+                    border: 1px solid color-mix(in srgb, #a855f7 35%, var(--bwm-border));
+                }
+                .bwm-sense-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 8px;
+                    flex-wrap: wrap;
+                }
+                .bwm-sense-title {
+                    font-weight: 600;
+                    font-size: 0.92rem;
+                    color: var(--bwm-text);
+                }
+                .bwm-sense-model-tag {
+                    font-size: 0.75rem;
+                    font-family: monospace;
+                    padding: 1px 6px;
+                    border-radius: 4px;
+                    background: var(--bwm-badge-bg);
+                    border: 1px solid var(--bwm-border);
+                    color: var(--bwm-text-muted);
+                }
+                .bwm-sense-subtitle {
+                    font-size: 0.80rem;
+                    color: var(--bwm-text-muted);
+                    line-height: 1.35;
+                }
+                .bwm-sense-toggles {
+                    display: flex;
+                    gap: 8px;
+                }
+                .bwm-sense-toggle-btn {
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 3px;
+                    padding: 8px 10px;
+                    border-radius: 8px;
+                    background: var(--bwm-input-bg);
+                    border: 1px solid var(--bwm-border);
+                    color: var(--bwm-text);
+                    text-align: left;
+                    cursor: pointer;
+                    font-family: inherit;
+                    transition: all 0.15s ease;
+                }
+                .bwm-sense-toggle-btn:hover {
+                    border-color: #a855f7;
+                    background: color-mix(in srgb, #a855f7 10%, var(--bwm-input-bg));
+                    transform: translateY(-1px);
+                }
+                .bwm-sense-toggle-btn.active {
+                    border-color: #a855f7;
+                    background: color-mix(in srgb, #a855f7 16%, var(--bwm-input-bg));
+                    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.25);
+                }
+                .bwm-sense-btn-top {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 6px;
+                }
+                .bwm-sense-num {
+                    font-size: 0.72rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.4px;
+                    color: #a855f7;
+                }
+                .bwm-sense-badge {
+                    font-size: 0.72rem;
+                    padding: 1px 5px;
+                    border-radius: 4px;
+                    background: var(--bwm-badge-bg);
+                    color: var(--bwm-text-muted);
+                }
+                .bwm-sense-label {
+                    font-size: 0.88rem;
+                    font-weight: 600;
+                    color: var(--bwm-text);
+                }
+                .bwm-sense-sub {
+                    font-size: 0.74rem;
+                    color: var(--bwm-text-muted);
+                }
+                .bwm-sense-split-bar {
+                    width: 100%;
+                    height: 8px;
+                    border-radius: 4px;
+                    overflow: hidden;
+                    display: flex;
+                    margin: 6px 0 2px 0;
+                    background: var(--bwm-badge-bg);
+                }
+                .bwm-sense-split-ot {
+                    background: #f59e0b;
+                    height: 100%;
+                    transition: width 0.3s ease;
+                }
+                .bwm-sense-split-nt {
+                    background: #06b6d4;
+                    height: 100%;
+                    transition: width 0.3s ease;
+                }
+                .bwm-sense-legend {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    font-size: 0.75rem;
+                    color: var(--bwm-text-muted);
+                }
+                .bwm-sense-legend-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                }
+                .bwm-sense-dot {
+                    width: 7px;
+                    height: 7px;
+                    border-radius: 50%;
+                    display: inline-block;
+                }
+                .bwm-sense-prototypes {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    margin-top: 4px;
+                }
+                .bwm-sense-proto-label {
+                    font-size: 0.74rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.4px;
+                    color: var(--bwm-text-muted);
+                }
+                .bwm-prototype-verse-item {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 3px;
+                    padding: 6px 8px;
+                    border-radius: 6px;
+                    background: var(--bwm-card-bg);
+                    border: 1px solid var(--bwm-border);
+                    font-size: 0.82rem;
+                }
+                .bwm-prototype-head {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 6px;
+                }
+                .bwm-prototype-ref {
+                    font-weight: 600;
+                    color: var(--bwm-node-hover);
+                    cursor: pointer;
+                }
+                .bwm-prototype-ref:hover {
+                    text-decoration: underline;
+                }
+                .bwm-prototype-badge {
+                    font-size: 0.70rem;
+                    padding: 1px 5px;
+                    border-radius: 4px;
+                    background: color-mix(in srgb, #a855f7 18%, var(--bwm-badge-bg));
+                    color: #a855f7;
+                    font-weight: 600;
+                }
+                .bwm-prototype-text {
+                    color: var(--bwm-text-muted);
+                    font-size: 0.80rem;
+                    line-height: 1.35;
+                }
                 .bwm-canvas-container {
                     flex: 1;
                     position: relative;
@@ -3514,6 +3803,7 @@ class BibleWordMap extends HTMLElement {
                             </svg>
                         </button>
                         <div class="bwm-search-recovery-popover" id="bwm-search-recovery-popover" style="display: none;"></div>
+                        <div class="bwm-search-suggestions-popover" id="bwm-search-suggestions-popover" style="display: none;"></div>
                     </div>
                 </div>
                 <div class="bwm-drawer" id="bwm-drawer">
@@ -4070,6 +4360,7 @@ class BibleWordMap extends HTMLElement {
             this.srcVersemap = this.getAttribute('src-versemap-bsb') || this.getAttribute('src-versemap') || ('data/output/versemap_2d.json' + vParam);
             this.srcChapters = this.getAttribute('src-chapters-bsb') || this.getAttribute('src-chapters') || ('data/output/chaptermap_2d.json' + vParam);
         }
+        this.srcSenses = this.getAttribute('src-senses') || ('data/output/senses_data.json' + vParam);
         
         this.canvas = this.querySelector('canvas');
         this.ctx = this.canvas.getContext('2d');
@@ -4266,6 +4557,7 @@ class BibleWordMap extends HTMLElement {
         this.searchClearBtn = this.querySelector('#bwm-search-clear');
         this.searchBtn = this.querySelector('#bwm-btn-search');
         this.searchRecoveryPopover = this.querySelector('#bwm-search-recovery-popover');
+        this.searchSuggestionsPopover = this.querySelector('#bwm-search-suggestions-popover');
         this.searchSpinner = this.querySelector('#bwm-search-spinner');
         
         this.drawerClearAllBtn = this.querySelector('#bwm-btn-clear-all');
@@ -4305,32 +4597,50 @@ class BibleWordMap extends HTMLElement {
 
     setupEvents() {
         // Search
-        this.searchBtn.addEventListener('click', () => this.searchWord());
+        this.searchBtn.addEventListener('click', () => {
+            this.closeSearchSuggestions();
+            this.searchWord();
+        });
         this.searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') this.searchWord();
+            if (e.key === 'Enter') {
+                this.closeSearchSuggestions();
+                this.searchWord();
+            }
         });
         this.searchInput.addEventListener('input', () => {
             this.updateClearBtnVisibility();
             this.closeSearchRecovery();
+            this.updateSearchAutocomplete();
         });
 
-        // Global dismiss for search recovery popover
+        // Global dismiss for search recovery & suggestions popovers
         document.addEventListener('click', (e) => {
             if (this.searchRecoveryPopover && this.searchRecoveryPopover.style.display !== 'none') {
                 if (!this.searchRecoveryPopover.contains(e.target) && !this.searchInput.contains(e.target) && !this.searchBtn.contains(e.target)) {
                     this.closeSearchRecovery();
                 }
             }
+            if (this.searchSuggestionsPopover && this.searchSuggestionsPopover.style.display !== 'none') {
+                if (!this.searchSuggestionsPopover.contains(e.target) && !this.searchInput.contains(e.target) && !this.searchBtn.contains(e.target)) {
+                    this.closeSearchSuggestions();
+                }
+            }
         });
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.searchRecoveryPopover && this.searchRecoveryPopover.style.display !== 'none') {
-                this.closeSearchRecovery();
+            if (e.key === 'Escape') {
+                if (this.searchRecoveryPopover && this.searchRecoveryPopover.style.display !== 'none') {
+                    this.closeSearchRecovery();
+                }
+                if (this.searchSuggestionsPopover && this.searchSuggestionsPopover.style.display !== 'none') {
+                    this.closeSearchSuggestions();
+                }
             }
         });
         
         if (this.searchClearBtn) {
             this.searchClearBtn.addEventListener('click', () => {
                 this.closeSearchRecovery();
+                this.closeSearchSuggestions();
                 this.clearAllKeywords();
             });
         }
@@ -4824,6 +5134,7 @@ class BibleWordMap extends HTMLElement {
             this.srcVersemap = this.getAttribute('src-versemap-bsb') || this.getAttribute('src-versemap') || ('data/output/versemap_2d.json' + vParam);
             this.srcChapters = this.getAttribute('src-chapters-bsb') || this.getAttribute('src-chapters') || ('data/output/chaptermap_2d.json' + vParam);
         }
+        this.srcSenses = this.getAttribute('src-senses') || ('data/output/senses_data.json' + vParam);
 
         const lxxPill = this.querySelector('#bwm-btn-foundation-lxx');
         const bsbPill = this.querySelector('#bwm-btn-foundation-bsb');
@@ -5031,6 +5342,14 @@ class BibleWordMap extends HTMLElement {
                 console.warn("Could not load chaptermap data", err);
                 return null;
             }) : Promise.resolve(null);
+
+            this.sensesPromise = this.srcSenses ? fetch(this.srcSenses).then(r => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json();
+            }).catch(err => {
+                console.warn("Could not load senses data", err);
+                return null;
+            }) : Promise.resolve(null);
         }
 
         this.booksPromise.then(data => {
@@ -5051,6 +5370,9 @@ class BibleWordMap extends HTMLElement {
             if (vData) {
                 this.verses = vData.verses;
                 this.wordToVerses = vData.words;
+                if (this.sensesData) {
+                    this.setupSenseLookups();
+                }
                 if (vData.verses && !this.verseTextMap.size) {
                     for (let i = 0; i < vData.verses.length; i++) {
                         let str = vData.verses[i];
@@ -5082,11 +5404,22 @@ class BibleWordMap extends HTMLElement {
         this.data2dPromise.then(d2d => {
             if (d2d) this.data2d = d2d;
         });
+        if (this.sensesPromise) {
+            this.sensesPromise.then(sData => {
+                if (sData) {
+                    this.sensesData = sData;
+                    this.setupSenseLookups();
+                }
+            });
+        }
         if (this.versesPromise) {
             this.versesPromise.then(vData => {
                 if (vData && vData.verses) {
                     this.verses = vData.verses;
                     this.wordToVerses = vData.words;
+                    if (this.sensesData) {
+                        this.setupSenseLookups();
+                    }
                 }
             }).catch(() => {});
         }
@@ -5345,9 +5678,139 @@ class BibleWordMap extends HTMLElement {
         return this.getBookVerses(wordId, bookCode).length > 0;
     }
 
+    setupSenseLookups() {
+        if (!this.sensesData) return;
+        this.senseNodesLookup = new Map();
+        this.lemmaToSenses = new Map();
+        this.lemmaIdToSenses = new Map();
+
+        Object.keys(this.sensesData).forEach(lemmaId => {
+            const entry = this.sensesData[lemmaId];
+            const lemma = (entry.lemma || lemmaId.split('_')[0]).toLowerCase();
+            const senses = entry.senses || [];
+            this.lemmaIdToSenses.set(lemmaId, senses);
+            this.lemmaToSenses.set(lemma, senses);
+            senses.forEach(s => {
+                this.senseNodesLookup.set(s.id, s);
+                if (this.wordToVerses && s.verse_indices) {
+                    this.wordToVerses[s.id] = s.verse_indices;
+                }
+            });
+        });
+    }
+
+    closeSearchSuggestions() {
+        if (this.searchSuggestionsPopover) {
+            this.searchSuggestionsPopover.style.display = 'none';
+            this.searchSuggestionsPopover.innerHTML = '';
+        }
+    }
+
+    updateSearchAutocomplete() {
+        if (!this.searchSuggestionsPopover || !this.searchInput) return;
+        const query = this.searchInput.value.trim().toLowerCase();
+        if (query.length < 2 || this.viewMode !== 'words' || !this.sensesData) {
+            this.closeSearchSuggestions();
+            return;
+        }
+
+        const lemmaMatches = [];
+        const senseMatches = [];
+        Object.keys(this.sensesData).forEach(lemmaId => {
+            const entry = this.sensesData[lemmaId];
+            const lemma = (entry.lemma || lemmaId.split('_')[0]).toLowerCase();
+            if (lemma.startsWith(query) || query.startsWith(lemma)) {
+                lemmaMatches.push(entry);
+            } else if (entry.senses && entry.senses.some(s => s.sense_label.toLowerCase().includes(query))) {
+                senseMatches.push(entry);
+            }
+        });
+        const matchedEntries = lemmaMatches.length > 0 ? lemmaMatches : senseMatches;
+
+        if (matchedEntries.length === 0) {
+            this.closeSearchSuggestions();
+            return;
+        }
+
+        let html = `
+            <div class="bwm-suggestions-header">
+                <span class="bwm-sense-ai-badge">Transformer Induction</span>
+                <span style="font-size:0.78rem; font-weight:600; opacity:0.85;">Contextual Senses</span>
+            </div>
+            <div class="bwm-suggestions-list">
+        `;
+
+        matchedEntries.forEach(item => {
+            const lemma = item.lemma || item.lemma_id.split('_')[0];
+            html += `
+                <div class="bwm-suggestion-item" data-action="search-lemma" data-lemma="${lemma}">
+                    <div class="bwm-suggestion-icon">&#x1F50D;</div>
+                    <div class="bwm-suggestion-text">
+                        <div class="bwm-suggestion-title"><strong>${lemma}</strong> <span class="bwm-suggestion-meta">(All Senses Combined)</span></div>
+                        <div class="bwm-suggestion-desc">Word2Vec centroid coordinate</div>
+                    </div>
+                </div>
+            `;
+            (item.senses || []).forEach(s => {
+                const icon = (s.sense_index === 0) ? '&#x1F3DB;' : '&#x2728;';
+                const otPct = Math.round((s.ot_count / (s.f || 1)) * 100);
+                const ntPct = 100 - otPct;
+                html += `
+                    <div class="bwm-suggestion-item bwm-suggestion-sense" data-action="search-sense" data-sense-id="${s.id}" data-short-label="${s.short_label}">
+                        <div class="bwm-suggestion-icon">${icon}</div>
+                        <div class="bwm-suggestion-text">
+                            <div class="bwm-suggestion-title"><strong>${s.short_label}</strong></div>
+                            <div class="bwm-suggestion-desc">
+                                <span class="bwm-suggestion-count">${s.f} verses</span>
+                                <span class="bwm-suggestion-testament">${otPct}% OT / ${ntPct}% NT</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        });
+
+        html += `</div>`;
+        this.searchSuggestionsPopover.innerHTML = html;
+        this.searchSuggestionsPopover.style.display = 'flex';
+
+        this.searchSuggestionsPopover.querySelectorAll('.bwm-suggestion-item').forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const action = el.getAttribute('data-action');
+                if (action === 'search-sense') {
+                    const sId = el.getAttribute('data-sense-id');
+                    const sLabel = el.getAttribute('data-short-label');
+                    this.searchInput.value = sLabel;
+                    this.closeSearchSuggestions();
+                    this.searchedWords = [sId];
+                    this.searchWord(true);
+                } else {
+                    const l = el.getAttribute('data-lemma');
+                    this.searchInput.value = l;
+                    this.closeSearchSuggestions();
+                    this.searchWord();
+                }
+            });
+        });
+    }
+
     findMatchesForWordToken(token) {
         if (!token || !this.data2d) return [];
         token = token.toLowerCase();
+
+        if (this.senseNodesLookup) {
+            let directSenseMatch = this.senseNodesLookup.get(token);
+            if (directSenseMatch) return [directSenseMatch];
+            for (let sense of this.senseNodesLookup.values()) {
+                if (sense.id.toLowerCase() === token ||
+                    sense.short_label.toLowerCase() === token ||
+                    sense.w.toLowerCase() === token ||
+                    sense.short_label.toLowerCase().includes(token)) {
+                    return [sense];
+                }
+            }
+        }
 
         let idMatch = this.data2d.filter(d => d.id.toLowerCase() === token);
         if (idMatch.length > 0) return idMatch;
@@ -6387,7 +6850,7 @@ class BibleWordMap extends HTMLElement {
             }
             let resolvedIds = [];
             this.searchedWords.forEach(id => {
-                let p = this.data2d.find(d => d.id === id);
+                let p = this.data2d.find(d => d.id === id) || (this.senseNodesLookup ? this.senseNodesLookup.get(id) : null);
                 if (!p) {
                     let parsed = this.parseWordId(id);
                     let matches = this.data2d.filter(d => d.w.toLowerCase() === parsed.word.toLowerCase());
@@ -6438,6 +6901,27 @@ class BibleWordMap extends HTMLElement {
             if (!topWordsSet.has(p.id)) {
                 topWordsSet.set(p.id, { point: p, maxSim: 1, sourceKw: p.id });
             }
+            // If p is a polysemous lemma with senses, include its sense nodes as key search nodes
+            if (this.sensesData && this.sensesData[p.id]) {
+                const senses = this.sensesData[p.id].senses || [];
+                senses.forEach(s => {
+                    if (!topWordsSet.has(s.id)) {
+                        topWordsSet.set(s.id, { point: s, maxSim: 0.98, sourceKw: p.id });
+                    }
+                });
+            } else if (p.parent_id && this.sensesData && this.sensesData[p.parent_id]) {
+                // If p is a sense node itself, make sure parent and sister senses are included
+                const parentNode = this.data2d ? this.data2d.find(d => d.id === p.parent_id) : null;
+                if (parentNode && !topWordsSet.has(parentNode.id)) {
+                    topWordsSet.set(parentNode.id, { point: parentNode, maxSim: 0.98, sourceKw: parentNode.id });
+                }
+                const sisterSenses = this.sensesData[p.parent_id].senses || [];
+                sisterSenses.forEach(s => {
+                    if (!topWordsSet.has(s.id)) {
+                        topWordsSet.set(s.id, { point: s, maxSim: 0.98, sourceKw: p.parent_id });
+                    }
+                });
+            }
         });
 
         const limit = this.neighborsPerKeyword || 100;
@@ -6473,11 +6957,21 @@ class BibleWordMap extends HTMLElement {
             f: s.point.f,
             sim: s.maxSim,
             sourceKw: s.sourceKw,
-            isKw: this.searchedWords.includes(s.point.id),
-            x: 0,
-            y: 0,
+            isKw: this.searchedWords.includes(s.point.id) || Boolean(s.point.isSenseNode || s.point.id.includes('__sense_')) || (Boolean(this.sensesData && this.sensesData[s.point.id]) && this.searchedWords.some(sw => sw.startsWith(s.point.id + '__'))),
+            x: s.point.x || 0,
+            y: s.point.y || 0,
             original: s.point.original,
-            v: s.point.v
+            v: s.point.v,
+            isSenseNode: Boolean(s.point.isSenseNode || s.point.id.includes('__sense_')),
+            sense_label: s.point.sense_label,
+            short_label: s.point.short_label,
+            sense_index: s.point.sense_index,
+            parent_id: s.point.parent_id,
+            ot_count: s.point.ot_count,
+            nt_count: s.point.nt_count,
+            top_verses: s.point.top_verses,
+            sister_senses: s.point.sister_senses,
+            verse_indices: s.point.verse_indices
         }));
 
         this.allSearchLinks = [];
@@ -6513,6 +7007,41 @@ class BibleWordMap extends HTMLElement {
                     type: 'indirect',
                     sim: linkSim
                 });
+            }
+        });
+
+        // Build Sense Bridge links between sister senses and Parent-Sense links
+        const nodeMap = new Map(this.allSearchNodes.map(n => [n.id, n]));
+        this.allSearchNodes.forEach(n => {
+            if (n.isSenseNode) {
+                // Link to parent
+                if (n.parent_id && nodeMap.has(n.parent_id)) {
+                    let parentN = nodeMap.get(n.parent_id);
+                    let pSim = this.cosineSimilarity(n.v, parentN.v) || 0.94;
+                    this.allSearchLinks.push({
+                        source: n.parent_id,
+                        target: n.id,
+                        type: 'sense-parent',
+                        sim: pSim,
+                        isDirect: true
+                    });
+                }
+                // Link to sister senses (curved Sense Bridge)
+                if (n.sister_senses && Array.isArray(n.sister_senses)) {
+                    n.sister_senses.forEach(sisterId => {
+                        if (nodeMap.has(sisterId) && n.id < sisterId) {
+                            let sisterN = nodeMap.get(sisterId);
+                            let bSim = this.cosineSimilarity(n.v, sisterN.v) || 0.88;
+                            this.allSearchLinks.push({
+                                source: n.id,
+                                target: sisterId,
+                                type: 'sense-bridge',
+                                sim: bSim,
+                                isDirect: true
+                            });
+                        }
+                    });
+                }
             }
         });
 
@@ -6909,6 +7438,7 @@ class BibleWordMap extends HTMLElement {
             this.srcVersemap = this.getAttribute('src-versemap-bsb') || this.getAttribute('src-versemap') || ('data/output/versemap_2d.json' + vParam);
             this.srcChapters = this.getAttribute('src-chapters-bsb') || this.getAttribute('src-chapters') || ('data/output/chaptermap_2d.json' + vParam);
         }
+        this.srcSenses = this.getAttribute('src-senses') || ('data/output/senses_data.json' + vParam);
 
         if (this.viewMode === 'verses') {
             this.updateUrl({ view: 'verses', verses: (this.searchedVerses && this.searchedVerses.length > 0) ? this.searchedVerses.join(',') : undefined });
@@ -7212,7 +7742,13 @@ class BibleWordMap extends HTMLElement {
         
         // We start simulation with ONLY keywords
         this.nodes = [...kwNodes];
-        this.links = this.allSearchLinks.filter(l => l.type === 'kw-kw');
+        let currentActiveNodeIds = new Set(this.nodes.map(n => n.id));
+        this.links = this.allSearchLinks.filter(l => {
+            if (l.type !== 'kw-kw' && l.type !== 'sense-bridge' && l.type !== 'sense-parent') return false;
+            let srcId = (typeof l.source === 'object' && l.source !== null) ? l.source.id : l.source;
+            let tgtId = (typeof l.target === 'object' && l.target !== null) ? l.target.id : l.target;
+            return currentActiveNodeIds.has(srcId) && currentActiveNodeIds.has(tgtId);
+        });
         
         let cw = this.logicalWidth || 800;
         let ch = this.logicalHeight || 600;
@@ -7226,11 +7762,17 @@ class BibleWordMap extends HTMLElement {
             .randomSource(LCG)
             .velocityDecay(0.45)
             .force("link", d3.forceLink(this.links).id(d => d.id).distance(d => {
+                if (d.type === 'sense-bridge') return 160;
+                if (d.type === 'sense-parent') return 95;
                 if (d.type === 'kw-kw') return Math.max(80, (1 - d.sim) * 400);
                 return d.type === 'direct' ? Math.max(35, (1 - d.sim) * 150) : Math.max(65, (1 - d.sim) * 250);
-            }).strength(d => d.type === 'kw-kw' ? 1.5 : 0.6))
+            }).strength(d => {
+                if (d.type === 'sense-bridge') return 1.4;
+                if (d.type === 'sense-parent') return 1.1;
+                return d.type === 'kw-kw' ? 1.5 : 0.6;
+            }))
             .force("charge", d3.forceManyBody().strength(-180))
-            .force("collide", d3.forceCollide().radius(d => d.isKw ? 26 : 13))
+            .force("collide", d3.forceCollide().radius(d => d.isSenseNode ? 34 : (d.isKw ? 26 : 13)))
             .force("center", d3.forceCenter(0, 0).strength(0.04))
             .on("tick", () => {
                 this.updateDynamicZoom();
@@ -11594,7 +12136,9 @@ class BibleWordMap extends HTMLElement {
         // Pre-calculate radii for all nodes so we can clip lines to their edges
         this.nodes.forEach(n => {
             let pixelR = 3;
-            if (n.isChapter) {
+            if (n.isSenseNode) {
+                pixelR = 13;
+            } else if (n.isChapter) {
                 pixelR = n.isFocusedChapter ? 26 : 18;
             } else if (n.isChapterVerse) {
                 pixelR = 12;
@@ -11629,7 +12173,16 @@ class BibleWordMap extends HTMLElement {
             let isDirect = l.type === 'direct' || l.isDirect === true;
             let isDashed = false;
             
-            if (l.type === 'chapter-crossref') {
+            if (l.type === 'sense-bridge') {
+                this.ctx.strokeStyle = '#a855f7';
+                this.ctx.lineWidth = 2.4 / this.transform.k;
+                this.ctx.globalAlpha = 0.85;
+            } else if (l.type === 'sense-parent') {
+                this.ctx.strokeStyle = '#8b5cf6';
+                this.ctx.lineWidth = 1.4 / this.transform.k;
+                this.ctx.globalAlpha = 0.65;
+                isDashed = true;
+            } else if (l.type === 'chapter-crossref') {
                 let sim = (l.sim !== undefined) ? l.sim : 0.8;
                 this.ctx.strokeStyle = this.colors.nodeHover || '#2563eb';
                 this.ctx.lineWidth = Math.max(1.2, sim * 2.8) / this.transform.k;
@@ -11701,7 +12254,18 @@ class BibleWordMap extends HTMLElement {
                 let endX = l.target.x - (dx / dist) * l.target.canvasR;
                 let endY = l.target.y - (dy / dist) * l.target.canvasR;
                 this.ctx.moveTo(startX, startY);
-                this.ctx.lineTo(endX, endY);
+                if (l.type === 'sense-bridge') {
+                    let midX = (startX + endX) / 2;
+                    let midY = (startY + endY) / 2;
+                    let nx = -dy / dist;
+                    let ny = dx / dist;
+                    let curvature = Math.min(32, dist * 0.22);
+                    let ctrlX = midX + nx * curvature;
+                    let ctrlY = midY + ny * curvature;
+                    this.ctx.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
+                } else {
+                    this.ctx.lineTo(endX, endY);
+                }
             } else {
                 this.ctx.moveTo(l.source.x, l.source.y);
                 this.ctx.lineTo(l.target.x, l.target.y);
@@ -11741,7 +12305,7 @@ class BibleWordMap extends HTMLElement {
                     if (l.source === this.hoveredNode || l.target === this.hoveredNode) {
                         if (hoveredIsKey) {
                             let other = (l.source === this.hoveredNode) ? l.target : l.source;
-                            if (this.isKeyNode(other) || l.type === 'kw-kw' || l.type === 'book-book' || l.type === 'verse-crossref' || l.type === 'chapter-crossref' || l.type === 'chapter-verse') {
+                            if (this.isKeyNode(other) || l.type === 'kw-kw' || l.type === 'sense-bridge' || l.type === 'book-book' || l.type === 'verse-crossref' || l.type === 'chapter-crossref' || l.type === 'chapter-verse') {
                                 linksToLabel.add(l);
                             }
                         } else {
@@ -11750,6 +12314,13 @@ class BibleWordMap extends HTMLElement {
                     }
                 });
             }
+
+            // Always display label for Sense Bridge when visible on canvas
+            this.links.forEach(l => {
+                if (l.type === 'sense-bridge' && l.source && l.target && l.source.x !== undefined && l.target.x !== undefined) {
+                    linksToLabel.add(l);
+                }
+            });
 
             linksToLabel.forEach(l => {
                 if (!l.source || !l.target || l.source.x === undefined || l.target.x === undefined) return;
@@ -11782,10 +12353,19 @@ class BibleWordMap extends HTMLElement {
                 let screenGap = (dist - sourceR - targetR) * this.transform.k;
                 if (screenGap < (18 * Math.min(textScale, 1.25))) return;
 
+                let isSenseBridge = (l.type === 'sense-bridge');
                 let isHovered = Boolean(this.hoveredNode && (l.source === this.hoveredNode || l.target === this.hoveredNode));
-                let pctStr = (sim * 100).toFixed(2) + '%';
+                let pctStr = isSenseBridge ? `Sense Bridge (${(sim * 100).toFixed(1)}%)` : (sim * 100).toFixed(2) + '%';
                 let midX = (l.source.x + l.target.x) / 2;
                 let midY = (l.source.y + l.target.y) / 2;
+
+                if (isSenseBridge) {
+                    let nx = -dy / dist;
+                    let ny = dx / dist;
+                    let curvature = Math.min(32, dist * 0.22) * 0.5;
+                    midX += nx * curvature;
+                    midY += ny * curvature;
+                }
 
                 // Rotate along line direction; keep upright (text reading left-to-right)
                 let angle = Math.atan2(dy, dx);
@@ -11800,11 +12380,11 @@ class BibleWordMap extends HTMLElement {
                 this.ctx.rotate(angle);
                 this.ctx.scale(1 / this.transform.k, 1 / this.transform.k);
 
-                let fontSize = 8.5 * textScale;
-                this.ctx.font = `500 ${fontSize}px ${this.colors.font || 'sans-serif'}`;
+                let fontSize = (isSenseBridge ? 9 : 8.5) * textScale;
+                this.ctx.font = `600 ${fontSize}px ${this.colors.font || 'sans-serif'}`;
                 let tw = this.ctx.measureText(pctStr).width;
-                let padX = 3.5 * textScale;
-                let padY = 1.5 * textScale;
+                let padX = (isSenseBridge ? 5 : 3.5) * textScale;
+                let padY = (isSenseBridge ? 2 : 1.5) * textScale;
                 let w = tw + padX * 2;
                 let h = fontSize + padY * 2;
                 let r = h / 2;
@@ -11818,17 +12398,30 @@ class BibleWordMap extends HTMLElement {
                     this.ctx.closePath();
                 }
 
-                this.ctx.fillStyle = this.colors.bg || '#ffffff';
-                this.ctx.fill();
+                if (isSenseBridge) {
+                    this.ctx.fillStyle = '#7c3aed';
+                    this.ctx.fill();
+                    this.ctx.lineWidth = 1;
+                    this.ctx.strokeStyle = '#c4b5fd';
+                    this.ctx.stroke();
 
-                this.ctx.lineWidth = 0.75;
-                this.ctx.strokeStyle = isHovered ? (this.colors.nodeHover || '#2563eb') : (this.colors.border || 'rgba(148, 163, 184, 0.4)');
-                this.ctx.stroke();
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
+                    this.ctx.fillStyle = '#ffffff';
+                    this.ctx.fillText(pctStr, 0, 0.5);
+                } else {
+                    this.ctx.fillStyle = this.colors.bg || '#ffffff';
+                    this.ctx.fill();
 
-                this.ctx.textAlign = 'center';
-                this.ctx.textBaseline = 'middle';
-                this.ctx.fillStyle = isHovered ? (this.colors.nodeHover || '#2563eb') : (this.colors.textMuted || '#64748b');
-                this.ctx.fillText(pctStr, 0, 0.5);
+                    this.ctx.lineWidth = 0.75;
+                    this.ctx.strokeStyle = isHovered ? (this.colors.nodeHover || '#2563eb') : (this.colors.border || 'rgba(148, 163, 184, 0.4)');
+                    this.ctx.stroke();
+
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
+                    this.ctx.fillStyle = isHovered ? (this.colors.nodeHover || '#2563eb') : (this.colors.textMuted || '#64748b');
+                    this.ctx.fillText(pctStr, 0, 0.5);
+                }
 
                 this.ctx.restore();
             });
@@ -11851,7 +12444,9 @@ class BibleWordMap extends HTMLElement {
             this.ctx.beginPath();
             
             let posColor = '#94a3b8'; // default slate-400
-            if (n.isChapter) {
+            if (n.isSenseNode) {
+                posColor = (n.sense_index === 0) ? '#8b5cf6' : '#a855f7';
+            } else if (n.isChapter) {
                 posColor = GENRE_COLORS[n.genre] || '#3b82f6';
             } else if (n.isChapterVerse) {
                 posColor = GENRE_COLORS[n.genre] || '#3b82f6';
@@ -11915,7 +12510,17 @@ class BibleWordMap extends HTMLElement {
             this.ctx.arc(n.x, n.y, drawR, 0, 2 * Math.PI);
             this.ctx.fill();
             
-            if (n.isChapter) {
+            if (n.isSenseNode) {
+                this.ctx.lineWidth = 2.5 / this.transform.k;
+                this.ctx.strokeStyle = '#c4b5fd';
+                this.ctx.stroke();
+                // Outer orbit ring
+                this.ctx.beginPath();
+                this.ctx.arc(n.x, n.y, drawR + 3.5 / this.transform.k, 0, 2 * Math.PI);
+                this.ctx.lineWidth = 1.2 / this.transform.k;
+                this.ctx.strokeStyle = 'rgba(168, 85, 247, 0.65)';
+                this.ctx.stroke();
+            } else if (n.isChapter) {
                 this.ctx.lineWidth = (n.isFocusedChapter ? 3.5 : 2) / this.transform.k;
                 this.ctx.strokeStyle = n.isFocusedChapter ? '#ffffff' : (isHighlighted ? this.colors.text : 'rgba(255,255,255,0.7)');
                 this.ctx.stroke();
@@ -11946,7 +12551,7 @@ class BibleWordMap extends HTMLElement {
             }
             this.ctx.globalAlpha = labelAlpha;
             
-            let showLabel = n.isChapter || n.isChapterVerse || n.isVerse || n.isBook || (matchesT && (this.isSearchMode || n.isKw || autoShowLabels || n.isBookWord || n.isVerseWord || n.isChapterWord || isHighlighted));
+            let showLabel = n.isChapter || n.isChapterVerse || n.isVerse || n.isBook || n.isSenseNode || (matchesT && (this.isSearchMode || n.isKw || autoShowLabels || n.isBookWord || n.isVerseWord || n.isChapterWord || isHighlighted));
             if (showLabel) {
                 this.ctx.shadowBlur = 0;
                 
@@ -12040,8 +12645,35 @@ class BibleWordMap extends HTMLElement {
                     this.ctx.lineWidth = 2.5 * textScale;
                     this.ctx.strokeStyle = this.colors.bg;
                     this.ctx.strokeText(n.genre, 0, subOffset);
-                    this.ctx.fillStyle = this.colors.textMuted || '#888888';
-                    this.ctx.fillText(n.genre, 0, subOffset);
+                } else if (n.isSenseNode) {
+                    let fontSize = 12 * textScale;
+                    this.ctx.font = `bold ${fontSize}px ${this.colors.font}`;
+                    this.ctx.textAlign = "center";
+                    this.ctx.textBaseline = "top";
+                    let currentR = (isHighlighted) ? n.canvasR * 1.3 : n.canvasR;
+                    let yOffset = (currentR * this.transform.k) + (2 * textScale);
+                    
+                    let displayTitle = n.short_label || n.sense_label || n.w;
+                    this.ctx.lineWidth = 3 * textScale;
+                    this.ctx.strokeStyle = this.colors.bg;
+                    this.ctx.strokeText(displayTitle, 0, yOffset);
+                    
+                    this.ctx.fillStyle = this.colors.text;
+                    this.ctx.fillText(displayTitle, 0, yOffset);
+                    
+                    let totalOcc = (n.ot_count || 0) + (n.nt_count || 0);
+                    let otPct = totalOcc > 0 ? Math.round((n.ot_count / totalOcc) * 100) : 50;
+                    let subText = `Sense ${(n.sense_index !== undefined ? n.sense_index : 0) + 1} (${otPct}% OT / ${100 - otPct}% NT)`;
+                    let posFontSize = 9.5 * textScale;
+                    this.ctx.font = `${posFontSize}px ${this.colors.font}`;
+                    let posOffset = yOffset + fontSize + (1 * textScale);
+                    
+                    this.ctx.lineWidth = 2.5 * textScale;
+                    this.ctx.strokeStyle = this.colors.bg;
+                    this.ctx.strokeText(subText, 0, posOffset);
+                    
+                    this.ctx.fillStyle = '#8b5cf6';
+                    this.ctx.fillText(subText, 0, posOffset);
                 } else {
                     let fontSize = (n.isKw ? 14 : 11) * textScale;
                     this.ctx.font = `${fontSize}px ${this.colors.font}`;
@@ -13202,10 +13834,17 @@ class BibleWordMap extends HTMLElement {
         }
         if (!this.wordCard) return;
 
-        let displayW = this.formatWord(node.w, node.pos);
-        let vIds = (this.wordToVerses && this.wordToVerses[node.id]) ? this.wordToVerses[node.id] : [];
+        let isSenseNode = Boolean(node.isSenseNode || (node.id && node.id.includes('__sense_')));
+        let displayW = node.short_label || this.formatWord(node.w, node.pos);
+        if (isSenseNode && node.sense_label) {
+            let lemmaPart = node.lemma || node.w.split(' ')[0];
+            displayW = `${this.formatWord(lemmaPart, node.pos)} [${node.sense_label}]`;
+        }
+        let vIds = (node.verse_indices && Array.isArray(node.verse_indices))
+            ? node.verse_indices
+            : ((this.wordToVerses && this.wordToVerses[node.id]) ? this.wordToVerses[node.id] : []);
         let totalOccurrences = vIds.length;
-        let isVersesLoaded = Boolean(this.wordToVerses && this.verses);
+        let isVersesLoaded = Boolean((node.verse_indices && this.verses) || (this.wordToVerses && this.verses));
 
         const bookCounts = {};
         for (let i = 0; i < vIds.length; i++) {
@@ -13281,6 +13920,10 @@ class BibleWordMap extends HTMLElement {
             ? `<span class="bwm-window-badge bwm-window-badge-indirect" title="Connected by contextual semantic proximity rather than direct verse co-occurrence">Indirect link</span>`
             : '';
 
+        let senseBadgeHtml = isSenseNode 
+            ? `<span class="bwm-window-badge" style="background:#7c3aed; color:#ffffff; border-color:#a855f7;">Sense ${(node.sense_index !== undefined ? node.sense_index : 0) + 1}</span>`
+            : '';
+
         let headerHtml = `
             <div class="bwm-sheet-handle"></div>
             <div class="bwm-window-header">
@@ -13289,6 +13932,7 @@ class BibleWordMap extends HTMLElement {
                         <div style="display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;">
                             <h3 class="bwm-window-title" style="margin: 0;">${displayW}</h3>
                             ${node.pos ? `<span class="bwm-window-subtitle-inline">(${node.pos.toLowerCase()})</span>` : ''}
+                            ${senseBadgeHtml}
                             ${indirectBadgeHtml}
                             <span class="bwm-window-badge" id="bwm-word-occ-badge">${occBadgeText}</span>
                             ${booksBadgeText ? `<span class="bwm-window-badge-muted" id="bwm-word-books-badge">${booksBadgeText}</span>` : ''}
@@ -13316,7 +13960,11 @@ class BibleWordMap extends HTMLElement {
         let tabsState = {};
 
         let highlightKws = [];
-        if (node && node.w) highlightKws.push(node.w);
+        if (node) {
+            let baseWord = node.lemma || (node.w ? node.w.split(' ')[0] : '');
+            if (baseWord && !highlightKws.includes(baseWord)) highlightKws.push(baseWord);
+            if (node.w && !node.isSenseNode && !highlightKws.includes(node.w)) highlightKws.push(node.w);
+        }
         if (this.viewMode === 'words' && Array.isArray(this.searchedWords)) {
             for (const sId of this.searchedWords) {
                 if (!sId) continue;
@@ -13407,12 +14055,115 @@ class BibleWordMap extends HTMLElement {
             return html;
         };
 
+        let senseGroup = null;
+        if (this.sensesData) {
+            if (this.sensesData[node.id]) {
+                senseGroup = this.sensesData[node.id];
+            } else if (node.parent_id && this.sensesData[node.parent_id]) {
+                senseGroup = this.sensesData[node.parent_id];
+            }
+        }
+
+        let senseCardHtml = '';
+        if (senseGroup && Array.isArray(senseGroup.senses) && senseGroup.senses.length > 0) {
+            let activeSense = null;
+            if (isSenseNode) {
+                activeSense = senseGroup.senses.find(s => s.id === node.id) || senseGroup.senses[0];
+            } else {
+                activeSense = senseGroup.senses[0];
+            }
+
+            let totalSenseOcc = (activeSense.ot_count || 0) + (activeSense.nt_count || 0);
+            let otPct = totalSenseOcc > 0 ? ((activeSense.ot_count / totalSenseOcc) * 100).toFixed(1) : '50.0';
+            let ntPct = totalSenseOcc > 0 ? ((activeSense.nt_count / totalSenseOcc) * 100).toFixed(1) : '50.0';
+
+            let toggleBtnsHtml = senseGroup.senses.map((s, idx) => {
+                let isCurrent = (activeSense.id === s.id && isSenseNode);
+                let sTotal = (s.ot_count || 0) + (s.nt_count || 0);
+                let sOtPct = sTotal > 0 ? Math.round((s.ot_count / sTotal) * 100) : 50;
+                return `
+                    <button type="button" class="bwm-sense-toggle-btn ${isCurrent ? 'active' : ''}" data-sense-id="${s.id}" title="Inspect Sense ${idx + 1}: ${s.sense_label}">
+                        <div class="bwm-sense-btn-top">
+                            <span class="bwm-sense-num">Sense ${idx + 1}</span>
+                            <span class="bwm-sense-badge">${sTotal} verses</span>
+                        </div>
+                        <div class="bwm-sense-label">${s.sense_label}</div>
+                        <div class="bwm-sense-sub">${sOtPct}% OT · ${100 - sOtPct}% NT</div>
+                    </button>
+                `;
+            }).join('');
+
+            let protoVersesHtml = '';
+            if (activeSense.top_verses && Array.isArray(activeSense.top_verses) && activeSense.top_verses.length > 0) {
+                let protoItemsHtml = activeSense.top_verses.slice(0, 3).map(pv => {
+                    let simPct = (pv.prototype_sim * 100).toFixed(1);
+                    let cleanRef = formatVerseRef(pv.reference);
+                    let safeText = escapeHtml((pv.text || '').replace(/[\u2014\u2013]/g, ' - '));
+                    return `
+                        <div class="bwm-prototype-verse-item">
+                            <div class="bwm-prototype-head">
+                                <span class="bwm-prototype-ref" data-jump-verse="${pv.reference}" title="Inspect ${cleanRef} in Verse Study Panel">${cleanRef}</span>
+                                <span class="bwm-prototype-badge">${simPct}% match</span>
+                            </div>
+                            <div class="bwm-prototype-text" style="color:var(--bwm-text); font-size:0.82rem; line-height:1.4;">${safeText}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                protoVersesHtml = `
+                    <div class="bwm-sense-prototypes">
+                        <div class="bwm-sense-proto-label">Top Prototype Verses (Cosine Proximity to Sense Centroid):</div>
+                        ${protoItemsHtml}
+                    </div>
+                `;
+            }
+
+            senseCardHtml = `
+                <div class="bwm-sense-disambiguation-card">
+                    <div class="bwm-sense-header">
+                        <div class="bwm-sense-title">Contextual Sense Disambiguation</div>
+                        <span class="bwm-sense-model-tag">all-MiniLM-L6-v2 (GPU)</span>
+                    </div>
+                    <div class="bwm-sense-subtitle">
+                        Standard Word2Vec averages polysemous words into a single coordinate. Contextual transformer embeddings isolate distinct biblical senses:
+                    </div>
+                    <div class="bwm-sense-toggles">
+                        ${toggleBtnsHtml}
+                    </div>
+                    <div style="margin-top: 4px;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--bwm-text-muted); margin-bottom:3px;">
+                            <span>Testament Distribution: <strong>${activeSense.sense_label}</strong></span>
+                            <span>${activeSense.ot_count} OT / ${activeSense.nt_count} NT</span>
+                        </div>
+                        <div class="bwm-sense-split-bar">
+                            <div class="bwm-sense-split-ot" style="width: ${otPct}%;" title="Old Testament: ${otPct}%"></div>
+                            <div class="bwm-sense-split-nt" style="width: ${ntPct}%;" title="New Testament: ${ntPct}%"></div>
+                        </div>
+                        <div class="bwm-sense-legend">
+                            <div class="bwm-sense-legend-item">
+                                <span class="bwm-sense-dot" style="background:#f59e0b;"></span>
+                                <span>Old Testament: ${otPct}% (${activeSense.ot_count} verses)</span>
+                            </div>
+                            <div class="bwm-sense-legend-item">
+                                <span class="bwm-sense-dot" style="background:#06b6d4;"></span>
+                                <span>New Testament: ${ntPct}% (${activeSense.nt_count} verses)</span>
+                            </div>
+                        </div>
+                    </div>
+                    ${protoVersesHtml}
+                </div>
+            `;
+        }
+
         if (!isVersesLoaded) {
             versesPaneHtml = `
                 <div class="bwm-word-pane" id="bwm-word-pane-verses" style="display: ${defaultTab === 'verses' ? 'flex' : 'none'};">
-                    <div class="bwm-window-body" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 20px;">
-                        <span class="bwm-loading-spinner" style="width:24px; height:24px; border-width:3px; margin-bottom:12px;"></span>
-                        <div style="font-size:0.9em; color:var(--bwm-text-muted);">Loading verse statistics...</div>
+                    <div class="bwm-window-body" style="display:flex; flex-direction:column; padding: 14px 16px;">
+                        ${senseCardHtml}
+                        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:30px 20px;">
+                            <span class="bwm-loading-spinner" style="width:24px; height:24px; border-width:3px; margin-bottom:12px;"></span>
+                            <div style="font-size:0.9em; color:var(--bwm-text-muted);">Loading verse statistics...</div>
+                        </div>
                     </div>
                 </div>
             `;
@@ -13502,6 +14253,9 @@ class BibleWordMap extends HTMLElement {
             }
 
             let versesBodyHtml = `<div class="bwm-window-body bwm-verses-body">`;
+            if (senseCardHtml) {
+                versesBodyHtml += senseCardHtml;
+            }
             if (tabsData.length > 0) {
                 tabsData.forEach((t, i) => {
                     versesBodyHtml += `<div class="bwm-verses-tab-content" id="bwm-tab-content-${t.id}" style="display: ${i === 0 ? 'block' : 'none'};">`;
@@ -14010,6 +14764,48 @@ class BibleWordMap extends HTMLElement {
                 this.hideWordInspector();
             });
         }
+
+        // Sense toggle buttons in Contextual Sense Disambiguation card
+        const senseToggleBtns = this.wordCard.querySelectorAll('.bwm-sense-toggle-btn');
+        senseToggleBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const senseId = btn.getAttribute('data-sense-id');
+                if (!senseId) return;
+                let targetSenseNode = (this.nodes && this.nodes.find(n => n.id === senseId))
+                    || (this.allSearchNodes && this.allSearchNodes.find(n => n.id === senseId));
+                if (!targetSenseNode && senseGroup && senseGroup.senses) {
+                    let sData = senseGroup.senses.find(s => s.id === senseId);
+                    if (sData) {
+                        targetSenseNode = Object.assign({}, sData, {
+                            isSenseNode: true,
+                            canvasR: 13 / this.transform.k,
+                            x: 0,
+                            y: 0
+                        });
+                    }
+                }
+                if (targetSenseNode) {
+                    this.showWordInspector(targetSenseNode, this.lastWordInspectorTab || 'verses');
+                }
+            });
+        });
+
+        // Prototype verse click in sense disambiguation card
+        const protoRefs = this.wordCard.querySelectorAll('.bwm-prototype-ref[data-jump-verse]');
+        protoRefs.forEach(refEl => {
+            refEl.addEventListener('click', (e) => {
+                e.stopPropagation();
+                let ref = refEl.getAttribute('data-jump-verse');
+                if (ref) {
+                    if (this.viewMode !== 'verses') this.setViewMode('verses');
+                    this.selectVerse(ref);
+                    let target = this.versemapLookup ? this.versemapLookup.get(ref) : null;
+                    if (!target) target = { id: ref };
+                    this.showVerseCard(target, [target]);
+                }
+            });
+        });
 
         // Action button / toggle (keyword add/remove or explore on word map)
         const toggleKw = this.wordCard.querySelector('#bwm-word-action-kw');
