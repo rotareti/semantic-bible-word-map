@@ -1,5 +1,19 @@
 # Changelog
 
+## [12.1.0] - 2026-09-22
+### Added
+- **Multi-Word Search Autocomplete:** Enabled multi-term autocomplete in the search bar across spaces and commas:
+  - **Sequential Autocomplete:** Typing an initial word (e.g. "Fat") suggests terms like "Father". Adding a delimiter (space or comma) preserves previous terms and transitions autocomplete to the subsequent word being typed (e.g. "Father, lov" suggests "love").
+  - **Semantic Companion Suggestions:** When a delimiter is added without characters for the subsequent term (e.g. "Father "), autocomplete dynamically recommends high-affinity semantic companions (e.g. "son", "spirit", "faith", "love") based on cosine similarity and frequency.
+  - **Multi-Token Prefix Preservation:** Selecting an autocomplete suggestion preserves all preceding keywords in the search bar and graphs all terms simultaneously in Word Mode or Verse Mode.
+  - **Mixed Search Detection & Multi-View Navigation:** When a query contains a mix and match of different canonical entity types (such as words, verse references, chapters, or books; e.g. "Father, John 3:16"):
+    - Categorized navigation suggestions are generated for each corresponding view (Words Mode, Verses View, Chapters Mode, Books Mode).
+    - Requires the user to navigate to one of the suggested views rather than attempting an invalid mixed canvas graph.
+    - Pressing Enter on mixed searches prompts the navigation popover with all available target views.
+
+### Changed
+- **Asset Cache Busting (`v=12.1.0`):** Bumped cache-buster query parameter to `?v=12.1.0` across stylesheet links, custom element scripts, and runtime data fetch requests.
+
 ## [12.0.0] - 2026-09-21
 ### Added
 - **Contextual Sense Disambiguation & Entity Unification Architecture:** Introduced a new semantic layer that resolves biblical polysemy and unifies cross-canonical theological entities without disrupting the global Word2Vec semantic manifold:
