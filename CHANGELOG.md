@@ -13,7 +13,9 @@
   - **Cross-View Multi-Category Suggestions:** Queries matching canonical books that also match vocabulary words or names (e.g. "Acts" or "1 John") generate suggestions across all relevant views (Word view, Book view, Chapter view, Verse view) with categorized section headers (`Words`, `Books`, `Chapters`, `Verses`), enabling seamless navigation regardless of current view mode.
   - **Numbered Book Prefix Tokenization:** Preserves biblical book titles with leading number prefixes (such as "1 John", "2 Peter", "1 Kings", "2 Samuel") as single search items instead of splitting into disjointed numeric tokens, while extracting the lexeme component (e.g. "John") to offer simultaneous Word view suggestions.
   - **Universal Cross-Mode Search Navigation:** Ensured selecting any suggestion from the search autocomplete window (words, verses, chapters, books) automatically switches the canvas view mode (`words`, `verses`, `chapters`, `books`) and navigates directly to the selected target, providing unified search jumping capability irrespective of the active view.
+  - **Sequential Background Dataset Preloading:** Prioritized primary view data (such as `wordmap_2d.json` in Words Mode) for fast initial rendering, followed by automatic sequential background preloading of secondary datasets: Verses (`verse_index.json` then `versemap_2d.json`), Chapters (`chaptermap_2d.json`), and Books (`bookmap_2d.json`) one after the other.
   - **Dynamic Multi-Keyword Exploration & Centroid Autocomplete:** When typing multiple words (e.g. "In the beginning God"), automatically computes the semantic centroid in the background across all views (words, verses, chapters, books), presenting "Explore N Keywords in Word view" alongside "Top Linked Verses (Semantic Map Centroid):" with direct verse jump navigation.
+  - **Unified Cross-Mode Autocomplete:** Enabled verse, chapter, and book autocomplete matching across all view modes once background datasets arrive, allowing users to jump directly to any view from the search bar regardless of current mode.
 
 ### Changed
 - **Multi-Word Search Performance & UI Non-Blocking:**
@@ -26,6 +28,7 @@
   - Added memoization for search item classification (`_classifyCache`) and semantic companions (`_companionCache`) across keystrokes.
   - Implemented adaptive neighbor limit scaling (`Math.floor(220 / numKeywords)`) for queries with 3+ words, preventing excessive node counts and D3 simulation stalls.
   - Precomputed keyword verse lookups as hash sets for O(1) link intersection performance.
+- **Sequential Pipeline Across Canons:** Applied sequential background dataset preloading across BSB, LXX, and Vulgate upon initial load and canon switching, cancelling stale background queues upon canon reloads.
 - **Options Drawer & Suggestions Hierarchy:**
   - Opening the options drawer (hamburger toggle, `openDrawer()`, or interacting with drawer controls) immediately collapses and closes the autocomplete suggestions popover.
   - Elevated open drawer z-index (`10040`) above popovers to prevent overlay collisions.
@@ -36,6 +39,7 @@
 - **Asset Cache Busting (`v=12.1.0`):** Bumped cache-buster query parameter to `?v=12.1.0` across stylesheet links, custom element scripts, and runtime data fetch requests.
 
 ### Fixed
+- **Post-Refresh Centroid Suggestions & Map Truthiness Bug:** Fixed an issue where verse centroid suggestions failed to produce matches after a page refresh until switching views to Verses. Resolved a boolean truthiness bug where empty `versemapLookup` Maps evaluated as truthy, preventing versemap coordinates from being awaited. Unified dataset access through cached sequential loaders (`ensureVersesLoaded`, `ensureWordsLoaded`) so search functions immediately out of the gate.
 - **Initial Load Centroid Search Spinner Hang:** Fixed an issue where typing multi-word queries right after refreshing the page caused the search spinner to spin indefinitely without returning centroid verses. Reused in-flight dataset promises initiated at page load, eliminated redundant unmemoized multi-megabyte fetch calls in `getEnglishSemanticData()`, and ensured atomic construction of the verse coordinate lookup map.
 - **Cross-View Suggestion Click Routing:** Fixed suggestion click handlers for words, verses, chapters, and books to automatically switch view mode when clicked from another mode, allowing seamless cross-view jumping from any active mode.
 - **Bare Digit Strong's Matching:** Prevented standalone 1-2 digit numbers (e.g. "1" in "1 John") from falsely matching Greek/Hebrew lexemes via Strong's prefix heuristics, eliminating spurious centroid verse calculations for numbered books.

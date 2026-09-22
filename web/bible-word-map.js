@@ -700,6 +700,11 @@ class BibleWordMap extends HTMLElement {
         this.mapTextScale = isMobileScreen ? 1.0 : 1.3;
         this._userSelectedTextSize = false;
         this._searchRecoverySeq = 0;
+        this._bgLoadSeq = 0;
+        this._wordsLoadPromise = null;
+        this._versesLoadPromise = null;
+        this._chaptersLoadPromise = null;
+        this._booksLoadPromise = null;
         this.isSearchMode = false;
         this.searchedWords = [];
         this.nodes = [];
@@ -5486,6 +5491,340 @@ class BibleWordMap extends HTMLElement {
         this.updateZoomExtentsVisibility();
     }
 
+    get data2dPromise() {
+        return this._customWordsPromise || this.ensureWordsLoaded();
+    }
+    set data2dPromise(p) {
+        this._customWordsPromise = p;
+    }
+
+    get versesPromise() {
+        return this._customVersesPromise || this.ensureVersesLoaded().then(() => ({ verses: this.verses, words: this.wordToVerses }));
+    }
+    set versesPromise(p) {
+        this._customVersesPromise = p;
+    }
+
+    get versemapPromise() {
+        return this._customVersemapPromise || this.ensureVersesLoaded().then(() => this.versemapData);
+    }
+    set versemapPromise(p) {
+        this._customVersemapPromise = p;
+    }
+
+    get chaptersPromise() {
+        return this._customChaptersPromise || this.ensureChaptersLoaded();
+    }
+    set chaptersPromise(p) {
+        this._customChaptersPromise = p;
+    }
+
+    get booksPromise() {
+        return this._customBooksPromise || this.ensureBooksLoaded();
+    }
+    set booksPromise(p) {
+        this._customBooksPromise = p;
+    }
+
+    async ensureWordsLoaded() {
+        if (this.data2d && Array.isArray(this.data2d) && this.data2d.length > 0) {
+            return this.data2d;
+        }
+        if (this._customWordsPromise) {
+            const data = await this._customWordsPromise;
+            if (data) this.data2d = data;
+            return this.data2d;
+        }
+        if (this._wordsLoadPromise) {
+            return await this._wordsLoadPromise;
+        }
+
+        this._wordsLoadPromise = (async () => {
+            try {
+                const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
+                const vParam = '?v=12.1.0';
+                let src2d = this.src2d;
+                if (!src2d) {
+                    if (this.foundation === 'lxx') {
+                        src2d = getAttr('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
+                    } else if (this.foundation === 'vul') {
+                        src2d = getAttr('src-2d-vul') || ('data/output/wordmap_2d_vul.json' + vParam);
+                    } else {
+                        src2d = getAttr('src-2d-bsb') || getAttr('src-2d') || ('data/output/wordmap_2d.json' + vParam);
+                    }
+                    this.src2d = src2d;
+                }
+
+                const res = await fetch(src2d);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                this.data2d = data;
+
+                if (!this.sensesData && this.srcSenses) {
+                    fetch(this.srcSenses).then(r => r.ok ? r.json() : null).then(sData => {
+                        if (sData) {
+                            this.sensesData = sData;
+                            if (this.setupSenseLookups) this.setupSenseLookups();
+                        }
+                    }).catch(() => {});
+                }
+
+                return this.data2d;
+            } catch (err) {
+                console.error("Could not load wordmap data:", err);
+                this._wordsLoadPromise = null;
+                return null;
+            }
+        })();
+
+        return await this._wordsLoadPromise;
+    }
+
+    async ensureVersesLoaded() {
+        if (this.versemapLookup && this.versemapLookup.size > 0 && this.verses && this.verses.length > 0) {
+            return { versemapLookup: this.versemapLookup, verses: this.verses };
+        }
+        if (this._customVersemapPromise || this._customVersesPromise) {
+            if (this._customVersesPromise && (!this.verses || this.verses.length === 0)) {
+                try {
+                    const vData = await this._customVersesPromise;
+                    if (vData && vData.verses) {
+                        this.verses = vData.verses;
+                        this.wordToVerses = vData.words;
+                    }
+                } catch (e) {}
+            }
+            if (this._customVersemapPromise && (!this.versemapLookup || this.versemapLookup.size === 0)) {
+                try {
+                    const vmData = await this._customVersemapPromise;
+                    if (vmData) {
+                        let versesList = vmData.verses || (Array.isArray(vmData) ? vmData : []);
+                        this.versemapData = vmData.verses ? vmData : { count: versesList.length, verses: versesList };
+                        this.versemapLookup = new Map(versesList.map(v => [v.id, v]));
+                    }
+                } catch (e) {}
+            }
+            if (this.versemapLookup && this.versemapLookup.size > 0) {
+                return { versemapLookup: this.versemapLookup, verses: this.verses };
+            }
+        }
+        if (this._versesLoadPromise) {
+            return await this._versesLoadPromise;
+        }
+
+        this._versesLoadPromise = (async () => {
+            try {
+                const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
+                const vParam = '?v=12.1.0';
+                let srcVerses = this.srcVerses;
+                let srcVersemap = this.srcVersemap;
+                if (!srcVerses || !srcVersemap) {
+                    if (this.foundation === 'lxx') {
+                        srcVerses = getAttr('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
+                        srcVersemap = getAttr('src-versemap-lxx') || ('data/output/versemap_2d_lxx.json' + vParam);
+                    } else if (this.foundation === 'vul') {
+                        srcVerses = getAttr('src-verses-vul') || ('data/output/verse_index_vul.json' + vParam);
+                        srcVersemap = getAttr('src-versemap-vul') || ('data/output/versemap_2d_vul.json' + vParam);
+                    } else {
+                        srcVerses = getAttr('src-verses-bsb') || getAttr('src-verses') || ('data/output/verse_index.json' + vParam);
+                        srcVersemap = getAttr('src-versemap-bsb') || getAttr('src-versemap') || ('data/output/versemap_2d.json' + vParam);
+                    }
+                    this.srcVerses = srcVerses;
+                    this.srcVersemap = srcVersemap;
+                }
+
+                // Step 1: Sequential fetch and indexing of verse_index
+                if (!this.verses || this.verses.length === 0) {
+                    const resV = await fetch(srcVerses);
+                    if (resV.ok) {
+                        const vData = await resV.json();
+                        if (vData && vData.verses) {
+                            this.verses = vData.verses;
+                            this.wordToVerses = vData.words;
+                            if (this.sensesData && this.setupSenseLookups) {
+                                this.setupSenseLookups();
+                            }
+                            if (!this.verseTextMap.size) {
+                                for (let i = 0; i < vData.verses.length; i++) {
+                                    let str = vData.verses[i];
+                                    let parts = str.split('|');
+                                    let ref = parts[0];
+                                    let en = parts[1] || '';
+                                    let el = parts[2] || '';
+                                    if (!el && parts.length === 2 && /[\u0370-\u03ff\u1f00-\u1fff]/.test(en) && !/[a-zA-Z]{3,}/.test(en)) {
+                                        el = en;
+                                        en = '';
+                                    }
+                                    this.verseTextMap.set(ref, en);
+                                    if (el) this.verseGreekMap.set(ref, el);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Step 2: Sequential fetch and indexing of versemap_2d
+                if (!this.versemapLookup || this.versemapLookup.size === 0) {
+                    const resVm = await fetch(srcVersemap);
+                    if (resVm.ok) {
+                        const vmData = await resVm.json();
+                        if (vmData) {
+                            let versesList = vmData.verses || (Array.isArray(vmData) ? vmData : []);
+                            this.versemapData = vmData.verses ? vmData : { count: versesList.length, verses: versesList };
+                            this.versemapLookup = new Map(versesList.map(v => [v.id, v]));
+                        }
+                    }
+                }
+
+                return { versemapLookup: this.versemapLookup, verses: this.verses };
+            } catch (err) {
+                console.error("Could not load verses data:", err);
+                this._versesLoadPromise = null;
+                return null;
+            }
+        })();
+
+        return await this._versesLoadPromise;
+    }
+
+    async ensureChaptersLoaded() {
+        if (this.chaptermapLookup && this.chaptermapLookup.size > 0 && this.chaptersData) {
+            return this.chaptersData;
+        }
+        if (this._customChaptersPromise) {
+            const data = await this._customChaptersPromise;
+            if (data) {
+                let chList = data.chapters || (Array.isArray(data) ? data : []);
+                this.chaptersData = data.chapters ? data : { count: chList.length, chapters: chList };
+                this.chaptermapLookup = new Map(chList.map(c => [c.id, c]));
+            }
+            return this.chaptersData;
+        }
+        if (this._chaptersLoadPromise) {
+            return await this._chaptersLoadPromise;
+        }
+
+        this._chaptersLoadPromise = (async () => {
+            try {
+                const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
+                const vParam = '?v=12.1.0';
+                let srcChapters = this.srcChapters;
+                if (!srcChapters) {
+                    if (this.foundation === 'lxx') {
+                        srcChapters = getAttr('src-chapters-lxx') || ('data/output/chaptermap_2d_lxx.json' + vParam);
+                    } else if (this.foundation === 'vul') {
+                        srcChapters = getAttr('src-chapters-vul') || ('data/output/chaptermap_2d_vul.json' + vParam);
+                    } else {
+                        srcChapters = getAttr('src-chapters-bsb') || getAttr('src-chapters') || ('data/output/chaptermap_2d.json' + vParam);
+                    }
+                    this.srcChapters = srcChapters;
+                }
+
+                const res = await fetch(srcChapters);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data) {
+                        let chList = data.chapters || (Array.isArray(data) ? data : []);
+                        this.chaptersData = data.chapters ? data : { count: chList.length, chapters: chList };
+                        this.chaptermapLookup = new Map(chList.map(c => [c.id, c]));
+                    }
+                }
+                return this.chaptersData;
+            } catch (err) {
+                console.warn("Could not load chaptermap data:", err);
+                this._chaptersLoadPromise = null;
+                return null;
+            }
+        })();
+
+        return await this._chaptersLoadPromise;
+    }
+
+    async ensureBooksLoaded() {
+        if (this.booksData && this.booksData.books) {
+            return this.booksData;
+        }
+        if (this._customBooksPromise) {
+            const data = await this._customBooksPromise;
+            if (data) this.booksData = data;
+            return this.booksData;
+        }
+        if (this._booksLoadPromise) {
+            return await this._booksLoadPromise;
+        }
+
+        this._booksLoadPromise = (async () => {
+            try {
+                const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
+                const vParam = '?v=12.1.0';
+                let srcBooks = this.srcBooks;
+                if (!srcBooks) {
+                    if (this.foundation === 'lxx') {
+                        srcBooks = getAttr('src-books-lxx') || ('data/output/bookmap_2d_lxx.json' + vParam);
+                    } else if (this.foundation === 'vul') {
+                        srcBooks = getAttr('src-books-vul') || ('data/output/bookmap_2d_vul.json' + vParam);
+                    } else {
+                        srcBooks = getAttr('src-books-bsb') || getAttr('src-books') || ('data/output/bookmap_2d.json' + vParam);
+                    }
+                    this.srcBooks = srcBooks;
+                }
+
+                const res = await fetch(srcBooks);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data) {
+                        this.booksData = data;
+                    }
+                }
+                return this.booksData;
+            } catch (err) {
+                console.warn("Could not load bookmap data:", err);
+                this._booksLoadPromise = null;
+                return null;
+            }
+        })();
+
+        return await this._booksLoadPromise;
+    }
+
+    async loadBackgroundDatasets(foundation) {
+        const seq = ++this._bgLoadSeq;
+
+        try {
+            // Step 1: Verses (verse_index + versemap_2d)
+            if (this._bgLoadSeq !== seq) return;
+            if (!this.versemapLookup || this.versemapLookup.size === 0 || !this.verses) {
+                await this.ensureVersesLoaded();
+            }
+
+            // Step 2: Words (wordmap_2d)
+            if (this._bgLoadSeq !== seq) return;
+            if (!this.data2d || !Array.isArray(this.data2d) || this.data2d.length === 0) {
+                await this.ensureWordsLoaded();
+            }
+
+            // Step 3: Chapters (chaptermap_2d)
+            if (this._bgLoadSeq !== seq) return;
+            if (!this.chaptermapLookup || this.chaptermapLookup.size === 0) {
+                await this.ensureChaptersLoaded();
+            }
+
+            // Step 4: Books (bookmap_2d)
+            if (this._bgLoadSeq !== seq) return;
+            if (!this.booksData || !this.booksData.books) {
+                await this.ensureBooksLoaded();
+            }
+
+            // Step 5: If non-BSB foundation (LXX / VUL), pre-warm English semantic data for English multi-word searches
+            if (this._bgLoadSeq !== seq) return;
+            if (foundation !== 'bsb' && !this._englishSemanticData) {
+                await this.getEnglishSemanticData();
+            }
+        } catch (e) {
+            console.warn("Background dataset preloading encountered an error:", e);
+        }
+    }
+
     async loadData() {
         let params = new URLSearchParams(window.location.search);
         let baseParam = (params.get('c') || params.get('f') || params.get('canon') || params.get('base') || params.get('foundation') || this.foundation || 'bsb').toLowerCase();
@@ -5499,28 +5838,29 @@ class BibleWordMap extends HTMLElement {
             this.foundation = 'bsb';
         }
 
+        const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
         const vParam = '?v=12.1.0';
         if (this.foundation === 'lxx') {
-            this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
-            this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
-            this.srcBooks = this.getAttribute('src-books-lxx') || ('data/output/bookmap_2d_lxx.json' + vParam);
-            this.srcVersemap = this.getAttribute('src-versemap-lxx') || ('data/output/versemap_2d_lxx.json' + vParam);
-            this.srcChapters = this.getAttribute('src-chapters-lxx') || ('data/output/chaptermap_2d_lxx.json' + vParam);
-            this.srcSenses = this.getAttribute('src-senses-lxx') || ('data/output/senses_data_lxx.json' + vParam);
+            this.src2d = getAttr('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
+            this.srcVerses = getAttr('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
+            this.srcBooks = getAttr('src-books-lxx') || ('data/output/bookmap_2d_lxx.json' + vParam);
+            this.srcVersemap = getAttr('src-versemap-lxx') || ('data/output/versemap_2d_lxx.json' + vParam);
+            this.srcChapters = getAttr('src-chapters-lxx') || ('data/output/chaptermap_2d_lxx.json' + vParam);
+            this.srcSenses = getAttr('src-senses-lxx') || ('data/output/senses_data_lxx.json' + vParam);
         } else if (this.foundation === 'vul') {
-            this.src2d = this.getAttribute('src-2d-vul') || ('data/output/wordmap_2d_vul.json' + vParam);
-            this.srcVerses = this.getAttribute('src-verses-vul') || ('data/output/verse_index_vul.json' + vParam);
-            this.srcBooks = this.getAttribute('src-books-vul') || ('data/output/bookmap_2d_vul.json' + vParam);
-            this.srcVersemap = this.getAttribute('src-versemap-vul') || ('data/output/versemap_2d_vul.json' + vParam);
-            this.srcChapters = this.getAttribute('src-chapters-vul') || ('data/output/chaptermap_2d_vul.json' + vParam);
-            this.srcSenses = this.getAttribute('src-senses-vul') || ('data/output/senses_data_vul.json' + vParam);
+            this.src2d = getAttr('src-2d-vul') || ('data/output/wordmap_2d_vul.json' + vParam);
+            this.srcVerses = getAttr('src-verses-vul') || ('data/output/verse_index_vul.json' + vParam);
+            this.srcBooks = getAttr('src-books-vul') || ('data/output/bookmap_2d_vul.json' + vParam);
+            this.srcVersemap = getAttr('src-versemap-vul') || ('data/output/versemap_2d_vul.json' + vParam);
+            this.srcChapters = getAttr('src-chapters-vul') || ('data/output/chaptermap_2d_vul.json' + vParam);
+            this.srcSenses = getAttr('src-senses-vul') || ('data/output/senses_data_vul.json' + vParam);
         } else {
-            this.src2d = this.getAttribute('src-2d-bsb') || this.getAttribute('src-2d') || ('data/output/wordmap_2d.json' + vParam);
-            this.srcVerses = this.getAttribute('src-verses-bsb') || this.getAttribute('src-verses') || ('data/output/verse_index.json' + vParam);
-            this.srcBooks = this.getAttribute('src-books-bsb') || this.getAttribute('src-books') || ('data/output/bookmap_2d.json' + vParam);
-            this.srcVersemap = this.getAttribute('src-versemap-bsb') || this.getAttribute('src-versemap') || ('data/output/versemap_2d.json' + vParam);
-            this.srcChapters = this.getAttribute('src-chapters-bsb') || this.getAttribute('src-chapters') || ('data/output/chaptermap_2d.json' + vParam);
-            this.srcSenses = this.getAttribute('src-senses-bsb') || this.getAttribute('src-senses') || ('data/output/senses_data.json' + vParam);
+            this.src2d = getAttr('src-2d-bsb') || getAttr('src-2d') || ('data/output/wordmap_2d.json' + vParam);
+            this.srcVerses = getAttr('src-verses-bsb') || getAttr('src-verses') || ('data/output/verse_index.json' + vParam);
+            this.srcBooks = getAttr('src-books-bsb') || getAttr('src-books') || ('data/output/bookmap_2d.json' + vParam);
+            this.srcVersemap = getAttr('src-versemap-bsb') || getAttr('src-versemap') || ('data/output/versemap_2d.json' + vParam);
+            this.srcChapters = getAttr('src-chapters-bsb') || getAttr('src-chapters') || ('data/output/chaptermap_2d.json' + vParam);
+            this.srcSenses = getAttr('src-senses-bsb') || getAttr('src-senses') || ('data/output/senses_data.json' + vParam);
         }
 
         const lxxPill = this.querySelector('#bwm-btn-foundation-lxx');
@@ -5683,164 +6023,9 @@ class BibleWordMap extends HTMLElement {
 
         this.updateNeighborSlider();
 
-        // Fetch datasets concurrently
-        if (this.foundation === 'bsb' && this._englishSemanticData) {
-            this.booksPromise = this._englishSemanticData.booksData
-                ? Promise.resolve(this._englishSemanticData.booksData)
-                : (this.srcBooks ? fetch(this.srcBooks).then(r => {
-                    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                    return r.json();
-                }).catch(() => null) : Promise.resolve(null));
-            this.versesPromise = Promise.resolve({ verses: this._englishSemanticData.verses, words: this._englishSemanticData.wordToVerses });
-            this.data2dPromise = Promise.resolve(this._englishSemanticData.data2d);
-            this.versemapPromise = Promise.resolve(this._englishSemanticData.versemapData);
-        } else {
-            this.booksPromise = this.srcBooks ? fetch(this.srcBooks).then(r => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json();
-            }).catch(err => {
-                console.warn("Could not load bookmap data", err);
-                return null;
-            }) : Promise.resolve(null);
-
-            this.versesPromise = this.srcVerses ? fetch(this.srcVerses).then(r => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json();
-            }).catch(err => {
-                console.warn("Could not load verses data", err);
-                return null;
-            }) : Promise.resolve(null);
-
-            this.data2dPromise = this.src2d ? fetch(this.src2d).then(r => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json();
-            }).catch(err => {
-                console.error("Could not load wordmap data", err);
-                return null;
-            }) : Promise.resolve(null);
-
-            this.versemapPromise = this.srcVersemap ? fetch(this.srcVersemap).then(r => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json();
-            }).catch(err => {
-                console.warn("Could not load versemap data", err);
-                return null;
-            }) : Promise.resolve(null);
-
-            this.chaptersPromise = this.srcChapters ? fetch(this.srcChapters).then(r => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json();
-            }).catch(err => {
-                console.warn("Could not load chaptermap data", err);
-                return null;
-            }) : Promise.resolve(null);
-
-            this.sensesPromise = this.srcSenses ? fetch(this.srcSenses).then(r => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json();
-            }).catch(err => {
-                console.warn("Could not load senses data", err);
-                return null;
-            }) : Promise.resolve(null);
-        }
-
-        this.booksPromise.then(data => {
-            if (data) this.booksData = data;
-        });
-
-        this.chaptersPromise.then(data => {
-            if (data) {
-                let chList = data.chapters || (Array.isArray(data) ? data : null);
-                if (chList) {
-                    this.chaptersData = data.chapters ? data : { count: chList.length, chapters: chList };
-                    this.chaptermapLookup = new Map(chList.map(c => [c.id, c]));
-                }
-            }
-        });
-
-        this.versesPromise.then(vData => {
-            if (vData) {
-                this.verses = vData.verses;
-                this.wordToVerses = vData.words;
-                if (this.sensesData) {
-                    this.setupSenseLookups();
-                }
-                if (vData.verses && !this.verseTextMap.size) {
-                    for (let i = 0; i < vData.verses.length; i++) {
-                        let str = vData.verses[i];
-                        let parts = str.split('|');
-                        let ref = parts[0];
-                        let en = parts[1] || '';
-                        let el = parts[2] || '';
-                        if (!el && parts.length === 2 && /[\u0370-\u03ff\u1f00-\u1fff]/.test(en) && !/[a-zA-Z]{3,}/.test(en)) {
-                            el = en;
-                            en = '';
-                        }
-                        this.verseTextMap.set(ref, en);
-                        if (el) this.verseGreekMap.set(ref, el);
-                    }
-                }
-            }
-        });
-
-        this.versemapPromise.then(data => {
-            if (data) {
-                let versesList = data.verses || (Array.isArray(data) ? data : null);
-                if (versesList) {
-                    this.versemapData = data.verses ? data : { count: versesList.length, verses: versesList };
-                    this.versemapLookup = new Map(versesList.map(v => [v.id, v]));
-                }
-            }
-        });
-
-        this.data2dPromise.then(d2d => {
-            if (d2d) this.data2d = d2d;
-        });
-        if (this.sensesPromise) {
-            this.sensesPromise.then(sData => {
-                if (sData) {
-                    this.sensesData = sData;
-                    this.setupSenseLookups();
-                }
-            });
-        }
-        if (this.versesPromise) {
-            this.versesPromise.then(vData => {
-                if (vData && vData.verses) {
-                    this.verses = vData.verses;
-                    this.wordToVerses = vData.words;
-                    if (this.sensesData) {
-                        this.setupSenseLookups();
-                    }
-                }
-            }).catch(() => {});
-        }
-
         try {
             if (isVersesInit) {
-                this.versemapData = await this.versemapPromise;
-                if (this.versemapData) {
-                    let versesList = this.versemapData.verses || (Array.isArray(this.versemapData) ? this.versemapData : []);
-                    this.versemapLookup = new Map(versesList.map(v => [v.id, v]));
-                }
-                const vData = await this.versesPromise;
-                if (vData && vData.verses) {
-                    this.verses = vData.verses;
-                    this.wordToVerses = vData.words;
-                    for (let i = 0; i < vData.verses.length; i++) {
-                        let str = vData.verses[i];
-                        let parts = str.split('|');
-                        let ref = parts[0];
-                        let en = parts[1] || '';
-                        let el = parts[2] || '';
-                        if (!el && parts.length === 2 && /[\u0370-\u03ff\u1f00-\u1fff]/.test(en) && !/[a-zA-Z]{3,}/.test(en)) {
-                            el = en;
-                            en = '';
-                        }
-                        this.verseTextMap.set(ref, en);
-                        if (el) this.verseGreekMap.set(ref, el);
-                    }
-                }
+                await this.ensureVersesLoaded();
                 if (this.viewMode !== 'verses') {
                     return;
                 }
@@ -5873,30 +6058,9 @@ class BibleWordMap extends HTMLElement {
                 } else {
                     this.buildVersesGraph();
                 }
+                this.loadBackgroundDatasets(this.foundation);
             } else if (isChaptersInit) {
-                this.chaptersData = await this.chaptersPromise;
-                if (this.chaptersData) {
-                    let chList = this.chaptersData.chapters || (Array.isArray(this.chaptersData) ? this.chaptersData : []);
-                    this.chaptermapLookup = new Map(chList.map(c => [c.id, c]));
-                }
-                const vData = await this.versesPromise;
-                if (vData && vData.verses) {
-                    this.verses = vData.verses;
-                    this.wordToVerses = vData.words;
-                    for (let i = 0; i < vData.verses.length; i++) {
-                        let str = vData.verses[i];
-                        let parts = str.split('|');
-                        let ref = parts[0];
-                        let en = parts[1] || '';
-                        let el = parts[2] || '';
-                        if (!el && parts.length === 2 && /[\u0370-\u03ff\u1f00-\u1fff]/.test(en) && !/[a-zA-Z]{3,}/.test(en)) {
-                            el = en;
-                            en = '';
-                        }
-                        this.verseTextMap.set(ref, en);
-                        if (el) this.verseGreekMap.set(ref, el);
-                    }
-                }
+                await this.ensureChaptersLoaded();
                 if (this.viewMode !== 'chapters') {
                     return;
                 }
@@ -5929,33 +6093,17 @@ class BibleWordMap extends HTMLElement {
                 } else {
                     this.buildChaptersGraph();
                 }
+                this.loadBackgroundDatasets(this.foundation);
             } else if (isBooksInit) {
-                this.booksData = await this.booksPromise;
+                await this.ensureBooksLoaded();
                 if (this.viewMode !== 'books') {
                     return;
                 }
 
                 let hasSelectedBooks = (this.searchedBooks && this.searchedBooks.length > 0) || Boolean(books);
                 if (hasSelectedBooks) {
-                    if (!this.data2d && this.data2dPromise) {
-                        try {
-                            const d2d = await this.data2dPromise;
-                            if (d2d) this.data2d = d2d;
-                        } catch (e) {
-                            console.error('Failed loading word data for books view:', e);
-                        }
-                    }
-                    if ((!this.verses || !this.wordToVerses) && this.versesPromise) {
-                        try {
-                            const vData = await this.versesPromise;
-                            if (vData && vData.verses) {
-                                this.verses = vData.verses;
-                                this.wordToVerses = vData.words;
-                            }
-                        } catch (e) {
-                            console.error('Failed loading verses data for books view:', e);
-                        }
-                    }
+                    await this.ensureWordsLoaded();
+                    await this.ensureVersesLoaded();
                 }
 
                 this.hideLoading();
@@ -5982,18 +6130,12 @@ class BibleWordMap extends HTMLElement {
                 } else {
                     this.buildBooksGraph();
                 }
+                this.loadBackgroundDatasets(this.foundation);
             } else {
-                this.data2d = await this.data2dPromise;
-                const vData = await this.versesPromise;
-                if (vData) {
-                    this.verses = vData.verses;
-                    this.wordToVerses = vData.words;
-                }
+                await this.ensureWordsLoaded();
 
                 if (this.viewMode !== 'words') {
-                    if (this.booksData || this.versemapData) {
-                        this.hideLoading();
-                    }
+                    this.hideLoading();
                     return;
                 }
                 this.hideLoading();
@@ -6039,6 +6181,8 @@ class BibleWordMap extends HTMLElement {
                 } else {
                     this.buildAllWordsGraph();
                 }
+
+                this.loadBackgroundDatasets(this.foundation);
             }
         } catch (e) {
             console.error("Error loading Bible Word Map data", e);
@@ -6756,8 +6900,8 @@ class BibleWordMap extends HTMLElement {
                 }
             }
 
-            // 3. View-specific scripture matches
-            if (this.viewMode === 'verses' && this.versemapLookup) {
+            // 3. Verse and chapter matches across all view modes
+            if (this.versemapLookup && this.versemapLookup.size > 0) {
                 let count = 0;
                 for (const [vId, vObj] of this.versemapLookup.entries()) {
                     if (count >= 5) break;
@@ -6782,7 +6926,7 @@ class BibleWordMap extends HTMLElement {
                 }
             }
 
-            if (this.viewMode === 'chapters' && this.booksData && Array.isArray(this.booksData.books)) {
+            if (this.booksData && Array.isArray(this.booksData.books)) {
                 for (const b of this.booksData.books) {
                     if (chapterItems.length >= 6) break;
                     if (b.name.toLowerCase().startsWith(query) || b.code.toLowerCase().startsWith(query)) {
@@ -7513,54 +7657,9 @@ class BibleWordMap extends HTMLElement {
 
     async getEnglishSemanticData() {
         if (this.foundation === 'bsb') {
-            if (!this.versemapLookup && this.versemapData) {
-                let list = this.versemapData.verses || (Array.isArray(this.versemapData) ? this.versemapData : []);
-                const vmLookup = new Map();
-                for (let i = 0; i < list.length; i++) {
-                    vmLookup.set(list[i].id, list[i]);
-                }
-                this.versemapLookup = vmLookup;
-            }
-            if (!this.versemapLookup && this.versemapPromise) {
-                try {
-                    let data = await this.versemapPromise;
-                    if (data) {
-                        let list = data.verses || (Array.isArray(data) ? data : []);
-                        this.versemapData = data.verses ? data : { count: list.length, verses: list };
-                        const vmLookup = new Map();
-                        for (let i = 0; i < list.length; i++) {
-                            vmLookup.set(list[i].id, list[i]);
-                        }
-                        this.versemapLookup = vmLookup;
-                    }
-                } catch (e) {
-                    console.warn('Could not load versemap data for English semantics:', e);
-                }
-            }
-            if ((!this.verses || !this.wordToVerses) && this.versesPromise) {
-                try {
-                    let vData = await this.versesPromise;
-                    if (vData) {
-                        this.verses = vData.verses;
-                        this.wordToVerses = vData.words;
-                    }
-                } catch (e) {
-                    console.warn('Could not load verses data for English semantics:', e);
-                }
-            }
-            if (!this.data2d && this.data2dPromise) {
-                try {
-                    this.data2d = await this.data2dPromise;
-                } catch (e) {
-                    console.warn('Could not load wordmap data for English semantics:', e);
-                }
-            }
-            if (!this.booksData && this.booksPromise) {
-                try {
-                    this.booksData = await this.booksPromise;
-                } catch (e) {}
-            }
-            if (this.data2d && this.verses && this.versemapLookup) {
+            await this.ensureWordsLoaded();
+            await this.ensureVersesLoaded();
+            if (this.data2d && this.verses && this.versemapLookup && this.versemapLookup.size > 0) {
                 return {
                     data2d: this.data2d,
                     verses: this.verses,
@@ -7581,11 +7680,12 @@ class BibleWordMap extends HTMLElement {
         }
 
         this._englishSemanticDataPromise = (async () => {
+            const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
             const vParam = '?v=12.1.0';
-            const wordmapSrc = this.getAttribute('src-2d-bsb') || this.getAttribute('src-2d') || ('data/output/wordmap_2d.json' + vParam);
-            const versesSrc = this.getAttribute('src-verses-bsb') || this.getAttribute('src-verses') || ('data/output/verse_index.json' + vParam);
-            const versemapSrc = this.getAttribute('src-versemap-bsb') || this.getAttribute('src-versemap') || ('data/output/versemap_2d.json' + vParam);
-            const booksSrc = this.getAttribute('src-books-bsb') || this.getAttribute('src-books') || ('data/output/bookmap_2d.json' + vParam);
+            const wordmapSrc = getAttr('src-2d-bsb') || getAttr('src-2d') || ('data/output/wordmap_2d.json' + vParam);
+            const versesSrc = getAttr('src-verses-bsb') || getAttr('src-verses') || ('data/output/verse_index.json' + vParam);
+            const versemapSrc = getAttr('src-versemap-bsb') || getAttr('src-versemap') || ('data/output/versemap_2d.json' + vParam);
+            const booksSrc = getAttr('src-books-bsb') || getAttr('src-books') || ('data/output/bookmap_2d.json' + vParam);
 
             try {
                 const [wData, vData, vmData, bData] = await Promise.all([
@@ -9214,28 +9314,29 @@ class BibleWordMap extends HTMLElement {
             vulPill.classList.toggle('active', foundation === 'vul');
         }
 
+        const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
         const vParam = '?v=12.1.0';
         if (foundation === 'lxx') {
-            this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
-            this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
-            this.srcBooks = this.getAttribute('src-books-lxx') || ('data/output/bookmap_2d_lxx.json' + vParam);
-            this.srcVersemap = this.getAttribute('src-versemap-lxx') || ('data/output/versemap_2d_lxx.json' + vParam);
-            this.srcChapters = this.getAttribute('src-chapters-lxx') || ('data/output/chaptermap_2d_lxx.json' + vParam);
-            this.srcSenses = this.getAttribute('src-senses-lxx') || ('data/output/senses_data_lxx.json' + vParam);
+            this.src2d = getAttr('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
+            this.srcVerses = getAttr('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
+            this.srcBooks = getAttr('src-books-lxx') || ('data/output/bookmap_2d_lxx.json' + vParam);
+            this.srcVersemap = getAttr('src-versemap-lxx') || ('data/output/versemap_2d_lxx.json' + vParam);
+            this.srcChapters = getAttr('src-chapters-lxx') || ('data/output/chaptermap_2d_lxx.json' + vParam);
+            this.srcSenses = getAttr('src-senses-lxx') || ('data/output/senses_data_lxx.json' + vParam);
         } else if (foundation === 'vul') {
-            this.src2d = this.getAttribute('src-2d-vul') || ('data/output/wordmap_2d_vul.json' + vParam);
-            this.srcVerses = this.getAttribute('src-verses-vul') || ('data/output/verse_index_vul.json' + vParam);
-            this.srcBooks = this.getAttribute('src-books-vul') || ('data/output/bookmap_2d_vul.json' + vParam);
-            this.srcVersemap = this.getAttribute('src-versemap-vul') || ('data/output/versemap_2d_vul.json' + vParam);
-            this.srcChapters = this.getAttribute('src-chapters-vul') || ('data/output/chaptermap_2d_vul.json' + vParam);
-            this.srcSenses = this.getAttribute('src-senses-vul') || ('data/output/senses_data_vul.json' + vParam);
+            this.src2d = getAttr('src-2d-vul') || ('data/output/wordmap_2d_vul.json' + vParam);
+            this.srcVerses = getAttr('src-verses-vul') || ('data/output/verse_index_vul.json' + vParam);
+            this.srcBooks = getAttr('src-books-vul') || ('data/output/bookmap_2d_vul.json' + vParam);
+            this.srcVersemap = getAttr('src-versemap-vul') || ('data/output/versemap_2d_vul.json' + vParam);
+            this.srcChapters = getAttr('src-chapters-vul') || ('data/output/chaptermap_2d_vul.json' + vParam);
+            this.srcSenses = getAttr('src-senses-vul') || ('data/output/senses_data_vul.json' + vParam);
         } else {
-            this.src2d = this.getAttribute('src-2d-bsb') || this.getAttribute('src-2d') || ('data/output/wordmap_2d.json' + vParam);
-            this.srcVerses = this.getAttribute('src-verses-bsb') || this.getAttribute('src-verses') || ('data/output/verse_index.json' + vParam);
-            this.srcBooks = this.getAttribute('src-books-bsb') || this.getAttribute('src-books') || ('data/output/bookmap_2d.json' + vParam);
-            this.srcVersemap = this.getAttribute('src-versemap-bsb') || this.getAttribute('src-versemap') || ('data/output/versemap_2d.json' + vParam);
-            this.srcChapters = this.getAttribute('src-chapters-bsb') || this.getAttribute('src-chapters') || ('data/output/chaptermap_2d.json' + vParam);
-            this.srcSenses = this.getAttribute('src-senses-bsb') || this.getAttribute('src-senses') || ('data/output/senses_data.json' + vParam);
+            this.src2d = getAttr('src-2d-bsb') || getAttr('src-2d') || ('data/output/wordmap_2d.json' + vParam);
+            this.srcVerses = getAttr('src-verses-bsb') || getAttr('src-verses') || ('data/output/verse_index.json' + vParam);
+            this.srcBooks = getAttr('src-books-bsb') || getAttr('src-books') || ('data/output/bookmap_2d.json' + vParam);
+            this.srcVersemap = getAttr('src-versemap-bsb') || getAttr('src-versemap') || ('data/output/versemap_2d.json' + vParam);
+            this.srcChapters = getAttr('src-chapters-bsb') || getAttr('src-chapters') || ('data/output/chaptermap_2d.json' + vParam);
+            this.srcSenses = getAttr('src-senses-bsb') || getAttr('src-senses') || ('data/output/senses_data.json' + vParam);
         }
 
         if (this.viewMode === 'verses') {
@@ -9249,6 +9350,12 @@ class BibleWordMap extends HTMLElement {
         }
 
         if (reload) {
+            this._bgLoadSeq++;
+            this._wordsLoadPromise = null;
+            this._versesLoadPromise = null;
+            this._chaptersLoadPromise = null;
+            this._booksLoadPromise = null;
+
             this.data2d = null;
             this.verses = null;
             this.wordToVerses = null;
@@ -10199,27 +10306,20 @@ class BibleWordMap extends HTMLElement {
             this.updateUrl({ view: 'verses' });
             this.renderActiveWords();
 
-            if (!this.versemapLookup) {
+            if (!this.versemapLookup || this.versemapLookup.size === 0 || !this.verses) {
                 this.showLoading('Loading Biblical Verses & Cross-References...', 'verses');
-                if (this.versemapPromise) {
-                    this.versemapPromise.then(data => {
-                        if (data && (data.verses || Array.isArray(data))) {
-                            let vList = data.verses || data;
-                            this.versemapData = data.verses ? data : { count: vList.length, verses: vList };
-                            this.versemapLookup = new Map(vList.map(v => [v.id, v]));
+                this.ensureVersesLoaded().then(() => {
+                    if (this.viewMode === 'verses') {
+                        this.hideLoading();
+                        if (this.searchedVerses && this.searchedVerses.length > 0) {
+                            this.searchVerses(true);
+                        } else {
+                            this.buildVersesGraph();
                         }
-                        if (this.viewMode === 'verses') {
-                            this.hideLoading();
-                            if (this.searchedVerses && this.searchedVerses.length > 0) {
-                                this.searchVerses(true);
-                            } else {
-                                this.buildVersesGraph();
-                            }
-                        }
-                    }).catch(() => {
-                        if (this.viewMode === 'verses') this.hideLoading();
-                    });
-                }
+                    }
+                }).catch(() => {
+                    if (this.viewMode === 'verses') this.hideLoading();
+                });
             } else {
                 this.hideLoading();
                 this.buildVersesGraph();
@@ -10239,26 +10339,19 @@ class BibleWordMap extends HTMLElement {
 
             if (!this.chaptermapLookup || this.chaptermapLookup.size === 0) {
                 this.showLoading('Loading Biblical Chapters & Connections...', 'chapters');
-                if (this.chaptersPromise) {
-                    this.chaptersPromise.then(data => {
-                        if (data && (data.chapters || Array.isArray(data))) {
-                            let chList = data.chapters || data;
-                            this.chaptersData = data.chapters ? data : { count: chList.length, chapters: chList };
-                            this.chaptermapLookup = new Map(chList.map(c => [c.id, c]));
+                this.ensureChaptersLoaded().then(() => {
+                    if (this.viewMode === 'chapters') {
+                        this.hideLoading();
+                        if (this.isSearchMode && this.searchedChapters && this.searchedChapters.length > 0) {
+                            let records = this.searchedChapters.map(ref => this.chaptermapLookup ? this.chaptermapLookup.get(ref) : null).filter(Boolean);
+                            this.buildChaptersConstellation(records);
+                        } else {
+                            this.buildChaptersGraph();
                         }
-                        if (this.viewMode === 'chapters') {
-                            this.hideLoading();
-                            if (this.isSearchMode && this.searchedChapters && this.searchedChapters.length > 0) {
-                                let records = this.searchedChapters.map(ref => this.chaptermapLookup ? this.chaptermapLookup.get(ref) : null).filter(Boolean);
-                                this.buildChaptersConstellation(records);
-                            } else {
-                                this.buildChaptersGraph();
-                            }
-                        }
-                    }).catch(() => {
-                        if (this.viewMode === 'chapters') this.hideLoading();
-                    });
-                }
+                    }
+                }).catch(() => {
+                    if (this.viewMode === 'chapters') this.hideLoading();
+                });
             } else {
                 this.hideLoading();
                 this.buildChaptersGraph();
@@ -10276,19 +10369,16 @@ class BibleWordMap extends HTMLElement {
             this.updateUrl({ view: 'books' });
             this.renderActiveWords();
 
-            if (!this.booksData) {
+            if (!this.booksData || !this.booksData.books) {
                 this.showLoading('Loading Biblical Books & Themes...', 'books');
-                if (this.booksPromise) {
-                    this.booksPromise.then(data => {
-                        if (data) this.booksData = data;
-                        if (this.viewMode === 'books') {
-                            this.hideLoading();
-                            this.buildBooksGraph();
-                        }
-                    }).catch(() => {
-                        if (this.viewMode === 'books') this.hideLoading();
-                    });
-                }
+                this.ensureBooksLoaded().then(() => {
+                    if (this.viewMode === 'books') {
+                        this.hideLoading();
+                        this.buildBooksGraph();
+                    }
+                }).catch(() => {
+                    if (this.viewMode === 'books') this.hideLoading();
+                });
             } else {
                 this.hideLoading();
                 this.buildBooksGraph();
@@ -10306,19 +10396,16 @@ class BibleWordMap extends HTMLElement {
             this.updateUrl({});
             this.renderActiveWords();
 
-            if (!this.data2d) {
+            if (!this.data2d || !Array.isArray(this.data2d) || this.data2d.length === 0) {
                 this.showLoading('Loading Bible Word Map...', 'words');
-                if (this.data2dPromise) {
-                    this.data2dPromise.then(data => {
-                        if (data) this.data2d = data;
-                        if (this.viewMode === 'words') {
-                            this.hideLoading();
-                            this.buildAllWordsGraph();
-                        }
-                    }).catch(() => {
-                        if (this.viewMode === 'words') this.hideLoading();
-                    });
-                }
+                this.ensureWordsLoaded().then(() => {
+                    if (this.viewMode === 'words') {
+                        this.hideLoading();
+                        this.buildAllWordsGraph();
+                    }
+                }).catch(() => {
+                    if (this.viewMode === 'words') this.hideLoading();
+                });
             } else {
                 this.hideLoading();
                 this.buildAllWordsGraph();
