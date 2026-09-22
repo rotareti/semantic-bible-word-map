@@ -10,7 +10,7 @@
     - Categorized navigation suggestions are generated for each corresponding view (Words Mode, Verses View, Chapters Mode, Books Mode).
     - Requires the user to navigate to one of the suggested views rather than attempting an invalid mixed canvas graph.
     - Pressing Enter on mixed searches prompts the navigation popover with all available target views.
-  - **Dynamic Centroid Verse Suggestions (3+ Words):** When typing 3 or more keywords, the search bar automatically calculates the combined semantic vector centroid in the background and presents closest thematic centroid verses in the autocomplete dropdown with quick navigation to Verses View.
+  - **Dynamic Multi-Keyword Exploration & Centroid Autocomplete:** When typing multiple words (e.g. "In the beginning God"), automatically computes the semantic centroid in the background across all views (words, verses, chapters, books), presenting "Explore N Keywords in Words Mode" alongside "Top Linked Verses (Semantic Map Centroid):" with direct verse jump navigation.
 
 ### Changed
 - **Multi-Word Search Performance & UI Non-Blocking:**
@@ -18,6 +18,8 @@
   - Introduced cooperative main thread yielding between keyword vector searches to keep the UI fluid and prevent browser freezes.
   - Implemented adaptive neighbor limit scaling (`Math.floor(220 / numKeywords)`) for queries with 3+ words, preventing excessive node counts and D3 simulation stalls.
   - Precomputed keyword verse lookups as hash sets for O(1) link intersection performance.
+- **Search Resolution & Recovery Fallback:** Hitting Enter or clicking the search icon executes searches directly. If all words in Word Mode are valid, graphs all words and opens the study panel; if any words cannot be resolved, falls back to the nearest matches window.
+- **Clean Professional Typography:** Removed emoji icons from dynamic search suggestions and recovery cards to maintain consistent, professional styling.
 - **Asset Cache Busting (`v=12.1.0`):** Bumped cache-buster query parameter to `?v=12.1.0` across stylesheet links, custom element scripts, and runtime data fetch requests.
 
 ### Fixed

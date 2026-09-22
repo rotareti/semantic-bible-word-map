@@ -6410,29 +6410,19 @@ class BibleWordMap extends HTMLElement {
             }
         } else {
             if (parsed.items.length >= 3) {
-                if (this.viewMode === 'words') {
-                    suggestions.push({
-                        type: 'multi-word-search',
-                        category: 'Word Mode',
-                        categoryClass: 'word',
-                        icon: '&#x1F50D;',
-                        title: `Search keywords: <strong>${escapeHtml(parsed.items.join(', '))}</strong>`,
-                        desc: `Explore combined semantic vector neighborhood in Word Mode`,
-                        action: 'search-multi-words',
-                        query: parsed.items.join(' ')
-                    });
-                } else if (this.viewMode === 'verses') {
-                    suggestions.push({
-                        type: 'multi-word-search',
-                        category: 'Word Mode',
-                        categoryClass: 'word',
-                        icon: '&#x1F50D;',
-                        title: `Search <strong>"${escapeHtml(fullVal.trim())}"</strong> in Word Mode`,
-                        desc: `Switch to Word Mode for semantic vocabulary analysis`,
-                        action: 'switch-word-mode',
-                        query: fullVal.trim()
-                    });
-                }
+                const count = parsed.items.length;
+                const isWordsMode = this.viewMode === 'words';
+                suggestions.push({
+                    type: 'multi-word-search',
+                    category: 'Words Mode',
+                    categoryClass: 'word',
+                    title: `Explore ${count} Keywords in Words Mode`,
+                    desc: isWordsMode
+                        ? `Graph all ${count} words across their semantic constellations.`
+                        : `Search the combined semantic constellation in Words Mode.`,
+                    action: 'search-multi-words',
+                    query: parsed.items.join(' ')
+                });
             }
 
             if (parsed.hasTrailingDelimiter && !parsed.activeToken) {
@@ -6890,7 +6880,7 @@ class BibleWordMap extends HTMLElement {
         this.renderSearchSuggestions(suggestions, headerLabel, headerSub);
 
         const rawTokens = fullVal.trim().split(/[\s,]+/).filter(Boolean);
-        if (!isMixed && !forceShowMixed && rawTokens.length >= 3) {
+        if (!isMixed && !forceShowMixed && rawTokens.length >= 2 && (fullVal.includes(' ') || fullVal.includes(','))) {
             this.setSearchSpinner(true);
             if (this._autocompleteTimer) {
                 clearTimeout(this._autocompleteTimer);
@@ -6903,28 +6893,68 @@ class BibleWordMap extends HTMLElement {
                     const centroidResult = await this.findCentroidVerses(fullVal, 4);
                     if (this._autocompleteSeq !== seq) return;
                     if (!this.searchSuggestionsPopover || this.searchSuggestionsPopover.style.display === 'none') return;
-                    if (centroidResult && centroidResult.verses && centroidResult.verses.length > 0) {
-                        const centroidSuggestions = centroidResult.verses.map(v => ({
-                            type: 'centroid-verse',
-                            category: 'Centroid Verse',
-                            categoryClass: 'verse',
-                            icon: '&#x1F4D6;',
-                            title: `<strong>${escapeHtml(v.displayRef)}</strong> <span class="bwm-suggestion-meta">(Semantic Centroid)</span>`,
-                            desc: escapeHtml(v.snippet || v.text),
-                            action: 'jump-verse',
-                            verseRef: v.displayRef,
-                            searchRef: v.ref
-                        }));
 
-                        const combined = [];
-                        const topAction = suggestions.find(s => s.action === 'search-multi-words');
-                        if (topAction) combined.push(topAction);
-                        combined.push(...centroidSuggestions);
+                    if (centroidResult && ((centroidResult.matchedTokens && centroidResult.matchedTokens.length >= 2) || (centroidResult.verses && centroidResult.verses.length > 0))) {
+                        const dynamicSuggestions = [];
+                        const isNonBsb = (this.foundation !== 'bsb');
+
+                        if (centroidResult.matchedTokens && centroidResult.matchedTokens.length >= 2) {
+                            const matchedCount = centroidResult.matchedTokens.length;
+                            const wordSearchQuery = centroidResult.matchedTokens.map(m => m.bestPoint.w).join(' ');
+                            const cardTitle = isNonBsb
+                                ? `Explore ${matchedCount} Keywords in BSB Words Mode`
+                                : `Explore ${matchedCount} Keywords in Words Mode`;
+                            const cardDesc = isNonBsb
+                                ? `Switch to the English (BSB) canon to graph these keywords across their semantic constellation.`
+                                : (this.viewMode === 'words'
+                                    ? `Graph all ${matchedCount} words across their semantic constellations.`
+                                    : `All words match canonical vocabulary. Search the combined semantic constellation in Words Mode.`);
+
+                            dynamicSuggestions.push({
+                                type: 'multi-word-search',
+                                category: 'Words Mode',
+                                categoryClass: 'word',
+                                title: cardTitle,
+                                desc: cardDesc,
+                                action: 'search-multi-words',
+                                query: wordSearchQuery,
+                                switchBsb: isNonBsb
+                            });
+                        }
+
+                        if (centroidResult.verses && centroidResult.verses.length > 0) {
+                            const sectionTitle = isNonBsb
+                                ? 'Top Linked Verses (BSB English Centroid):'
+                                : 'Top Linked Verses (Semantic Map Centroid):';
+                            dynamicSuggestions.push({
+                                type: 'section-header',
+                                title: sectionTitle
+                            });
+
+                            centroidResult.verses.forEach(v => {
+                                const bsbBadge = isNonBsb ? ' <span class="bwm-suggestion-meta">(BSB)</span>' : '';
+                                dynamicSuggestions.push({
+                                    type: 'centroid-verse',
+                                    category: 'Centroid Verse',
+                                    categoryClass: 'verse',
+                                    title: `<strong>${escapeHtml(v.displayRef)}</strong>${bsbBadge}`,
+                                    desc: `&ldquo;${escapeHtml(v.snippet || v.text)}&rdquo;`,
+                                    action: 'jump-verse',
+                                    verseRef: v.displayRef,
+                                    searchRef: v.ref,
+                                    switchBsb: isNonBsb
+                                });
+                            });
+                        }
+
+                        const combined = [...dynamicSuggestions];
                         suggestions.forEach(s => {
-                            if (s.action !== 'search-multi-words') combined.push(s);
+                            if (s.type !== 'multi-word-search' && s.type !== 'centroid-verse' && s.type !== 'section-header') {
+                                combined.push(s);
+                            }
                         });
 
-                        this.renderSearchSuggestions(combined, 'Thematic Centroid Verses', `${combined.length} suggestions`);
+                        this.renderSearchSuggestions(combined, 'Suggestions', `${combined.filter(c => c.type !== 'section-header').length} results`);
                     }
                 } catch (err) {
                     console.warn('Dynamic centroid search error:', err);
@@ -6951,7 +6981,7 @@ class BibleWordMap extends HTMLElement {
         }
 
         if (!headerSub) {
-            headerSub = `${suggestions.length} results`;
+            headerSub = `${suggestions.filter(s => s.type !== 'section-header').length} results`;
         }
 
         let html = `
@@ -6963,6 +6993,15 @@ class BibleWordMap extends HTMLElement {
         `;
 
         suggestions.forEach((item, idx) => {
+            if (item.type === 'section-header') {
+                html += `
+                    <div class="bwm-suggestions-section-header" style="font-size:0.72rem; font-weight:700; color:var(--bwm-text-muted); text-transform:uppercase; letter-spacing:0.04em; padding:8px 4px 2px 4px; margin-top:2px; border-top:1px solid var(--bwm-border);">
+                        ${escapeHtml(item.title)}
+                    </div>
+                `;
+                return;
+            }
+
             const senseClass = item.isSense ? 'bwm-suggestion-sense' : (item.isEntity ? 'bwm-suggestion-entity' : '');
             const categoryHtml = item.category ? `<span class="bwm-autocomplete-category ${item.categoryClass || ''}">${item.category}</span>` : '';
             html += `
@@ -6980,8 +7019,9 @@ class BibleWordMap extends HTMLElement {
                      ${item.verseId ? `data-verse-id="${escapeHtml(item.verseId)}"` : ''}
                      ${item.chapterId ? `data-chapter-id="${escapeHtml(item.chapterId)}"` : ''}
                      ${item.bookCode ? `data-book-code="${escapeHtml(item.bookCode)}"` : ''}
-                     ${item.query ? `data-query="${escapeHtml(item.query)}"` : ''}>
-                    <div class="bwm-suggestion-text">
+                     ${item.query ? `data-query="${escapeHtml(item.query)}"` : ''}
+                     ${item.switchBsb ? 'data-switch-bsb="true"' : ''}>
+                    <div class="bwm-suggestion-text" style="width:100%;">
                         <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
                             <div class="bwm-suggestion-title">${item.title}</div>
                             ${categoryHtml}
@@ -7004,10 +7044,14 @@ class BibleWordMap extends HTMLElement {
 
                 if (action === 'navigate-view-words' || action === 'search-multi-words') {
                     const q = el.getAttribute('data-query');
+                    const switchBsb = el.getAttribute('data-switch-bsb') === 'true';
                     this.closeSearchSuggestions();
+                    if (switchBsb && this.foundation !== 'bsb') {
+                        this.setSemanticFoundation('bsb', true);
+                    }
                     this.setViewMode('words');
                     this.searchInput.value = q;
-                    this.searchWord();
+                    this.searchWord(false, true);
                 } else if (action === 'navigate-view-verses') {
                     const vRef = el.getAttribute('data-verse-ref');
                     this.closeSearchSuggestions();
@@ -7061,7 +7105,11 @@ class BibleWordMap extends HTMLElement {
                     this.searchWord();
                 } else if (action === 'jump-verse') {
                     const vRef = el.getAttribute('data-verse-ref');
+                    const switchBsb = el.getAttribute('data-switch-bsb') === 'true';
                     this.closeSearchSuggestions();
+                    if (switchBsb && this.foundation !== 'bsb') {
+                        this.setSemanticFoundation('bsb', true);
+                    }
                     this.setViewMode('verses');
                     this.searchInput.value = vRef;
                     this.searchVerses();
@@ -7609,8 +7657,8 @@ class BibleWordMap extends HTMLElement {
                         ? 'Switch to BSB &amp; Graph &rarr;'
                         : (currentMode === 'words' ? 'Graph Words &rarr;' : 'Search in Words Mode &rarr;');
                     let cardTitle = isNonBsb
-                        ? `✦ Explore ${centroidResult.matchedTokens.length} Keywords in BSB Words Mode`
-                        : `✦ Explore ${centroidResult.matchedTokens.length} Keywords in Words Mode`;
+                        ? `Explore ${centroidResult.matchedTokens.length} Keywords in BSB Words Mode`
+                        : `Explore ${centroidResult.matchedTokens.length} Keywords in Words Mode`;
                     let cardDesc = isNonBsb
                         ? `Switch to the English (BSB) canon to graph these keywords across their semantic constellation.`
                         : (currentMode === 'words'
@@ -7644,10 +7692,10 @@ class BibleWordMap extends HTMLElement {
                         vHtml += `
                             <div class="bwm-recovery-action-card bwm-recovery-verse-card">
                                 <div class="bwm-recovery-action-info">
-                                    <div class="bwm-recovery-action-title">📖 ${escapeHtml(v.displayRef)} <span class="bwm-recovery-canon-tag">BSB</span></div>
+                                    <div class="bwm-recovery-action-title">${escapeHtml(v.displayRef)} <span class="bwm-recovery-canon-tag">BSB</span></div>
                                     <div class="bwm-recovery-action-desc">&ldquo;${escapeHtml(v.snippet)}&rdquo;</div>
                                 </div>
-                                <button type="button" class="bwm-recovery-action-btn bwm-recovery-btn-suggested-verse" data-verse="${escapeHtml(v.displayRef)}" data-ref="${escapeHtml(v.ref)}" data-switch-bsb="${isNonBsb}">${verseBtnLabel}</button>
+                                <button type="button" class="bwm-recovery-action-btn" id="bwm-recovery-btn-suggested-verse" data-verse="${escapeHtml(v.displayRef)}" data-ref="${escapeHtml(v.ref)}" data-switch-bsb="${isNonBsb}">${verseBtnLabel}</button>
                             </div>
                         `;
                     }
@@ -7728,10 +7776,10 @@ class BibleWordMap extends HTMLElement {
                 hasContent = true;
                 let btnLabel = currentMode === 'chapters' ? `Search ${escapeHtml(detectedChapter.displayTitle)} &rarr;` : `View in Chapters Mode &rarr;`;
                 let title = detectedChapter.isTypo
-                    ? `📑 Did you mean Chapter: ${escapeHtml(detectedChapter.displayTitle)}?`
+                    ? `Did you mean Chapter: ${escapeHtml(detectedChapter.displayTitle)}?`
                     : (detectedChapter.isSingleChapterBook
-                        ? `📑 Single-Chapter Book: ${escapeHtml(detectedChapter.displayTitle)}`
-                        : `📑 Chapter Detected: ${escapeHtml(detectedChapter.displayTitle)}`);
+                        ? `Single-Chapter Book: ${escapeHtml(detectedChapter.displayTitle)}`
+                        : `Chapter Detected: ${escapeHtml(detectedChapter.displayTitle)}`);
                 let desc = detectedChapter.isSingleChapterBook
                     ? `Explore the complete chapter and verse reader for ${escapeHtml(detectedChapter.bookName)} in Chapters Mode.`
                     : `Explore this chapter thematic network and verse-by-verse parallel reader in Chapters Mode.`;
@@ -7781,18 +7829,18 @@ class BibleWordMap extends HTMLElement {
                 let title = '';
                 let desc = '';
                 if (verseActionData.isChapterOpening) {
-                    title = `📖 Verse Suggestion: ${escapeHtml(verseActionData.displayRef)}`;
+                    title = `Verse Suggestion: ${escapeHtml(verseActionData.displayRef)}`;
                     let chapNum = detectedChapter.chapNum || detectedChapter.chap || 1;
                     desc = `Start at the opening verse of ${escapeHtml(detectedChapter.bookName)} ${chapNum} in Verses Mode.`;
                 } else if (verseActionData.isBook11) {
                     title = verseActionData.isTypo
-                        ? `📖 Did you mean Verse: ${escapeHtml(verseActionData.displayRef)}?`
-                        : `📖 Verse Suggestion: ${escapeHtml(verseActionData.displayRef)}`;
+                        ? `Did you mean Verse: ${escapeHtml(verseActionData.displayRef)}?`
+                        : `Verse Suggestion: ${escapeHtml(verseActionData.displayRef)}`;
                     desc = `Start at the opening verse of ${escapeHtml(verseActionData.bookName)} in Verses Mode.`;
                 } else {
                     title = verseActionData.isTypo
-                        ? `📖 Did you mean Scripture Verse: ${escapeHtml(verseActionData.displayRef)}?`
-                        : `📖 Scripture Verse Detected: ${escapeHtml(verseActionData.displayRef)}`;
+                        ? `Did you mean Scripture Verse: ${escapeHtml(verseActionData.displayRef)}?`
+                        : `Scripture Verse Detected: ${escapeHtml(verseActionData.displayRef)}`;
                     desc = verseActionData.isTypo
                         ? `Typo detected in book reference. Search for this passage in Verses Mode.`
                         : `This query matches a biblical passage. Explore its cross-references in Verses Mode.`;
@@ -7815,7 +7863,7 @@ class BibleWordMap extends HTMLElement {
                     hasContent = true;
                     let bookName = detectedBook.book.name;
                     let btnLabel = currentMode === 'books' ? `Search ${escapeHtml(bookName)} &rarr;` : `View in Books Mode &rarr;`;
-                    let title = detectedBook.isTypo ? `📚 Did you mean Bible Book: ${escapeHtml(bookName)}?` : `📚 Bible Book Detected: ${escapeHtml(bookName)}`;
+                    let title = detectedBook.isTypo ? `Did you mean Bible Book: ${escapeHtml(bookName)}?` : `Bible Book Detected: ${escapeHtml(bookName)}`;
                     let desc = detectedBook.isTypo ? `Typo detected in book name. Explore its chapter and thematic network in Books Mode.` : `This query matches a biblical book. Explore its structural connections in Books Mode.`;
                     html += `
                         <div class="bwm-recovery-action-card">
@@ -7839,7 +7887,7 @@ class BibleWordMap extends HTMLElement {
                 html += `
                     <div class="bwm-recovery-action-card">
                         <div class="bwm-recovery-action-info">
-                            <div class="bwm-recovery-action-title">✦ Biblical Keyword Detected: &ldquo;${escapeHtml(displayWord)}&rdquo;${escapeHtml(posBadge)}</div>
+                            <div class="bwm-recovery-action-title">Biblical Keyword Detected: &ldquo;${escapeHtml(displayWord)}&rdquo;${escapeHtml(posBadge)}</div>
                             <div class="bwm-recovery-action-desc">This query is a canonical word. Explore its semantic constellation and usage in Words Mode.</div>
                         </div>
                         <button type="button" class="bwm-recovery-action-btn" id="bwm-recovery-btn-word" data-word="${escapeHtml(displayWord)}">${btnText}</button>
@@ -7870,7 +7918,7 @@ class BibleWordMap extends HTMLElement {
                         <div class="bwm-recovery-action-card">
                             <div class="bwm-recovery-action-info">
                                 <div class="bwm-recovery-action-title">
-                                    ✦ &ldquo;${escapeHtml(displayW)}&rdquo; <span style="font-size: 0.85em; opacity: 0.7;">${escapeHtml(badgeText)}</span>
+                                    &ldquo;${escapeHtml(displayW)}&rdquo; <span style="font-size: 0.85em; opacity: 0.7;">${escapeHtml(badgeText)}</span>
                                     <span class="bwm-recovery-canon-tag" style="background:${meta.bg}; color:${meta.color}; border:1px solid ${meta.border}; font-weight:700; padding:2px 7px; border-radius:6px; font-size:0.75em; margin-left:6px;">${meta.tag}</span>
                                 </div>
                                 <div class="bwm-recovery-action-desc">
@@ -8177,12 +8225,17 @@ class BibleWordMap extends HTMLElement {
                 let words = hasCommas
                     ? originalQuery.split(/[,;]+/).map(w => w.trim().toLowerCase()).filter(w => w)
                     : query.split(/[\s,]+/).filter(w => w);
+                let matchedWordCount = 0;
                 for (let w of words) {
                     let matches = findMatchesForToken(w);
                     if (matches.length > 0) {
                         foundPoints.push(...matches);
                         this.searchedWords.push(...matches.map(p => p.id));
+                        matchedWordCount++;
                     }
+                }
+                if (words.length > 1 && matchedWordCount < words.length && !directKeywordSearch) {
+                    foundPoints = [];
                 }
             }
             this.searchedWords = [...new Set(this.searchedWords)];
