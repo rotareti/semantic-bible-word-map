@@ -10,7 +10,9 @@
     - Categorized navigation suggestions are generated for each corresponding view (Words Mode, Verses View, Chapters Mode, Books Mode).
     - Requires the user to navigate to one of the suggested views rather than attempting an invalid mixed canvas graph.
     - Pressing Enter on mixed searches prompts the navigation popover with all available target views.
-  - **Dynamic Multi-Keyword Exploration & Centroid Autocomplete:** When typing multiple words (e.g. "In the beginning God"), automatically computes the semantic centroid in the background across all views (words, verses, chapters, books), presenting "Explore N Keywords in Words Mode" alongside "Top Linked Verses (Semantic Map Centroid):" with direct verse jump navigation.
+  - **Cross-View Multi-Category Suggestions:** Queries matching canonical books that also match vocabulary words or names (e.g. "Acts" or "1 John") generate suggestions across all relevant views (Word view, Book view, Chapter view, Verse view) with categorized section headers (`Words`, `Books`, `Chapters`, `Verses`), enabling seamless navigation regardless of current view mode.
+  - **Numbered Book Prefix Tokenization:** Preserves biblical book titles with leading number prefixes (such as "1 John", "2 Peter", "1 Kings", "2 Samuel") as single search items instead of splitting into disjointed numeric tokens, while extracting the lexeme component (e.g. "John") to offer simultaneous Word view suggestions.
+  - **Dynamic Multi-Keyword Exploration & Centroid Autocomplete:** When typing multiple words (e.g. "In the beginning God"), automatically computes the semantic centroid in the background across all views (words, verses, chapters, books), presenting "Explore N Keywords in Word view" alongside "Top Linked Verses (Semantic Map Centroid):" with direct verse jump navigation.
 
 ### Changed
 - **Multi-Word Search Performance & UI Non-Blocking:**
@@ -19,6 +21,7 @@
   - Implemented adaptive neighbor limit scaling (`Math.floor(220 / numKeywords)`) for queries with 3+ words, preventing excessive node counts and D3 simulation stalls.
   - Precomputed keyword verse lookups as hash sets for O(1) link intersection performance.
 - **Search Resolution & Recovery Fallback:** Hitting Enter or clicking the search icon executes searches directly. If all words in Word Mode are valid, graphs all words and opens the study panel; if any words cannot be resolved, falls back to the nearest matches window.
+- **Search Suggestion Taxonomy & Category Badges:** Updated category badge labels to "Word view" and "Verse View" (replacing legacy "Words mode" and "Centroid Verse"), paired with categorized section delineators in the suggestions dropdown.
 - **Clean Professional Typography:** Removed emoji icons from dynamic search suggestions and recovery cards to maintain consistent, professional styling.
 - **Asset Cache Busting (`v=12.1.0`):** Bumped cache-buster query parameter to `?v=12.1.0` across stylesheet links, custom element scripts, and runtime data fetch requests.
 

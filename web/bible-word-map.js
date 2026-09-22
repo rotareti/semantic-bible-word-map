@@ -520,30 +520,105 @@ function detectVerseReference(query) {
 function detectBookMatch(query, books) {
     if (!query) return null;
     const q = query.trim().toLowerCase();
-    if (q.length < 2) return null;
+    if (q.length < 1) return null;
+    if (q.length < 2 && !/^[1-4]$/.test(q)) return null;
 
-    if (books && Array.isArray(books)) {
-        // Exact match first
-        for (const b of books) {
-            if (b.name.toLowerCase() === q || b.code.toLowerCase() === q) {
-                return { book: b, isTypo: false, dist: 0 };
-            }
+    const bookList = (books && Array.isArray(books) && books.length > 0)
+        ? books
+        : (typeof BIBLE_BOOKS !== 'undefined' ? BIBLE_BOOKS : []);
+
+    // Exact match first
+    for (const b of bookList) {
+        if (b.name.toLowerCase() === q || b.code.toLowerCase() === q) {
+            return { book: b, isTypo: false, dist: 0 };
         }
-        // Prefix match: query must start the book name or code
-        for (const b of books) {
-            if (b.name.toLowerCase().startsWith(q) || b.code.toLowerCase().startsWith(q)) {
-                return { book: b, isTypo: false, dist: 0 };
-            }
+    }
+    // Prefix match: query must start the book name or code
+    for (const b of bookList) {
+        if (b.name.toLowerCase().startsWith(q) || b.code.toLowerCase().startsWith(q)) {
+            return { book: b, isTypo: false, dist: 0 };
         }
     }
 
     // Alias match
     let cleanQ = q.replace(/\s+/g, '');
     let code = BOOK_ALIASES[cleanQ];
-    if (code && BOOK_CODE_MAP[code]) {
-        return { book: BOOK_CODE_MAP[code], isTypo: false, dist: 0 };
+    if (!code) {
+        for (let [alias, aCode] of Object.entries(BOOK_ALIASES)) {
+            if (alias.startsWith(cleanQ)) {
+                code = aCode;
+                break;
+            }
+        }
+    }
+    if (code) {
+        let bObj = bookList.find(b => b.code === code) || (typeof BOOK_CODE_MAP !== 'undefined' ? BOOK_CODE_MAP[code] : null);
+        if (bObj) {
+            return { book: bObj, isTypo: false, dist: 0 };
+        }
     }
     return null;
+}
+
+function findMatchingBooks(query, books, limit = 5) {
+    if (!query) return [];
+    const q = query.trim().toLowerCase();
+    if (q.length < 1) return [];
+    if (q.length < 2 && !/^[1-4]$/.test(q)) return [];
+
+    const bookList = (books && Array.isArray(books) && books.length > 0)
+        ? books
+        : (typeof BIBLE_BOOKS !== 'undefined' ? BIBLE_BOOKS : []);
+
+    const matches = [];
+    // Exact match first
+    for (const b of bookList) {
+        if (b.name.toLowerCase() === q || b.code.toLowerCase() === q) {
+            matches.push(b);
+            if (matches.length >= limit) return matches;
+        }
+    }
+    // Prefix match: query must start the book name or code
+    for (const b of bookList) {
+        if (matches.some(m => m.code === b.code)) continue;
+        if (b.name.toLowerCase().startsWith(q) || b.code.toLowerCase().startsWith(q)) {
+            matches.push(b);
+            if (matches.length >= limit) return matches;
+        }
+    }
+    // Alias match
+    let cleanQ = q.replace(/\s+/g, '');
+    let code = BOOK_ALIASES[cleanQ];
+    if (!code) {
+        for (let [alias, aCode] of Object.entries(BOOK_ALIASES)) {
+            if (alias.startsWith(cleanQ)) {
+                code = aCode;
+                break;
+            }
+        }
+    }
+    if (code && !matches.some(m => m.code === code)) {
+        let bObj = bookList.find(b => b.code === code) || (typeof BOOK_CODE_MAP !== 'undefined' ? BOOK_CODE_MAP[code] : null);
+        if (bObj) {
+            matches.push(bObj);
+        }
+    }
+    return matches;
+}
+
+function tokenizeSearchString(str) {
+    if (!str || !str.trim()) return [];
+    if (/[,;]/.test(str)) {
+        return str.split(/[,;]+/).map(t => t.trim()).filter(Boolean);
+    }
+    const trimmed = str.trim();
+    if (detectVerseReference(trimmed) || detectChapterMatch(trimmed) || detectBookMatch(trimmed)) {
+        return [trimmed];
+    }
+    // Preserves numbered books, multi-word titles, and words
+    const tokenRegex = /(?:[1-4]\s+[a-zA-Z]+(?:\s+\d+(?::\d+(?:-\d+)?)?)?)|(?:song\s+of\s+(?:solomon|songs))|(?:[^\s]+)/gi;
+    const matches = trimmed.match(tokenRegex);
+    return matches ? matches.map(m => m.trim()).filter(Boolean) : [trimmed];
 }
 
 function detectChapterMatch(query, books) {
@@ -6129,10 +6204,23 @@ class BibleWordMap extends HTMLElement {
             const wholeChapter = detectChapterMatch(beforeCursor.trim(), this.booksData ? this.booksData.books : null);
             const wholeBook = detectBookMatch(beforeCursor.trim(), this.booksData ? this.booksData.books : null);
 
+            const numberedBookMatch = beforeCursor.match(/^(.*?\s+)?([1-4]\s+[a-zA-Z]*(?:\s+\d+(?::\d+)?)?)$/i);
+            const isLeadingNumberOnly = /^[1-4]\s*$/.test(beforeCursor.trim());
+
             if ((wholeVerse && wholeVerse.vstart !== null) || (wholeChapter && !beforeCursor.endsWith(' ')) || (wholeBook && !beforeCursor.endsWith(' '))) {
                 prefix = '';
                 activeToken = beforeCursor.trim();
                 hasTrailingDelimiter = false;
+                delimiter = ' ';
+            } else if (isLeadingNumberOnly) {
+                prefix = '';
+                activeToken = beforeCursor.trim();
+                hasTrailingDelimiter = false;
+                delimiter = ' ';
+            } else if (numberedBookMatch) {
+                prefix = numberedBookMatch[1] || '';
+                activeToken = numberedBookMatch[2].trim();
+                hasTrailingDelimiter = beforeCursor.endsWith(' ') && (wholeBook || wholeChapter || wholeVerse);
                 delimiter = ' ';
             } else {
                 const lastSpaceIndex = beforeCursor.lastIndexOf(' ');
@@ -6150,9 +6238,7 @@ class BibleWordMap extends HTMLElement {
             }
         }
 
-        const completedItems = hasCommas
-            ? prefix.split(/[,;]+/).map(t => t.trim()).filter(Boolean)
-            : prefix.split(/\s+/).map(t => t.trim()).filter(Boolean);
+        const completedItems = tokenizeSearchString(prefix);
 
         const allItems = [...completedItems];
         if (activeToken.trim()) {
@@ -6329,7 +6415,7 @@ class BibleWordMap extends HTMLElement {
                 const vRefs = verseItems.map(v => v.displayRef).join(', ');
                 suggestions.push({
                     type: 'mixed-nav-verse',
-                    category: 'Verses View',
+                    category: 'Verse View',
                     categoryClass: 'verse',
                     icon: '&#x1F4D6;',
                     title: `Navigate to Verses View: <strong>${escapeHtml(vRefs)}</strong>`,
@@ -6344,11 +6430,11 @@ class BibleWordMap extends HTMLElement {
                 const wDisplay = wordItems.join(', ');
                 suggestions.push({
                     type: 'mixed-nav-word',
-                    category: 'Words Mode',
+                    category: 'Word view',
                     categoryClass: 'word',
                     icon: '&#x1F50D;',
                     title: `Navigate to Words View: <strong>${escapeHtml(wDisplay)}</strong>`,
-                    desc: `Explore semantic vector constellation in Word Mode`,
+                    desc: `Explore semantic vector constellation in Word view`,
                     action: 'navigate-view-words',
                     query: wQuery
                 });
@@ -6358,7 +6444,7 @@ class BibleWordMap extends HTMLElement {
                 chapterItems.forEach(ch => {
                     suggestions.push({
                         type: 'mixed-nav-chapter',
-                        category: 'Chapters Mode',
+                        category: 'Chapter view',
                         categoryClass: 'chapter',
                         icon: '&#x1F4DA;',
                         title: `Navigate to Chapters View: <strong>${escapeHtml(ch.displayTitle)}</strong>`,
@@ -6373,7 +6459,7 @@ class BibleWordMap extends HTMLElement {
                 bookItems.forEach(b => {
                     suggestions.push({
                         type: 'mixed-nav-book',
-                        category: 'Books Mode',
+                        category: 'Book view',
                         categoryClass: 'book',
                         icon: '&#x1F4D6;',
                         title: `Navigate to Books View: <strong>${escapeHtml(b.name)}</strong>`,
@@ -6395,7 +6481,7 @@ class BibleWordMap extends HTMLElement {
                     if (item.low.startsWith(subQuery)) {
                         suggestions.push({
                             type: 'word',
-                            category: 'Word',
+                            category: 'Word view',
                             categoryClass: 'word',
                             icon: '&#x1F50D;',
                             title: `<strong>${item.entry.w}</strong>`,
@@ -6414,12 +6500,12 @@ class BibleWordMap extends HTMLElement {
                 const isWordsMode = this.viewMode === 'words';
                 suggestions.push({
                     type: 'multi-word-search',
-                    category: 'Words Mode',
+                    category: 'Word view',
                     categoryClass: 'word',
                     title: `Explore ${count} Keywords in Words Mode`,
                     desc: isWordsMode
                         ? `Graph all ${count} words across their semantic constellations.`
-                        : `Search the combined semantic constellation in Words Mode.`,
+                        : `Search the combined semantic constellation in Word view.`,
                     action: 'search-multi-words',
                     query: parsed.items.join(' ')
                 });
@@ -6494,7 +6580,7 @@ class BibleWordMap extends HTMLElement {
             }
         } else {
             // Standard autocomplete on active token
-            const query = (parsed.activeToken || '').toLowerCase();
+            const query = (parsed.activeToken || '').toLowerCase().trim();
             const rawVal = parsed.activeToken || '';
 
             if (query.length < 1) {
@@ -6502,17 +6588,207 @@ class BibleWordMap extends HTMLElement {
                 return;
             }
 
-            if (this.viewMode === 'words') {
+            const wordItems = [];
+            const bookItems = [];
+            const chapterItems = [];
+            const verseItems = [];
+
+            // 1. Bible Book Matches (exact, prefix, or alias)
+            const matchingBooks = findMatchingBooks(rawVal, this.booksData ? this.booksData.books : null, 4);
+            if (matchingBooks.length > 0) {
+                const primaryBook = matchingBooks[0];
+                bookItems.push({
+                    type: 'book',
+                    category: 'Book view',
+                    categoryClass: 'book',
+                    icon: '&#x1F4D6;',
+                    title: `<strong>${primaryBook.name}</strong> <span class="bwm-suggestion-meta">(${primaryBook.code})</span>`,
+                    desc: `${(primaryBook.testament || '').toUpperCase()} · ${primaryBook.genre || ''} · ${(primaryBook.verses || primaryBook.total_verses || 0)} verses`,
+                    action: 'jump-book',
+                    bookCode: primaryBook.code
+                });
+
+                chapterItems.push({
+                    type: 'chapter',
+                    category: 'Chapter view',
+                    categoryClass: 'chapter',
+                    icon: '&#x1F4DA;',
+                    title: `<strong>${primaryBook.name} 1</strong>`,
+                    desc: `Switch to Chapter view and explore narrative neighborhood`,
+                    action: 'jump-chapter',
+                    chapterId: `${primaryBook.code}.1`
+                });
+
+                verseItems.push({
+                    type: 'verse',
+                    category: 'Verse View',
+                    categoryClass: 'verse',
+                    icon: '&#x1F4D6;',
+                    title: `<strong>${primaryBook.name} 1:1</strong>`,
+                    desc: `Inspect opening verse coordinates and study panel`,
+                    action: 'jump-verse',
+                    verseRef: `${primaryBook.name} 1:1`,
+                    searchRef: `${primaryBook.code} 1:1`
+                });
+
+                for (let i = 1; i < matchingBooks.length; i++) {
+                    const mb = matchingBooks[i];
+                    bookItems.push({
+                        type: 'book',
+                        category: 'Book view',
+                        categoryClass: 'book',
+                        icon: '&#x1F4D6;',
+                        title: `<strong>${mb.name}</strong> <span class="bwm-suggestion-meta">(${mb.code})</span>`,
+                        desc: `${(mb.testament || '').toUpperCase()} · ${mb.genre || ''}`,
+                        action: 'jump-book',
+                        bookCode: mb.code
+                    });
+                }
+            }
+
+            // 2. Direct Verse or Chapter Citations
+            const detectedVerse = detectVerseReference(rawVal);
+            if (detectedVerse && detectedVerse.vstart !== null) {
+                verseItems.unshift({
+                    type: 'cross-verse',
+                    category: 'Verse View',
+                    categoryClass: 'verse',
+                    icon: '&#x1F4D6;',
+                    title: `<strong>${detectedVerse.displayRef}</strong>`,
+                    desc: `Inspect verse coordinates, interlinear text, and study panel`,
+                    action: 'jump-verse',
+                    verseRef: detectedVerse.displayRef,
+                    searchRef: detectedVerse.searchRef
+                });
+                if (!chapterItems.some(c => c.chapterId === `${detectedVerse.bookCode}.${detectedVerse.chap}`)) {
+                    chapterItems.unshift({
+                        type: 'cross-chapter',
+                        category: 'Chapter view',
+                        categoryClass: 'chapter',
+                        icon: '&#x1F4DA;',
+                        title: `<strong>${detectedVerse.bookName} Chapter ${detectedVerse.chap}</strong>`,
+                        desc: `Switch to Chapter view and explore narrative neighborhood`,
+                        action: 'jump-chapter',
+                        chapterId: `${detectedVerse.bookCode}.${detectedVerse.chap}`
+                    });
+                }
+                if (!bookItems.some(b => b.bookCode === detectedVerse.bookCode)) {
+                    bookItems.unshift({
+                        type: 'cross-book',
+                        category: 'Book view',
+                        categoryClass: 'book',
+                        icon: '&#x1F4D6;',
+                        title: `<strong>${detectedVerse.bookName}</strong> <span class="bwm-suggestion-meta">(${detectedVerse.bookCode})</span>`,
+                        desc: `Explore book landmark in Book view`,
+                        action: 'jump-book',
+                        bookCode: detectedVerse.bookCode
+                    });
+                }
+            } else {
+                const detectedChapter = detectChapterMatch(rawVal, this.booksData ? this.booksData.books : null);
+                if (detectedChapter) {
+                    chapterItems.unshift({
+                        type: 'cross-chapter',
+                        category: 'Chapter view',
+                        categoryClass: 'chapter',
+                        icon: '&#x1F4DA;',
+                        title: `<strong>${detectedChapter.displayTitle}</strong>`,
+                        desc: `Switch to Chapter view and explore narrative neighborhood`,
+                        action: 'jump-chapter',
+                        chapterId: detectedChapter.chapterId
+                    });
+                    if (!verseItems.some(v => v.searchRef === `${detectedChapter.bookCode} ${detectedChapter.chapNum}:1`)) {
+                        verseItems.unshift({
+                            type: 'cross-verse',
+                            category: 'Verse View',
+                            categoryClass: 'verse',
+                            icon: '&#x1F4D6;',
+                            title: `<strong>${detectedChapter.bookName} ${detectedChapter.chapNum}:1</strong>`,
+                            desc: `Inspect opening verse coordinates and study panel`,
+                            action: 'jump-verse',
+                            verseRef: `${detectedChapter.bookName} ${detectedChapter.chapNum}:1`,
+                            searchRef: `${detectedChapter.bookCode} ${detectedChapter.chapNum}:1`
+                        });
+                    }
+                    if (!bookItems.some(b => b.bookCode === detectedChapter.bookCode)) {
+                        bookItems.unshift({
+                            type: 'cross-book',
+                            category: 'Book view',
+                            categoryClass: 'book',
+                            icon: '&#x1F4D6;',
+                            title: `<strong>${detectedChapter.bookName}</strong> <span class="bwm-suggestion-meta">(${detectedChapter.bookCode})</span>`,
+                            desc: `Explore book landmark in Book view`,
+                            action: 'jump-book',
+                            bookCode: detectedChapter.bookCode
+                        });
+                    }
+                }
+            }
+
+            // 3. View-specific scripture matches
+            if (this.viewMode === 'verses' && this.versemapLookup) {
+                let count = 0;
+                for (const [vId, vObj] of this.versemapLookup.entries()) {
+                    if (count >= 5) break;
+                    let refClean = (vObj.reference || vId).toLowerCase();
+                    if (refClean.includes(query) || vId.toLowerCase().includes(query)) {
+                        let formatted = formatVerseRef(vObj.reference || vId);
+                        let snippet = (vObj.text || '').replace(/[\u2014\u2013]/g, ' - ');
+                        if (snippet.length > 70) snippet = snippet.slice(0, 67) + '...';
+                        verseItems.push({
+                            type: 'verse',
+                            category: 'Verse View',
+                            categoryClass: 'verse',
+                            icon: '&#x1F4D6;',
+                            title: `<strong>${formatted}</strong>`,
+                            desc: escapeHtml(snippet),
+                            action: 'select-verse-ref',
+                            verseRef: formatted,
+                            verseId: vId
+                        });
+                        count++;
+                    }
+                }
+            }
+
+            if (this.viewMode === 'chapters' && this.booksData && Array.isArray(this.booksData.books)) {
+                for (const b of this.booksData.books) {
+                    if (chapterItems.length >= 6) break;
+                    if (b.name.toLowerCase().startsWith(query) || b.code.toLowerCase().startsWith(query)) {
+                        let maxChaps = Math.min(b.chapters || 1, 3);
+                        for (let ch = 1; ch <= maxChaps; ch++) {
+                            if (chapterItems.length >= 6) break;
+                            const chId = `${b.code}.${ch}`;
+                            if (!chapterItems.some(c => c.chapterId === chId)) {
+                                chapterItems.push({
+                                    type: 'chapter',
+                                    category: 'Chapter view',
+                                    categoryClass: 'chapter',
+                                    icon: '&#x1F4DA;',
+                                    title: `<strong>${b.name} Chapter ${ch}</strong>`,
+                                    desc: `${(b.testament || '').toUpperCase()} · ${b.genre || ''}`,
+                                    action: 'select-chapter-id',
+                                    chapterId: chId
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 4. Word View Matches (Entities, Senses, Lexemes)
+            const wordQuery = query.replace(/^[1-4]\s+/i, '').trim();
+            if (wordQuery.length >= 1) {
                 const candidateList = [];
                 const handledLemmaIds = new Set();
 
-                // Branch 1: Contextual Disambiguation & Entity Unification Matches
+                // Contextual Disambiguation & Entity Unification Matches
                 if (this.disambiguationEnabled !== false && this.sensesData) {
                     if (this.entityNodesLookup) {
                         this.entityNodesLookup.forEach((entity, eId) => {
                             const eTitle = (entity.title || entity.entity_name || '').toLowerCase();
-                            const isPrefix = eTitle.startsWith(query);
-                            const isSubstring = !isPrefix && (query.length >= 3 && eTitle.includes(query));
+                            const isPrefix = eTitle.startsWith(wordQuery);
+                            const isSubstring = !isPrefix && (wordQuery.length >= 3 && eTitle.includes(wordQuery));
                             let memberPrefix = false;
                             let memberSub = false;
                             let matchingMemberLabel = '';
@@ -6520,10 +6796,10 @@ class BibleWordMap extends HTMLElement {
                             if (!isPrefix && !isSubstring) {
                                 (entity.member_lemmas || []).forEach(m => {
                                     const lbl = (m.label || m.id.split('_')[0]).toLowerCase();
-                                    if (lbl.startsWith(query)) {
+                                    if (lbl.startsWith(wordQuery)) {
                                         memberPrefix = true;
                                         if (!matchingMemberLabel) matchingMemberLabel = lbl;
-                                    } else if (query.length >= 3 && lbl.includes(query)) {
+                                    } else if (wordQuery.length >= 3 && lbl.includes(wordQuery)) {
                                         memberSub = true;
                                     }
                                 });
@@ -6558,8 +6834,8 @@ class BibleWordMap extends HTMLElement {
                         const entry = this.sensesData[lemmaId];
                         if (entry.type === 'entity' || entry.is_entity) return;
                         const lemma = (entry.lemma || lemmaId.split('_')[0]).toLowerCase();
-                        const isPrefix = lemma.startsWith(query);
-                        const isSubstring = !isPrefix && (query.length >= 3 && lemma.includes(query));
+                        const isPrefix = lemma.startsWith(wordQuery);
+                        const isSubstring = !isPrefix && (wordQuery.length >= 3 && lemma.includes(wordQuery));
 
                         if (isPrefix || isSubstring) {
                             handledLemmaIds.add(lemmaId);
@@ -6570,7 +6846,7 @@ class BibleWordMap extends HTMLElement {
 
                             subSuggestions.push({
                                 type: 'context-union',
-                                category: 'General Context',
+                                category: 'Word view',
                                 categoryClass: 'context',
                                 icon: '&#x2728;',
                                 title: `<strong>${escapeHtml(entry.lemma || lemma)}</strong> <span class="bwm-suggestion-meta">(All Contexts Combined)</span>`,
@@ -6587,7 +6863,7 @@ class BibleWordMap extends HTMLElement {
                                 const formattedSenseLabel = (s.short_label || s.w || '').replace(/\[(.*?)\]/g, '($1)');
                                 subSuggestions.push({
                                     type: 'context-sense',
-                                    category: 'Specific Context',
+                                    category: 'Word view',
                                     categoryClass: 'context',
                                     isSense: true,
                                     icon,
@@ -6609,7 +6885,7 @@ class BibleWordMap extends HTMLElement {
                     });
                 }
 
-                // Branch 2: Standard Word2Vec Dictionary Prefix, Original & Substring Matches
+                // Standard Word2Vec Dictionary Matches
                 const uniqueWords = this.getUniqueWordList ? this.getUniqueWordList() : [];
                 if (uniqueWords && uniqueWords.length > 0) {
                     for (let i = 0; i < uniqueWords.length; i++) {
@@ -6623,16 +6899,16 @@ class BibleWordMap extends HTMLElement {
                         }
 
                         let matchType = 0;
-                        if (item.low.startsWith(query)) {
+                        if (item.low.startsWith(wordQuery)) {
                             matchType = 1;
                         } else if (wEntry.original && Array.isArray(wEntry.original) && wEntry.original.some(o => {
-                            if (o.lemma && o.lemma.toLowerCase().startsWith(query)) return true;
-                            if (o.translit && o.translit.toLowerCase().startsWith(query)) return true;
-                            if (o.strongs && o.strongs.toLowerCase() === query) return true;
+                            if (o.lemma && o.lemma.toLowerCase().startsWith(wordQuery)) return true;
+                            if (o.translit && o.translit.toLowerCase().startsWith(wordQuery)) return true;
+                            if (o.strongs && o.strongs.toLowerCase() === wordQuery) return true;
                             return false;
                         })) {
                             matchType = 2;
-                        } else if (query.length >= 3 && item.low.includes(query)) {
+                        } else if (wordQuery.length >= 3 && item.low.includes(wordQuery)) {
                             matchType = 3;
                         }
 
@@ -6649,7 +6925,7 @@ class BibleWordMap extends HTMLElement {
                                 id: wEntry.id,
                                 items: [{
                                     type: 'word',
-                                    category: 'Word',
+                                    category: 'Word view',
                                     categoryClass: 'word',
                                     icon: '&#x1F50D;',
                                     title: `<strong>${wEntry.w}</strong><span class="bwm-suggestion-meta">${posLabel}</span>`,
@@ -6672,200 +6948,72 @@ class BibleWordMap extends HTMLElement {
 
                 const addedIds = new Set();
                 for (const cand of candidateList) {
-                    if (suggestions.length >= 10) break;
+                    if (wordItems.length >= 6) break;
                     if (addedIds.has(cand.id)) continue;
                     addedIds.add(cand.id);
 
                     for (const item of cand.items) {
-                        if (suggestions.length >= 12) break;
-                        suggestions.push(item);
+                        if (wordItems.length >= 6) break;
+                        wordItems.push(item);
                     }
                 }
-
-                // Branch 3: Cross-Mode Scripture Reference Detections on active token
-                const detectedVerse = detectVerseReference(rawVal);
-                if (detectedVerse && detectedVerse.vstart !== null) {
-                    suggestions.unshift({
-                        type: 'cross-verse',
-                        category: 'Jump Verse',
-                        categoryClass: 'verse',
-                        icon: '&#x1F4D6;',
-                        title: `<strong>${detectedVerse.displayRef}</strong> <span class="bwm-suggestion-meta">(Verses View)</span>`,
-                        desc: `Jump to verse coordinates and verse study panel`,
-                        action: 'jump-verse',
-                        verseRef: detectedVerse.displayRef,
-                        searchRef: detectedVerse.searchRef
-                    });
-                } else {
-                    const detectedChapter = detectChapterMatch(rawVal, this.booksData ? this.booksData.books : null);
-                    if (detectedChapter) {
-                        suggestions.unshift({
-                            type: 'cross-chapter',
-                            category: 'Jump Chapter',
-                            categoryClass: 'chapter',
-                            icon: '&#x1F4DA;',
-                            title: `<strong>${detectedChapter.displayTitle}</strong> <span class="bwm-suggestion-meta">(Chapters Mode)</span>`,
-                            desc: `Switch to chapter view and explore narrative neighborhood`,
-                            action: 'jump-chapter',
-                            chapterId: detectedChapter.chapterId
-                        });
-                    } else {
-                        const detectedBook = detectBookMatch(rawVal, this.booksData ? this.booksData.books : null);
-                        if (detectedBook && detectedBook.book) {
-                            suggestions.unshift({
-                                type: 'cross-book',
-                                category: 'Jump Book',
-                                categoryClass: 'book',
-                                icon: '&#x1F4D6;',
-                                title: `<strong>${detectedBook.book.name}</strong> <span class="bwm-suggestion-meta">(Books Mode)</span>`,
-                                desc: `Explore book landmark (${(detectedBook.book.testament || '').toUpperCase()} · ${detectedBook.book.genre || ''})`,
-                                action: 'jump-book',
-                                bookCode: detectedBook.book.code
-                            });
-                        }
-                    }
-                }
-            } else if (this.viewMode === 'verses') {
-                const detectedVerse = detectVerseReference(rawVal);
-                if (detectedVerse && detectedVerse.vstart !== null) {
-                    suggestions.push({
-                        type: 'verse',
-                        category: 'Verse',
-                        categoryClass: 'verse',
-                        icon: '&#x1F4D6;',
-                        title: `<strong>${detectedVerse.displayRef}</strong>`,
-                        desc: `Inspect verse text, interlinear grammar, and thematic connections`,
-                        action: 'select-verse-ref',
-                        verseRef: detectedVerse.displayRef,
-                        searchRef: detectedVerse.searchRef
-                    });
-                } else {
-                    const detectedChapter = detectChapterMatch(rawVal, this.booksData ? this.booksData.books : null);
-                    if (detectedChapter) {
-                        suggestions.push({
-                            type: 'cross-chapter',
-                            category: 'Jump Chapter',
-                            categoryClass: 'chapter',
-                            icon: '&#x1F4DA;',
-                            title: `<strong>${detectedChapter.displayTitle}</strong> <span class="bwm-suggestion-meta">(Chapters Mode)</span>`,
-                            desc: `Switch to chapter view and explore narrative neighborhood`,
-                            action: 'jump-chapter',
-                            chapterId: detectedChapter.chapterId
-                        });
-                    }
-                }
-
-                if (this.versemapLookup) {
-                    let count = 0;
-                    for (const [vId, vObj] of this.versemapLookup.entries()) {
-                        if (suggestions.length >= 7) break;
-                        let refClean = (vObj.reference || vId).toLowerCase();
-                        if (refClean.includes(query) || vId.toLowerCase().includes(query)) {
-                            let formatted = formatVerseRef(vObj.reference || vId);
-                            let snippet = (vObj.text || '').replace(/[\u2014\u2013]/g, ' - ');
-                            if (snippet.length > 70) snippet = snippet.slice(0, 67) + '...';
-                            suggestions.push({
-                                type: 'verse',
-                                category: 'Verse',
-                                categoryClass: 'verse',
-                                icon: '&#x1F4D6;',
-                                title: `<strong>${formatted}</strong>`,
-                                desc: escapeHtml(snippet),
-                                action: 'select-verse-ref',
-                                verseRef: formatted,
-                                verseId: vId
-                            });
-                            count++;
-                        }
-                    }
-                }
-
-                suggestions.push({
-                    type: 'cross-word',
-                    category: 'Word Mode',
-                    categoryClass: 'word',
-                    icon: '&#x1F50D;',
-                    title: `Search <strong>"${escapeHtml(rawVal)}"</strong> in Word Mode`,
-                    desc: `Explore semantic vector neighborhood and collocations`,
-                    action: 'switch-word-mode',
-                    query: rawVal
-                });
-            } else if (this.viewMode === 'chapters') {
-                const detectedChapter = detectChapterMatch(rawVal, this.booksData ? this.booksData.books : null);
-                if (detectedChapter) {
-                    suggestions.push({
-                        type: 'chapter',
-                        category: 'Chapter',
-                        categoryClass: 'chapter',
-                        icon: '&#x1F4DA;',
-                        title: `<strong>${detectedChapter.displayTitle}</strong>`,
-                        desc: `View narrative coordinates and chapter cross-references`,
-                        action: 'select-chapter-id',
-                        chapterId: detectedChapter.chapterId
-                    });
-                }
-
-                if (this.booksData && Array.isArray(this.booksData.books)) {
-                    for (const b of this.booksData.books) {
-                        if (suggestions.length >= 7) break;
-                        if (b.name.toLowerCase().startsWith(query) || b.code.toLowerCase().startsWith(query)) {
-                            let maxChaps = Math.min(b.chapters || 1, 3);
-                            for (let ch = 1; ch <= maxChaps; ch++) {
-                                if (suggestions.length >= 7) break;
-                                suggestions.push({
-                                    type: 'chapter',
-                                    category: 'Chapter',
-                                    categoryClass: 'chapter',
-                                    icon: '&#x1F4DA;',
-                                    title: `<strong>${b.name} Chapter ${ch}</strong>`,
-                                    desc: `${(b.testament || '').toUpperCase()} · ${b.genre || ''}`,
-                                    action: 'select-chapter-id',
-                                    chapterId: `${b.code}.${ch}`
-                                });
-                            }
-                        }
-                    }
-                }
-
-                suggestions.push({
-                    type: 'cross-word',
-                    category: 'Word Mode',
-                    categoryClass: 'word',
-                    icon: '&#x1F50D;',
-                    title: `Search <strong>"${escapeHtml(rawVal)}"</strong> in Word Mode`,
-                    desc: `Switch to Word Mode for semantic vocabulary analysis`,
-                    action: 'switch-word-mode',
-                    query: rawVal
-                });
-            } else if (this.viewMode === 'books') {
-                if (this.booksData && Array.isArray(this.booksData.books)) {
-                    this.booksData.books.forEach(b => {
-                        if (b.name.toLowerCase().startsWith(query) || b.code.toLowerCase().startsWith(query) || b.name.toLowerCase().includes(query)) {
-                            suggestions.push({
-                                type: 'book',
-                                category: 'Book',
-                                categoryClass: 'book',
-                                icon: '&#x1F4D6;',
-                                title: `<strong>${b.name}</strong> <span class="bwm-suggestion-meta">(${b.code})</span>`,
-                                desc: `${(b.testament || '').toUpperCase()} · ${b.genre || ''} · ${b.verses || b.total_verses || 0} verses`,
-                                action: 'select-book-code',
-                                bookCode: b.code
-                            });
-                        }
-                    });
-                }
-
-                suggestions.push({
-                    type: 'cross-word',
-                    category: 'Word Mode',
-                    categoryClass: 'word',
-                    icon: '&#x1F50D;',
-                    title: `Search <strong>"${escapeHtml(rawVal)}"</strong> in Word Mode`,
-                    desc: `Switch to Word Mode for semantic vocabulary analysis`,
-                    action: 'switch-word-mode',
-                    query: rawVal
-                });
             }
+
+            // 5. Section Organization & Order
+            const isNumberedBookQuery = /^[1-4]\s+[a-zA-Z]*/i.test(query);
+            const activeCategoriesCount = [wordItems.length > 0, bookItems.length > 0, chapterItems.length > 0, verseItems.length > 0].filter(Boolean).length;
+            const useSectionHeaders = (activeCategoriesCount > 1);
+
+            let sectionOrder = [];
+            if (isNumberedBookQuery) {
+                sectionOrder = [
+                    { title: 'Books', items: bookItems },
+                    { title: 'Chapters', items: chapterItems },
+                    { title: 'Verses', items: verseItems },
+                    { title: 'Words', items: wordItems }
+                ];
+            } else if (this.viewMode === 'verses') {
+                sectionOrder = [
+                    { title: 'Verses', items: verseItems },
+                    { title: 'Chapters', items: chapterItems },
+                    { title: 'Books', items: bookItems },
+                    { title: 'Words', items: wordItems }
+                ];
+            } else if (this.viewMode === 'chapters') {
+                sectionOrder = [
+                    { title: 'Chapters', items: chapterItems },
+                    { title: 'Books', items: bookItems },
+                    { title: 'Verses', items: verseItems },
+                    { title: 'Words', items: wordItems }
+                ];
+            } else if (this.viewMode === 'books') {
+                sectionOrder = [
+                    { title: 'Books', items: bookItems },
+                    { title: 'Chapters', items: chapterItems },
+                    { title: 'Verses', items: verseItems },
+                    { title: 'Words', items: wordItems }
+                ];
+            } else {
+                // 'words' view mode default
+                sectionOrder = [
+                    { title: 'Words', items: wordItems },
+                    { title: 'Books', items: bookItems },
+                    { title: 'Chapters', items: chapterItems },
+                    { title: 'Verses', items: verseItems }
+                ];
+            }
+
+            sectionOrder.forEach(sec => {
+                if (sec.items && sec.items.length > 0) {
+                    if (useSectionHeaders) {
+                        suggestions.push({
+                            type: 'section-header',
+                            title: sec.title
+                        });
+                    }
+                    sec.items.forEach(it => suggestions.push(it));
+                }
+            });
         }
         }
 
@@ -6912,7 +7060,7 @@ class BibleWordMap extends HTMLElement {
 
                             dynamicSuggestions.push({
                                 type: 'multi-word-search',
-                                category: 'Words Mode',
+                                category: 'Word view',
                                 categoryClass: 'word',
                                 title: cardTitle,
                                 desc: cardDesc,
@@ -6935,7 +7083,7 @@ class BibleWordMap extends HTMLElement {
                                 const bsbBadge = isNonBsb ? ' <span class="bwm-suggestion-meta">(BSB)</span>' : '';
                                 dynamicSuggestions.push({
                                     type: 'centroid-verse',
-                                    category: 'Centroid Verse',
+                                    category: 'Verse View',
                                     categoryClass: 'verse',
                                     title: `<strong>${escapeHtml(v.displayRef)}</strong>${bsbBadge}`,
                                     desc: `&ldquo;${escapeHtml(v.snippet || v.text)}&rdquo;`,
@@ -6994,8 +7142,9 @@ class BibleWordMap extends HTMLElement {
 
         suggestions.forEach((item, idx) => {
             if (item.type === 'section-header') {
+                const isFirst = (idx === 0);
                 html += `
-                    <div class="bwm-suggestions-section-header" style="font-size:0.72rem; font-weight:700; color:var(--bwm-text-muted); text-transform:uppercase; letter-spacing:0.04em; padding:8px 4px 2px 4px; margin-top:2px; border-top:1px solid var(--bwm-border);">
+                    <div class="bwm-suggestions-section-header" style="font-size:0.72rem; font-weight:700; color:var(--bwm-text-muted); text-transform:uppercase; letter-spacing:0.04em; padding:6px 4px 2px 4px; ${isFirst ? '' : 'margin-top:4px; border-top:1px solid var(--bwm-border);'}">
                         ${escapeHtml(item.title)}
                     </div>
                 `;
@@ -8196,12 +8345,14 @@ class BibleWordMap extends HTMLElement {
                 return;
             }
 
-            // If the query is formatted as a Scripture verse citation (e.g. "John 3:16", "1 Cor 13") or chapter ("Gen 1"),
-            // prioritize recovery instead of treating the book name as a word lemma
+            // If the query is formatted as a Scripture verse citation (e.g. "John 3:16", "1 Cor 13"), chapter ("Gen 1"),
+            // or a book name without an exact word match (e.g. "1 John"), prioritize recovery
             if (!directKeywordSearch) {
                 let detectedVerse = detectVerseReference(originalQuery);
                 let detectedChapter = detectChapterMatch(originalQuery, this.booksData ? this.booksData.books : null);
-                if (detectedVerse || detectedChapter) {
+                let detectedBook = detectBookMatch(originalQuery, this.booksData ? this.booksData.books : null);
+                let hasExactWord = findMatchesForToken(query).length > 0;
+                if (detectedVerse || detectedChapter || (detectedBook && !hasExactWord)) {
                     this.searchedWords = [];
                     this.drawerWords = [];
                     this.isSearchMode = false;
@@ -8224,7 +8375,7 @@ class BibleWordMap extends HTMLElement {
             } else {
                 let words = hasCommas
                     ? originalQuery.split(/[,;]+/).map(w => w.trim().toLowerCase()).filter(w => w)
-                    : query.split(/[\s,]+/).filter(w => w);
+                    : tokenizeSearchString(originalQuery).map(w => w.toLowerCase());
                 let matchedWordCount = 0;
                 for (let w of words) {
                     let matches = findMatchesForToken(w);
