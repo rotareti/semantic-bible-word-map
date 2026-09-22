@@ -1,6 +1,7 @@
 data/*
 !data/output/
 !data/output/*.json
+data/archive/
 data/output/*_raw*.json
 !data/analysis/
 !data/analysis/*.json
@@ -11,6 +12,8 @@ pipeline/__pycache__/
 *.json
 !package.json
 !package-lock.json
+!manifest.json
+!web/manifest.json
 !data/output/*.json
 !data/analysis/*.json
 data/output/*_raw*.json

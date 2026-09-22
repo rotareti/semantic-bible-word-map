@@ -52,6 +52,9 @@ jobs:
           cp data/output/bookmap_2d_vul.json _site/data/output/
           cp data/output/versemap_2d_vul.json _site/data/output/
           cp data/output/chaptermap_2d_vul.json _site/data/output/
+          cp data/output/senses_data.json _site/data/output/
+          cp data/output/senses_data_lxx.json _site/data/output/
+          cp data/output/senses_data_vul.json _site/data/output/
           
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4

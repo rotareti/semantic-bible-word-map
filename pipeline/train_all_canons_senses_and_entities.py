@@ -1,14 +1,11 @@
 """
 Full GPU Contextual Embeddings Pipeline for Biblical Disambiguation and Entity Unification
-Supports all three canonical foundations:
-- Berean Standard Bible (BSB English) via all-MiniLM-L6-v2
-- Septuagint and Greek NT (LXX Greek) via paraphrase-multilingual-MiniLM-L12-v2
-- Clementine Vulgate (VUL Latin) via paraphrase-multilingual-MiniLM-L12-v2
-
-Generates:
-1. Context Disambiguation (Polysemy): Partitions polysemous lemmas into distinct contextual senses.
-2. Entity Unification (Coreference & Thematic Union): Unifies cross-lexeme referents (e.g. Jesus, Christ, Messiah)
-   into a single contextual entity node.
+Fully Unsupervised Discovery Pipeline:
+1. Dynamic Entity Discovery: Scans the 100D wordmap to discover tightly bound cliques (NOUN & PROPN)
+   and unifies cross-lexeme referents into thematic/coreferent entity nodes.
+2. Unsupervised Polysemy Discovery: Tests contextual transformer embeddings for every lemma (count >= 20)
+   using KMeans (K=2, K=3) and silhouette analysis. Discovered polysemous senses are automatically labeled
+   via differential TF-IDF keyword extraction.
 
 Outputs:
 - data/output/senses_data.json (BSB)
@@ -18,16 +15,19 @@ Outputs:
 
 import os
 import re
+import sys
 import json
 import time
 import torch
 import numpy as np
+import networkx as nx
 from transformers import AutoTokenizer, AutoModel
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 
-# Canon Configurations
+# Canon Configurations (Hardcoded polysemous_lemmas and entities removed for unsupervised discovery)
 CANON_CONFIGS = {
     'bsb': {
         'name': 'Berean Standard Bible (BSB)',
@@ -35,153 +35,7 @@ CANON_CONFIGS = {
         'verse_index': 'data/output/verse_index.json',
         'wordmap': 'data/output/wordmap_2d.json',
         'bookmap': 'data/output/bookmap_2d.json',
-        'output_file': 'data/output/senses_data.json',
-        'polysemous_lemmas': [
-            {
-                'lemma_id': 'temple_NOUN',
-                'lemma': 'temple',
-                'pattern': r'\btemples?\b',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Physical Sanctuary', 'keywords': ['stone', 'cedar', 'solomon', 'altar', 'portico', 'chambers', 'building', 'gold']},
-                    {'index': 1, 'default_label': 'Spiritual Body', 'keywords': ['body', 'spirit', 'dwell', 'living', 'holy', 'christ', 'believers']}
-                ]
-            },
-            {
-                'lemma_id': 'spirit_NOUN',
-                'lemma': 'spirit',
-                'pattern': r'\bspirits?\b',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Holy Spirit / Divine Spirit', 'keywords': ['holy', 'god', 'father', 'truth', 'grace', 'dwell', 'anoint', 'gifts']},
-                    {'index': 1, 'default_label': 'Natural Wind / Human Spirit', 'keywords': ['wind', 'breath', 'storm', 'troubled', 'faint', 'broken', 'soul', 'disposition']}
-                ]
-            },
-            {
-                'lemma_id': 'flesh_NOUN',
-                'lemma': 'flesh',
-                'pattern': r'\bflesh\b',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Physical Body / Meat', 'keywords': ['meat', 'skin', 'bones', 'eat', 'sacrifice', 'blood', 'body', 'animal']},
-                    {'index': 1, 'default_label': 'Sinful Nature / Fallen Humanity', 'keywords': ['sin', 'spirit', 'desires', 'walk', 'lust', 'corrupt', 'weakness']}
-                ]
-            },
-            {
-                'lemma_id': 'world_NOUN',
-                'lemma': 'world',
-                'pattern': r'\bworlds?\b',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Physical Creation / Earth', 'keywords': ['foundation', 'earth', 'made', 'heavens', 'created', 'beginning', 'land']},
-                    {'index': 1, 'default_label': 'Fallen Human System', 'keywords': ['evil', 'love', 'darkness', 'hated', 'rulers', 'lust', 'overcome', 'corrupt']}
-                ]
-            },
-            {
-                'lemma_id': 'law_NOUN',
-                'lemma': 'law',
-                'pattern': r'\blaws?\b',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Mosaic Legislation & Commandments', 'keywords': ['moses', 'commandments', 'statutes', 'ordinances', 'book', 'tablets', 'sinai']},
-                    {'index': 1, 'default_label': 'Principle & Spiritual Rule', 'keywords': ['faith', 'sin', 'members', 'mind', 'christ', 'spirit', 'grace', 'inward']}
-                ]
-            },
-            {
-                'lemma_id': 'covenant_NOUN',
-                'lemma': 'covenant',
-                'pattern': r'\bcovenants?\b',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Sinaitic / Mosaic Covenant', 'keywords': ['tablets', 'ark', 'blood', 'sacrifice', 'moses', 'command', 'ordinance']},
-                    {'index': 1, 'default_label': 'Everlasting / New Covenant', 'keywords': ['heart', 'eternal', 'christ', 'promise', 'peace', 'forgiveness', 'grace']}
-                ]
-            },
-            {
-                'lemma_id': 'house_NOUN',
-                'lemma': 'house',
-                'pattern': r'\bhouses?\b',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Physical Dwelling & Palace', 'keywords': ['cedar', 'stone', 'build', 'wall', 'gate', 'palace', 'gold', 'rooms']},
-                    {'index': 1, 'default_label': 'Household of Faith & Dynasty', 'keywords': ['lineage', 'israel', 'jacob', 'david', 'father', 'blessing', 'children', 'household']}
-                ]
-            },
-            {
-                'lemma_id': 'servant_NOUN',
-                'lemma': 'servant',
-                'pattern': r'\bservants?\b',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Bondslave & Human Servitude', 'keywords': ['master', 'buy', 'sold', 'work', 'field', 'money', 'year', 'ox']},
-                    {'index': 1, 'default_label': 'Servant of the LORD & Prophet', 'keywords': ['prophets', 'moses', 'david', 'hear', 'righteous', 'send', 'prayer', 'anoint']}
-                ]
-            },
-            {
-                'lemma_id': 'heart_NOUN',
-                'lemma': 'heart',
-                'pattern': r'\bhearts?\b',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Inner Consciousness & Conscience', 'keywords': ['troubled', 'fear', 'sorrow', 'thought', 'understanding', 'discern', 'grief']},
-                    {'index': 1, 'default_label': 'Seat of Devotion & Moral Will', 'keywords': ['love', 'obey', 'clean', 'pure', 'upright', 'wicked', 'steadfast', 'devoted']}
-                ]
-            },
-            {
-                'lemma_id': 'judge_NOUN',
-                'lemma': 'judge',
-                'pattern': r'\bjudges?\b',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Human Magistrate & Legal Ruler', 'keywords': ['elders', 'city', 'court', 'decide', 'bribe', 'rulers', 'people']},
-                    {'index': 1, 'default_label': 'Divine Judge & Deliverer', 'keywords': ['earth', 'god', 'righteousness', 'nations', 'salvation', 'vindicate', 'throne']}
-                ]
-            }
-        ],
-        'entities': [
-            {
-                'id': 'entity__jesus_christ',
-                'slug': 'jesus_christ',
-                'title': 'Jesus Christ the Messiah',
-                'description': 'Unified messianic and divine personage across Gospels, Epistles, and Revelation.',
-                'member_lemmas': ['jesus_PROPN', 'christ_PROPN', 'messiah_PROPN']
-            },
-            {
-                'id': 'entity__lord_god',
-                'slug': 'lord_god',
-                'title': 'The LORD God Almighty',
-                'description': 'The supreme covenant God of Abraham, Isaac, and Jacob (Yahweh Elohim).',
-                'member_lemmas': ['lord_NOUN', 'god_NOUN']
-            },
-            {
-                'id': 'entity__jerusalem_zion',
-                'slug': 'jerusalem_zion',
-                'title': 'Jerusalem & Mount Zion',
-                'description': 'The holy city of the Great King and spiritual mountain of God.',
-                'member_lemmas': ['jerusalem_PROPN', 'zion_PROPN']
-            },
-            {
-                'id': 'entity__covenant_promise',
-                'slug': 'covenant_promise',
-                'title': 'Divine Covenant & Promise',
-                'description': 'God\'s steadfast pledge, oath, and relational bond with humanity.',
-                'member_lemmas': ['covenant_NOUN', 'promise_NOUN']
-            },
-            {
-                'id': 'entity__faith_belief',
-                'slug': 'faith_belief',
-                'title': 'Faith & Belief',
-                'description': 'Covenantal trust, steadfast fidelity, and belief in God.',
-                'member_lemmas': ['faith_NOUN', 'believe_VERB', 'faithful_ADJ']
-            },
-            {
-                'id': 'entity__righteousness_justification',
-                'slug': 'righteousness_justification',
-                'title': 'Righteousness & Justification',
-                'description': 'Moral rectitude, covenant justice, and acquittal before God.',
-                'member_lemmas': ['righteousness_NOUN', 'justify_VERB', 'righteous_ADJ']
-            }
-        ]
+        'output_file': 'data/output/senses_data.json'
     },
     'lxx': {
         'name': 'Septuagint & Greek NT (LXX)',
@@ -189,134 +43,7 @@ CANON_CONFIGS = {
         'verse_index': 'data/output/verse_index_lxx.json',
         'wordmap': 'data/output/wordmap_2d_lxx.json',
         'bookmap': 'data/output/bookmap_2d_lxx.json',
-        'output_file': 'data/output/senses_data_lxx.json',
-        'polysemous_lemmas': [
-            {
-                'lemma_id': 'spirit_G4151_NOUN',
-                'lemma': 'spirit',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Holy Spirit / Divine Breath', 'keywords': ['holy', 'god', 'father', 'wisdom', 'grace', 'ἅγιος', 'θεός', 'πατήρ', 'σοφία']},
-                    {'index': 1, 'default_label': 'Natural Wind / Human Spirit', 'keywords': ['wind', 'breath', 'soul', 'affliction', 'weakness', 'ἄνεμος', 'πνοή', 'ψυχή', 'ἀσθένεια']}
-                ]
-            },
-            {
-                'lemma_id': 'flesh_G4561_NOUN',
-                'lemma': 'flesh',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Physical Body / Mortal Substance', 'keywords': ['body', 'bone', 'blood', 'meat', 'sacrifice', 'σῶμα', 'ὀστέον', 'αἷμα', 'κρέας']},
-                    {'index': 1, 'default_label': 'Carnal Nature / Human Frailty', 'keywords': ['sin', 'lust', 'desire', 'weakness', 'corrupt', 'ἁμαρτία', 'ἐπιθυμία', 'φθαρτός']}
-                ]
-            },
-            {
-                'lemma_id': 'world_G2889_NOUN',
-                'lemma': 'world',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Created Cosmos / Earth', 'keywords': ['creation', 'heaven', 'earth', 'beginning', 'make', 'κτίσις', 'οὐρανός', 'γῆ', 'ἀρχή']},
-                    {'index': 1, 'default_label': 'Secular World / Earthly Order', 'keywords': ['darkness', 'evil', 'hate', 'ruler', 'lust', 'σκοτία', 'πονηρός', 'μισέω', 'ἄρχων']}
-                ]
-            },
-            {
-                'lemma_id': 'temple_G3485_NOUN',
-                'lemma': 'temple (naos)',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Holy Sanctuary / Altar Room', 'keywords': ['holy', 'altar', 'priest', 'stone', 'ark', 'ἅγιος', 'θυσιαστήριον', 'ἱερεύς', 'λίθος']},
-                    {'index': 1, 'default_label': 'Spiritual Temple of God', 'keywords': ['body', 'spirit', 'dwell', 'god', 'believers', 'σῶμα', 'πνεῦμα', 'οἰκέω', 'θεός']}
-                ]
-            },
-            {
-                'lemma_id': 'temple_G2411_NOUN',
-                'lemma': 'temple (hieron)',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Sacred Precinct / Public Courts', 'keywords': ['court', 'teach', 'people', 'portico', 'enter', 'αὐλή', 'διδάσκω', 'λαός', 'στοά']},
-                    {'index': 1, 'default_label': 'Ceremonial Complex & Offerings', 'keywords': ['sacrifice', 'gift', 'offer', 'priest', 'service', 'θυσία', 'δῶρον', 'προσφέρω', 'ἱερεύς']}
-                ]
-            },
-            {
-                'lemma_id': 'law_G3551_NOUN',
-                'lemma': 'law',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Mosaic Law & Ordinances', 'keywords': ['moses', 'commandment', 'statutes', 'book', 'keep', 'Μωυσῆς', 'ἐντολή', 'προστάγματα', 'βιβλίον']},
-                    {'index': 1, 'default_label': 'Spiritual Principle / Inner Law', 'keywords': ['faith', 'grace', 'heart', 'spirit', 'righteousness', 'πίστις', 'χάρις', 'καρδία', 'πνεῦμα']}
-                ]
-            },
-            {
-                'lemma_id': 'covenant_G1242_NOUN',
-                'lemma': 'covenant',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Ancestral / Sinai Covenant', 'keywords': ['covenant', 'blood', 'sacrifice', 'tablets', 'ark', 'διαθήκη', 'αἷμα', 'θυσία', 'πλάκες']},
-                    {'index': 1, 'default_label': 'New & Everlasting Covenant', 'keywords': ['new', 'eternal', 'promise', 'heart', 'grace', 'καινή', 'αἰώνιος', 'ἐπαγγελία', 'καρδία']}
-                ]
-            },
-            {
-                'lemma_id': 'house_G3624_NOUN',
-                'lemma': 'house',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Physical Residence & Temple', 'keywords': ['build', 'wall', 'gate', 'stone', 'gold', 'οἰκοδομέω', 'τοῖχος', 'πύλη', 'λίθος', 'χρυσός']},
-                    {'index': 1, 'default_label': 'Dynasty / House of Israel', 'keywords': ['israel', 'david', 'tribe', 'seed', 'father', 'Ἰσραήλ', 'Δαυίδ', 'φυλή', 'σπέρμα', 'πατήρ']}
-                ]
-            },
-            {
-                'lemma_id': 'slave_G1401_NOUN',
-                'lemma': 'servant / slave',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Domestic Slave & Bondservant', 'keywords': ['master', 'price', 'freedom', 'household', 'work', 'κύριος', 'τιμή', 'ἐλευθερία', 'οἰκέτης']},
-                    {'index': 1, 'default_label': 'Servant of God & Apostle', 'keywords': ['god', 'jesus', 'christ', 'prophet', 'ministry', 'θεός', 'Ἰησοῦς', 'Χριστός', 'προφήτης']}
-                ]
-            }
-        ],
-        'entities': [
-            {
-                'id': 'entity__jesus_christ_lxx',
-                'slug': 'jesus_christ',
-                'title': 'Jesus Christ the Messiah',
-                'description': 'The Son of God and Anointed Messiah across Septuagint messianic prophecy and Greek NT.',
-                'member_lemmas': ['jesus_G2424_PROPN', 'christ_G5547_PROPN']
-            },
-            {
-                'id': 'entity__lord_god_lxx',
-                'slug': 'lord_god',
-                'title': 'The LORD God Almighty',
-                'description': 'The divine names and sovereign titles of Yahweh Elohim (Kyrios Theos).',
-                'member_lemmas': ['lord_G2962_NOUN', 'god_G2316_NOUN']
-            },
-            {
-                'id': 'entity__jerusalem_zion_lxx',
-                'slug': 'jerusalem_zion',
-                'title': 'Jerusalem & Mount Zion',
-                'description': 'The holy sanctuary city and hill of the divine presence.',
-                'member_lemmas': ['jerusalem_G2419_PROPN', 'zion_G4622_PROPN']
-            },
-            {
-                'id': 'entity__covenant_promise_lxx',
-                'slug': 'covenant_promise',
-                'title': 'Divine Covenant & Promise',
-                'description': 'The sworn treaty and covenantal promise of God to His people.',
-                'member_lemmas': ['covenant_G1242_NOUN', 'promise_G1860_NOUN']
-            },
-            {
-                'id': 'entity__faith_belief_lxx',
-                'slug': 'faith_belief',
-                'title': 'Faith & Belief',
-                'description': 'The theological reality of faith, active trust, and fidelity (pistis & pisteuo).',
-                'member_lemmas': ['faith_G4102_NOUN', 'trust_G4100_VERB']
-            },
-            {
-                'id': 'entity__righteousness_justification_lxx',
-                'slug': 'righteousness_justification',
-                'title': 'Righteousness & Justification',
-                'description': 'Covenant justice, forensic acquittal, and divine righteousness.',
-                'member_lemmas': ['righteousness_G1343_NOUN', 'justify_G1344_VERB']
-            }
-        ]
+        'output_file': 'data/output/senses_data_lxx.json'
     },
     'vul': {
         'name': 'Clementine Vulgate (VUL)',
@@ -324,125 +51,7 @@ CANON_CONFIGS = {
         'verse_index': 'data/output/verse_index_vul.json',
         'wordmap': 'data/output/wordmap_2d_vul.json',
         'bookmap': 'data/output/bookmap_2d_vul.json',
-        'output_file': 'data/output/senses_data_vul.json',
-        'polysemous_lemmas': [
-            {
-                'lemma_id': 'spirit_spiritus_NOUN',
-                'lemma': 'spiritus',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Spiritus Sanctus / Divinus', 'keywords': ['sanctus', 'deus', 'pater', 'virtus', 'gratia', 'sapientia', 'holy', 'spirit', 'god']},
-                    {'index': 1, 'default_label': 'Ventus / Flatus Humanus', 'keywords': ['ventus', 'flatus', 'tempestas', 'anima', 'angustia', 'tristitia', 'wind', 'breath', 'storm']}
-                ]
-            },
-            {
-                'lemma_id': 'flesh_caro_NOUN',
-                'lemma': 'caro',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Corpus Carnale / Materia', 'keywords': ['corpus', 'sanguis', 'ossa', 'cibus', 'sacrificium', 'cutis', 'flesh', 'meat', 'blood']},
-                    {'index': 1, 'default_label': 'Carnalitas / Infirmitas', 'keywords': ['peccatum', 'concupiscentia', 'carnalis', 'corruptio', 'infirmitas', 'sin', 'lust', 'weakness']}
-                ]
-            },
-            {
-                'lemma_id': 'universe_mundus_NOUN',
-                'lemma': 'mundus',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Creatio / Universum', 'keywords': ['creatio', 'terra', 'caelum', 'principium', 'fundamentum', 'opus', 'world', 'earth', 'creation']},
-                    {'index': 1, 'default_label': 'Saeculum / Mundus Carnalis', 'keywords': ['malus', 'tenebrae', 'odium', 'princeps', 'saecularis', 'lux', 'evil', 'darkness', 'prince']}
-                ]
-            },
-            {
-                'lemma_id': 'temple_templum_NOUN',
-                'lemma': 'templum',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Sanctuarium / Aedes Sacra', 'keywords': ['sanctuarium', 'altare', 'lapis', 'aedificium', 'sacerdos', 'salomon', 'temple', 'sanctuary', 'altar']},
-                    {'index': 1, 'default_label': 'Templum Spirituale', 'keywords': ['corpus', 'habitare', 'spiritus', 'vivus', 'sanctus', 'fides', 'body', 'dwell', 'living']}
-                ]
-            },
-            {
-                'lemma_id': 'law_lex_NOUN',
-                'lemma': 'lex',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Lex Mosaica / Decalogus', 'keywords': ['moyses', 'praecepta', 'tabulae', 'mandata', 'iudicia', 'sinai', 'law', 'commandment', 'statute']},
-                    {'index': 1, 'default_label': 'Lex Nova / Lex Gratiae', 'keywords': ['gratia', 'fides', 'spiritus', 'iustitia', 'cor', 'christus', 'grace', 'faith', 'spirit']}
-                ]
-            },
-            {
-                'lemma_id': 'covenant_testamentum_NOUN',
-                'lemma': 'testamentum',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Vetus Testamentum / Foedus', 'keywords': ['arca', 'tabulae', 'sanguis', 'holocaustum', 'lex', 'covenant', 'ark', 'sacrifice']},
-                    {'index': 1, 'default_label': 'Novum Testamentum / Gratia', 'keywords': ['novum', 'aeternum', 'calix', 'sanguis', 'remissio', 'promissio', 'new', 'cup', 'eternal']}
-                ]
-            },
-            {
-                'lemma_id': 'subdue_domus_NOUN',
-                'lemma': 'domus',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Aedificium / Domicilium', 'keywords': ['aedificare', 'paries', 'porta', 'lapis', 'aurum', 'domus', 'house', 'build', 'wall']},
-                    {'index': 1, 'default_label': 'Domus Dei / Familia Fidelium', 'keywords': ['israel', 'david', 'gens', 'filii', 'semen', 'dominus', 'children', 'household', 'seed']}
-                ]
-            },
-            {
-                'lemma_id': 'slave_seruus_NOUN',
-                'lemma': 'servus',
-                'pos': 'NOUN',
-                'senses': [
-                    {'index': 0, 'default_label': 'Servus Domesticus', 'keywords': ['dominus', 'pretium', 'emptus', 'ministerium', 'servitium', 'servant', 'master', 'slave']},
-                    {'index': 1, 'default_label': 'Servus Domini / Propheta', 'keywords': ['deus', 'moyses', 'david', 'propheta', 'oratio', 'iustus', 'lord', 'prophet', 'prayer']}
-                ]
-            }
-        ],
-        'entities': [
-            {
-                'id': 'entity__jesus_christ_vul',
-                'slug': 'jesus_christ',
-                'title': 'Jesus Christ the Messiah',
-                'description': 'The Savior Jesus Christ (Iesus Christus) throughout Gospels and Latin New Testament.',
-                'member_lemmas': ['jesus_iesus_PROPN', 'christ_christus_PROPN']
-            },
-            {
-                'id': 'entity__lord_god_vul',
-                'slug': 'lord_god',
-                'title': 'The LORD God Almighty',
-                'description': 'Dominus Deus, the Lord God of heaven and earth.',
-                'member_lemmas': ['lord_dominus_NOUN', 'god_deus_NOUN']
-            },
-            {
-                'id': 'entity__jerusalem_zion_vul',
-                'slug': 'jerusalem_zion',
-                'title': 'Jerusalem & Mount Zion',
-                'description': 'Ierusalem and Sion, the holy city and mountain of the Lord.',
-                'member_lemmas': ['jerusalem_ierusalem_PROPN', 'zion_sion_PROPN']
-            },
-            {
-                'id': 'entity__covenant_promise_vul',
-                'slug': 'covenant_promise',
-                'title': 'Divine Covenant & Promise',
-                'description': 'The testament and solemn pact of God (Testamentum and Foedus).',
-                'member_lemmas': ['covenant_testamentum_NOUN', 'covenant_foedus_NOUN']
-            },
-            {
-                'id': 'entity__faith_belief_vul',
-                'slug': 'faith_belief',
-                'title': 'Faith & Belief',
-                'description': 'The grace of faith and theological belief (Fides and Credo).',
-                'member_lemmas': ['faith_fides_NOUN', 'believe_credo_VERB']
-            },
-            {
-                'id': 'entity__righteousness_justification_vul',
-                'slug': 'righteousness_justification',
-                'title': 'Righteousness & Justification',
-                'description': 'Justice, moral righteousness, and justification before God (Iustitia and Iustifico).',
-                'member_lemmas': ['righteousness_iustitia_NOUN', 'justify_iustifico_VERB']
-            }
-        ]
+        'output_file': 'data/output/senses_data_vul.json'
     }
 }
 
@@ -452,6 +61,192 @@ def clean_str(s):
         return ''
     # Replace em-dashes and en-dashes with hyphens
     return s.replace('\u2014', ' - ').replace('\u2013', ' - ')
+
+
+def discover_polysemy(X, min_occurrences=20, silhouette_threshold=0.15):
+    """
+    Evaluates contextual embedding distribution for polysemy.
+    Tests K=2 and K=3 clusters using KMeans and silhouette_score.
+    Returns (best_k, cluster_labels).
+    Falls back to K=1 if the best silhouette score is below silhouette_threshold
+    or if len(X) < min_occurrences.
+    """
+    if X is None or len(X) < min_occurrences:
+        return 1, np.zeros(len(X) if X is not None else 0, dtype=int)
+
+    best_k = 1
+    best_score = -1.0
+    best_labels = np.zeros(len(X), dtype=int)
+
+    for k in (2, 3):
+        if len(X) <= k:
+            continue
+        try:
+            kmeans = KMeans(n_clusters=k, random_state=42, n_init='auto')
+            labels = kmeans.fit_predict(X)
+            if len(set(labels)) < 2:
+                continue
+            sample_size = 1000 if len(X) > 1000 else None
+            score = silhouette_score(X, labels, sample_size=sample_size, random_state=42)
+            if score > best_score:
+                best_score = score
+                best_k = k
+                best_labels = labels
+        except Exception:
+            continue
+
+    if best_score < silhouette_threshold:
+        return 1, np.zeros(len(X), dtype=int)
+
+    return best_k, best_labels
+
+
+def extract_cluster_keywords(cluster_texts, background_texts, top_n=6):
+    """
+    Extracts the most defining keywords for a cluster compared to background texts
+    using TfidfVectorizer, and generates a default_label (e.g. 'Sense: word1, word2, word3').
+    """
+    if not cluster_texts:
+        return [], "Sense: generic"
+
+    cluster_doc = " ".join(cluster_texts).strip()
+    bg_doc = " ".join(background_texts).strip() if background_texts else ""
+
+    if not cluster_doc:
+        return [], "Sense: generic"
+
+    docs = [cluster_doc, bg_doc] if bg_doc else [cluster_doc]
+
+    try:
+        vec = TfidfVectorizer(
+            token_pattern=r'(?u)\b[^\W\d_]{3,}\b',
+            stop_words='english',
+            max_features=1000
+        )
+        X = vec.fit_transform(docs)
+        feature_names = np.array(vec.get_feature_names_out())
+
+        if len(docs) > 1:
+            c_scores = X[0].toarray()[0]
+            bg_scores = X[1].toarray()[0]
+            diff_scores = c_scores - bg_scores
+            ranked_indices = np.argsort(-diff_scores)
+            keywords = [feature_names[i] for i in ranked_indices if c_scores[i] > 0][:top_n]
+        else:
+            c_scores = X[0].toarray()[0]
+            ranked_indices = np.argsort(-c_scores)
+            keywords = [feature_names[i] for i in ranked_indices if c_scores[i] > 0][:top_n]
+    except Exception:
+        keywords = []
+
+    if not keywords:
+        default_label = "Sense: generic"
+    else:
+        label_words = keywords[:3]
+        default_label = f"Sense: {', '.join(label_words)}"
+
+    return keywords, default_label
+
+
+def discover_entities(wordmap_nodes, similarity_threshold=0.85):
+    """
+    Scans the 100D wordmap nodes, filters for NOUN and PROPN with count >= 10,
+    computes a pairwise cosine similarity matrix, and extracts tightly bound
+    cliques (2+ words) into the dynamic entities list.
+    """
+    if isinstance(wordmap_nodes, str):
+        with open(wordmap_nodes, 'r', encoding='utf-8') as f:
+            wordmap_nodes = json.load(f)
+
+    filtered_nodes = [
+        n for n in wordmap_nodes
+        if n.get('pos') in ('NOUN', 'PROPN')
+        and n.get('count', n.get('f', 0)) >= 10
+        and 'v' in n and len(n['v']) > 0
+    ]
+
+    if len(filtered_nodes) < 2:
+        return []
+
+    vecs = np.array([n['v'] for n in filtered_nodes], dtype=np.float32)
+    norms = np.linalg.norm(vecs, axis=1, keepdims=True)
+    norms[norms == 0] = 1e-9
+    normalized_vecs = vecs / norms
+    sim_matrix = np.dot(normalized_vecs, normalized_vecs.T)
+
+    G = nx.Graph()
+    for i in range(len(filtered_nodes)):
+        G.add_node(i)
+
+    N = len(filtered_nodes)
+    for i in range(N):
+        for j in range(i + 1, N):
+            if sim_matrix[i, j] >= similarity_threshold:
+                G.add_edge(i, j)
+
+    raw_cliques = [c for c in nx.find_cliques(G) if len(c) >= 2]
+
+    def clique_score(c):
+        num_pairs = len(c) * (len(c) - 1) / 2
+        total_sim = sum(sim_matrix[u, v] for u in c for v in c if u < v)
+        return (len(c), total_sim / num_pairs)
+
+    raw_cliques.sort(key=clique_score, reverse=True)
+
+    # Deduplicate near-identical cliques with high Jaccard overlap
+    deduped_cliques = []
+    for c in raw_cliques:
+        c_set = set(c)
+        is_redundant = False
+        for existing_set in deduped_cliques:
+            jaccard = len(c_set & existing_set) / len(c_set | existing_set)
+            if jaccard >= 0.7:
+                is_redundant = True
+                break
+        if not is_redundant:
+            deduped_cliques.append(c_set)
+
+    dynamic_entities = []
+    seen_ids = set()
+
+    for c in deduped_cliques:
+        clique_nodes = [filtered_nodes[idx] for idx in c]
+        # Order member words by frequency/count descending
+        clique_nodes.sort(key=lambda n: n.get('count', n.get('f', 0)), reverse=True)
+        member_ids = [n['id'] for n in clique_nodes]
+        member_words = [n['w'] for n in clique_nodes]
+
+        slug_words = [re.sub(r'[^\w]', '', w.lower()) for w in member_words[:4]]
+        slug = "_".join(w for w in slug_words if w)
+        if not slug:
+            slug = f"entity_{len(dynamic_entities)}"
+
+        base_id = f"entity__{slug}"
+        entity_id = base_id
+        counter = 2
+        while entity_id in seen_ids:
+            entity_id = f"{base_id}_{counter}"
+            counter += 1
+        seen_ids.add(entity_id)
+
+        title = " / ".join(w.title() for w in member_words)
+        if len(member_words) > 3:
+            short_label = " / ".join(w.title() for w in member_words[:3]) + f" (+{len(member_words) - 3})"
+        else:
+            short_label = title
+
+        description = f"Discovered thematic entity uniting: {', '.join(member_words)}."
+
+        dynamic_entities.append({
+            'id': entity_id,
+            'slug': slug,
+            'title': title,
+            'short_label': short_label,
+            'description': description,
+            'member_lemmas': member_ids
+        })
+
+    return dynamic_entities
 
 
 def run_training_for_canon(canon_key):
@@ -508,19 +303,17 @@ def run_training_for_canon(canon_key):
 
     print(f"Loaded {len(parsed_verses)} verses, {len(node_lookup)} 2D words, {len(ot_books)} OT books.")
 
-    def encode_sentences(text_list, batch_size=64):
+    def encode_sentences(text_list, batch_size=128):
         vectors = []
         for start_idx in range(0, len(text_list), batch_size):
             batch_texts = text_list[start_idx:start_idx + batch_size]
             inputs = tokenizer(batch_texts, padding=True, truncation=True, max_length=128, return_tensors='pt').to(device)
             with torch.no_grad():
                 outputs = model(**inputs)
-                # Mean pooling with attention mask
                 mask = inputs['attention_mask'].unsqueeze(-1).expand(outputs.last_hidden_state.size()).float()
                 sum_embeddings = torch.sum(outputs.last_hidden_state * mask, 1)
                 sum_mask = torch.clamp(mask.sum(1), min=1e-9)
                 mean_pooled = (sum_embeddings / sum_mask).cpu().numpy()
-                # Normalize
                 norms = np.linalg.norm(mean_pooled, axis=1, keepdims=True)
                 norms[norms == 0] = 1e-9
                 normalized = mean_pooled / norms
@@ -529,108 +322,97 @@ def run_training_for_canon(canon_key):
             return np.vstack(vectors)
         return np.zeros((0, 384), dtype=np.float32)
 
+    # Pre-encode all verses once to provide fast contextual lookups
+    print(f"Pre-encoding {len(parsed_verses)} verses with transformer on {device}...")
+    t_enc_start = time.time()
+    all_verse_texts = []
+    for occ in parsed_verses:
+        if canon_key == 'bsb':
+            all_verse_texts.append(occ['en_text'])
+        else:
+            combined_txt = f"{occ['en_text']} {occ['orig_text']}".strip()
+            all_verse_texts.append(combined_txt)
+
+    all_verse_embeddings = encode_sentences(all_verse_texts, batch_size=128)
+    print(f"Verse contextual embeddings encoded in {time.time() - t_enc_start:.2f}s (matrix shape {all_verse_embeddings.shape}).")
+
     output_data = {}
 
     # -------------------------------------------------------------
-    # 1. Polysemous Context Disambiguation
+    # Pre-flight: Dynamic Entity Discovery
     # -------------------------------------------------------------
-    print(f"\n--- Processing {len(cfg['polysemous_lemmas'])} Polysemous Lemmas ---")
+    print(f"\n--- Pre-flight: Discovering Dynamic Entities from 100D Word Map ---")
+    t_ent_start = time.time()
+    dynamic_entities = discover_entities(wordmap_nodes, similarity_threshold=0.85)
+    print(f"Discovered {len(dynamic_entities)} tightly bound entity cliques in {time.time() - t_ent_start:.2f}s.")
 
-    for target in cfg['polysemous_lemmas']:
-        lemma_id = target['lemma_id']
-        lemma = target['lemma']
-        print(f"\nDisambiguating polysemous lemma: {lemma_id} ('{lemma}')...")
+    # -------------------------------------------------------------
+    # Polysemy Sense Discovery Loop
+    # -------------------------------------------------------------
+    candidate_lemmas = [
+        (lemma_id, v_indices)
+        for lemma_id, v_indices in word_to_verses.items()
+        if len(v_indices) >= 20 and lemma_id in node_lookup
+    ]
+    candidate_lemmas.sort(key=lambda item: len(item[1]), reverse=True)
+    print(f"\n--- Polysemy Discovery: Scanning {len(candidate_lemmas)} lemmas with count >= 20 ---")
 
-        v_indices = word_to_verses.get(lemma_id, [])
-        if not v_indices:
-            print(f"  Warning: No verse occurrences found for {lemma_id} in word index.")
+    t_poly_start = time.time()
+    polysemous_count = 0
+
+    for idx, (lemma_id, v_indices) in enumerate(candidate_lemmas):
+        valid_indices = [v_idx for v_idx in v_indices if v_idx < len(parsed_verses)]
+        if len(valid_indices) < 20:
             continue
 
-        occurrences = [parsed_verses[v_idx] for v_idx in v_indices if v_idx < len(parsed_verses)]
-        print(f"  Found {len(occurrences)} verse occurrences in canon.")
+        occurrences = [parsed_verses[v_idx] for v_idx in valid_indices]
+        X = all_verse_embeddings[valid_indices]
 
-        # Prepare texts for transformer embedding
-        # For Greek/Latin, concatenate English gloss with original text for rich cross-lingual contextual semantics
-        texts_to_encode = []
-        for occ in occurrences:
-            if canon_key == 'bsb':
-                texts_to_encode.append(occ['en_text'])
-            else:
-                combined_txt = f"{occ['en_text']} {occ['orig_text']}".strip()
-                texts_to_encode.append(combined_txt)
+        best_k, cluster_labels = discover_polysemy(X, min_occurrences=20, silhouette_threshold=0.15)
 
-        X = encode_sentences(texts_to_encode, batch_size=64)
-        print(f"  Extracted contextual matrix of shape {X.shape}.")
-
-        if len(occurrences) < 4:
-            print(f"  Skipping clustering (fewer than 4 occurrences).")
+        # Filter: If K=1, skip the word
+        if best_k <= 1:
             continue
 
-        # Cluster into K=2 senses
-        kmeans = KMeans(n_clusters=2, random_state=42, n_init=10)
-        cluster_labels = kmeans.fit_predict(X)
-        try:
-            sil = silhouette_score(X, cluster_labels)
-        except Exception:
-            sil = 0.0
-        print(f"  K-Means silhouette score: {sil:.4f}")
-
-        c0_items = [occurrences[i] for i, l in enumerate(cluster_labels) if l == 0]
-        c1_items = [occurrences[i] for i, l in enumerate(cluster_labels) if l == 1]
-
-        # Score sense keywords against occurrences to map clusters accurately
-        def score_sense_keywords(items, keywords):
-            score = 0
-            for item in items:
-                searchable = f"{item['en_text']} {item['orig_text']}".lower()
-                for kw in keywords:
-                    if kw.lower() in searchable:
-                        score += 1
-            return score
-
-        s0_kws = target['senses'][0]['keywords']
-        s1_kws = target['senses'][1]['keywords']
-
-        c0_score_s0 = score_sense_keywords(c0_items, s0_kws)
-        c0_score_s1 = score_sense_keywords(c0_items, s1_kws)
-
-        if c0_score_s0 >= c0_score_s1:
-            sense_0_cluster = 0
-            sense_1_cluster = 1
-        else:
-            sense_0_cluster = 1
-            sense_1_cluster = 0
-
-        cluster_map = {
-            sense_0_cluster: target['senses'][0],
-            sense_1_cluster: target['senses'][1]
-        }
-
-        parent_node = node_lookup.get(lemma_id)
-        parent_x = parent_node['x'] if parent_node else 0.0
-        parent_y = parent_node['y'] if parent_node else 0.0
-        parent_v = np.array(parent_node['v']) if parent_node else np.zeros(100)
+        polysemous_count += 1
+        parent_node = node_lookup[lemma_id]
+        lemma = parent_node.get('w', lemma_id.split('_')[0])
+        pos = parent_node.get('pos', 'NOUN')
+        parent_x = parent_node.get('x', 0.0)
+        parent_y = parent_node.get('y', 0.0)
+        parent_v = np.array(parent_node['v']) if 'v' in parent_node else np.zeros(100)
 
         senses_output = []
 
-        for cluster_id, sense_meta in cluster_map.items():
-            items = c0_items if cluster_id == 0 else c1_items
-            c_indices = [idx for idx, l in enumerate(cluster_labels) if l == cluster_id]
-            c_center = kmeans.cluster_centers_[cluster_id]
+        for k_idx in range(best_k):
+            c_indices = [i for i, l in enumerate(cluster_labels) if l == k_idx]
+            cluster_occurrences = [occurrences[i] for i in c_indices]
+            bg_occurrences = [occurrences[i] for i, l in enumerate(cluster_labels) if l != k_idx]
+
+            if not cluster_occurrences:
+                continue
+
+            if canon_key == 'bsb':
+                cluster_texts = [occ['en_text'] for occ in cluster_occurrences]
+                bg_texts = [occ['en_text'] for occ in bg_occurrences]
+            else:
+                cluster_texts = [f"{occ['en_text']} {occ['orig_text']}".strip() for occ in cluster_occurrences]
+                bg_texts = [f"{occ['en_text']} {occ['orig_text']}".strip() for occ in bg_occurrences]
+
+            keywords, default_label = extract_cluster_keywords(cluster_texts, bg_texts, top_n=6)
+
+            # Cluster centroid & prototype verse ranking
+            c_vecs = X[c_indices]
+            c_center = np.mean(c_vecs, axis=0)
             c_center_norm = c_center / (np.linalg.norm(c_center) + 1e-9)
 
-            # Rank items by cosine similarity to cluster center
-            item_sims = []
-            for item_idx, orig_idx in enumerate(c_indices):
-                vec = X[orig_idx]
-                sim = float(np.dot(vec, c_center_norm))
-                item_sims.append((items[item_idx], sim))
-
-            item_sims.sort(key=lambda x: x[1], reverse=True)
+            sims = np.dot(c_vecs, c_center_norm)
+            ranked_order = np.argsort(-sims)
 
             seen_refs = set()
             ranked_top_verses = []
-            for itm, sim in item_sims:
+            for r_idx in ranked_order:
+                itm = cluster_occurrences[r_idx]
                 ref = itm['ref']
                 if ref not in seen_refs:
                     seen_refs.add(ref)
@@ -638,27 +420,27 @@ def run_training_for_canon(canon_key):
                         'reference': ref,
                         'text': itm['en_text'],
                         'original_text': itm['orig_text'] if canon_key != 'bsb' else '',
-                        'prototype_sim': round(sim, 3)
+                        'prototype_sim': round(float(sims[r_idx]), 3)
                     })
                 if len(ranked_top_verses) >= 8:
                     break
 
-            ot_cnt = sum(1 for x in items if x['testament'] == 'OT')
-            nt_cnt = len(items) - ot_cnt
+            ot_cnt = sum(1 for x in cluster_occurrences if x['testament'] == 'OT')
+            nt_cnt = len(cluster_occurrences) - ot_cnt
             testament_str = 'Both' if (ot_cnt > 0 and nt_cnt > 0) else ('OT' if ot_cnt > 0 else 'NT')
 
-            # Offset 2D position from parent node for distinct visual cluster separation
+            # Coordinate offset
             offset_dist = 2.8
-            angle = (sense_meta['index'] * np.pi) + (np.pi / 4.0)
+            angle = (2.0 * np.pi * k_idx / best_k) + (np.pi / 4.0)
             sense_x = round(parent_x + (np.cos(angle) * offset_dist), 3)
             sense_y = round(parent_y + (np.sin(angle) * offset_dist), 3)
 
-            sense_node_id = f"{lemma_id}__sense_{sense_meta['index']}"
-            other_sense_id = f"{lemma_id}__sense_{1 - sense_meta['index']}"
+            sense_node_id = f"{lemma_id}__sense_{k_idx}"
+            sister_senses = [f"{lemma_id}__sense_{other_k}" for other_k in range(best_k) if other_k != k_idx]
 
-            # Calculate specialized 100D vector tilted toward sense keywords
+            # Specialized 100D vector tilted toward sense keywords
             kw_vecs = []
-            for kw in sense_meta['keywords']:
+            for kw in keywords:
                 for pot_id in [kw, f"{kw}_NOUN", f"{kw}_ADJ", f"{kw}_VERB"]:
                     if pot_id in node_lookup:
                         kw_vecs.append(np.array(node_lookup[pot_id]['v']))
@@ -672,31 +454,30 @@ def run_training_for_canon(canon_key):
             else:
                 v_out = [round(float(val), 4) for val in parent_v]
 
-            unique_verse_indices = sorted(list(set(x['verse_id'] for x in items)))
+            unique_verse_indices = sorted(list(set(x['verse_id'] for x in cluster_occurrences)))
 
             sense_entry = {
                 'id': sense_node_id,
                 'parent_id': lemma_id,
                 'lemma': lemma,
-                'pos': target.get('pos', 'NOUN'),
-                'sense_index': sense_meta['index'],
-                'sense_label': sense_meta['default_label'],
-                'w': f"{lemma} ({sense_meta['default_label']})",
-                'short_label': f"{lemma} [{sense_meta['default_label']}]",
-                'f': len(items),
+                'pos': pos,
+                'sense_index': k_idx,
+                'sense_label': default_label,
+                'w': f"{lemma} ({default_label})",
+                'short_label': f"{lemma} [{default_label}]",
+                'f': len(cluster_occurrences),
                 'ot_count': ot_cnt,
                 'nt_count': nt_cnt,
                 't': testament_str,
                 'x': sense_x,
                 'y': sense_y,
                 'v': v_out,
-                'sister_senses': [other_sense_id],
+                'keywords': keywords,
+                'sister_senses': sister_senses,
                 'verse_indices': unique_verse_indices,
                 'top_verses': ranked_top_verses
             }
             senses_output.append(sense_entry)
-
-            print(f"  Context {sense_meta['index']} ({sense_meta['default_label']}): {len(items)} verses | OT={ot_cnt}, NT={nt_cnt}")
 
         output_data[lemma_id] = {
             'type': 'disambiguation',
@@ -705,15 +486,19 @@ def run_training_for_canon(canon_key):
             'senses': senses_output
         }
 
-    # -------------------------------------------------------------
-    # 2. Contextual Entity Unification
-    # -------------------------------------------------------------
-    print(f"\n--- Processing {len(cfg['entities'])} Core Theological Entities ---")
+        print(f"  [Polysemy K={best_k}] {lemma_id} ('{lemma}') -> {[s['sense_label'] for s in senses_output]}")
 
-    for entity in cfg['entities']:
+    print(f"Polysemy loop complete: analyzed {len(candidate_lemmas)} lemmas, identified {polysemous_count} polysemous lemmas in {time.time() - t_poly_start:.2f}s.")
+
+    # -------------------------------------------------------------
+    # Contextual Entity Unification
+    # -------------------------------------------------------------
+    print(f"\n--- Unifying {len(dynamic_entities)} Discovered Entities ---")
+    t_unify_start = time.time()
+
+    for entity in dynamic_entities:
         entity_id = entity['id']
         title = entity['title']
-        print(f"\nUnifying entity: {entity_id} ('{title}')...")
 
         member_nodes = []
         all_entity_verse_indices = set()
@@ -731,29 +516,24 @@ def run_training_for_canon(canon_key):
                     'pos': m_node.get('pos', ''),
                     'count': len(m_verses)
                 })
-            else:
-                print(f"  Notice: Member {m_id} not found in word map for {canon_key}.")
 
         if not member_nodes:
-            print(f"  Warning: No active member nodes found for {entity_id}.")
             continue
 
         unique_verse_indices = sorted(list(all_entity_verse_indices))
         occurrences = [parsed_verses[v_idx] for v_idx in unique_verse_indices if v_idx < len(parsed_verses)]
-        print(f"  Unified {len(member_nodes)} member lemmas across {len(occurrences)} verses.")
 
-        # Compute occurrence-weighted 2D coordinates (barycenter)
+        # Occurrence-weighted 2D coordinates (barycenter)
         total_weight = sum(m['count'] for m in member_summaries)
         if total_weight == 0:
-            total_weight = len(member_nodes)
-            weights = [1.0] * len(member_nodes)
+            weights = [1.0 / len(member_nodes)] * len(member_nodes)
         else:
             weights = [m['count'] / total_weight for m in member_summaries]
 
         entity_x = round(sum(m_node['x'] * w for m_node, w in zip(member_nodes, weights)), 3)
         entity_y = round(sum(m_node['y'] * w for m_node, w in zip(member_nodes, weights)), 3)
 
-        # Compute occurrence-weighted 100D Word2Vec vector
+        # Occurrence-weighted 100D vector
         weighted_100d = sum(np.array(m_node['v']) * w for m_node, w in zip(member_nodes, weights))
         norm_100d = np.linalg.norm(weighted_100d)
         if norm_100d > 0:
@@ -762,22 +542,14 @@ def run_training_for_canon(canon_key):
         else:
             unified_v = member_nodes[0]['v']
 
-        # Extract transformer representations for sample occurrences to find top prototype coreference verses
+        # Sample occurrences for prototype coreference verses
         sample_size = min(len(occurrences), 250)
-        # Sample evenly across occurrences
         step = max(1, len(occurrences) // sample_size)
         sampled_occurrences = occurrences[::step][:sample_size]
 
-        sample_texts = []
-        for occ in sampled_occurrences:
-            if canon_key == 'bsb':
-                sample_texts.append(occ['en_text'])
-            else:
-                combined_txt = f"{occ['en_text']} {occ['orig_text']}".strip()
-                sample_texts.append(combined_txt)
-
-        sample_X = encode_sentences(sample_texts, batch_size=64)
-        if len(sample_X) > 0:
+        sample_v_indices = [occ['verse_id'] for occ in sampled_occurrences if occ['verse_id'] < len(all_verse_embeddings)]
+        if sample_v_indices:
+            sample_X = all_verse_embeddings[sample_v_indices]
             entity_centroid = np.mean(sample_X, axis=0)
             entity_centroid = entity_centroid / (np.linalg.norm(entity_centroid) + 1e-9)
 
@@ -813,7 +585,7 @@ def run_training_for_canon(canon_key):
             'entity_name': title,
             'canonical_title': title,
             'title': title,
-            'short_label': title,
+            'short_label': entity.get('short_label', title),
             'w': title,
             'lemma': title,
             'description': entity['description'],
@@ -831,7 +603,8 @@ def run_training_for_canon(canon_key):
         }
 
         output_data[entity_id] = entity_entry
-        print(f"  Entity {title}: {len(occurrences)} verses | OT={ot_cnt}, NT={nt_cnt} | barycenter=({entity_x}, {entity_y})")
+
+    print(f"Entities unified in {time.time() - t_unify_start:.2f}s.")
 
     # Write output JSON
     os.makedirs(os.path.dirname(cfg['output_file']), exist_ok=True)
@@ -843,10 +616,14 @@ def run_training_for_canon(canon_key):
 
 def main():
     t_start = time.time()
-    for canon in ['bsb', 'lxx', 'vul']:
-        run_training_for_canon(canon)
+    canons = sys.argv[1:] if len(sys.argv) > 1 else ['bsb', 'lxx', 'vul']
+    for canon in canons:
+        if canon in CANON_CONFIGS:
+            run_training_for_canon(canon)
+        else:
+            print(f"Warning: Unknown canon '{canon}', skipping.")
     print(f"\n=======================================================")
-    print(f"All canons successfully trained in {time.time() - t_start:.2f}s!")
+    print(f"Training completed in {time.time() - t_start:.2f}s!")
     print(f"=======================================================")
 
 

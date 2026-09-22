@@ -1,0 +1,18 @@
+{
+  "name": "SymBible",
+  "short_name": "SymBible",
+  "description": "Interactive semantic word-proximity and passage map of the Holy Scriptures.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
+  "icons": [
+    {
+      "src": "favicon.jpg",
+      "sizes": "any",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}

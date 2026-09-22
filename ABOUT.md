@@ -1,4 +1,4 @@
-# About Semantic Bible
+# About SymBible
 
 Explore the Holy Scriptures through a semantic lens across three historical textual foundations: the **Berean Standard Bible (BSB)** in English, the ancient Greek **Septuagint and Greek New Testament (LXX)**, and the Latin **Clementine Vulgate (VUL)**.
 
@@ -9,7 +9,7 @@ Every point on the map represents a word lemma, verse, chapter, or biblical book
 ## 1. General Theory and Methodology
 
 ### Distributional Semantics and Word Embeddings
-The foundational premise of Semantic Bible rests on distributional linguistics, summarized by British linguist J. R. Firth: *"You shall know a word by the company it keeps."*
+The foundational premise of SymBible rests on distributional linguistics, summarized by British linguist J. R. Firth: *"You shall know a word by the company it keeps."*
 
 Rather than relying on modern theological commentary or human editorial categorization, the semantic relationships in this project were generated directly from the biblical texts:
 1. **Corpus Extraction**: Text corpora were extracted from clean scripture sources across the Old Testament and New Testament, stripping modern apparatus, footnotes, and translator headings.
@@ -37,7 +37,7 @@ Rather than relying on uncalibrated assumptions, the Biblical Semantic Evaluatio
 - **Standard Subsampling & Negative Sampling**: Empirical testing confirmed that aggressive subsampling (`1e-4`) over-pruned the syntagmatic glue connecting verbs to their arguments, while standard subsampling (`sample=1e-3`) and negative sampling (`negative=5`) maintain structural linguistic cohesion.
 
 ### Multi-Level Semantic Hierarchy
-Semantic Bible provides four complementary viewing modes:
+SymBible provides four complementary viewing modes:
 - **Word Mode**: The atomic vocabulary map (over 8,200 English terms, 9,200 Greek lemmas, and 10,400 Latin lemmas).
 - **Verses View**: 31,000+ biblical verses projected as multi-word centroids computed by averaging constituent lemma vectors, revealing how entire biblical passages cluster thematically.
 - **Chapters Mode**: 1,189 chapter centroids illustrating high-level narrative movements and thematic transitions across books.

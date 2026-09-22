@@ -618,11 +618,8 @@ class BibleWordMap extends HTMLElement {
         this.viewMode = 'words';
         this.testamentFilter = 'all';
         this.similarityLabelsMode = 'hover'; // 'off' | 'hover' | 'all'
-        let savedDisambiguation = null;
-        if (typeof localStorage !== 'undefined') {
-            try { savedDisambiguation = localStorage.getItem('bwm-disambiguation'); } catch (e) {}
-        }
-        this.disambiguationEnabled = (savedDisambiguation === 'true') ? true : false;
+        // Contextual disambiguation defaulted to off and disabled for deployment
+        this.disambiguationEnabled = false;
         const isMobileScreen = (typeof window !== 'undefined' && window.innerWidth <= 768);
         this.mapTextSize = isMobileScreen ? 'small' : 'medium'; // 'small' | 'medium' | 'large'
         this.mapTextScale = isMobileScreen ? 1.0 : 1.3;
@@ -1998,13 +1995,38 @@ class BibleWordMap extends HTMLElement {
                 #bwm-foundation-filter .bwm-pill-btn.active,
                 #bwm-testament-filter .bwm-pill-btn.active,
                 #bwm-sim-labels-filter .bwm-pill-btn.active,
-                #bwm-text-size-filter .bwm-pill-btn.active,
-                #bwm-disambiguation-filter .bwm-pill-btn.active {
+                #bwm-text-size-filter .bwm-pill-btn.active {
                     background: var(--bwm-node-hover);
                     color: #ffffff;
                     border: none;
                     box-shadow: 0 1px 3px rgba(37, 99, 235, 0.35);
                     font-weight: 600;
+                }
+                #bwm-disambiguation-section {
+                    opacity: 0.55;
+                    user-select: none;
+                }
+                #bwm-disambiguation-section .bwm-drawer-coming-soon {
+                    font-size: 0.72em;
+                    font-weight: 600;
+                    color: var(--bwm-text-muted);
+                    margin-left: 6px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                #bwm-disambiguation-filter {
+                    pointer-events: none !important;
+                    opacity: 0.65;
+                    cursor: not-allowed;
+                }
+                #bwm-disambiguation-filter .bwm-pill-btn {
+                    cursor: not-allowed !important;
+                    pointer-events: none !important;
+                }
+                #bwm-disambiguation-filter .bwm-pill-btn.active {
+                    background: var(--bwm-border) !important;
+                    color: var(--bwm-text-muted) !important;
+                    box-shadow: none !important;
                 }
                 #bwm-foundation-filter .bwm-pill-btn {
                     letter-spacing: 0.5px;
@@ -4100,15 +4122,15 @@ class BibleWordMap extends HTMLElement {
                             </div>
                             <div class="bwm-drawer-hint">Scale words, percentages, and labels on the map canvas.</div>
                         </div>
-                        <div class="bwm-drawer-section" id="bwm-disambiguation-section">
+                        <div class="bwm-drawer-section disabled" id="bwm-disambiguation-section">
                             <div class="bwm-drawer-section-header">
-                                <h4>Contextual Disambiguation</h4>
+                                <h4>Contextual Disambiguation <span class="bwm-drawer-coming-soon">(Coming Soon)</span></h4>
                             </div>
                             <div class="bwm-pill-group" id="bwm-disambiguation-filter">
-                                <button type="button" class="bwm-pill-btn ${this.disambiguationEnabled === true ? 'active' : ''}" data-disambiguation="on" title="Enable contextual sense nodes and unified entities">Enabled</button>
-                                <button type="button" class="bwm-pill-btn ${this.disambiguationEnabled !== true ? 'active' : ''}" data-disambiguation="off" title="Revert to standard unified word space">Disabled</button>
+                                <button type="button" class="bwm-pill-btn" data-disambiguation="on" disabled title="Contextual sense disambiguation (under development)">Enabled</button>
+                                <button type="button" class="bwm-pill-btn active" data-disambiguation="off" disabled title="Standard unified word space">Disabled</button>
                             </div>
-                            <div class="bwm-drawer-hint">Split polysemous words into distinct contextual senses and group unified entities.</div>
+                            <div class="bwm-drawer-hint">Split polysemous words into distinct contextual senses and group unified entities (temporarily offline for model tuning).</div>
                         </div>
                     </div>
                 </div>
@@ -4295,7 +4317,7 @@ class BibleWordMap extends HTMLElement {
                             </svg>
                             <span>Map View</span>
                         </button>
-                        <h3 class="bwm-about-title">About Semantic Bible</h3>
+                        <h3 class="bwm-about-title">About SymBible</h3>
                         <button type="button" class="bwm-about-close-btn" id="bwm-about-close-btn" aria-label="Close About" title="Close About">&times;</button>
                     </div>
                     <div class="bwm-about-body">
@@ -4310,7 +4332,7 @@ class BibleWordMap extends HTMLElement {
                             <h2>1. General Theory and Methodology</h2>
                             <h3>Distributional Semantics and Word Embeddings</h3>
                             <p>
-                                The foundational premise of Semantic Bible rests on distributional linguistics, summarized by British linguist J. R. Firth: <em>"You shall know a word by the company it keeps."</em>
+                                The foundational premise of SymBible rests on distributional linguistics, summarized by British linguist J. R. Firth: <em>"You shall know a word by the company it keeps."</em>
                             </p>
                             <p>
                                 Rather than relying on modern theological commentary or human editorial categorization, the semantic relationships in this project were generated directly from the biblical texts:
@@ -4360,7 +4382,7 @@ class BibleWordMap extends HTMLElement {
                             </div>
 
                             <h3>Multi-Level Semantic Hierarchy</h3>
-                            <p>Semantic Bible provides four complementary viewing modes:</p>
+                            <p>SymBible provides four complementary viewing modes:</p>
                             <ul>
                                 <li><strong>Word Mode:</strong> The atomic vocabulary map (over 8,200 English terms, 9,200 Greek lemmas, and 10,400 Latin lemmas).</li>
                                 <li><strong>Verses View:</strong> 31,000+ biblical verses projected as multi-word centroids computed by averaging constituent lemma vectors, revealing how entire biblical passages cluster thematically.</li>
@@ -4397,7 +4419,7 @@ class BibleWordMap extends HTMLElement {
 
                             <h3>Multi-Layer NLP and Semantic Architecture</h3>
                             <p>
-                                Semantic Bible synthesizes four distinct architectural layers to deliver biblical vocabulary analysis from morphological ground truth up to contextual coreference unifications:
+                                SymBible synthesizes four distinct architectural layers to deliver biblical vocabulary analysis from morphological ground truth up to contextual coreference unifications:
                             </p>
                             <ol>
                                 <li>
@@ -4538,14 +4560,15 @@ class BibleWordMap extends HTMLElement {
     }
 
     setDisambiguationEnabled(enabled, isUserAction = true) {
-        this.disambiguationEnabled = Boolean(enabled);
+        // Disambiguation feature is defaulted to off and disabled for deployment
+        this.disambiguationEnabled = false;
         if (typeof localStorage !== 'undefined') {
-            try { localStorage.setItem('bwm-disambiguation', this.disambiguationEnabled ? 'true' : 'false'); } catch (e) {}
+            try { localStorage.setItem('bwm-disambiguation', 'false'); } catch (e) {}
         }
         const disambigPills = this.querySelectorAll('#bwm-disambiguation-filter .bwm-pill-btn');
         disambigPills.forEach(btn => {
             const val = btn.getAttribute('data-disambiguation') === 'on';
-            btn.classList.toggle('active', val === this.disambiguationEnabled);
+            btn.classList.toggle('active', !val);
         });
         this.updateUrl();
 
@@ -5036,9 +5059,10 @@ class BibleWordMap extends HTMLElement {
 
         const disambigPills = this.querySelectorAll('#bwm-disambiguation-filter .bwm-pill-btn');
         disambigPills.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const val = btn.getAttribute('data-disambiguation') === 'on';
-                this.setDisambiguationEnabled(val, true);
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                // Contextual disambiguation is temporarily greyed out and disabled for deployment
+                return;
             });
         });
 
@@ -5502,15 +5526,10 @@ class BibleWordMap extends HTMLElement {
         const tsBtns = this.querySelectorAll('#bwm-text-size-filter button');
         tsBtns.forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-text-size') === this.mapTextSize));
 
-        // Contextual disambiguation option (?d=on | off)
-        let dParam = (params.get('d') || params.get('disambiguation') || '').toLowerCase();
-        if (dParam === 'off' || dParam === 'false' || dParam === '0') {
-            this.disambiguationEnabled = false;
-        } else if (dParam === 'on' || dParam === 'true' || dParam === '1') {
-            this.disambiguationEnabled = true;
-        }
+        // Contextual disambiguation option (?d=on | off) - disabled for deployment
+        this.disambiguationEnabled = false;
         const disambigBtns = this.querySelectorAll('#bwm-disambiguation-filter button');
-        disambigBtns.forEach(btn => btn.classList.toggle('active', (btn.getAttribute('data-disambiguation') === 'on' && this.disambiguationEnabled) || (btn.getAttribute('data-disambiguation') === 'off' && !this.disambiguationEnabled)));
+        disambigBtns.forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-disambiguation') === 'off'));
 
         if (chapters) {
             this.searchedChapters = this.parseChapterQuery(chapters);

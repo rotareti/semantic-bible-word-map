@@ -1,6 +1,6 @@
-# Semantic Bible Word Map
+# SymBible
 
-This project generates a semantic word-proximity map of the Bible using natural language processing and visualizes it in a web browser.
+SymBible generates an interactive semantic word-proximity map of the Bible using natural language processing and visualizes it in a web browser.
 
 For a comprehensive guide to the underlying distributional semantic theory, dimensionality reduction methodology, frequency filtering thresholds, and project limitations, see the [About Documentation](ABOUT.md).
 
