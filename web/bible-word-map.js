@@ -6144,10 +6144,9 @@ class BibleWordMap extends HTMLElement {
             }
         }
 
-        const completedItems = prefix
-            .split(/[,;]+|\s+/)
-            .map(t => t.trim())
-            .filter(Boolean);
+        const completedItems = hasCommas
+            ? prefix.split(/[,;]+/).map(t => t.trim()).filter(Boolean)
+            : prefix.split(/\s+/).map(t => t.trim()).filter(Boolean);
 
         const allItems = [...completedItems];
         if (activeToken.trim()) {
@@ -6168,6 +6167,8 @@ class BibleWordMap extends HTMLElement {
         if (!rawItem) return null;
         const item = rawItem.trim();
         if (!item) return null;
+        const low = item.toLowerCase();
+        const cleanNoSpace = low.replace(/\s+/g, '');
 
         const res = {
             raw: item,
@@ -6193,23 +6194,33 @@ class BibleWordMap extends HTMLElement {
             res.chapterData = chMatch;
         }
 
-        const bMatch = detectBookMatch(item, this.booksData ? this.booksData.books : null);
-        if (bMatch && bMatch.book && !res.isVerse && !res.isChapter) {
-            res.isBook = true;
-            res.bookData = bMatch.book;
+        // An item is only a book if it is an exact book name, exact book code, or exact alias
+        const bookList = (this.booksData && Array.isArray(this.booksData.books)) ? this.booksData.books : BIBLE_BOOKS;
+        let matchedBook = null;
+        for (const b of bookList) {
+            if (b.name.toLowerCase() === low || b.code.toLowerCase() === low) {
+                matchedBook = b;
+                break;
+            }
+        }
+        if (!matchedBook && BOOK_ALIASES[cleanNoSpace]) {
+            const code = BOOK_ALIASES[cleanNoSpace];
+            matchedBook = bookList.find(b => b.code === code) || BOOK_CODE_MAP[code] || null;
         }
 
-        if (!res.isVerse && !res.isChapter) {
-            const matches = this.findMatchesForWordToken ? this.findMatchesForWordToken(item) : [];
-            if (matches && matches.length > 0) {
+        if (matchedBook && !res.isVerse && !res.isChapter) {
+            res.isBook = true;
+            res.bookData = matchedBook;
+        }
+
+        const matches = this.findMatchesForWordToken ? this.findMatchesForWordToken(item) : [];
+        if (matches && matches.length > 0) {
+            res.isWord = true;
+            res.wordMatches = matches;
+        } else {
+            const uWords = this.getUniqueWordList ? this.getUniqueWordList() : [];
+            if (uWords.some(u => u.low === low)) {
                 res.isWord = true;
-                res.wordMatches = matches;
-            } else {
-                const uWords = this.getUniqueWordList ? this.getUniqueWordList() : [];
-                const low = item.toLowerCase();
-                if (uWords.some(u => u.low === low)) {
-                    res.isWord = true;
-                }
             }
         }
 
@@ -6218,22 +6229,22 @@ class BibleWordMap extends HTMLElement {
 
     isMixedSearch(items) {
         if (!items || items.length < 2) return false;
-        let hasWord = false;
-        let hasVerse = false;
-        let hasChapter = false;
-        let hasBook = false;
+        const classified = items.map(it => this.classifySearchItem(it)).filter(Boolean);
+        if (classified.length < 2) return false;
 
-        for (const it of items) {
-            const classified = this.classifySearchItem(it);
-            if (!classified) continue;
-            if (classified.isVerse) hasVerse = true;
-            if (classified.isChapter) hasChapter = true;
-            if (classified.isBook) hasBook = true;
-            if (classified.isWord) hasWord = true;
-        }
+        const canBeWord = classified.every(c => c.isWord || (!c.isVerse && !c.isChapter && !c.isBook));
+        if (canBeWord) return false;
 
-        const distinctTypes = (hasWord ? 1 : 0) + (hasVerse ? 1 : 0) + (hasChapter ? 1 : 0) + (hasBook ? 1 : 0);
-        return distinctTypes >= 2;
+        const canBeVerse = classified.every(c => c.isVerse);
+        if (canBeVerse) return false;
+
+        const canBeChapter = classified.every(c => c.isChapter);
+        if (canBeChapter) return false;
+
+        const canBeBook = classified.every(c => c.isBook);
+        if (canBeBook) return false;
+
+        return true;
     }
 
     getSemanticCompanionWords(word, limit = 8) {
@@ -6303,10 +6314,9 @@ class BibleWordMap extends HTMLElement {
                 const c = this.classifySearchItem(it);
                 if (!c) return;
                 if (c.isVerse && c.verseData) verseItems.push(c.verseData);
-                else if (c.isChapter && c.chapterData) chapterItems.push(c.chapterData);
-                else if (c.isBook && c.bookData) bookItems.push(c.bookData);
-                else if (c.isWord) wordItems.push(it);
-                else wordItems.push(it);
+                if (c.isChapter && c.chapterData) chapterItems.push(c.chapterData);
+                if (c.isBook && c.bookData) bookItems.push(c.bookData);
+                if (c.isWord || (!c.isVerse && !c.isChapter && !c.isBook)) wordItems.push(it);
             });
 
             if (verseItems.length > 0) {
@@ -8050,13 +8060,7 @@ class BibleWordMap extends HTMLElement {
                 }
             }
 
-            let queryTokens = query.split(/[\s,]+/).filter(w => w);
             let hasCommas = originalQuery.includes(',');
-            if (!directKeywordSearch && queryTokens.length >= 3 && !hasCommas) {
-                this.updateClearBtnVisibility();
-                this.showSearchRecovery(originalQuery, 'words');
-                return;
-            }
 
             this.searchedWords = [];
             let phraseMatches = findMatchesForToken(query);

@@ -14,6 +14,11 @@
 ### Changed
 - **Asset Cache Busting (`v=12.1.0`):** Bumped cache-buster query parameter to `?v=12.1.0` across stylesheet links, custom element scripts, and runtime data fetch requests.
 
+### Fixed
+- **Direct Multi-Word Search Execution:** Fixed search execution when pressing Enter or clicking the search button with multiple space-delimited keywords (e.g. "Father Son Spirit"). Removed obsolete length heuristic that aborted queries with 3+ space-separated keywords without commas.
+- **Book Classification and Multi-Word Suggestion Accuracy:** Fixed book matching in search item classification to require exact book names, codes, or recognized aliases instead of prefix matching, preventing common words (such as "Son" from "Song of Solomon") from being misclassified as books, triggering false mixed search modes, or being dropped from word search suggestions.
+- **Non-Exclusive Suggestion Categorization:** Populated mixed search item suggestions non-exclusively so dual-potential terms (such as names that match both books and common lexemes) are preserved in word suggestions.
+
 ## [12.0.0] - 2026-09-21
 ### Added
 - **Contextual Sense Disambiguation & Entity Unification Architecture:** Introduced a new semantic layer that resolves biblical polysemy and unifies cross-canonical theological entities without disrupting the global Word2Vec semantic manifold:
