@@ -6028,6 +6028,12 @@ class BibleWordMap extends HTMLElement {
     }
 
     closeSearchSuggestions() {
+        this._autocompleteSeq = (this._autocompleteSeq || 0) + 1;
+        if (this._autocompleteTimer) {
+            clearTimeout(this._autocompleteTimer);
+            this._autocompleteTimer = null;
+        }
+        this.setSearchSpinner(false);
         if (this.searchSuggestionsPopover) {
             this.searchSuggestionsPopover.style.display = 'none';
             this.searchSuggestionsPopover.innerHTML = '';
@@ -6402,7 +6408,34 @@ class BibleWordMap extends HTMLElement {
                     }
                 }
             }
-        } else if (parsed.hasTrailingDelimiter && !parsed.activeToken) {
+        } else {
+            if (parsed.items.length >= 3) {
+                if (this.viewMode === 'words') {
+                    suggestions.push({
+                        type: 'multi-word-search',
+                        category: 'Word Mode',
+                        categoryClass: 'word',
+                        icon: '&#x1F50D;',
+                        title: `Search keywords: <strong>${escapeHtml(parsed.items.join(', '))}</strong>`,
+                        desc: `Explore combined semantic vector neighborhood in Word Mode`,
+                        action: 'search-multi-words',
+                        query: parsed.items.join(' ')
+                    });
+                } else if (this.viewMode === 'verses') {
+                    suggestions.push({
+                        type: 'multi-word-search',
+                        category: 'Word Mode',
+                        categoryClass: 'word',
+                        icon: '&#x1F50D;',
+                        title: `Search <strong>"${escapeHtml(fullVal.trim())}"</strong> in Word Mode`,
+                        desc: `Switch to Word Mode for semantic vocabulary analysis`,
+                        action: 'switch-word-mode',
+                        query: fullVal.trim()
+                    });
+                }
+            }
+
+            if (parsed.hasTrailingDelimiter && !parsed.activeToken) {
             // Trailing delimiter after a word: suggest subsequent words / companions
             const lastWord = parsed.completedItems[parsed.completedItems.length - 1];
             if (this.viewMode === 'words') {
@@ -6844,6 +6877,7 @@ class BibleWordMap extends HTMLElement {
                 });
             }
         }
+        }
 
         if (suggestions.length === 0) {
             this.closeSearchSuggestions();
@@ -6852,6 +6886,73 @@ class BibleWordMap extends HTMLElement {
 
         const headerLabel = (isMixed || forceShowMixed) ? 'Mixed Search Items' : 'Suggestions';
         const headerSub = (isMixed || forceShowMixed) ? 'Select a view below to explore:' : `${suggestions.length} results`;
+
+        this.renderSearchSuggestions(suggestions, headerLabel, headerSub);
+
+        const rawTokens = fullVal.trim().split(/[\s,]+/).filter(Boolean);
+        if (!isMixed && !forceShowMixed && rawTokens.length >= 3) {
+            this.setSearchSpinner(true);
+            if (this._autocompleteTimer) {
+                clearTimeout(this._autocompleteTimer);
+                this._autocompleteTimer = null;
+            }
+            const seq = ++this._autocompleteSeq;
+            this._autocompleteTimer = setTimeout(async () => {
+                try {
+                    if (this._autocompleteSeq !== seq) return;
+                    const centroidResult = await this.findCentroidVerses(fullVal, 4);
+                    if (this._autocompleteSeq !== seq) return;
+                    if (!this.searchSuggestionsPopover || this.searchSuggestionsPopover.style.display === 'none') return;
+                    if (centroidResult && centroidResult.verses && centroidResult.verses.length > 0) {
+                        const centroidSuggestions = centroidResult.verses.map(v => ({
+                            type: 'centroid-verse',
+                            category: 'Centroid Verse',
+                            categoryClass: 'verse',
+                            icon: '&#x1F4D6;',
+                            title: `<strong>${escapeHtml(v.displayRef)}</strong> <span class="bwm-suggestion-meta">(Semantic Centroid)</span>`,
+                            desc: escapeHtml(v.snippet || v.text),
+                            action: 'jump-verse',
+                            verseRef: v.displayRef,
+                            searchRef: v.ref
+                        }));
+
+                        const combined = [];
+                        const topAction = suggestions.find(s => s.action === 'search-multi-words');
+                        if (topAction) combined.push(topAction);
+                        combined.push(...centroidSuggestions);
+                        suggestions.forEach(s => {
+                            if (s.action !== 'search-multi-words') combined.push(s);
+                        });
+
+                        this.renderSearchSuggestions(combined, 'Thematic Centroid Verses', `${combined.length} suggestions`);
+                    }
+                } catch (err) {
+                    console.warn('Dynamic centroid search error:', err);
+                } finally {
+                    if (this._autocompleteSeq === seq) {
+                        this.setSearchSpinner(false);
+                    }
+                }
+            }, 120);
+        } else {
+            if (this._autocompleteTimer) {
+                clearTimeout(this._autocompleteTimer);
+                this._autocompleteTimer = null;
+            }
+            this.setSearchSpinner(false);
+        }
+    }
+
+    renderSearchSuggestions(suggestions, headerLabel = 'Suggestions', headerSub = '') {
+        if (!this.searchSuggestionsPopover) return;
+        if (!suggestions || suggestions.length === 0) {
+            this.closeSearchSuggestions();
+            return;
+        }
+
+        if (!headerSub) {
+            headerSub = `${suggestions.length} results`;
+        }
 
         let html = `
             <div class="bwm-suggestions-header">
@@ -6901,7 +7002,7 @@ class BibleWordMap extends HTMLElement {
                 const action = el.getAttribute('data-action');
                 const prefix = this._searchAutocompletePrefix || '';
 
-                if (action === 'navigate-view-words') {
+                if (action === 'navigate-view-words' || action === 'search-multi-words') {
                     const q = el.getAttribute('data-query');
                     this.closeSearchSuggestions();
                     this.setViewMode('words');
@@ -8028,7 +8129,12 @@ class BibleWordMap extends HTMLElement {
         
         const findMatchesForToken = (token) => this.findMatchesForWordToken(token);
 
-        if (!useExplicitIds) {
+        this.setSearchSpinner(true);
+        // Yield to allow browser paint cycle to display the loading spinner immediately
+        await new Promise(r => setTimeout(r, 20));
+
+        try {
+            if (!useExplicitIds) {
             let query = originalQuery.toLowerCase();
             if (!query) {
                 this.clearAllKeywords();
@@ -8192,8 +8298,14 @@ class BibleWordMap extends HTMLElement {
             }
         });
 
-        const limit = this.neighborsPerKeyword || 100;
-        foundPoints.forEach(primaryPoint => {
+        const numKws = Math.max(1, foundPoints.length);
+        const baseLimit = this.neighborsPerKeyword || 100;
+        // Dynamically scale limit so multi-keyword searches do not explode node count and freeze D3
+        const targetTotalNeighbors = 220;
+        const limit = numKws <= 2 ? baseLimit : Math.max(20, Math.min(baseLimit, Math.floor(targetTotalNeighbors / numKws)));
+
+        for (let i = 0; i < foundPoints.length; i++) {
+            const primaryPoint = foundPoints[i];
             let similarities = this.data2d.map(d => ({
                 point: d,
                 sim: this.cosineSimilarity(primaryPoint.v, d.v)
@@ -8213,7 +8325,12 @@ class BibleWordMap extends HTMLElement {
                     }
                 }
             });
-        });
+
+            // Yield periodically if calculating many keywords to avoid freezing main thread
+            if (numKws >= 4 && (i + 1) % 2 === 0 && i < foundPoints.length - 1) {
+                await new Promise(r => setTimeout(r, 0));
+            }
+        }
 
         let finalTopWords = Array.from(topWordsSet.values());
         
@@ -8249,6 +8366,21 @@ class BibleWordMap extends HTMLElement {
             verse_indices: s.point.verse_indices
         }));
 
+        if (numKws >= 3) {
+            await new Promise(r => setTimeout(r, 0));
+        }
+
+        // Build pre-computed verse sets for fast O(1) intersection checks
+        const swVerseSets = new Map();
+        if (this.wordToVerses) {
+            this.searchedWords.forEach(sw => {
+                const arr = this.wordToVerses[sw];
+                if (arr && arr.length > 0) {
+                    swVerseSets.set(sw, new Set(arr));
+                }
+            });
+        }
+
         this.allSearchLinks = [];
         this.allSearchNodes.forEach(n => {
             if (n.isKw || !n.sourceKw) return;
@@ -8257,8 +8389,8 @@ class BibleWordMap extends HTMLElement {
             let linkedToSourceKw = false;
             
             this.searchedWords.forEach(sw => {
-                let swVerses = this.wordToVerses ? (this.wordToVerses[sw] || []) : [];
-                let intersection = myVerses.filter(vId => swVerses.includes(vId));
+                let swSet = swVerseSets.get(sw);
+                let intersection = swSet ? myVerses.filter(vId => swSet.has(vId)) : [];
                 if (intersection.length > 0) {
                     let swPoint = this.data2d ? this.data2d.find(d => d.id === sw) : null;
                     let linkSim = (n.v && swPoint && swPoint.v) ? this.cosineSimilarity(n.v, swPoint.v) : (sw === n.sourceKw ? n.sim : 0);
@@ -8378,6 +8510,9 @@ class BibleWordMap extends HTMLElement {
             }
         }
         this.runSimulation();
+        } finally {
+            this.setSearchSpinner(false);
+        }
     }
     updateClearBtnVisibility() {
         if (!this.searchClearBtn) return;
