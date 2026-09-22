@@ -7295,8 +7295,9 @@ class BibleWordMap extends HTMLElement {
                 } else if (action === 'search-entity') {
                     const eId = el.getAttribute('data-entity-id');
                     const eTitle = el.getAttribute('data-entity-title');
-                    this.searchInput.value = prefix ? (prefix + eTitle) : eTitle;
                     this.closeSearchSuggestions();
+                    if (this.viewMode !== 'words') this.setViewMode('words');
+                    this.searchInput.value = prefix ? (prefix + eTitle) : eTitle;
                     if (prefix) {
                         this.searchWord();
                     } else {
@@ -7306,8 +7307,9 @@ class BibleWordMap extends HTMLElement {
                 } else if (action === 'search-sense') {
                     const sId = el.getAttribute('data-sense-id');
                     const sLabel = el.getAttribute('data-short-label');
-                    this.searchInput.value = prefix ? (prefix + sLabel) : sLabel;
                     this.closeSearchSuggestions();
+                    if (this.viewMode !== 'words') this.setViewMode('words');
+                    this.searchInput.value = prefix ? (prefix + sLabel) : sLabel;
                     if (prefix) {
                         this.searchWord();
                     } else {
@@ -7316,13 +7318,15 @@ class BibleWordMap extends HTMLElement {
                     }
                 } else if (action === 'search-lemma') {
                     const l = el.getAttribute('data-lemma');
-                    this.searchInput.value = prefix ? (prefix + l) : l;
                     this.closeSearchSuggestions();
+                    if (this.viewMode !== 'words') this.setViewMode('words');
+                    this.searchInput.value = prefix ? (prefix + l) : l;
                     this.searchWord();
                 } else if (action === 'search-word') {
                     const w = el.getAttribute('data-word');
-                    this.searchInput.value = prefix ? (prefix + w) : w;
                     this.closeSearchSuggestions();
+                    if (this.viewMode !== 'words') this.setViewMode('words');
+                    this.searchInput.value = prefix ? (prefix + w) : w;
                     this.searchWord();
                 } else if (action === 'jump-verse') {
                     const vRef = el.getAttribute('data-verse-ref');
@@ -7351,6 +7355,7 @@ class BibleWordMap extends HTMLElement {
                     const vId = el.getAttribute('data-verse-id');
                     const vRef = el.getAttribute('data-verse-ref') || vId;
                     this.closeSearchSuggestions();
+                    if (this.viewMode !== 'verses') this.setViewMode('verses');
                     if (prefix) {
                         this.searchInput.value = prefix + formatVerseRef(vRef);
                         this.searchVerses();
@@ -7360,6 +7365,7 @@ class BibleWordMap extends HTMLElement {
                 } else if (action === 'select-verse-ref') {
                     const vRef = el.getAttribute('data-verse-ref');
                     this.closeSearchSuggestions();
+                    if (this.viewMode !== 'verses') this.setViewMode('verses');
                     if (prefix) {
                         this.searchInput.value = prefix + vRef;
                     } else {
@@ -7369,6 +7375,7 @@ class BibleWordMap extends HTMLElement {
                 } else if (action === 'select-chapter-id') {
                     const chId = el.getAttribute('data-chapter-id');
                     this.closeSearchSuggestions();
+                    if (this.viewMode !== 'chapters') this.setViewMode('chapters');
                     if (prefix) {
                         this.searchInput.value = prefix + formatChapterRef(chId);
                         this.searchChapters();
@@ -7379,6 +7386,7 @@ class BibleWordMap extends HTMLElement {
                     const bCode = el.getAttribute('data-book-code');
                     const bObj = this.booksData ? this.booksData.books.find(b => b.code === bCode) : null;
                     this.closeSearchSuggestions();
+                    if (this.viewMode !== 'books') this.setViewMode('books');
                     if (prefix) {
                         this.searchInput.value = prefix + (bObj ? bObj.name : bCode);
                         this.searchBooks();
@@ -7505,28 +7513,51 @@ class BibleWordMap extends HTMLElement {
 
     async getEnglishSemanticData() {
         if (this.foundation === 'bsb') {
-            if (this.versemapPromise && !this.versemapData) {
+            if (!this.versemapLookup && this.versemapData) {
+                let list = this.versemapData.verses || (Array.isArray(this.versemapData) ? this.versemapData : []);
+                const vmLookup = new Map();
+                for (let i = 0; i < list.length; i++) {
+                    vmLookup.set(list[i].id, list[i]);
+                }
+                this.versemapLookup = vmLookup;
+            }
+            if (!this.versemapLookup && this.versemapPromise) {
                 try {
                     let data = await this.versemapPromise;
                     if (data) {
                         let list = data.verses || (Array.isArray(data) ? data : []);
                         this.versemapData = data.verses ? data : { count: list.length, verses: list };
-                        this.versemapLookup = new Map(list.map(v => [v.id, v]));
+                        const vmLookup = new Map();
+                        for (let i = 0; i < list.length; i++) {
+                            vmLookup.set(list[i].id, list[i]);
+                        }
+                        this.versemapLookup = vmLookup;
                     }
-                } catch (e) {}
+                } catch (e) {
+                    console.warn('Could not load versemap data for English semantics:', e);
+                }
             }
-            if (this.versesPromise && !this.verses) {
+            if ((!this.verses || !this.wordToVerses) && this.versesPromise) {
                 try {
                     let vData = await this.versesPromise;
                     if (vData) {
                         this.verses = vData.verses;
                         this.wordToVerses = vData.words;
                     }
-                } catch (e) {}
+                } catch (e) {
+                    console.warn('Could not load verses data for English semantics:', e);
+                }
             }
-            if (this.data2dPromise && !this.data2d) {
+            if (!this.data2d && this.data2dPromise) {
                 try {
                     this.data2d = await this.data2dPromise;
+                } catch (e) {
+                    console.warn('Could not load wordmap data for English semantics:', e);
+                }
+            }
+            if (!this.booksData && this.booksPromise) {
+                try {
+                    this.booksData = await this.booksPromise;
                 } catch (e) {}
             }
             if (this.data2d && this.verses && this.versemapLookup) {
@@ -7541,66 +7572,79 @@ class BibleWordMap extends HTMLElement {
                 };
             }
         }
+
         if (this._englishSemanticData) {
             return this._englishSemanticData;
         }
-
-        const vParam = '?v=12.1.0';
-        const wordmapSrc = this.getAttribute('src-2d-bsb') || this.getAttribute('src-2d') || ('data/output/wordmap_2d.json' + vParam);
-        const versesSrc = this.getAttribute('src-verses-bsb') || this.getAttribute('src-verses') || ('data/output/verse_index.json' + vParam);
-        const versemapSrc = this.getAttribute('src-versemap-bsb') || this.getAttribute('src-versemap') || ('data/output/versemap_2d.json' + vParam);
-        const booksSrc = this.getAttribute('src-books-bsb') || this.getAttribute('src-books') || ('data/output/bookmap_2d.json' + vParam);
-
-        try {
-            const [wData, vData, vmData, bData] = await Promise.all([
-                fetch(wordmapSrc).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
-                fetch(versesSrc).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
-                fetch(versemapSrc).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
-                fetch(booksSrc).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }).catch(() => null)
-            ]);
-
-            const vmList = vmData ? (vmData.verses || (Array.isArray(vmData) ? vmData : [])) : [];
-            const vmLookup = new Map(vmList.map(v => [v.id, v]));
-
-            const findMatches = (token) => {
-                if (!token || !wData) return [];
-                token = token.toLowerCase();
-                let idMatch = wData.filter(d => d.id.toLowerCase() === token);
-                if (idMatch.length > 0) return idMatch;
-                let wordMatch = wData.filter(d => d.w.toLowerCase() === token);
-                if (wordMatch.length > 0) return wordMatch;
-                let glossPartMatch = wData.filter(d => d.w.toLowerCase().split(/[\s-]+/).includes(token));
-                if (glossPartMatch.length > 0) return glossPartMatch;
-                let origMatch = wData.filter(d => {
-                    if (!d.original || !Array.isArray(d.original)) return false;
-                    return d.original.some(o => {
-                        if (o.lemma && o.lemma.toLowerCase() === token) return true;
-                        if (o.translit && o.translit.toLowerCase() === token) return true;
-                        if (o.strongs) {
-                            let sLow = o.strongs.toLowerCase();
-                            if (sLow === token || sLow === 'g' + token || sLow === 'h' + token) return true;
-                        }
-                        return false;
-                    });
-                });
-                if (origMatch.length > 0) return origMatch;
-                return [];
-            };
-
-            this._englishSemanticData = {
-                data2d: wData,
-                verses: vData ? vData.verses : [],
-                wordToVerses: vData ? vData.words : {},
-                versemapData: vmData ? (vmData.verses ? vmData : { count: vmList.length, verses: vmList }) : null,
-                versemapLookup: vmLookup,
-                booksData: bData,
-                findMatches
-            };
-            return this._englishSemanticData;
-        } catch (err) {
-            console.error('Could not load English semantic data:', err);
-            return null;
+        if (this._englishSemanticDataPromise) {
+            return await this._englishSemanticDataPromise;
         }
+
+        this._englishSemanticDataPromise = (async () => {
+            const vParam = '?v=12.1.0';
+            const wordmapSrc = this.getAttribute('src-2d-bsb') || this.getAttribute('src-2d') || ('data/output/wordmap_2d.json' + vParam);
+            const versesSrc = this.getAttribute('src-verses-bsb') || this.getAttribute('src-verses') || ('data/output/verse_index.json' + vParam);
+            const versemapSrc = this.getAttribute('src-versemap-bsb') || this.getAttribute('src-versemap') || ('data/output/versemap_2d.json' + vParam);
+            const booksSrc = this.getAttribute('src-books-bsb') || this.getAttribute('src-books') || ('data/output/bookmap_2d.json' + vParam);
+
+            try {
+                const [wData, vData, vmData, bData] = await Promise.all([
+                    fetch(wordmapSrc).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
+                    fetch(versesSrc).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
+                    fetch(versemapSrc).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
+                    fetch(booksSrc).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }).catch(() => null)
+                ]);
+
+                const vmList = vmData ? (vmData.verses || (Array.isArray(vmData) ? vmData : [])) : [];
+                const vmLookup = new Map();
+                for (let i = 0; i < vmList.length; i++) {
+                    vmLookup.set(vmList[i].id, vmList[i]);
+                }
+
+                const findMatches = (token) => {
+                    if (!token || !wData) return [];
+                    token = token.toLowerCase();
+                    let idMatch = wData.filter(d => d.id.toLowerCase() === token);
+                    if (idMatch.length > 0) return idMatch;
+                    let wordMatch = wData.filter(d => d.w.toLowerCase() === token);
+                    if (wordMatch.length > 0) return wordMatch;
+                    let glossPartMatch = wData.filter(d => d.w.toLowerCase().split(/[\s-]+/).includes(token));
+                    if (glossPartMatch.length > 0) return glossPartMatch;
+                    let origMatch = wData.filter(d => {
+                        if (!d.original || !Array.isArray(d.original)) return false;
+                        return d.original.some(o => {
+                            if (o.lemma && o.lemma.toLowerCase() === token) return true;
+                            if (o.translit && o.translit.toLowerCase() === token) return true;
+                            if (o.strongs) {
+                                let sLow = o.strongs.toLowerCase();
+                                if (sLow === token || sLow === 'g' + token || sLow === 'h' + token) return true;
+                            }
+                            return false;
+                        });
+                    });
+                    if (origMatch.length > 0) return origMatch;
+                    return [];
+                };
+
+                this._englishSemanticData = {
+                    data2d: wData,
+                    verses: vData ? vData.verses : [],
+                    wordToVerses: vData ? vData.words : {},
+                    versemapData: vmData ? (vmData.verses ? vmData : { count: vmList.length, verses: vmList }) : null,
+                    versemapLookup: vmLookup,
+                    booksData: bData,
+                    findMatches
+                };
+                return this._englishSemanticData;
+            } catch (err) {
+                console.error('Could not load English semantic data:', err);
+                return null;
+            } finally {
+                this._englishSemanticDataPromise = null;
+            }
+        })();
+
+        return await this._englishSemanticDataPromise;
     }
 
     async getWordmapForFoundation(foundation) {
