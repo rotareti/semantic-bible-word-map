@@ -700,6 +700,7 @@ class BibleWordMap extends HTMLElement {
         this.mapTextScale = isMobileScreen ? 1.0 : 1.3;
         this._userSelectedTextSize = false;
         this._searchRecoverySeq = 0;
+        this._autocompleteSeq = 0;
         this._bgLoadSeq = 0;
         this._wordsLoadPromise = null;
         this._versesLoadPromise = null;
@@ -7213,7 +7214,7 @@ class BibleWordMap extends HTMLElement {
                 clearTimeout(this._autocompleteTimer);
                 this._autocompleteTimer = null;
             }
-            const seq = ++this._autocompleteSeq;
+            const seq = (this._autocompleteSeq = (this._autocompleteSeq || 0) + 1);
             this._autocompleteTimer = setTimeout(async () => {
                 try {
                     if (this._autocompleteSeq !== seq) return;
