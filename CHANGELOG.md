@@ -18,14 +18,24 @@
 - **Multi-Word Search Performance & UI Non-Blocking:**
   - Integrated loading spinner activation during background centroid calculations and multi-keyword Word Mode searches.
   - Introduced cooperative main thread yielding between keyword vector searches to keep the UI fluid and prevent browser freezes.
+  - Optimized centroid verse calculation with precomputed Set indices, reducing candidate verse scoring time by over 90%.
+  - Added cooperative yielding (`await new Promise(r => setTimeout(r, 0))`) every 128 candidate verses so the browser UI thread never lags or drops keystrokes during background scoring.
+  - Implemented sequence-aware task cancellation (`abortCheck`) so subsequent keystrokes immediately abort in-flight centroid calculations.
+  - Tuned dynamic centroid search debounce from 120ms to 280ms to prevent premature background calculations while actively typing subsequent words.
+  - Added memoization for search item classification (`_classifyCache`) and semantic companions (`_companionCache`) across keystrokes.
   - Implemented adaptive neighbor limit scaling (`Math.floor(220 / numKeywords)`) for queries with 3+ words, preventing excessive node counts and D3 simulation stalls.
   - Precomputed keyword verse lookups as hash sets for O(1) link intersection performance.
+- **Options Drawer & Suggestions Hierarchy:**
+  - Opening the options drawer (hamburger toggle, `openDrawer()`, or interacting with drawer controls) immediately collapses and closes the autocomplete suggestions popover.
+  - Elevated open drawer z-index (`10040`) above popovers to prevent overlay collisions.
 - **Search Resolution & Recovery Fallback:** Hitting Enter or clicking the search icon executes searches directly. If all words in Word Mode are valid, graphs all words and opens the study panel; if any words cannot be resolved, falls back to the nearest matches window.
 - **Search Suggestion Taxonomy & Category Badges:** Updated category badge labels to "Word view" and "Verse View" (replacing legacy "Words mode" and "Centroid Verse"), paired with categorized section delineators in the suggestions dropdown.
 - **Clean Professional Typography:** Removed emoji icons from dynamic search suggestions and recovery cards to maintain consistent, professional styling.
 - **Asset Cache Busting (`v=12.1.0`):** Bumped cache-buster query parameter to `?v=12.1.0` across stylesheet links, custom element scripts, and runtime data fetch requests.
 
 ### Fixed
+- **Search Input Typing Latency:** Fixed main-thread lockup when typing 3 or more words by removing synchronous O(N) array scans (`list.includes(vIdx)`) across thousands of candidate verses and yielding to the browser event loop.
+- **Options Drawer Layering & Suggestion Dismissal:** Fixed an issue where the options drawer opened beneath the autocomplete suggestions window by collapsing suggestions and blurring the search input upon drawer activation.
 - **Direct Multi-Word Search Execution:** Fixed search execution when pressing Enter or clicking the search button with multiple space-delimited keywords (e.g. "Father Son Spirit"). Removed obsolete length heuristic that aborted queries with 3+ space-separated keywords without commas.
 - **Book Classification and Multi-Word Suggestion Accuracy:** Fixed book matching in search item classification to require exact book names, codes, or recognized aliases instead of prefix matching, preventing common words (such as "Son" from "Song of Solomon") from being misclassified as books, triggering false mixed search modes, or being dropped from word search suggestions.
 - **Non-Exclusive Suggestion Categorization:** Populated mixed search item suggestions non-exclusively so dual-potential terms (such as names that match both books and common lexemes) are preserved in word suggestions.

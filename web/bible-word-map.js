@@ -1809,6 +1809,7 @@ class BibleWordMap extends HTMLElement {
                 }
                 .bwm-drawer.open {
                     left: 0;
+                    z-index: 10040;
                 }
                 .bwm-drawer.pinned {
                     left: 0;
@@ -3615,6 +3616,7 @@ class BibleWordMap extends HTMLElement {
                         transform: translateY(0) !important;
                         opacity: 1 !important;
                         pointer-events: auto !important;
+                        z-index: 10040 !important;
                     }
 
                     .bwm-drawer-header {
@@ -5312,8 +5314,12 @@ class BibleWordMap extends HTMLElement {
             this.drawer.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.closeSearchRecovery();
+                this.closeSearchSuggestions();
             });
-            this.drawer.addEventListener('pointerdown', (e) => e.stopPropagation());
+            this.drawer.addEventListener('pointerdown', (e) => {
+                e.stopPropagation();
+                this.closeSearchSuggestions();
+            });
             this.drawer.addEventListener('mousedown', (e) => e.stopPropagation());
             this.setupMobileSwipeToDismiss(this.drawer, () => this.closeDrawer());
         }
@@ -5322,6 +5328,7 @@ class BibleWordMap extends HTMLElement {
             this.drawerToggle.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.closeSearchRecovery();
+                this.closeSearchSuggestions();
                 if (this.isOptionsPanelPinned) {
                     this.unpinOptionsPanel();
                     this.closeDrawer(true);
@@ -6260,6 +6267,15 @@ class BibleWordMap extends HTMLElement {
         const item = rawItem.trim();
         if (!item) return null;
         const low = item.toLowerCase();
+
+        if (!this._classifyCache || this._classifyCacheSource !== this.data2d) {
+            this._classifyCache = new Map();
+            this._classifyCacheSource = this.data2d;
+        }
+        if (this._classifyCache.has(low)) {
+            return this._classifyCache.get(low);
+        }
+
         const cleanNoSpace = low.replace(/\s+/g, '');
 
         const res = {
@@ -6316,6 +6332,7 @@ class BibleWordMap extends HTMLElement {
             }
         }
 
+        this._classifyCache.set(low, res);
         return res;
     }
 
@@ -6342,6 +6359,16 @@ class BibleWordMap extends HTMLElement {
     getSemanticCompanionWords(word, limit = 8) {
         if (!word || !this.data2d) return [];
         const cleanWord = word.trim().toLowerCase();
+
+        if (!this._companionCache || this._companionCacheSource !== this.data2d) {
+            this._companionCache = new Map();
+            this._companionCacheSource = this.data2d;
+        }
+        const cacheKey = `${cleanWord}:${limit}`;
+        if (this._companionCache.has(cacheKey)) {
+            return this._companionCache.get(cacheKey);
+        }
+
         let sourceNode = null;
 
         let matches = this.findMatchesForWordToken ? this.findMatchesForWordToken(cleanWord) : [];
@@ -6353,10 +6380,12 @@ class BibleWordMap extends HTMLElement {
 
         if (!sourceNode || !sourceNode.v) {
             const unique = this.getUniqueWordList ? this.getUniqueWordList() : [];
-            return unique
+            const fallback = unique
                 .filter(u => u.low !== cleanWord)
                 .slice(0, limit)
                 .map(u => u.entry);
+            this._companionCache.set(cacheKey, fallback);
+            return fallback;
         }
 
         const nodeVec = sourceNode.v;
@@ -6378,7 +6407,9 @@ class BibleWordMap extends HTMLElement {
         }
 
         candidates.sort((a, b) => b.sim - a.sim);
-        return candidates.slice(0, limit).map(c => c.entry);
+        const res = candidates.slice(0, limit).map(c => c.entry);
+        this._companionCache.set(cacheKey, res);
+        return res;
     }
 
     updateSearchAutocomplete(forceShowMixed = false) {
@@ -7038,8 +7069,8 @@ class BibleWordMap extends HTMLElement {
             this._autocompleteTimer = setTimeout(async () => {
                 try {
                     if (this._autocompleteSeq !== seq) return;
-                    const centroidResult = await this.findCentroidVerses(fullVal, 4);
-                    if (this._autocompleteSeq !== seq) return;
+                    const centroidResult = await this.findCentroidVerses(fullVal, 4, () => this._autocompleteSeq !== seq);
+                    if (this._autocompleteSeq !== seq || !centroidResult) return;
                     if (!this.searchSuggestionsPopover || this.searchSuggestionsPopover.style.display === 'none') return;
 
                     if (centroidResult && ((centroidResult.matchedTokens && centroidResult.matchedTokens.length >= 2) || (centroidResult.verses && centroidResult.verses.length > 0))) {
@@ -7111,7 +7142,7 @@ class BibleWordMap extends HTMLElement {
                         this.setSearchSpinner(false);
                     }
                 }
-            }, 120);
+            }, 280);
         } else {
             if (this._autocompleteTimer) {
                 clearTimeout(this._autocompleteTimer);
@@ -7607,8 +7638,10 @@ class BibleWordMap extends HTMLElement {
         return results;
     }
 
-    async findCentroidVerses(query, topN = 4) {
+    async findCentroidVerses(query, topN = 4, abortCheck = null) {
+        if (abortCheck && abortCheck()) return null;
         const engData = await this.getEnglishSemanticData();
+        if (abortCheck && abortCheck()) return null;
         if (!engData || !engData.versemapLookup || !engData.verses || !engData.data2d) {
             return { centroid: null, allMatched: false, matchedTokens: [], verses: [] };
         }
@@ -7631,6 +7664,8 @@ class BibleWordMap extends HTMLElement {
             }
         }
 
+        if (abortCheck && abortCheck()) return null;
+
         if (tokenMatches.length < 2) {
             return { centroid: null, allMatched: false, matchedTokens: tokenMatches, verses: [] };
         }
@@ -7642,18 +7677,65 @@ class BibleWordMap extends HTMLElement {
             y: tokenMatches.reduce((sum, m) => sum + m.bestPoint.y, 0) / tokenMatches.length
         };
 
-        let candidateIndices = new Set();
-        if (engData.wordToVerses) {
-            for (let tm of tokenMatches) {
+        // Precompute Set of verse indices for each token for O(1) membership
+        const tokenVerseSets = tokenMatches.map(tm => {
+            const s = new Set();
+            if (engData.wordToVerses) {
                 for (let h of tm.hits) {
-                    let list = engData.wordToVerses[h.id] || [];
-                    for (let vIdx of list) candidateIndices.add(vIdx);
+                    let list = engData.wordToVerses[h.id];
+                    if (list) {
+                        for (let i = 0; i < list.length; i++) s.add(list[i]);
+                    }
+                }
+            }
+            return s;
+        });
+
+        // Precompute phrase match candidates once outside verse loop
+        const subPhrases = [];
+        if (cleanPhrase.length >= 6) {
+            subPhrases.push({ phrase: cleanPhrase, bonus: 250 });
+        }
+        let pWords = cleanPhrase.split(' ');
+        if (pWords.length >= 2) {
+            for (let len = pWords.length - 1; len >= 2; len--) {
+                for (let start = 0; start <= pWords.length - len; start++) {
+                    let sub = pWords.slice(start, start + len).join(' ');
+                    if (sub.length >= 6 && sub !== cleanPhrase) {
+                        subPhrases.push({ phrase: sub, bonus: len * 35 });
+                    }
                 }
             }
         }
 
+        // Count verse occurrences across token sets
+        const verseCounts = new Map();
+        for (let i = 0; i < tokenVerseSets.length; i++) {
+            for (const vIdx of tokenVerseSets[i]) {
+                verseCounts.set(vIdx, (verseCounts.get(vIdx) || 0) + 1);
+            }
+        }
+
+        let candidateList = [];
+        for (const [vIdx, count] of verseCounts.entries()) {
+            if (count >= 2) candidateList.push({ vIdx, count });
+        }
+        if (candidateList.length === 0) {
+            for (const [vIdx, count] of verseCounts.entries()) {
+                candidateList.push({ vIdx, count });
+            }
+        }
+
         let scored = [];
-        for (let vIdx of candidateIndices) {
+        for (let i = 0; i < candidateList.length; i++) {
+            // Yield every 128 items to ensure UI thread responsiveness
+            if ((i & 127) === 0 && i > 0) {
+                if (abortCheck && abortCheck()) return null;
+                await new Promise(resolve => setTimeout(resolve, 0));
+                if (abortCheck && abortCheck()) return null;
+            }
+
+            const { vIdx, count: matchCount } = candidateList[i];
             let raw = engData.verses[vIdx];
             if (!raw) continue;
             let pipeIdx = raw.indexOf('|');
@@ -7662,28 +7744,11 @@ class BibleWordMap extends HTMLElement {
             let normText = text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
 
             let phraseBonus = 0;
-            if (cleanPhrase.length >= 6 && normText.includes(cleanPhrase)) {
-                phraseBonus = 250;
-            } else {
-                let pWords = cleanPhrase.split(' ');
-                for (let len = pWords.length - 1; len >= 2; len--) {
-                    for (let start = 0; start <= pWords.length - len; start++) {
-                        let sub = pWords.slice(start, start + len).join(' ');
-                        if (sub.length >= 6 && normText.includes(sub)) {
-                            phraseBonus = Math.max(phraseBonus, len * 35);
-                        }
-                    }
-                }
-            }
-
-            let matchCount = 0;
-            if (engData.wordToVerses) {
-                for (let tm of tokenMatches) {
-                    let hasToken = tm.hits.some(h => {
-                        let list = engData.wordToVerses[h.id];
-                        return list && list.includes(vIdx);
-                    });
-                    if (hasToken) matchCount++;
+            for (let sIdx = 0; sIdx < subPhrases.length; sIdx++) {
+                const sp = subPhrases[sIdx];
+                if (normText.includes(sp.phrase)) {
+                    if (sp.bonus > phraseBonus) phraseBonus = sp.bonus;
+                    if (sp.bonus >= 250) break;
                 }
             }
 
@@ -7705,6 +7770,8 @@ class BibleWordMap extends HTMLElement {
 
             scored.push({ ref, displayRef, text, snippet, matchCount, dist2D, score });
         }
+
+        if (abortCheck && abortCheck()) return null;
 
         scored.sort((a, b) => b.score - a.score);
         return {
@@ -7746,7 +7813,7 @@ class BibleWordMap extends HTMLElement {
             let centroidResult = null;
 
             if (isMultiWordQuery) {
-                centroidResult = await this.findCentroidVerses(q, 4);
+                centroidResult = await this.findCentroidVerses(q, 4, () => this._searchRecoverySeq !== recoverySeq);
                 if (this._searchRecoverySeq !== recoverySeq) return;
             }
 
@@ -10680,8 +10747,12 @@ class BibleWordMap extends HTMLElement {
     }
 
     openDrawer() {
-        if (!this.drawer) return;
         this.closeSearchRecovery();
+        this.closeSearchSuggestions();
+        if (this.searchInput && typeof this.searchInput.blur === 'function') {
+            this.searchInput.blur();
+        }
+        if (!this.drawer) return;
         if (window.innerWidth <= 768) {
             this.closeActiveInfoWindows();
             this.hideRadialMenu();
@@ -10708,8 +10779,9 @@ class BibleWordMap extends HTMLElement {
     }
 
     toggleDrawer() {
-        if (!this.drawer) return;
         this.closeSearchRecovery();
+        this.closeSearchSuggestions();
+        if (!this.drawer) return;
         if (this.drawer.classList.contains('open')) {
             if (this.isOptionsPanelPinned) {
                 this.unpinOptionsPanel();
