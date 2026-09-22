@@ -1,20 +1,21 @@
 setup:
-	mkdir -p data/raw data/processed data/output pipeline/venv
-	python3 -m venv --without-pip pipeline/venv
-	wget -q https://bootstrap.pypa.io/get-pip.py && pipeline/venv/bin/python get-pip.py && rm get-pip.py
-	pipeline/venv/bin/pip install -r pipeline/requirements.txt
+	bash setup.sh
 
 parse:
-	cd parser && ~/.cargo/bin/cargo run --release -- ../data/raw ../data/processed
+	pipeline/venv/bin/python pipeline/build.py
+	pipeline/venv/bin/python pipeline/build_lxx.py
+	pipeline/venv/bin/python pipeline/build_vul.py
 
 train:
-	pipeline/venv/bin/python pipeline/train_embeddings.py
+	pipeline/venv/bin/python pipeline/train_all_canons_senses_and_entities.py
 
 map:
 	pipeline/venv/bin/python pipeline/generate_map.py
+	pipeline/venv/bin/python pipeline/generate_map_lxx.py
+	pipeline/venv/bin/python pipeline/generate_map_vul.py
 
 serve:
 	ln -sfn ../data web/data
 	cd web && python3 -m http.server 8000
 
-all: parse train map
+all: setup parse train map

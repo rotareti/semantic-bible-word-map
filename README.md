@@ -25,7 +25,6 @@ The pipeline consists of three main components:
 ## Directory Structure
 
 * `data/`: Raw USJ files, processed tokens, and output coordinate/verse maps.
-* `parser/`: Rust CLI application for processing USJ.
 * `pipeline/`: Python scripts for ML.
 * `web/`: Frontend components.
 
@@ -33,7 +32,7 @@ The pipeline consists of three main components:
 
 If you want to parse the Bible text, train your own Word2Vec embeddings, and generate the map projections yourself:
 
-1. **Setup the Environment**: Installs Rust, Python, and required ML dependencies.
+1. **Setup the Environment**: Installs Python and required ML dependencies.
    ```bash
    make setup
    ```
