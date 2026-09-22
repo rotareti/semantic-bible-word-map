@@ -1,5 +1,29 @@
 # Changelog
 
+## [12.2.0] - 2026-09-22
+### Added
+- **Symbible Query Language (Vector Arithmetic & Motif Matching):** Integrated a custom query language parser and visualization engine directly into the primary search bar:
+  - **Syntax & AST Parser:** Implemented an AST parser handling vector addition (`+`), subtraction (`-`), directional motif sequences (`>`), unary negation (`-`), and nested parentheses `()` for order of operations.
+  - **Vector Arithmetic & Pseudo-Node:** When evaluating vector arithmetic expressions (e.g. `Isaac - Abraham + God` or `covenant + blood`):
+    - Computes dense 100D vector arithmetic and smoothed 2D coordinates.
+    - Injects a temporary Phantom / Pseudo-Node into the D3 canvas with a distinctive golden glowing center, outer orbit ring, and math symbol badge (`∑`).
+    - Animates smooth pan and zoom transitions centering directly on the Pseudo-Node.
+    - Populates the right-hand Study Panel with the top 10 biblical vocabulary words having the highest cosine similarity to the computed vector.
+    - Preserves Pseudo-Node interactivity, allowing users to re-open the arithmetic inspector by clicking the Pseudo-Node.
+  - **Motif Matching & Constellation View:** When evaluating directional sequence queries (e.g. `Jesus > Crucified > Raised` or `(King - Babylon) > (Priest - Temple)`):
+    - Computes directional offset vectors across successive stages.
+    - Asynchronously scans the vocabulary for structural matches sharing the internal angle and trajectory, ranking results by structural cosine similarity (e.g. 92% Match).
+    - Study Panel Motif Results: Replaces standard definitions with an interactive Motif Results list featuring sequence cards, trajectory match percentages, and step alignments.
+    - Constellation Canvas View: Clicking any motif card dims non-relevant nodes to 10% opacity, spotlights matched nodes at 100% opacity with cyan glowing halos, renders bold directed arrows with arrowheads and step labels, and smoothly frames the entire constellation.
+  - **Search Bar Autocomplete Integration:**
+    - Detects operator queries and switches cleanly to word autocomplete for the active token being typed without conflicts.
+    - Preserves operators and preceding tokens during autocomplete selection.
+    - Bypasses mixed-view navigation and centroid verse lookups during arithmetic/motif composition.
+  - **State Management, Spinner & Error Handling:**
+    - Displays search loading spinner throughout async vector math and motif offset scanning.
+    - Implemented cooperative chunked yielding during motif corpus scanning to prevent UI freezing.
+    - Gracefully catches missing vocabulary terms and displays a toast notification: "Term '[Word]' not found in the current corpus."
+
 ## [12.1.0] - 2026-09-22
 ### Added
 - **Multi-Word Search Autocomplete:** Enabled multi-term autocomplete in the search bar across spaces and commas:
