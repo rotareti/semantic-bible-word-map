@@ -7058,8 +7058,12 @@ class BibleWordMap extends HTMLElement {
 
         this.renderSearchSuggestions(suggestions, headerLabel, headerSub);
 
-        const rawTokens = fullVal.trim().split(/[\s,]+/).filter(Boolean);
-        if (!isMixed && !forceShowMixed && rawTokens.length >= 2 && (fullVal.includes(' ') || fullVal.includes(','))) {
+        const semanticTokens = tokenizeSearchString(fullVal);
+        const hasNumberedBook = /^[1-4]\s+[a-zA-Z]*/i.test(fullVal.trim());
+        const isSingleBookQuery = hasNumberedBook && semanticTokens.length === 1;
+        const shouldRunCentroid = !isMixed && !forceShowMixed && !isSingleBookQuery && (semanticTokens.length >= 2 || (fullVal.includes(' ') && !hasNumberedBook && semanticTokens.length >= 1));
+
+        if (shouldRunCentroid) {
             this.setSearchSpinner(true);
             if (this._autocompleteTimer) {
                 clearTimeout(this._autocompleteTimer);
@@ -7126,12 +7130,49 @@ class BibleWordMap extends HTMLElement {
                             });
                         }
 
-                        const combined = [...dynamicSuggestions];
-                        suggestions.forEach(s => {
-                            if (s.type !== 'multi-word-search' && s.type !== 'centroid-verse' && s.type !== 'section-header') {
-                                combined.push(s);
+                        // Determine priority: exact 1:1 match or fewer than 3 semantic words prioritizes concrete items
+                        const cleanVal = fullVal.trim().toLowerCase();
+                        const hasExactMatch = suggestions.some(s => {
+                            if (s.type === 'section-header') return false;
+                            if (s.type === 'book' || s.type === 'cross-book') {
+                                const bCode = (s.bookCode || '').toLowerCase();
+                                const bMatch = BOOK_CODE_MAP[s.bookCode];
+                                const bName = (bMatch ? bMatch.name : (s.bookName || '')).toLowerCase();
+                                if (cleanVal === bCode || cleanVal === bName) return true;
                             }
+                            if (s.type === 'verse' || s.type === 'cross-verse') {
+                                const vRef = (s.verseRef || '').toLowerCase();
+                                if (vRef === cleanVal) return true;
+                            }
+                            if (s.type === 'chapter') {
+                                const chId = (s.chapterId || '').toLowerCase();
+                                if (chId === cleanVal) return true;
+                            }
+                            if (s.type === 'word' || s.type === 'cross-word') {
+                                const wStr = (s.word || s.lemma || '').toLowerCase();
+                                if (wStr === cleanVal) return true;
+                            }
+                            return false;
                         });
+
+                        const prioritizeConcrete = hasExactMatch || (semanticTokens.length < 3);
+
+                        let combined = [];
+                        if (prioritizeConcrete) {
+                            suggestions.forEach(s => {
+                                if (s.type !== 'multi-word-search' && s.type !== 'centroid-verse') {
+                                    combined.push(s);
+                                }
+                            });
+                            dynamicSuggestions.forEach(ds => combined.push(ds));
+                        } else {
+                            dynamicSuggestions.forEach(ds => combined.push(ds));
+                            suggestions.forEach(s => {
+                                if (s.type !== 'multi-word-search' && s.type !== 'centroid-verse') {
+                                    combined.push(s);
+                                }
+                            });
+                        }
 
                         this.renderSearchSuggestions(combined, 'Suggestions', `${combined.filter(c => c.type !== 'section-header').length} results`);
                     }
@@ -7393,7 +7434,9 @@ class BibleWordMap extends HTMLElement {
                 if (o.translit && o.translit.toLowerCase() === token) return true;
                 if (o.strongs) {
                     let sLow = o.strongs.toLowerCase();
-                    if (sLow === token || sLow === 'g' + token || sLow === 'h' + token) return true;
+                    if (sLow === token) return true;
+                    if (!/^\d+$/.test(token) && (sLow === 'g' + token || sLow === 'h' + token)) return true;
+                    if (/^\d{3,5}$/.test(token) && (sLow === 'g' + token || sLow === 'h' + token)) return true;
                 }
                 return false;
             });

@@ -28,12 +28,14 @@
 - **Options Drawer & Suggestions Hierarchy:**
   - Opening the options drawer (hamburger toggle, `openDrawer()`, or interacting with drawer controls) immediately collapses and closes the autocomplete suggestions popover.
   - Elevated open drawer z-index (`10040`) above popovers to prevent overlay collisions.
+- **Suggestion Ranking & 1:1 Match Priority:** Refined suggestion result sorting to place exact 1:1 matches (books like "1 John", words, chapters, or verses) at the top of the autocomplete dropdown. For queries with fewer than 3 semantic tokens or with exact matches, concrete matches are prioritized above dynamic centroid verses to prevent burying direct hits. Queries with 3+ keywords without exact matches (e.g. "In the beginning God") elevate thematic exploration cards and linked centroid verses to the top.
 - **Search Resolution & Recovery Fallback:** Hitting Enter or clicking the search icon executes searches directly. If all words in Word Mode are valid, graphs all words and opens the study panel; if any words cannot be resolved, falls back to the nearest matches window.
 - **Search Suggestion Taxonomy & Category Badges:** Updated category badge labels to "Word view" and "Verse View" (replacing legacy "Words mode" and "Centroid Verse"), paired with categorized section delineators in the suggestions dropdown.
 - **Clean Professional Typography:** Removed emoji icons from dynamic search suggestions and recovery cards to maintain consistent, professional styling.
 - **Asset Cache Busting (`v=12.1.0`):** Bumped cache-buster query parameter to `?v=12.1.0` across stylesheet links, custom element scripts, and runtime data fetch requests.
 
 ### Fixed
+- **Bare Digit Strong's Matching:** Prevented standalone 1-2 digit numbers (e.g. "1" in "1 John") from falsely matching Greek/Hebrew lexemes via Strong's prefix heuristics, eliminating spurious centroid verse calculations for numbered books.
 - **Search Input Typing Latency:** Fixed main-thread lockup when typing 3 or more words by removing synchronous O(N) array scans (`list.includes(vIdx)`) across thousands of candidate verses and yielding to the browser event loop.
 - **Options Drawer Layering & Suggestion Dismissal:** Fixed an issue where the options drawer opened beneath the autocomplete suggestions window by collapsing suggestions and blurring the search input upon drawer activation.
 - **Direct Multi-Word Search Execution:** Fixed search execution when pressing Enter or clicking the search button with multiple space-delimited keywords (e.g. "Father Son Spirit"). Removed obsolete length heuristic that aborted queries with 3+ space-separated keywords without commas.
