@@ -1,5 +1,20 @@
 # Changelog
 
+## [12.0.0] - 2026-09-21
+### Added
+- **Contextual Sense Disambiguation & Entity Unification Architecture:** Introduced a new semantic layer that resolves biblical polysemy and unifies cross-canonical theological entities without disrupting the global Word2Vec semantic manifold:
+  - **Contextual Sense Nodes:** Deployed transformer-based contextual clustering (MiniLM contextual verse representations projected into the calibrated word manifold) to disentangle polysemous terms into distinct theological and literal senses (e.g. *temple* as Physical Sanctuary vs. Spiritual Body; *spirit* as Divine/Holy Spirit vs. Wind/Breath; *law* as Mosaic Legislation vs. Spiritual Principle).
+  - **Cross-Lexeme Entity Unification:** Unified disparate biblical titles and names representing singular biblical persons or realities across testaments and translations (e.g. *Jesus Christ* unifying *Jesus*, *Christ*, *Lord*, *Messiah*; *Lord God* unifying *Yahweh*, *God*, *Lord*, *Almighty*).
+  - **Canvas Visual Distinction:** Disambiguated sense nodes display their lemma on the top line with the contextual sense parenthesized beneath (e.g. `temple` with `(Physical Sanctuary)`), while the unified centroid word displays `(Unified Context)`. Unified entities display `(Unified Entity)`.
+  - **Contextual Force Graph Dynamics:** Inter-sense sister nodes are linked with subtle purple dashed connection arcs (`sense-bridge`) matching the dashed purple style of parent centroid connectors (`sense-parent`), while entity member lemmas are connected with dashed emerald links (`entity-member`).
+  - **Contextual Study Panel Header:** Added an interactive contextual selector situated in the header above the tabs, allowing readers to toggle seamlessly between the Unified Context and specific contextual senses or entities, instantly refreshing Verses, Language, Usage, and Neighbors.
+  - **Options Drawer Disambiguation Toggle:** Added a dedicated pill slider toggle in the Options menu (`Enabled` / `Disabled`), defaulting to `Disabled` for backward compatibility with classic Word2Vec topology, with URL state persistence via `?d=on`.
+
+### Changed
+- **Study Panel Contextual Selector Simplification:** Streamlined the top study panel disambiguation selector with wrapping buttons (`flex-wrap: wrap`) and transparent background, removing redundant OT/NT split bars and verse count statistics that are already comprehensive in the Usage tab.
+- **Search Autocomplete Precision:** Fixed search autocomplete to restrict polysemous sense matching to queries matching the underlying lemma or entity name, preventing sense subtitle words (such as "Spiritual Body") from hijacking queries for other terms (such as "spirit").
+- **Asset Cache Busting (`v=12.0.0`):** Bumped cache-buster query parameter to `?v=12.0.0` across stylesheet links, custom element scripts, and runtime data fetch requests.
+
 ## [11.2.0] - 2026-09-20
 ### Added
 - **Empirically Calibrated Word2Vec Model (Window 15):** Calibrated embedding training architecture across the Berean Standard Bible, Septuagint, and Clementine Vulgate based on the Biblical Semantic Evaluation Benchmark (BSEB):
