@@ -1,14 +1,17 @@
 # Changelog
 
-## [12.2.0] - 2026-09-22
+## [13.0.0] - 2026-09-23
 ### Added
 - **Symbible Query Language (Vector Arithmetic & Motif Matching):** Integrated a custom query language parser and visualization engine directly into the primary search bar:
   - **Syntax & AST Parser:** Implemented an AST parser handling vector addition (`+`), subtraction (`-`), directional motif sequences (`>`), unary negation (`-`), and nested parentheses `()` for order of operations.
   - **Vector Arithmetic & Pseudo-Node:** When evaluating vector arithmetic expressions (e.g. `Isaac - Abraham + God` or `covenant + blood`):
     - Computes dense 100D vector arithmetic and smoothed 2D coordinates.
-    - Injects a temporary Phantom / Pseudo-Node into the D3 canvas with a distinctive golden glowing center, outer orbit ring, and math symbol badge (`∑`).
+    - Injects a temporary Phantom / Pseudo-Node into the D3 canvas with a distinctive golden glowing center, outer orbit ring, math symbol badge (`∑`), and parentheses formatting `(query)`.
+    - Projects neighbor bubbles (default 100) around the Pseudo-Node using force simulation and phyllotaxis layout, fully responding to the options drawer neighbor count slider and filters.
     - Animates smooth pan and zoom transitions centering directly on the Pseudo-Node.
-    - Populates the right-hand Study Panel with the top 10 biblical vocabulary words having the highest cosine similarity to the computed vector.
+    - Study Panel Dual Tabs: Equips the computed node inspector with two distinct tabs:
+      - **Top 10 Neighbors:** Lists vocabulary words having highest cosine similarity to the computed vector.
+      - **Verses:** Renders verses with centroids closest in embedding space to the resultant vector, displaying centroid proximity badges, highlighted keyword matches, and direct verse navigation.
     - Preserves Pseudo-Node interactivity, allowing users to re-open the arithmetic inspector by clicking the Pseudo-Node.
   - **Motif Matching & Constellation View:** When evaluating directional sequence queries (e.g. `Jesus > Crucified > Raised` or `(King - Babylon) > (Priest - Temple)`):
     - Computes directional offset vectors across successive stages.
@@ -20,8 +23,9 @@
     - Preserves operators and preceding tokens during autocomplete selection.
     - Bypasses mixed-view navigation and centroid verse lookups during arithmetic/motif composition.
   - **State Management, Spinner & Error Handling:**
-    - Displays search loading spinner throughout async vector math and motif offset scanning.
+    - Prominently displays the search loading spinner throughout async vector math and motif calculations with guaranteed paint yields.
     - Implemented cooperative chunked yielding during motif corpus scanning to prevent UI freezing.
+    - Enforced comprehensive search state cleanup to completely purge pseudo-nodes, reset canvas opacity, and clear motif trajectory artifacts when searching regular words or verses, clearing search, or switching views.
     - Gracefully catches missing vocabulary terms and displays a toast notification: "Term '[Word]' not found in the current corpus."
 
 ## [12.1.0] - 2026-09-22

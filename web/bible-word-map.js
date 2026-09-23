@@ -4128,8 +4128,23 @@ class BibleWordMap extends HTMLElement {
                 }
 
                 /* Pseudo-Node Study Panel */
+                .bwm-pseudo-tabs {
+                    display: flex;
+                    border-bottom: 1px solid var(--bwm-border, rgba(0, 0, 0, 0.1));
+                    background: var(--bwm-bg);
+                    flex-shrink: 0;
+                }
+                .bwm-pseudo-pane {
+                    flex: 1;
+                    overflow-y: auto;
+                }
                 .bwm-pseudo-panel {
                     padding: 14px 16px;
+                }
+                .bwm-pseudo-verses-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
                 }
                 .bwm-pseudo-formula-box {
                     background: rgba(245, 158, 11, 0.07);
@@ -4934,7 +4949,7 @@ class BibleWordMap extends HTMLElement {
             this.foundation = 'bsb';
         }
 
-        const vParam = '?v=12.2.0';
+        const vParam = '?v=13.0.0';
         if (this.foundation === 'lxx') {
             this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -5269,6 +5284,12 @@ class BibleWordMap extends HTMLElement {
                     }
                 } else {
                     this.neighborsPerKeyword = val;
+                    if (this.pseudoNode && this.lastPseudoAst) {
+                        clearTimeout(this._pseudoSliderTimeout);
+                        this._pseudoSliderTimeout = setTimeout(() => {
+                            this.executeVectorArithmeticQuery(this.pseudoNode.query, this.lastPseudoAst);
+                        }, 60);
+                    }
                 }
                 if (this.neighborValue) this.neighborValue.textContent = val;
 
@@ -5299,7 +5320,9 @@ class BibleWordMap extends HTMLElement {
                         this.searchVerses(true);
                     }
                 } else {
-                    if (this.isSearchMode && this.searchedWords && this.searchedWords.length > 0) {
+                    if (this.pseudoNode && this.lastPseudoAst) {
+                        this.executeVectorArithmeticQuery(this.pseudoNode.query, this.lastPseudoAst);
+                    } else if (this.isSearchMode && this.searchedWords && this.searchedWords.length > 0) {
                         this.searchWord(true);
                     }
                 }
@@ -5765,7 +5788,7 @@ class BibleWordMap extends HTMLElement {
         this._wordsLoadPromise = (async () => {
             try {
                 const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-                const vParam = '?v=12.2.0';
+                const vParam = '?v=13.0.0';
                 let src2d = this.src2d;
                 if (!src2d) {
                     if (this.foundation === 'lxx') {
@@ -5838,7 +5861,7 @@ class BibleWordMap extends HTMLElement {
         this._versesLoadPromise = (async () => {
             try {
                 const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-                const vParam = '?v=12.2.0';
+                const vParam = '?v=13.0.0';
                 let srcVerses = this.srcVerses;
                 let srcVersemap = this.srcVersemap;
                 if (!srcVerses || !srcVersemap) {
@@ -5930,7 +5953,7 @@ class BibleWordMap extends HTMLElement {
         this._chaptersLoadPromise = (async () => {
             try {
                 const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-                const vParam = '?v=12.2.0';
+                const vParam = '?v=13.0.0';
                 let srcChapters = this.srcChapters;
                 if (!srcChapters) {
                     if (this.foundation === 'lxx') {
@@ -5979,7 +6002,7 @@ class BibleWordMap extends HTMLElement {
         this._booksLoadPromise = (async () => {
             try {
                 const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-                const vParam = '?v=12.2.0';
+                const vParam = '?v=13.0.0';
                 let srcBooks = this.srcBooks;
                 if (!srcBooks) {
                     if (this.foundation === 'lxx') {
@@ -6062,7 +6085,7 @@ class BibleWordMap extends HTMLElement {
         }
 
         const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-        const vParam = '?v=12.2.0';
+        const vParam = '?v=13.0.0';
         if (this.foundation === 'lxx') {
             this.src2d = getAttr('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = getAttr('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -8003,7 +8026,7 @@ class BibleWordMap extends HTMLElement {
 
         this._englishSemanticDataPromise = (async () => {
             const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-            const vParam = '?v=12.2.0';
+            const vParam = '?v=13.0.0';
             const wordmapSrc = getAttr('src-2d-bsb') || getAttr('src-2d') || ('data/output/wordmap_2d.json' + vParam);
             const versesSrc = getAttr('src-verses-bsb') || getAttr('src-verses') || ('data/output/verse_index.json' + vParam);
             const versemapSrc = getAttr('src-versemap-bsb') || getAttr('src-versemap') || ('data/output/versemap_2d.json' + vParam);
@@ -8077,7 +8100,7 @@ class BibleWordMap extends HTMLElement {
         if (this._cachedWordmaps[foundation]) {
             return this._cachedWordmaps[foundation];
         }
-        const vParam = '?v=12.2.0';
+        const vParam = '?v=13.0.0';
         let src = '';
         if (foundation === 'lxx') {
             src = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
@@ -8893,6 +8916,19 @@ class BibleWordMap extends HTMLElement {
             return;
         }
 
+        // Clean up any lingering pseudo-node or motif constellation state
+        this.pseudoNode = null;
+        this.activeMotifMatch = null;
+        this.motifResults = null;
+        this.lastPseudoNeighbors = null;
+        this.lastPseudoAst = null;
+        if (this.nodes) {
+            this.nodes = this.nodes.filter(n => !n.isPseudoNode);
+        }
+        if (this.allSearchNodes) {
+            this.allSearchNodes = this.allSearchNodes.filter(n => !n.isPseudoNode);
+        }
+
         if (this.viewMode === 'books') {
             await this.searchBooks(useExplicitIds);
             return;
@@ -9369,6 +9405,13 @@ class BibleWordMap extends HTMLElement {
         this.activeMotifMatch = null;
         this.motifResults = null;
         this.lastPseudoNeighbors = null;
+        this.lastPseudoAst = null;
+        if (this.nodes) {
+            this.nodes = this.nodes.filter(n => !n.isPseudoNode);
+        }
+        if (this.allSearchNodes) {
+            this.allSearchNodes = this.allSearchNodes.filter(n => !n.isPseudoNode);
+        }
         this.buildAllWordsGraph();
     }
 
@@ -9584,8 +9627,9 @@ class BibleWordMap extends HTMLElement {
             await this.ensureWordsLoaded();
         }
 
+        const spinnerStartTime = Date.now();
         // Allow UI to render spinner before starting heavy vector processing
-        await new Promise(r => setTimeout(r, 20));
+        await new Promise(r => setTimeout(r, 40));
 
         try {
             const ast = this.parseSymbibleQuery(queryStr);
@@ -9596,9 +9640,12 @@ class BibleWordMap extends HTMLElement {
             }
         } catch (err) {
             console.warn('Symbible Query Execution Error:', err);
-            this.setSearchSpinner(false);
             this.showToast(err.message || `Query error: ${err}`, 'error');
         } finally {
+            const elapsed = Date.now() - spinnerStartTime;
+            if (elapsed < 250) {
+                await new Promise(r => setTimeout(r, 250 - elapsed));
+            }
             this.setSearchSpinner(false);
         }
     }
@@ -9623,54 +9670,87 @@ class BibleWordMap extends HTMLElement {
         const top10 = neighbors.slice(0, 10);
         this.lastPseudoNeighbors = top10;
 
-        // Position coordinates: use calculated 2D coordinates, smoothed near top nearest neighbor centroids
-        let calcX = evalRes.x;
-        let calcY = evalRes.y;
-        if (top10.length > 0 && (isNaN(calcX) || isNaN(calcY) || Math.abs(calcX) > 250 || Math.abs(calcY) > 250)) {
-            calcX = top10.slice(0, 3).reduce((acc, nn) => acc + nn.node.x, 0) / Math.min(3, top10.length);
-            calcY = top10.slice(0, 3).reduce((acc, nn) => acc + nn.node.y, 0) / Math.min(3, top10.length);
+        // Compute global embedding centroid (gx, gy) from top 3 nearest words for verse centroid proximity
+        let gx = 0, gy = 0;
+        const top3 = top10.slice(0, 3);
+        if (top3.length > 0) {
+            gx = top3.reduce((acc, nn) => acc + (nn.node.x || 0), 0) / top3.length;
+            gy = top3.reduce((acc, nn) => acc + (nn.node.y || 0), 0) / top3.length;
         }
 
-        // Construct Pseudo-Node
+        // Construct Pseudo-Node pinned at origin for centered golden-spiral neighbor projection
+        const cleanQuery = queryStr.trim();
         const pseudoNode = {
-            id: `pseudo__${queryStr}`,
-            w: `[${queryStr}]`,
-            label: `[${queryStr}]`,
-            query: queryStr,
+            id: `pseudo__${cleanQuery}`,
+            w: `(${cleanQuery})`,
+            label: `(${cleanQuery})`,
+            query: cleanQuery,
             isPseudoNode: true,
             isKw: true,
-            x: calcX,
-            y: calcY,
+            x: 0,
+            y: 0,
+            fx: 0,
+            fy: 0,
+            globalX: gx,
+            globalY: gy,
             v: calcVector,
             pos: 'MATH',
             f: 1
         };
 
         this.pseudoNode = pseudoNode;
+        this.lastPseudoAst = ast;
         this.activeMotifMatch = null;
         this.motifResults = null;
 
-        // Inject Pseudo-Node into active graph simulation
-        if (!this.nodes) this.nodes = [];
-        this.nodes = this.nodes.filter(n => !n.isPseudoNode);
-        this.nodes.push(pseudoNode);
+        // Number of neighbor bubbles dynamically controlled by the Options slider
+        const limit = this.neighborsPerKeyword || 100;
+        const neighborNodes = neighbors.slice(0, limit).map(nn => ({
+            id: nn.node.id,
+            w: nn.node.w,
+            pos: nn.node.pos,
+            t: nn.node.t,
+            f: nn.node.f,
+            sim: nn.sim,
+            sourceKw: pseudoNode.id,
+            isKw: false,
+            x: (Math.random() - 0.5) * 50,
+            y: (Math.random() - 0.5) * 50,
+            v: nn.node.v,
+            original: nn.node.original
+        }));
 
-        // Highlight nearest neighbor nodes in search mode
-        top10.forEach(nn => {
-            if (!this.nodes.some(n => n.id === nn.node.id)) {
-                this.nodes.push(nn.node);
-            }
+        this.allSearchNodes = [pseudoNode, ...neighborNodes];
+
+        // Normalize similarity to [0, 1] to maximize color and size contrast
+        let minSim = d3.min(this.allSearchNodes.filter(n => !n.isKw), n => n.sim) || 0;
+        let maxSim = d3.max(this.allSearchNodes.filter(n => !n.isKw), n => n.sim) || 1;
+        this.allSearchNodes.forEach(n => {
+            if (n.isKw) n.normSim = 1;
+            else n.normSim = (n.sim - minSim) / (maxSim - minSim || 1);
         });
 
+        // Direct links from each neighbor bubble to the pseudoNode
+        this.allSearchLinks = this.allSearchNodes.filter(n => !n.isKw).map(n => ({
+            source: n.id,
+            target: pseudoNode.id,
+            type: 'direct',
+            sim: n.sim
+        }));
+
+        this.isSearchMode = true;
+        this.userInteracted = false;
+        this._nodesBounds = null;
         this.searchedWords = [pseudoNode.id];
+        this.drawerWords = [pseudoNode.id];
         this.updateClearBtnVisibility();
-        this.draw();
+        this.renderActiveWords();
 
-        // Canvas animation: smoothly pan and zoom to center on the Pseudo-Node
-        this.centerOnNode(pseudoNode, 700);
+        // Project the neighbor bubbles around the pseudo-node using D3 force simulation
+        this.runSimulation();
 
-        // Populate Study Panel with top 10 actual vocabulary words
-        this.showPseudoNodeInspector(pseudoNode, top10);
+        // Populate Study Panel with Top 10 Neighbors & Verses tabs
+        await this.showPseudoNodeInspector(pseudoNode, top10);
     }
 
     async executeMotifQuery(queryStr, ast) {
@@ -9842,7 +9922,7 @@ class BibleWordMap extends HTMLElement {
         return topMatches;
     }
 
-    showPseudoNodeInspector(pseudoNode, topNeighbors) {
+    async showPseudoNodeInspector(pseudoNode, topNeighbors, defaultTab = 'neighbors') {
         if (!this.wordCard) this.wordCard = this.querySelector('#bwm-word-card');
         if (!this.wordCard) return;
 
@@ -9852,7 +9932,10 @@ class BibleWordMap extends HTMLElement {
         this.hideChapterCard();
         this.hideRadialMenu();
 
-        let rowsHtml = topNeighbors.map((item, idx) => {
+        const cleanQuery = pseudoNode.query || (pseudoNode.w ? pseudoNode.w.replace(/^[\[\(]|[\]\)]$/g, '') : '');
+        const displayTitle = `(${cleanQuery})`;
+
+        let rowsHtml = (topNeighbors || []).slice(0, 10).map((item, idx) => {
             let posLabel = item.node.pos ? ` (${item.node.pos.toLowerCase()})` : '';
             let pct = Math.max(0, Math.min(100, Math.round(item.sim * 100)));
             return `
@@ -9878,7 +9961,7 @@ class BibleWordMap extends HTMLElement {
                 <div class="bwm-window-header-top">
                     <div class="bwm-window-title-group">
                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <h3 class="bwm-window-title" style="margin: 0; color: #d97706;">${escapeHtml(pseudoNode.w)}</h3>
+                            <h3 class="bwm-window-title" style="margin: 0; color: #d97706;">${escapeHtml(displayTitle)}</h3>
                             <span class="bwm-window-badge bwm-badge-pseudo">&sum; Computed Pseudo-Node</span>
                         </div>
                     </div>
@@ -9888,13 +9971,27 @@ class BibleWordMap extends HTMLElement {
                     </div>
                 </div>
             </div>
-            <div class="bwm-pseudo-panel">
-                <div class="bwm-pseudo-formula-box">
-                    <strong>Vector Expression:</strong> ${escapeHtml(pseudoNode.query)}
+            <div class="bwm-window-tabs bwm-pseudo-tabs">
+                <button type="button" class="bwm-window-tab ${defaultTab === 'neighbors' ? 'active' : ''}" data-pseudo-tab="neighbors">Top 10 Neighbors</button>
+                <button type="button" class="bwm-window-tab ${defaultTab === 'verses' ? 'active' : ''}" data-pseudo-tab="verses">Verses</button>
+            </div>
+            <div class="bwm-pseudo-pane" id="bwm-pseudo-pane-neighbors" style="display: ${defaultTab === 'neighbors' ? 'block' : 'none'};">
+                <div class="bwm-pseudo-panel">
+                    <div class="bwm-pseudo-formula-box">
+                        <strong>Vector Expression:</strong> ${escapeHtml(cleanQuery)}
+                    </div>
+                    <div class="bwm-pseudo-neighbors-header">Top 10 Biblical Concepts Mirroring Math:</div>
+                    <div class="bwm-pseudo-neighbors-list">
+                        ${rowsHtml}
+                    </div>
                 </div>
-                <div class="bwm-pseudo-neighbors-header">Top 10 Biblical Concepts Mirroring Math:</div>
-                <div class="bwm-pseudo-neighbors-list">
-                    ${rowsHtml}
+            </div>
+            <div class="bwm-pseudo-pane" id="bwm-pseudo-pane-verses" style="display: ${defaultTab === 'verses' ? 'block' : 'none'};">
+                <div class="bwm-pseudo-panel" id="bwm-pseudo-verses-container">
+                    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:30px 20px;">
+                        <span class="bwm-loading-spinner" style="width:24px; height:24px; border-width:3px; margin-bottom:12px;"></span>
+                        <div style="font-size:0.9em; color:var(--bwm-text-muted);">Finding nearest verse centroids...</div>
+                    </div>
                 </div>
             </div>
         `;
@@ -9907,6 +10004,18 @@ class BibleWordMap extends HTMLElement {
                 this.hideWordInspector();
             });
         }
+
+        const tabBtns = this.wordCard.querySelectorAll('.bwm-pseudo-tabs button[data-pseudo-tab]');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.getAttribute('data-pseudo-tab');
+                tabBtns.forEach(b => b.classList.toggle('active', b === btn));
+                const pNeighbors = this.wordCard.querySelector('#bwm-pseudo-pane-neighbors');
+                const pVerses = this.wordCard.querySelector('#bwm-pseudo-pane-verses');
+                if (pNeighbors) pNeighbors.style.display = (tab === 'neighbors') ? 'block' : 'none';
+                if (pVerses) pVerses.style.display = (tab === 'verses') ? 'block' : 'none';
+            });
+        });
 
         const items = this.wordCard.querySelectorAll('.bwm-pseudo-neighbor-item');
         items.forEach(el => {
@@ -9922,6 +10031,140 @@ class BibleWordMap extends HTMLElement {
 
         this.wordCard.classList.add('visible');
         this.wordCard.scrollTop = 0;
+
+        // Load nearest verse centroids asynchronously
+        this.loadPseudoNodeVerses(pseudoNode);
+    }
+
+    async loadPseudoNodeVerses(pseudoNode) {
+        const container = this.wordCard ? this.wordCard.querySelector('#bwm-pseudo-verses-container') : null;
+        if (!container) return;
+
+        try {
+            await this.ensureVersesLoaded();
+            if (!this.versemapLookup || this.versemapLookup.size === 0 || !this.verses) {
+                container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--bwm-text-muted);">Verse centroid data is not available.</div>';
+                return;
+            }
+
+            // Global 2D coordinates of the pseudo-node
+            const cx = pseudoNode.globalX !== undefined ? pseudoNode.globalX : (this.lastPseudoNeighbors && this.lastPseudoNeighbors[0] ? this.lastPseudoNeighbors[0].node.x : 0);
+            const cy = pseudoNode.globalY !== undefined ? pseudoNode.globalY : (this.lastPseudoNeighbors && this.lastPseudoNeighbors[0] ? this.lastPseudoNeighbors[0].node.y : 0);
+
+            // Compute distance from (cx, cy) to each verse centroid in versemapLookup
+            const nearList = [];
+            for (let [vId, vRec] of this.versemapLookup.entries()) {
+                if (vRec.x === undefined || vRec.y === undefined) continue;
+                const dist = Math.hypot(vRec.x - cx, vRec.y - cy);
+                nearList.push({ id: vId, rec: vRec, dist });
+            }
+            nearList.sort((a, b) => a.dist - b.dist);
+            const topVerses = nearList.slice(0, 30);
+
+            if (topVerses.length === 0) {
+                container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--bwm-text-muted);">No nearby verse centroids found.</div>';
+                return;
+            }
+
+            // Pre-index verse lines if not already cached
+            if (!this._verseRefToIndex && this.verses) {
+                this._verseRefToIndex = new Map();
+                for (let i = 0; i < this.verses.length; i++) {
+                    const pipe = this.verses[i].indexOf('|');
+                    const r = pipe !== -1 ? this.verses[i].slice(0, pipe) : this.verses[i];
+                    this._verseRefToIndex.set(r, i);
+                }
+            }
+
+            const queryKeywords = (pseudoNode.query || '')
+                .replace(/[^a-zA-Z\s]/g, ' ')
+                .split(/\s+/)
+                .filter(w => w.length >= 3);
+
+            let html = topVerses.map((item) => {
+                const vIdx = this._verseRefToIndex ? this._verseRefToIndex.get(item.id) : -1;
+                const vLine = (vIdx !== undefined && vIdx !== -1 && this.verses) ? this.verses[vIdx] : '';
+                const parts = vLine.split('|');
+                const ref = parts[0] || item.id;
+                const english = parts[1] || '';
+                const origText = parts[2] || '';
+                const formattedRef = formatVerseRef(ref);
+                const genre = getVerseGenre(ref);
+                const genreColor = GENRE_COLORS[genre] || '#3b82f6';
+                const proxPct = Math.max(50, Math.min(99, Math.round(100 - item.dist * 35)));
+                const snippet = this.getSmartSnippet(english, queryKeywords, 120);
+                const snippetHtml = this.highlightKeywordsInVerse(snippet, queryKeywords);
+                const fullHtml = this.highlightKeywordsInVerse(english, queryKeywords);
+                const isExpandable = english.length > 120 || Boolean(origText);
+
+                return `
+                    <div class="bwm-crossref-card bwm-verse-item" data-verse-id="${item.id}" style="margin: 8px 0;">
+                        <div class="bwm-crossref-head">
+                            <div class="bwm-crossref-title-wrap">
+                                <span class="bwm-crossref-ref" data-jump-verse="${ref}" title="Inspect verse in Verse Study Panel">${formattedRef}</span>
+                                <span class="bwm-book-badge" style="background:${genreColor};">${genre}</span>
+                                <span class="bwm-window-badge" style="background:rgba(245,158,11,0.14); color:#d97706; border:1px solid rgba(245,158,11,0.28); font-size:0.75rem;">${proxPct}% Centroid Proximity</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                ${isExpandable ? `
+                                <button type="button" class="bwm-verse-expand-btn" data-action="expand-verse-item" aria-expanded="false" title="Expand full verse">
+                                    <svg class="bwm-chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </button>` : ''}
+                            </div>
+                        </div>
+                        ${snippet ? `
+                        <div class="bwm-crossref-body">
+                            <div class="bwm-verse-item-english bwm-crossref-snippet" data-snippet-html="${escapeHtml(snippetHtml)}" data-full-html="${escapeHtml(fullHtml)}">${snippetHtml}</div>
+                        </div>` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                <div style="font-size:0.83rem; color:var(--bwm-text-muted); margin-bottom:10px; line-height:1.4;">
+                    Biblical verses whose semantic centroids cluster closest to the computed <code>${escapeHtml(cleanQuery)}</code> vector:
+                </div>
+                <div class="bwm-pseudo-verses-list">
+                    ${html}
+                </div>
+            `;
+
+            container.querySelectorAll('[data-jump-verse]').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const vRef = el.getAttribute('data-jump-verse');
+                    const targetVerse = this.versemapLookup ? this.versemapLookup.get(vRef) : null;
+                    if (targetVerse) {
+                        this.showVerseCard(targetVerse, [targetVerse]);
+                    }
+                });
+            });
+
+            container.querySelectorAll('[data-action="expand-verse-item"]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const card = btn.closest('.bwm-verse-item');
+                    if (!card) return;
+                    const textEl = card.querySelector('.bwm-verse-item-english');
+                    const isExpanded = btn.getAttribute('aria-expanded') === 'true';
+                    if (isExpanded) {
+                        btn.setAttribute('aria-expanded', 'false');
+                        btn.classList.remove('expanded');
+                        if (textEl) textEl.innerHTML = textEl.getAttribute('data-snippet-html');
+                    } else {
+                        btn.setAttribute('aria-expanded', 'true');
+                        btn.classList.add('expanded');
+                        if (textEl) textEl.innerHTML = textEl.getAttribute('data-full-html');
+                    }
+                });
+            });
+
+        } catch (err) {
+            console.error('Failed to load pseudo-node verses:', err);
+            container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--bwm-text-muted);">Error loading verse centroids.</div>';
+        }
     }
 
     showMotifResultsPanel(queryStr, matches, activeIndex = 0) {
@@ -10444,7 +10687,7 @@ class BibleWordMap extends HTMLElement {
         }
 
         const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-        const vParam = '?v=12.2.0';
+        const vParam = '?v=13.0.0';
         if (foundation === 'lxx') {
             this.src2d = getAttr('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = getAttr('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -11375,6 +11618,17 @@ class BibleWordMap extends HTMLElement {
         this.hideVersesPanel();
         this.hideCanonUsageModal();
         this.hoveredNode = null;
+        this.pseudoNode = null;
+        this.activeMotifMatch = null;
+        this.motifResults = null;
+        this.lastPseudoNeighbors = null;
+        this.lastPseudoAst = null;
+        if (this.nodes) {
+            this.nodes = this.nodes.filter(n => !n.isPseudoNode);
+        }
+        if (this.allSearchNodes) {
+            this.allSearchNodes = this.allSearchNodes.filter(n => !n.isPseudoNode);
+        }
         this.selectedBook = null;
         this.selectedVerse = null;
         this.selectedChapter = null;
@@ -11658,6 +11912,11 @@ class BibleWordMap extends HTMLElement {
     async searchBooks(useExplicitCodes = false) {
         if (!this.booksData || !this.booksData.books) return;
         this.hoveredNode = null;
+        this.pseudoNode = null;
+        this.activeMotifMatch = null;
+        this.motifResults = null;
+        this.lastPseudoNeighbors = null;
+        this.lastPseudoAst = null;
         let foundBooks = [];
 
         if (!useExplicitCodes) {
@@ -12921,6 +13180,11 @@ class BibleWordMap extends HTMLElement {
 
     searchChapters(useExplicitCodes = false) {
         this.hoveredNode = null;
+        this.pseudoNode = null;
+        this.activeMotifMatch = null;
+        this.motifResults = null;
+        this.lastPseudoNeighbors = null;
+        this.lastPseudoAst = null;
         let foundChapters = [];
 
         if (typeof useExplicitCodes === 'string') {
@@ -14237,6 +14501,11 @@ class BibleWordMap extends HTMLElement {
             return;
         }
         this.hoveredNode = null;
+        this.pseudoNode = null;
+        this.activeMotifMatch = null;
+        this.motifResults = null;
+        this.lastPseudoNeighbors = null;
+        this.lastPseudoAst = null;
         let foundVerses = [];
 
         if (!useExplicitCodes) {
@@ -15862,7 +16131,8 @@ class BibleWordMap extends HTMLElement {
                     let currentR = (isHighlighted) ? n.canvasR * 1.3 : n.canvasR;
                     let yOffset = (currentR * this.transform.k) + (4 * textScale);
 
-                    let displayTitle = `[${n.query || n.w}]`;
+                    let cleanQuery = n.query || (n.w ? n.w.replace(/^[\[\(]|[\]\)]$/g, '') : '');
+                    let displayTitle = `(${cleanQuery})`;
                     this.ctx.lineWidth = 3.5 * textScale;
                     this.ctx.strokeStyle = this.colors.bg;
                     this.ctx.strokeText(displayTitle, 0, yOffset);
@@ -17093,6 +17363,9 @@ class BibleWordMap extends HTMLElement {
             }
         }
         this.inspectorNode = null;
+        if (this.activeMotifMatch) {
+            this.activeMotifMatch = null;
+        }
         this.draw();
         this.onStudyPanelVisibilityChange(false);
     }
