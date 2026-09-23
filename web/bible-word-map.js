@@ -5113,6 +5113,10 @@ class BibleWordMap extends HTMLElement {
         if (this.wordReopenBtn) {
             this.wordReopenBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                if (this.motifResults && this.motifResults.length > 0 && this.lastMotifQuery) {
+                    this.showMotifResultsPanel(this.lastMotifQuery, this.motifResults, this.activeMotifIdx || 0);
+                    return;
+                }
                 let target = this.lastInspectedWordNode || this.inspectorNode;
                 if (!target && this.searchedWords && this.searchedWords.length > 0 && this.nodes) {
                     target = this.nodes.find(n => n.id === this.searchedWords[0] || (n.w && n.w.toLowerCase() === this.searchedWords[0].toLowerCase())) || this.nodes[0];
@@ -8919,14 +8923,17 @@ class BibleWordMap extends HTMLElement {
         // Clean up any lingering pseudo-node or motif constellation state
         this.pseudoNode = null;
         this.activeMotifMatch = null;
+        this.activeMotifIdx = null;
         this.motifResults = null;
+        this.searchMotifNodes = null;
         this.lastPseudoNeighbors = null;
         this.lastPseudoAst = null;
+        this.lastMotifQuery = null;
         if (this.nodes) {
-            this.nodes = this.nodes.filter(n => !n.isPseudoNode);
+            this.nodes = this.nodes.filter(n => !n.isPseudoNode && !n.isMotifNode && !n.isSearchMotif);
         }
         if (this.allSearchNodes) {
-            this.allSearchNodes = this.allSearchNodes.filter(n => !n.isPseudoNode);
+            this.allSearchNodes = this.allSearchNodes.filter(n => !n.isPseudoNode && !n.isMotifNode && !n.isSearchMotif);
         }
 
         if (this.viewMode === 'books') {
@@ -9403,14 +9410,17 @@ class BibleWordMap extends HTMLElement {
         this.hoveredNode = null;
         this.pseudoNode = null;
         this.activeMotifMatch = null;
+        this.activeMotifIdx = null;
         this.motifResults = null;
+        this.searchMotifNodes = null;
         this.lastPseudoNeighbors = null;
         this.lastPseudoAst = null;
+        this.lastMotifQuery = null;
         if (this.nodes) {
-            this.nodes = this.nodes.filter(n => !n.isPseudoNode);
+            this.nodes = this.nodes.filter(n => !n.isPseudoNode && !n.isMotifNode && !n.isSearchMotif);
         }
         if (this.allSearchNodes) {
-            this.allSearchNodes = this.allSearchNodes.filter(n => !n.isPseudoNode);
+            this.allSearchNodes = this.allSearchNodes.filter(n => !n.isPseudoNode && !n.isMotifNode && !n.isSearchMotif);
         }
         this.buildAllWordsGraph();
     }
@@ -9615,9 +9625,9 @@ class BibleWordMap extends HTMLElement {
     }
 
     async executeSymbibleQuery(queryStr) {
-        this.setSearchSpinner(true);
         this.closeSearchSuggestions();
         this.closeSearchRecovery();
+        this.setSearchSpinner(true);
 
         // Ensure in words mode with data loaded
         if (this.viewMode !== 'words') {
@@ -9629,7 +9639,7 @@ class BibleWordMap extends HTMLElement {
 
         const spinnerStartTime = Date.now();
         // Allow UI to render spinner before starting heavy vector processing
-        await new Promise(r => setTimeout(r, 40));
+        await new Promise(r => setTimeout(r, 60));
 
         try {
             const ast = this.parseSymbibleQuery(queryStr);
@@ -9643,8 +9653,8 @@ class BibleWordMap extends HTMLElement {
             this.showToast(err.message || `Query error: ${err}`, 'error');
         } finally {
             const elapsed = Date.now() - spinnerStartTime;
-            if (elapsed < 250) {
-                await new Promise(r => setTimeout(r, 250 - elapsed));
+            if (elapsed < 350) {
+                await new Promise(r => setTimeout(r, 350 - elapsed));
             }
             this.setSearchSpinner(false);
         }
@@ -9754,6 +9764,21 @@ class BibleWordMap extends HTMLElement {
     }
 
     async executeMotifQuery(queryStr, ast) {
+        // Clear whatever is currently on the map
+        if (this.simulation) this.simulation.stop();
+        this.nodes = [];
+        this.links = [];
+        this.allSearchNodes = [];
+        this.allSearchLinks = [];
+        this.searchedWords = [];
+        this.drawerWords = [];
+        this.pseudoNode = null;
+        this.hoveredNode = null;
+        this.inspectorNode = null;
+        this.renderActiveWords();
+        this.updateClearBtnVisibility();
+        this.draw();
+
         // Evaluate each stage in the motif sequence
         const stageResults = [];
         const allUsedWords = new Set();
@@ -9762,6 +9787,28 @@ class BibleWordMap extends HTMLElement {
             stageResults.push(res);
             res.usedWords.forEach(w => allUsedWords.add(w.toLowerCase()));
         }
+
+        // Build the Original Search Motif reference nodes
+        this.searchMotifNodes = stageResults.map((sr, k) => {
+            const wNode = sr.wordNode || {};
+            const cleanTitle = sr.usedWords.join(' ');
+            return {
+                id: `search_motif_stage_${k}`,
+                w: cleanTitle,
+                label: cleanTitle,
+                pos: wNode.pos || (k === 0 ? 'PROPN' : (k === 1 ? 'VERB' : 'NOUN')),
+                t: wNode.t || 'NT',
+                f: wNode.f || 1,
+                v: sr.vector,
+                isSearchMotif: true,
+                isKw: true,
+                stepIndex: k,
+                rawX: (sr.x !== undefined && !isNaN(sr.x)) ? sr.x : 0,
+                rawY: (sr.y !== undefined && !isNaN(sr.y)) ? sr.y : 0,
+                x: 0,
+                y: 0
+            };
+        });
 
         // Compute directional offset vectors
         const offsets = [];
@@ -9784,8 +9831,31 @@ class BibleWordMap extends HTMLElement {
             return;
         }
 
-        this.pseudoNode = null;
+        // Attach alignedNodes structure to each match
+        matches.forEach((m, mIdx) => {
+            m.motifIndex = mIdx;
+            m.alignedNodes = m.nodes.map((node, k) => ({
+                id: `motif_m${mIdx}_k${k}_${node.id || node.w}`,
+                w: node.w,
+                label: this.formatWord(node.w, node.pos),
+                pos: node.pos || 'NOUN',
+                t: node.t || 'OT',
+                f: node.f || 1,
+                v: node.v,
+                isMotifNode: true,
+                motifIndex: mIdx,
+                stepIndex: k,
+                rawX: (node.x !== undefined && !isNaN(node.x)) ? node.x : 0,
+                rawY: (node.y !== undefined && !isNaN(node.y)) ? node.y : 0,
+                originalNode: node,
+                x: 0,
+                y: 0
+            }));
+        });
+
+        this.lastMotifQuery = queryStr;
         this.motifResults = matches;
+        this.activeMotifIdx = 0;
         this.showMotifResultsPanel(queryStr, matches, 0);
         this.activateMotifMatch(0);
     }
@@ -10218,7 +10288,7 @@ class BibleWordMap extends HTMLElement {
             </div>
             <div class="bwm-motif-results-container">
                 <div class="bwm-motif-summary-card">
-                    Click any structural echo below to spotlight its constellation on the map with directed arrows.
+                    Click any structural echo below to highlight its trajectory in contrast to the original search motif.
                 </div>
                 <div class="bwm-motif-cards-list">
                     ${cardsHtml}
@@ -10231,8 +10301,6 @@ class BibleWordMap extends HTMLElement {
             closeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (this.isStudyPanelPinned) this.unpinStudyPanel();
-                this.activeMotifMatch = null;
-                this.draw();
                 this.hideWordInspector();
             });
         }
@@ -10249,8 +10317,110 @@ class BibleWordMap extends HTMLElement {
         this.wordCard.scrollTop = 0;
     }
 
+    alignMotifTrajectories(activeIdx = 0) {
+        if (!this.searchMotifNodes || this.searchMotifNodes.length < 2) return;
+        if (!this.motifResults || this.motifResults.length === 0) return;
+
+        const K = this.searchMotifNodes.length;
+        const L = 220; // Standard readable step distance between stages
+
+        // Step 1: Calculate direction angles and anchor positions for the Search Motif
+        this.searchMotifNodes[0].x = 0;
+        this.searchMotifNodes[0].y = 0;
+
+        for (let k = 0; k < K - 1; k++) {
+            const sCur = this.searchMotifNodes[k];
+            const sNext = this.searchMotifNodes[k + 1];
+            const dx = (sNext.rawX !== undefined && sCur.rawX !== undefined) ? (sNext.rawX - sCur.rawX) : 0;
+            const dy = (sNext.rawY !== undefined && sCur.rawY !== undefined) ? (sNext.rawY - sCur.rawY) : 0;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            let theta = 0;
+            if (dist > 0.05) {
+                theta = Math.atan2(dy, dx);
+            } else {
+                theta = (k < Math.floor(K / 2)) ? (Math.PI / 6) : (-Math.PI / 6);
+            }
+            sNext.x = sCur.x + L * Math.cos(theta);
+            sNext.y = sCur.y + L * Math.sin(theta);
+        }
+
+        // Center the search motif around (0, 0)
+        const minSx = d3.min(this.searchMotifNodes, d => d.x);
+        const maxSx = d3.max(this.searchMotifNodes, d => d.x);
+        const minSy = d3.min(this.searchMotifNodes, d => d.y);
+        const maxSy = d3.max(this.searchMotifNodes, d => d.y);
+        const midSx = (minSx + maxSx) / 2;
+        const midSy = (minSy + maxSy) / 2;
+
+        this.searchMotifNodes.forEach(sn => {
+            sn.x -= midSx;
+            sn.y -= midSy;
+        });
+
+        // Step 2: Compute tangent and perpendicular normal vectors at each stage
+        const normals = [];
+        const tangents = [];
+
+        for (let k = 0; k < K; k++) {
+            let tx, ty;
+            if (k === 0) {
+                tx = this.searchMotifNodes[1].x - this.searchMotifNodes[0].x;
+                ty = this.searchMotifNodes[1].y - this.searchMotifNodes[0].y;
+            } else if (k === K - 1) {
+                tx = this.searchMotifNodes[K - 1].x - this.searchMotifNodes[K - 2].x;
+                ty = this.searchMotifNodes[K - 1].y - this.searchMotifNodes[K - 2].y;
+            } else {
+                tx = (this.searchMotifNodes[k + 1].x - this.searchMotifNodes[k - 1].x) / 2;
+                ty = (this.searchMotifNodes[k + 1].y - this.searchMotifNodes[k - 1].y) / 2;
+            }
+            const tLen = Math.sqrt(tx * tx + ty * ty) || 1;
+            tx /= tLen;
+            ty /= tLen;
+            tangents.push({ x: tx, y: ty });
+            normals.push({ x: -ty, y: tx });
+        }
+
+        // Step 3: Align all matching motifs around the search motif
+        // The active match is given the primary highlighted companion lane (+48px)
+        // Other matches fan out around it (+48px + offset) creating a shadow envelope
+        const primaryLaneDist = 48;
+
+        this.motifResults.forEach((match, mIdx) => {
+            const isSelected = (mIdx === activeIdx);
+            const relIdx = mIdx - activeIdx;
+            const shadowOffset = isSelected ? 0 : (relIdx * 6);
+            const laneDist = primaryLaneDist + shadowOffset;
+            const scoreOffset = isSelected ? 0 : ((1 - (match.score || 0.8)) * 18 - 4);
+
+            match.alignedNodes.forEach((node, k) => {
+                const sNode = this.searchMotifNodes[k];
+                const norm = normals[k];
+                const tang = tangents[k];
+
+                node.x = sNode.x + (laneDist * norm.x) + (scoreOffset * tang.x);
+                node.y = sNode.y + (laneDist * norm.y) + (scoreOffset * tang.y);
+                node.isHighlighted = isSelected;
+            });
+        });
+
+        // Step 4: Populate this.nodes with search nodes, active match nodes, and background shadow nodes
+        const activeMatch = this.motifResults[activeIdx];
+        const allNodes = [...this.searchMotifNodes];
+        if (activeMatch && activeMatch.alignedNodes) {
+            allNodes.push(...activeMatch.alignedNodes);
+        }
+        this.motifResults.forEach((m, idx) => {
+            if (idx !== activeIdx && m.alignedNodes) {
+                allNodes.push(...m.alignedNodes);
+            }
+        });
+
+        this.nodes = allNodes;
+    }
+
     activateMotifMatch(idx) {
         if (!this.motifResults || !this.motifResults[idx]) return;
+        this.activeMotifIdx = idx;
         this.activeMotifMatch = this.motifResults[idx];
 
         if (this.wordCard) {
@@ -10260,47 +10430,94 @@ class BibleWordMap extends HTMLElement {
             });
         }
 
-        // Ensure all matched nodes exist in this.nodes
-        if (!this.nodes) this.nodes = [];
-        this.activeMotifMatch.nodes.forEach(mn => {
-            let existing = this.nodes.find(n => n.id === mn.id);
-            if (!existing) {
-                this.nodes.push(mn);
-            } else {
-                if (mn.x !== undefined) existing.x = mn.x;
-                if (mn.y !== undefined) existing.y = mn.y;
+        // Align all motifs around the search motif with selected match in primary position
+        this.alignMotifTrajectories(idx);
+
+        this.draw();
+
+        // Smoothly frame the search motif and active match nodes
+        const nodesToFrame = [...this.searchMotifNodes, ...this.activeMotifMatch.alignedNodes];
+        this.frameNodes(nodesToFrame, 110, 600);
+    }
+
+    drawMotifTrajectories() {
+        if (!this.searchMotifNodes || this.searchMotifNodes.length < 2) return;
+        if (!this.motifResults || this.motifResults.length === 0) return;
+
+        const activeIdx = this.activeMotifIdx !== undefined ? this.activeMotifIdx : 0;
+        const activeMatch = this.motifResults[activeIdx];
+
+        // 1. Draw Background Shadow Trajectories for all other matches (opacity ~0.18 - 0.22)
+        this.motifResults.forEach((m, mIdx) => {
+            if (mIdx === activeIdx || !m.alignedNodes || m.alignedNodes.length < 2) return;
+            for (let i = 0; i < m.alignedNodes.length - 1; i++) {
+                const sNode = m.alignedNodes[i];
+                const tNode = m.alignedNodes[i + 1];
+                if (sNode.x === undefined || tNode.x === undefined) continue;
+
+                const dx = tNode.x - sNode.x;
+                const dy = tNode.y - sNode.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 1) continue;
+
+                const startX = sNode.x + (dx / dist) * (4 / this.transform.k);
+                const startY = sNode.y + (dy / dist) * (4 / this.transform.k);
+                const endX = tNode.x - (dx / dist) * (8 / this.transform.k);
+                const endY = tNode.y - (dy / dist) * (8 / this.transform.k);
+
+                this.ctx.save();
+                this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.18)';
+                this.ctx.lineWidth = 1.6 / this.transform.k;
+
+                // Subtle shadow shaft
+                this.ctx.beginPath();
+                this.ctx.moveTo(startX, startY);
+                this.ctx.lineTo(endX, endY);
+                this.ctx.stroke();
+
+                // Subtle shadow arrowhead
+                const headLen = 8 / this.transform.k;
+                const angle = Math.atan2(dy, dx);
+                const p1X = endX - headLen * Math.cos(angle - Math.PI / 6);
+                const p1Y = endY - headLen * Math.sin(angle - Math.PI / 6);
+                const p2X = endX - headLen * Math.cos(angle + Math.PI / 6);
+                const p2Y = endY - headLen * Math.sin(angle + Math.PI / 6);
+
+                this.ctx.fillStyle = 'rgba(56, 189, 248, 0.22)';
+                this.ctx.beginPath();
+                this.ctx.moveTo(endX, endY);
+                this.ctx.lineTo(p1X, p1Y);
+                this.ctx.lineTo(p2X, p2Y);
+                this.ctx.closePath();
+                this.ctx.fill();
+                this.ctx.restore();
             }
         });
 
-        this.draw();
-        this.frameNodes(this.activeMotifMatch.nodes, 100, 800);
-    }
-
-    drawMotifConstellationArrows(match) {
-        if (!match || !match.nodes || match.nodes.length < 2) return;
-        for (let i = 0; i < match.nodes.length - 1; i++) {
-            const sNode = match.nodes[i];
-            const tNode = match.nodes[i + 1];
-            if (sNode.x === undefined || tNode.x === undefined || isNaN(sNode.x) || isNaN(tNode.x)) continue;
+        // 2. Draw Original Search Motif Reference Trajectory (Bold Amber/Gold)
+        for (let i = 0; i < this.searchMotifNodes.length - 1; i++) {
+            const sNode = this.searchMotifNodes[i];
+            const tNode = this.searchMotifNodes[i + 1];
+            if (sNode.x === undefined || tNode.x === undefined) continue;
 
             const dx = tNode.x - sNode.x;
             const dy = tNode.y - sNode.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
             if (dist < 1) continue;
 
-            const sR = sNode.canvasR || (12 / this.transform.k);
-            const tR = tNode.canvasR || (12 / this.transform.k);
+            const sR = (sNode.canvasR || 15) / this.transform.k;
+            const tR = (tNode.canvasR || 15) / this.transform.k;
 
             const startX = sNode.x + (dx / dist) * sR;
             const startY = sNode.y + (dy / dist) * sR;
-            const endX = tNode.x - (dx / dist) * (tR + (3 / this.transform.k));
-            const endY = tNode.y - (dy / dist) * (tR + (3 / this.transform.k));
+            const endX = tNode.x - (dx / dist) * (tR + (4 / this.transform.k));
+            const endY = tNode.y - (dy / dist) * (tR + (4 / this.transform.k));
 
             this.ctx.save();
-            this.ctx.strokeStyle = '#38bdf8';
+            this.ctx.strokeStyle = '#f59e0b';
             this.ctx.lineWidth = 3.5 / this.transform.k;
-            this.ctx.shadowBlur = 12 / this.transform.k;
-            this.ctx.shadowColor = 'rgba(56, 189, 248, 0.75)';
+            this.ctx.shadowBlur = 10 / this.transform.k;
+            this.ctx.shadowColor = 'rgba(245, 158, 11, 0.6)';
 
             // Arrow shaft
             this.ctx.beginPath();
@@ -10316,7 +10533,7 @@ class BibleWordMap extends HTMLElement {
             const p2X = endX - headLen * Math.cos(angle + Math.PI / 6);
             const p2Y = endY - headLen * Math.sin(angle + Math.PI / 6);
 
-            this.ctx.fillStyle = '#38bdf8';
+            this.ctx.fillStyle = '#f59e0b';
             this.ctx.beginPath();
             this.ctx.moveTo(endX, endY);
             this.ctx.lineTo(p1X, p1Y);
@@ -10324,12 +10541,12 @@ class BibleWordMap extends HTMLElement {
             this.ctx.closePath();
             this.ctx.fill();
 
-            // Sequence trajectory label pill at midpoint
+            // Midpoint pill badge
             const midX = (startX + endX) / 2;
             const midY = (startY + endY) / 2;
-            const stepLabel = `Step ${i + 1} ➔`;
+            const stepLabel = `Step ${i + 1} (Search) ➔`;
             const textScale = this.mapTextScale || 1.0;
-            const fontSize = Math.max(8.5, 10 * textScale) / this.transform.k;
+            const fontSize = Math.max(8.5, 9.5 * textScale) / this.transform.k;
 
             this.ctx.font = `bold ${fontSize}px ${this.colors.font}`;
             this.ctx.textAlign = 'center';
@@ -10339,7 +10556,7 @@ class BibleWordMap extends HTMLElement {
             const pillPadX = 6 / this.transform.k;
             const pillPadY = 3 / this.transform.k;
 
-            this.ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+            this.ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
             this.ctx.shadowBlur = 4 / this.transform.k;
             this.ctx.shadowColor = '#000000';
             this.ctx.beginPath();
@@ -10347,10 +10564,88 @@ class BibleWordMap extends HTMLElement {
             this.ctx.fill();
 
             this.ctx.shadowBlur = 0;
-            this.ctx.fillStyle = '#38bdf8';
+            this.ctx.fillStyle = '#fbbf24';
             this.ctx.fillText(stepLabel, midX, midY);
 
             this.ctx.restore();
+        }
+
+        // 3. Draw Selected Matching Motif Trajectory (Bold Electric Cyan)
+        if (activeMatch && activeMatch.alignedNodes && activeMatch.alignedNodes.length >= 2) {
+            for (let i = 0; i < activeMatch.alignedNodes.length - 1; i++) {
+                const sNode = activeMatch.alignedNodes[i];
+                const tNode = activeMatch.alignedNodes[i + 1];
+                if (sNode.x === undefined || tNode.x === undefined) continue;
+
+                const dx = tNode.x - sNode.x;
+                const dy = tNode.y - sNode.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 1) continue;
+
+                const sR = (sNode.canvasR || 14) / this.transform.k;
+                const tR = (tNode.canvasR || 14) / this.transform.k;
+
+                const startX = sNode.x + (dx / dist) * sR;
+                const startY = sNode.y + (dy / dist) * sR;
+                const endX = tNode.x - (dx / dist) * (tR + (4 / this.transform.k));
+                const endY = tNode.y - (dy / dist) * (tR + (4 / this.transform.k));
+
+                this.ctx.save();
+                this.ctx.strokeStyle = '#38bdf8';
+                this.ctx.lineWidth = 3.5 / this.transform.k;
+                this.ctx.shadowBlur = 14 / this.transform.k;
+                this.ctx.shadowColor = 'rgba(56, 189, 248, 0.85)';
+
+                // Arrow shaft
+                this.ctx.beginPath();
+                this.ctx.moveTo(startX, startY);
+                this.ctx.lineTo(endX, endY);
+                this.ctx.stroke();
+
+                // Arrowhead marker
+                const headLen = 14 / this.transform.k;
+                const angle = Math.atan2(dy, dx);
+                const p1X = endX - headLen * Math.cos(angle - Math.PI / 6);
+                const p1Y = endY - headLen * Math.sin(angle - Math.PI / 6);
+                const p2X = endX - headLen * Math.cos(angle + Math.PI / 6);
+                const p2Y = endY - headLen * Math.sin(angle + Math.PI / 6);
+
+                this.ctx.fillStyle = '#38bdf8';
+                this.ctx.beginPath();
+                this.ctx.moveTo(endX, endY);
+                this.ctx.lineTo(p1X, p1Y);
+                this.ctx.lineTo(p2X, p2Y);
+                this.ctx.closePath();
+                this.ctx.fill();
+
+                // Midpoint pill badge
+                const midX = (startX + endX) / 2;
+                const midY = (startY + endY) / 2;
+                const stepLabel = `Step ${i + 1} ➔ ${activeMatch.displayPct}% Echo`;
+                const textScale = this.mapTextScale || 1.0;
+                const fontSize = Math.max(8.5, 9.5 * textScale) / this.transform.k;
+
+                this.ctx.font = `bold ${fontSize}px ${this.colors.font}`;
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+
+                const txtWidth = this.ctx.measureText(stepLabel).width;
+                const pillPadX = 6 / this.transform.k;
+                const pillPadY = 3 / this.transform.k;
+
+                this.ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+                this.ctx.shadowBlur = 4 / this.transform.k;
+                this.ctx.shadowColor = '#000000';
+                this.ctx.beginPath();
+                this.ctx.roundRect(midX - (txtWidth / 2) - pillPadX, midY - (fontSize / 2) - pillPadY, txtWidth + (pillPadX * 2), fontSize + (pillPadY * 2), 4 / this.transform.k);
+                this.ctx.fill();
+
+                this.ctx.shadowBlur = 0;
+                this.ctx.fillStyle = '#38bdf8';
+                this.ctx.fillText(stepLabel, midX, midY);
+
+                this.ctx.restore();
+            }
         }
     }
 
@@ -11620,14 +11915,17 @@ class BibleWordMap extends HTMLElement {
         this.hoveredNode = null;
         this.pseudoNode = null;
         this.activeMotifMatch = null;
+        this.activeMotifIdx = null;
         this.motifResults = null;
+        this.searchMotifNodes = null;
         this.lastPseudoNeighbors = null;
         this.lastPseudoAst = null;
+        this.lastMotifQuery = null;
         if (this.nodes) {
-            this.nodes = this.nodes.filter(n => !n.isPseudoNode);
+            this.nodes = this.nodes.filter(n => !n.isPseudoNode && !n.isMotifNode && !n.isSearchMotif);
         }
         if (this.allSearchNodes) {
-            this.allSearchNodes = this.allSearchNodes.filter(n => !n.isPseudoNode);
+            this.allSearchNodes = this.allSearchNodes.filter(n => !n.isPseudoNode && !n.isMotifNode && !n.isSearchMotif);
         }
         this.selectedBook = null;
         this.selectedVerse = null;
@@ -11914,9 +12212,12 @@ class BibleWordMap extends HTMLElement {
         this.hoveredNode = null;
         this.pseudoNode = null;
         this.activeMotifMatch = null;
+        this.activeMotifIdx = null;
         this.motifResults = null;
+        this.searchMotifNodes = null;
         this.lastPseudoNeighbors = null;
         this.lastPseudoAst = null;
+        this.lastMotifQuery = null;
         let foundBooks = [];
 
         if (!useExplicitCodes) {
@@ -13182,9 +13483,12 @@ class BibleWordMap extends HTMLElement {
         this.hoveredNode = null;
         this.pseudoNode = null;
         this.activeMotifMatch = null;
+        this.activeMotifIdx = null;
         this.motifResults = null;
+        this.searchMotifNodes = null;
         this.lastPseudoNeighbors = null;
         this.lastPseudoAst = null;
+        this.lastMotifQuery = null;
         let foundChapters = [];
 
         if (typeof useExplicitCodes === 'string') {
@@ -14503,9 +14807,12 @@ class BibleWordMap extends HTMLElement {
         this.hoveredNode = null;
         this.pseudoNode = null;
         this.activeMotifMatch = null;
+        this.activeMotifIdx = null;
         this.motifResults = null;
+        this.searchMotifNodes = null;
         this.lastPseudoNeighbors = null;
         this.lastPseudoAst = null;
+        this.lastMotifQuery = null;
         let foundVerses = [];
 
         if (!useExplicitCodes) {
@@ -15923,9 +16230,9 @@ class BibleWordMap extends HTMLElement {
             });
         }
 
-        // Draw Directed Arrows for active Motif Sequence Constellation
-        if (this.activeMotifMatch && this.activeMotifMatch.nodes && this.activeMotifMatch.nodes.length >= 2) {
-            this.drawMotifConstellationArrows(this.activeMotifMatch);
+        // Draw Directed Arrows for Motif Sequence Trajectories
+        if (this.motifResults && this.motifResults.length > 0) {
+            this.drawMotifTrajectories();
         }
         
         let kwWordCounts = {};
@@ -15938,18 +16245,34 @@ class BibleWordMap extends HTMLElement {
             nodeWordCounts[baseW] = (nodeWordCounts[baseW] || 0) + 1;
         });
 
+        const isMotifMode = Boolean(this.motifResults && this.motifResults.length > 0);
+
         this.nodes.forEach(n => {
             let isHighlighted = (this.hoveredNode === n || this.inspectorNode === n);
-            let isMotifMatched = Boolean(this.activeMotifMatch && this.activeMotifMatch.nodes && this.activeMotifMatch.nodes.some(mn => mn.id === n.id || mn.w.toLowerCase() === n.w.toLowerCase()));
-            let matchesT = this.matchesTestament(n.t || n.testament) || isHighlighted || n.isFocusedBook || n.isFocusedVerse || n.isFocusedChapter || n.isPseudoNode || isMotifMatched;
+            let isSearchMotifNode = Boolean(n.isSearchMotif);
+            let isMotifMatched = Boolean(n.isHighlighted || (this.activeMotifMatch && this.activeMotifMatch.alignedNodes && this.activeMotifMatch.alignedNodes.some(mn => mn.id === n.id)));
+            let isShadowMotifNode = Boolean(n.isMotifNode && !isMotifMatched);
+            let matchesT = this.matchesTestament(n.t || n.testament) || isHighlighted || n.isFocusedBook || n.isFocusedVerse || n.isFocusedChapter || n.isPseudoNode || isMotifMatched || isSearchMotifNode;
             
             this.ctx.beginPath();
             
             let posColor = '#94a3b8'; // default slate-400
             if (n.isPseudoNode) {
                 posColor = '#f59e0b'; // amber-500 for Pseudo-Node
+            } else if (isSearchMotifNode) {
+                // Original colored dots for the search motif based on actual grammatical POS
+                if (n.pos === 'NOUN') posColor = '#3b82f6';
+                else if (n.pos === 'VERB') posColor = '#ef4444';
+                else if (n.pos === 'PROPN') posColor = '#10b981';
+                else if (n.pos === 'ADJ') posColor = '#8b5cf6';
+                else if (n.pos === 'ADV') posColor = '#ec4899';
+                else if (n.pos === 'PRON') posColor = '#14b8a6';
+                else if (n.pos === 'NUM') posColor = '#f59e0b';
+                else posColor = '#10b981';
             } else if (isMotifMatched) {
-                posColor = '#38bdf8'; // sky-blue for motif sequence constellation
+                posColor = '#38bdf8'; // sky-blue for active motif sequence
+            } else if (isShadowMotifNode) {
+                posColor = 'rgba(56, 189, 248, 0.35)'; // subtle shadow dot
             } else if (n.isEntityNode || n.is_entity) {
                 posColor = '#10b981'; // emerald-500
             } else if (n.isSenseNode) {
@@ -15972,7 +16295,15 @@ class BibleWordMap extends HTMLElement {
 
             this.ctx.fillStyle = posColor;
             
-            if (this.activeMotifMatch) {
+            if (isMotifMode) {
+                if (isSearchMotifNode || isMotifMatched) {
+                    this.ctx.globalAlpha = 1.0;
+                } else if (isShadowMotifNode) {
+                    this.ctx.globalAlpha = 0.22;
+                } else {
+                    this.ctx.globalAlpha = 0.05;
+                }
+            } else if (this.activeMotifMatch) {
                 this.ctx.globalAlpha = isMotifMatched ? 1.0 : 0.10;
             } else if (n.isPseudoNode) {
                 this.ctx.globalAlpha = 1.0;
@@ -15989,7 +16320,7 @@ class BibleWordMap extends HTMLElement {
                 this.ctx.globalAlpha = 1.0;
             }
             
-            if (!matchesT && !this.activeMotifMatch) {
+            if (!matchesT && !isMotifMode && !this.activeMotifMatch) {
                 this.ctx.globalAlpha = Math.min(this.ctx.globalAlpha, 0.06);
             }
             
@@ -16005,10 +16336,17 @@ class BibleWordMap extends HTMLElement {
                 drawR = n.canvasR || (15 / this.transform.k);
                 this.ctx.shadowBlur = 22 / this.transform.k;
                 this.ctx.shadowColor = '#f59e0b';
+            } else if (isSearchMotifNode) {
+                drawR = 15 / this.transform.k;
+                this.ctx.shadowBlur = 14 / this.transform.k;
+                this.ctx.shadowColor = 'rgba(245, 158, 11, 0.7)';
             } else if (isMotifMatched) {
-                drawR = (n.canvasR || (14 / this.transform.k)) * (isHighlighted ? 1.3 : 1.15);
-                this.ctx.shadowBlur = 24 / this.transform.k;
+                drawR = (14 / this.transform.k) * (isHighlighted ? 1.25 : 1.1);
+                this.ctx.shadowBlur = 22 / this.transform.k;
                 this.ctx.shadowColor = '#38bdf8';
+            } else if (isShadowMotifNode) {
+                drawR = 4 / this.transform.k;
+                this.ctx.shadowBlur = 0;
             } else if (isHighlighted) {
                 drawR = n.canvasR * (n.isBook ? 1.2 : ((n.isVerse || n.isChapter) ? 1.25 : 1.4));
                 this.ctx.shadowBlur = (n.isBook ? 16 : ((n.isVerse || n.isChapter) ? 18 : 12)) / this.transform.k;
@@ -16023,7 +16361,7 @@ class BibleWordMap extends HTMLElement {
                 this.ctx.shadowBlur = 0;
             }
             
-            if (!matchesT && !this.activeMotifMatch) {
+            if (!matchesT && !isMotifMode && !this.activeMotifMatch) {
                 drawR = drawR * 0.75;
             }
             
@@ -16049,6 +16387,16 @@ class BibleWordMap extends HTMLElement {
                 this.ctx.shadowBlur = 0;
                 this.ctx.fillText('∑', n.x, n.y);
                 this.ctx.restore();
+            } else if (isSearchMotifNode) {
+                this.ctx.lineWidth = 2.5 / this.transform.k;
+                this.ctx.strokeStyle = '#f59e0b';
+                this.ctx.stroke();
+                // Outer golden orbit ring
+                this.ctx.beginPath();
+                this.ctx.arc(n.x, n.y, drawR + 4.5 / this.transform.k, 0, 2 * Math.PI);
+                this.ctx.lineWidth = 1.6 / this.transform.k;
+                this.ctx.strokeStyle = 'rgba(245, 158, 11, 0.8)';
+                this.ctx.stroke();
             } else if (isMotifMatched) {
                 this.ctx.lineWidth = 2.5 / this.transform.k;
                 this.ctx.strokeStyle = '#ffffff';
@@ -16102,7 +16450,9 @@ class BibleWordMap extends HTMLElement {
             }
             
             let labelAlpha = 1.0;
-            if (this.activeMotifMatch) {
+            if (isMotifMode) {
+                labelAlpha = (isSearchMotifNode || isMotifMatched) ? 1.0 : 0.0;
+            } else if (this.activeMotifMatch) {
                 labelAlpha = isMotifMatched ? 1.0 : 0.10;
             }
             if (n.spawnTime) {
@@ -16113,7 +16463,7 @@ class BibleWordMap extends HTMLElement {
             }
             this.ctx.globalAlpha = labelAlpha;
             
-            let showLabel = n.isPseudoNode || isMotifMatched || n.isChapter || n.isChapterVerse || n.isVerse || n.isBook || n.isSenseNode || n.isEntityNode || n.is_entity || (matchesT && (this.isSearchMode || n.isKw || autoShowLabels || n.isBookWord || n.isVerseWord || n.isChapterWord || isHighlighted));
+            let showLabel = n.isPseudoNode || isSearchMotifNode || isMotifMatched || (!isMotifMode && (n.isChapter || n.isChapterVerse || n.isVerse || n.isBook || n.isSenseNode || n.isEntityNode || n.is_entity || (matchesT && (this.isSearchMode || n.isKw || autoShowLabels || n.isBookWord || n.isVerseWord || n.isChapterWord || isHighlighted))));
             if (showLabel) {
                 this.ctx.shadowBlur = 0;
                 
@@ -16151,17 +16501,41 @@ class BibleWordMap extends HTMLElement {
 
                     this.ctx.fillStyle = '#fbbf24';
                     this.ctx.fillText(subText, 0, posOffset);
-                } else if (isMotifMatched) {
-                    let stepIndex = -1;
-                    if (this.activeMotifMatch && this.activeMotifMatch.nodes) {
-                        stepIndex = this.activeMotifMatch.nodes.findIndex(mn => mn.id === n.id || mn.w.toLowerCase() === n.w.toLowerCase());
-                    }
+                } else if (isSearchMotifNode) {
                     let fontSize = 13 * textScale;
                     this.ctx.font = `bold ${fontSize}px ${this.colors.font}`;
                     this.ctx.textAlign = "center";
                     this.ctx.textBaseline = "top";
-                    let currentR = (isHighlighted) ? n.canvasR * 1.3 : n.canvasR;
-                    let yOffset = (currentR * this.transform.k) + (3 * textScale);
+                    let currentR = 15;
+                    let yOffset = currentR + (3 * textScale);
+
+                    let displayTitle = this.formatWord(n.w, n.pos);
+                    this.ctx.lineWidth = 3.5 * textScale;
+                    this.ctx.strokeStyle = this.colors.bg;
+                    this.ctx.strokeText(displayTitle, 0, yOffset);
+
+                    this.ctx.fillStyle = '#f59e0b';
+                    this.ctx.fillText(displayTitle, 0, yOffset);
+
+                    let stepBadge = `Search Anchor (Step ${n.stepIndex + 1})`;
+                    let posFontSize = 9.5 * textScale;
+                    this.ctx.font = `bold ${posFontSize}px ${this.colors.font}`;
+                    let posOffset = yOffset + fontSize + (2 * textScale);
+
+                    this.ctx.lineWidth = 2.5 * textScale;
+                    this.ctx.strokeStyle = this.colors.bg;
+                    this.ctx.strokeText(stepBadge, 0, posOffset);
+
+                    this.ctx.fillStyle = '#fbbf24';
+                    this.ctx.fillText(stepBadge, 0, posOffset);
+                } else if (isMotifMatched) {
+                    let stepIndex = n.stepIndex !== undefined ? n.stepIndex : -1;
+                    let fontSize = 13 * textScale;
+                    this.ctx.font = `bold ${fontSize}px ${this.colors.font}`;
+                    this.ctx.textAlign = "center";
+                    this.ctx.textBaseline = "top";
+                    let currentR = 14;
+                    let yOffset = currentR + (3 * textScale);
 
                     let displayTitle = this.formatWord(n.w, n.pos);
                     this.ctx.lineWidth = 3.5 * textScale;
@@ -16171,7 +16545,8 @@ class BibleWordMap extends HTMLElement {
                     this.ctx.fillStyle = '#38bdf8';
                     this.ctx.fillText(displayTitle, 0, yOffset);
 
-                    let stepBadge = stepIndex >= 0 ? `Step ${stepIndex + 1}` : 'Motif Match';
+                    let activeIdx = this.activeMotifIdx !== undefined ? this.activeMotifIdx : 0;
+                    let stepBadge = stepIndex >= 0 ? `Match ${activeIdx + 1} (Step ${stepIndex + 1})` : `Match ${activeIdx + 1}`;
                     let posFontSize = 9.5 * textScale;
                     this.ctx.font = `bold ${posFontSize}px ${this.colors.font}`;
                     let posOffset = yOffset + fontSize + (2 * textScale);
@@ -17345,7 +17720,11 @@ class BibleWordMap extends HTMLElement {
             this.wordCard.innerHTML = '';
         }
         if (this.wordReopenBtn) {
-            if (this.viewMode === 'words' && this.isSearchMode && this.searchedWords && this.searchedWords.length > 0) {
+            if (this.motifResults && this.motifResults.length > 0) {
+                let textEl = this.wordReopenBtn.querySelector('.bwm-book-card-reopen-text');
+                if (textEl) textEl.textContent = 'Motif Results';
+                this.wordReopenBtn.style.display = 'flex';
+            } else if (this.viewMode === 'words' && this.isSearchMode && this.searchedWords && this.searchedWords.length > 0) {
                 let name = 'Word';
                 if (this.lastInspectedWordNode) {
                     name = this.formatWord(this.lastInspectedWordNode.w, this.lastInspectedWordNode.pos);
@@ -17363,7 +17742,7 @@ class BibleWordMap extends HTMLElement {
             }
         }
         this.inspectorNode = null;
-        if (this.activeMotifMatch) {
+        if (!this.motifResults) {
             this.activeMotifMatch = null;
         }
         this.draw();

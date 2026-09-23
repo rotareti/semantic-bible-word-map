@@ -16,8 +16,11 @@
   - **Motif Matching & Constellation View:** When evaluating directional sequence queries (e.g. `Jesus > Crucified > Raised` or `(King - Babylon) > (Priest - Temple)`):
     - Computes directional offset vectors across successive stages.
     - Asynchronously scans the vocabulary for structural matches sharing the internal angle and trajectory, ranking results by structural cosine similarity (e.g. 92% Match).
-    - Study Panel Motif Results: Replaces standard definitions with an interactive Motif Results list featuring sequence cards, trajectory match percentages, and step alignments.
-    - Constellation Canvas View: Clicking any motif card dims non-relevant nodes to 10% opacity, spotlights matched nodes at 100% opacity with cyan glowing halos, renders bold directed arrows with arrowheads and step labels, and smoothly frames the entire constellation.
+    - Overlayed Trajectory Canvas View: Clears existing map nodes on motif search and aligns all matching motifs around the original search motif reference trajectory:
+      - Renders the original search motif with original POS colored dots, golden orbit rings, and bold amber direction arrows.
+      - Highlights the selected matching motif in vibrant electric cyan with prominent step labels and glow.
+      - Displays all other structural matches as translucent shadow outlines in the background (with 22% opacity) along the companion path.
+      - Dynamically highlights any clicked motif card in contrast to the canonical search motif.
   - **Search Bar Autocomplete Integration:**
     - Detects operator queries and switches cleanly to word autocomplete for the active token being typed without conflicts.
     - Preserves operators and preceding tokens during autocomplete selection.
