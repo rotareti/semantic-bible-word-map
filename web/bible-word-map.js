@@ -4453,6 +4453,9 @@ class BibleWordMap extends HTMLElement {
                             <marker id="bwm-motif-arrowhead" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
                                 <path d="M 0 1 L 10 5 L 0 9 z" fill="#38bdf8"></path>
                             </marker>
+                            <marker id="bwm-motif-arrowhead-gold" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 1 L 10 5 L 0 9 z" fill="#f59e0b"></path>
+                            </marker>
                         </defs>
                     </svg>
                     <div class="bwm-tooltip"></div>
@@ -9593,7 +9596,9 @@ class BibleWordMap extends HTMLElement {
                 x: wordNode.x || 0,
                 y: wordNode.y || 0,
                 usedWords: [wordNode.w || astNode.value],
-                wordNode
+                wordNode,
+                isPseudoNode: false,
+                expression: wordNode.w || astNode.value
             };
         }
         if (astNode.type === 'Neg') {
@@ -9602,7 +9607,9 @@ class BibleWordMap extends HTMLElement {
                 vector: res.vector.map(v => -v),
                 x: -res.x,
                 y: -res.y,
-                usedWords: res.usedWords
+                usedWords: res.usedWords,
+                isPseudoNode: true,
+                expression: `-${res.expression}`
             };
         }
         if (astNode.type === 'Add' || astNode.type === 'Sub') {
@@ -9618,7 +9625,9 @@ class BibleWordMap extends HTMLElement {
                 vector: resVec,
                 x: isAdd ? (left.x + right.x) : (left.x - right.x),
                 y: isAdd ? (left.y + right.y) : (left.y - right.y),
-                usedWords: [...left.usedWords, ...right.usedWords]
+                usedWords: [...left.usedWords, ...right.usedWords],
+                isPseudoNode: true,
+                expression: `${left.expression} ${isAdd ? '+' : '-'} ${right.expression}`
             };
         }
         throw new Error(`Unrecognized AST node type: ${astNode.type}`);
@@ -9791,16 +9800,20 @@ class BibleWordMap extends HTMLElement {
         // Build the Original Search Motif reference nodes
         this.searchMotifNodes = stageResults.map((sr, k) => {
             const wNode = sr.wordNode || {};
-            const cleanTitle = sr.usedWords.join(' ');
+            const cleanTitle = sr.isPseudoNode
+                ? `[${(sr.expression || sr.usedWords.join(' ')).replace(/^[\[\(]|[\]\)]$/g, '').trim()}]`
+                : (wNode.w || sr.usedWords.join(' '));
             return {
                 id: `search_motif_stage_${k}`,
                 w: cleanTitle,
                 label: cleanTitle,
-                pos: wNode.pos || (k === 0 ? 'PROPN' : (k === 1 ? 'VERB' : 'NOUN')),
+                pos: sr.isPseudoNode ? 'MATH' : (wNode.pos || (k === 0 ? 'PROPN' : (k === 1 ? 'VERB' : 'NOUN'))),
                 t: wNode.t || 'NT',
                 f: wNode.f || 1,
                 v: sr.vector,
                 isSearchMotif: true,
+                isPseudoNode: !!sr.isPseudoNode,
+                expression: sr.expression,
                 isKw: true,
                 stepIndex: k,
                 rawX: (sr.x !== undefined && !isNaN(sr.x)) ? sr.x : 0,
@@ -9837,12 +9850,14 @@ class BibleWordMap extends HTMLElement {
             m.alignedNodes = m.nodes.map((node, k) => ({
                 id: `motif_m${mIdx}_k${k}_${node.id || node.w}`,
                 w: node.w,
-                label: this.formatWord(node.w, node.pos),
+                label: node.isPseudoNode ? `[${(node.expression || node.w).replace(/^[\[\(]|[\]\)]$/g, '').trim()}]` : this.formatWord(node.w, node.pos),
                 pos: node.pos || 'NOUN',
                 t: node.t || 'OT',
                 f: node.f || 1,
                 v: node.v,
                 isMotifNode: true,
+                isPseudoNode: !!node.isPseudoNode,
+                expression: node.expression,
                 motifIndex: mIdx,
                 stepIndex: k,
                 rawX: (node.x !== undefined && !isNaN(node.x)) ? node.x : 0,
@@ -9862,11 +9877,105 @@ class BibleWordMap extends HTMLElement {
 
     async findMotifMatches(stageResults, offsets, excludedWords) {
         if (!this.data2d || this.data2d.length === 0) return [];
+        const excluded = (excludedWords instanceof Set) ? excludedWords : new Set();
+        const stageCount = stageResults.length;
+        if (stageCount < 2) return [];
+
         const matches = [];
         const seenSequences = new Set();
-        const stageCount = stageResults.length;
+        const dim = stageResults[0].vector.length;
 
-        // 1. Evaluate curated typological echo candidates for classic narrative alignment
+        // 1. Compute directional displacements and normalized unit vectors for the source sequence
+        const displacements = [];
+        const normDisplacements = [];
+
+        for (let i = 0; i < stageCount - 1; i++) {
+            const vFrom = stageResults[i].vector;
+            const vTo = stageResults[i + 1].vector;
+            const d = new Float32Array(dim);
+            let magSq = 0;
+            for (let j = 0; j < dim; j++) {
+                d[j] = vTo[j] - vFrom[j];
+                magSq += d[j] * d[j];
+            }
+            displacements.push(d);
+
+            const mag = Math.sqrt(magSq);
+            const dHat = new Float32Array(dim);
+            if (mag > 1e-9) {
+                for (let j = 0; j < dim; j++) dHat[j] = d[j] / mag;
+            }
+            normDisplacements.push(dHat);
+        }
+
+        // Calculate source internal angles between successive displacement steps (curvature baseline)
+        const sourceAngles = [];
+        for (let i = 0; i < stageCount - 2; i++) {
+            let dot = 0;
+            for (let j = 0; j < dim; j++) {
+                dot += normDisplacements[i][j] * normDisplacements[i + 1][j];
+            }
+            const clamped = Math.max(-1, Math.min(1, dot));
+            sourceAngles.push(Math.acos(clamped));
+        }
+
+        // Helper to score a candidate chain: directional match minus curvature penalty
+        const scoreCandidateChain = (chainNodes) => {
+            if (!chainNodes || chainNodes.length !== stageCount) return null;
+            const stepCosines = [];
+            const targetNormDisplacements = [];
+
+            for (let i = 0; i < stageCount - 1; i++) {
+                const vA = chainNodes[i].v;
+                const vB = chainNodes[i + 1].v;
+                const d = new Float32Array(dim);
+                let magSq = 0;
+                for (let j = 0; j < dim; j++) {
+                    d[j] = vB[j] - vA[j];
+                    magSq += d[j] * d[j];
+                }
+                const mag = Math.sqrt(magSq);
+                const dHat = new Float32Array(dim);
+                if (mag > 1e-9) {
+                    for (let j = 0; j < dim; j++) dHat[j] = d[j] / mag;
+                }
+                targetNormDisplacements.push(dHat);
+
+                let dot = 0;
+                for (let j = 0; j < dim; j++) {
+                    dot += normDisplacements[i][j] * dHat[j];
+                }
+                stepCosines.push(dot);
+            }
+
+            const avgCosine = stepCosines.reduce((acc, v) => acc + v, 0) / stepCosines.length;
+
+            let curvaturePenalty = 0;
+            if (stageCount >= 3) {
+                let totalAngleDiff = 0;
+                for (let i = 0; i < stageCount - 2; i++) {
+                    let dot = 0;
+                    for (let j = 0; j < dim; j++) {
+                        dot += targetNormDisplacements[i][j] * targetNormDisplacements[i + 1][j];
+                    }
+                    const clamped = Math.max(-1, Math.min(1, dot));
+                    const angle = Math.acos(clamped);
+                    totalAngleDiff += Math.abs(sourceAngles[i] - angle);
+                }
+                const avgAngleDiff = totalAngleDiff / (stageCount - 2);
+                curvaturePenalty = (avgAngleDiff / Math.PI) * 0.35;
+            }
+
+            const fitnessScore = avgCosine - curvaturePenalty;
+            return {
+                fitnessScore,
+                avgCosine,
+                curvaturePenalty,
+                stepCosines
+            };
+        };
+
+        // 2. Evaluate curated typological echo candidates for classic narrative alignment
         const TYPOLOGICAL_CANDIDATES = [
             { words: ['joseph', 'pit', 'governor'] },
             { words: ['jonah', 'swallow', 'vomit'] },
@@ -9884,98 +9993,149 @@ class BibleWordMap extends HTMLElement {
             for (let cand of TYPOLOGICAL_CANDIDATES) {
                 const nodes = cand.words.map(w => this.resolveQueryWord(w));
                 if (nodes.every(n => n && n.v)) {
-                    const stepCosines = [];
-                    for (let i = 0; i < offsets.length; i++) {
-                        const dActual = nodes[i + 1].v.map((val, idx) => val - nodes[i].v[idx]);
-                        const c = this.cosineSimilarity(dActual, offsets[i]);
-                        stepCosines.push(c);
-                    }
-                    const avgCosine = stepCosines.reduce((acc, v) => acc + v, 0) / stepCosines.length;
-                    const seqKey = nodes.map(n => n.w.toLowerCase()).join('>');
-                    if (!seenSequences.has(seqKey)) {
-                        seenSequences.add(seqKey);
-                        matches.push({
-                            nodes,
-                            sequenceLabels: nodes.map(n => this.formatWord(n.w, n.pos)),
-                            score: avgCosine,
-                            stepCosines,
-                            isCurated: true
-                        });
+                    const scored = scoreCandidateChain(nodes);
+                    if (scored && scored.fitnessScore > 0.15) {
+                        const seqKey = nodes.map(n => n.w.toLowerCase()).join('>');
+                        if (!seenSequences.has(seqKey)) {
+                            seenSequences.add(seqKey);
+                            matches.push({
+                                nodes,
+                                sequenceLabels: nodes.map(n => this.formatWord(n.w, n.pos)),
+                                score: scored.fitnessScore,
+                                stepCosines: scored.stepCosines,
+                                isCurated: true
+                            });
+                        }
                     }
                 }
             }
         }
 
-        // 2. Dynamic geometric offset scan across candidate vocabulary nodes
-        const candidates = this.data2d.filter(d => {
-            if (!d.v || !d.w) return false;
-            if (excludedWords.has(d.w.toLowerCase())) return false;
-            return d.pos === 'PROPN' || (d.pos === 'NOUN' && (d.f || 1) >= 8);
-        });
+        // 3. Pre-process Candidate Pool with normalized unit vectors for rapid local KNN dot products
+        const candidatePool = [];
+        for (let i = 0; i < this.data2d.length; i++) {
+            const d = this.data2d[i];
+            if (!d.v || !d.w || d.v.length !== dim) continue;
+            const wLow = d.w.toLowerCase();
+            if (excluded.has(wLow)) continue;
+            const f = d.f || 1;
+            // Valid target vocabulary pool
+            if (f < 6 && d.pos !== 'PROPN') continue;
+            if (d.pos && d.pos !== 'PROPN' && d.pos !== 'NOUN' && d.pos !== 'VERB') continue;
 
-        // Scan candidate nodes in batches, yielding periodically to prevent main thread freezing
-        const maxCandidatesToScan = Math.min(320, candidates.length);
-        const batchSize = 35;
+            let magSq = 0;
+            for (let j = 0; j < dim; j++) magSq += d.v[j] * d.v[j];
+            const mag = Math.sqrt(magSq);
+            if (mag < 1e-9) continue;
 
-        for (let i = 0; i < maxCandidatesToScan; i++) {
-            if (i > 0 && i % batchSize === 0) {
+            const unitV = new Float32Array(dim);
+            for (let j = 0; j < dim; j++) unitV[j] = d.v[j] / mag;
+
+            candidatePool.push({
+                node: d,
+                wLow,
+                v: d.v,
+                unitV,
+                f,
+                pos: d.pos
+            });
+        }
+
+        // Valid starting words: nouns, verbs, proper nouns with frequency >= 10
+        const startPool = candidatePool.filter(c => (c.pos === 'PROPN' || c.pos === 'NOUN' || c.pos === 'VERB') && c.f >= 10);
+        startPool.sort((a, b) => b.f - a.f);
+
+        const maxStartPool = Math.min(220, startPool.length);
+        const kNeighbors = stageCount <= 3 ? 4 : 3; // Branching factor
+        const batchSize = 25;
+
+        // Local KNN query helper: finds top k nearest words to target projection tVec
+        const findLocalKnn = (tVec, usedSet) => {
+            let tMagSq = 0;
+            for (let j = 0; j < dim; j++) tMagSq += tVec[j] * tVec[j];
+            const tMag = Math.sqrt(tMagSq);
+            if (tMag < 1e-9) return [];
+
+            const unitT = new Float32Array(dim);
+            for (let j = 0; j < dim; j++) unitT[j] = tVec[j] / tMag;
+
+            const topK = [];
+            for (let c = 0; c < candidatePool.length; c++) {
+                const cand = candidatePool[c];
+                if (usedSet.has(cand.wLow)) continue;
+
+                let dot = 0;
+                const uV = cand.unitV;
+                for (let j = 0; j < dim; j++) {
+                    dot += unitT[j] * uV[j];
+                }
+                if (dot < 0.16) continue;
+
+                if (topK.length < kNeighbors) {
+                    topK.push({ cand, sim: dot });
+                    topK.sort((a, b) => b.sim - a.sim);
+                } else if (dot > topK[kNeighbors - 1].sim) {
+                    topK[kNeighbors - 1] = { cand, sim: dot };
+                    topK.sort((a, b) => b.sim - a.sim);
+                }
+            }
+            return topK;
+        };
+
+        // Chained KNN Search Execution across starting words
+        for (let sIdx = 0; sIdx < maxStartPool; sIdx++) {
+            if (sIdx > 0 && sIdx % batchSize === 0) {
                 await new Promise(r => setTimeout(r, 0));
             }
 
-            const startNode = candidates[i];
-            const currentNodes = [startNode];
-            let isValidPath = true;
+            const startCand = startPool[sIdx];
+            let activeChains = [[startCand]];
 
-            for (let step = 0; step < offsets.length; step++) {
-                const prevNode = currentNodes[step];
-                const targetVec = prevNode.v.map((val, idx) => val + offsets[step][idx]);
+            for (let step = 0; step < stageCount - 1; step++) {
+                const nextChains = [];
+                const dStep = displacements[step];
 
-                let bestNode = null;
-                let bestSim = -1;
+                for (let chain of activeChains) {
+                    const prevCand = chain[chain.length - 1];
+                    const tVec = new Float32Array(dim);
+                    for (let j = 0; j < dim; j++) {
+                        tVec[j] = prevCand.v[j] + dStep[j];
+                    }
 
-                for (let j = 0; j < this.data2d.length; j++) {
-                    const d = this.data2d[j];
-                    if (!d.v || !d.w) continue;
-                    if (currentNodes.some(cn => cn.id === d.id || cn.w.toLowerCase() === d.w.toLowerCase())) continue;
-                    if (excludedWords.has(d.w.toLowerCase())) continue;
+                    const usedSet = new Set(chain.map(c => c.wLow));
+                    const nextKnns = findLocalKnn(tVec, usedSet);
 
-                    const sim = this.cosineSimilarity(targetVec, d.v);
-                    if (sim > bestSim) {
-                        bestSim = sim;
-                        bestNode = d;
+                    for (let knn of nextKnns) {
+                        nextChains.push([...chain, knn.cand]);
                     }
                 }
 
-                if (!bestNode || bestSim < 0.20) {
-                    isValidPath = false;
-                    break;
-                }
-                currentNodes.push(bestNode);
+                activeChains = nextChains;
+                if (activeChains.length === 0) break;
             }
 
-            if (isValidPath && currentNodes.length === stageCount) {
-                const stepCosines = [];
-                for (let step = 0; step < offsets.length; step++) {
-                    const dActual = currentNodes[step + 1].v.map((val, idx) => val - currentNodes[step].v[idx]);
-                    const c = this.cosineSimilarity(dActual, offsets[step]);
-                    stepCosines.push(c);
-                }
-                const avgScore = stepCosines.reduce((acc, v) => acc + v, 0) / stepCosines.length;
-                const seqKey = currentNodes.map(n => n.w.toLowerCase()).join('>');
-                if (!seenSequences.has(seqKey)) {
+            // Score completed chains
+            for (let chain of activeChains) {
+                if (chain.length !== stageCount) continue;
+                const chainNodes = chain.map(c => c.node);
+                const seqKey = chain.map(c => c.wLow).join('>');
+                if (seenSequences.has(seqKey)) continue;
+
+                const scored = scoreCandidateChain(chainNodes);
+                if (scored && scored.fitnessScore >= 0.20 && scored.stepCosines.every(c => c >= 0.08)) {
                     seenSequences.add(seqKey);
                     matches.push({
-                        nodes: currentNodes,
-                        sequenceLabels: currentNodes.map(n => this.formatWord(n.w, n.pos)),
-                        score: avgScore,
-                        stepCosines,
+                        nodes: chainNodes,
+                        sequenceLabels: chainNodes.map(n => this.formatWord(n.w, n.pos)),
+                        score: scored.fitnessScore,
+                        stepCosines: scored.stepCosines,
                         isCurated: false
                     });
                 }
             }
         }
 
-        // Rank by structural cosine similarity
+        // Rank by structural fitness score
         matches.sort((a, b) => b.score - a.score);
 
         // Assign calibrated match percentages (e.g. 92%, 85%, 78%)
@@ -10435,9 +10595,9 @@ class BibleWordMap extends HTMLElement {
 
         this.draw();
 
-        // Smoothly frame the search motif and active match nodes
+        // Smoothly frame the search motif and active match nodes with 15% viewport padding
         const nodesToFrame = [...this.searchMotifNodes, ...this.activeMotifMatch.alignedNodes];
-        this.frameNodes(nodesToFrame, 110, 600);
+        this.frameNodes(nodesToFrame, 0.15, 600);
     }
 
     drawMotifTrajectories() {
@@ -10450,6 +10610,7 @@ class BibleWordMap extends HTMLElement {
         // 1. Draw Background Shadow Trajectories for all other matches (opacity ~0.18 - 0.22)
         this.motifResults.forEach((m, mIdx) => {
             if (mIdx === activeIdx || !m.alignedNodes || m.alignedNodes.length < 2) return;
+            const relIdx = mIdx - activeIdx;
             for (let i = 0; i < m.alignedNodes.length - 1; i++) {
                 const sNode = m.alignedNodes[i];
                 const tNode = m.alignedNodes[i + 1];
@@ -10460,6 +10621,14 @@ class BibleWordMap extends HTMLElement {
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 if (dist < 1) continue;
 
+                const nx = -dy / dist;
+                const ny = dx / dist;
+                const curveOffset = (-14 + (relIdx * 2.5)) / this.transform.k;
+                const midRawX = (sNode.x + tNode.x) / 2;
+                const midRawY = (sNode.y + tNode.y) / 2;
+                const cx = midRawX + nx * curveOffset;
+                const cy = midRawY + ny * curveOffset;
+
                 const startX = sNode.x + (dx / dist) * (4 / this.transform.k);
                 const startY = sNode.y + (dy / dist) * (4 / this.transform.k);
                 const endX = tNode.x - (dx / dist) * (8 / this.transform.k);
@@ -10469,19 +10638,19 @@ class BibleWordMap extends HTMLElement {
                 this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.18)';
                 this.ctx.lineWidth = 1.6 / this.transform.k;
 
-                // Subtle shadow shaft
+                // Subtle shadow curved shaft
                 this.ctx.beginPath();
                 this.ctx.moveTo(startX, startY);
-                this.ctx.lineTo(endX, endY);
+                this.ctx.quadraticCurveTo(cx, cy, endX, endY);
                 this.ctx.stroke();
 
-                // Subtle shadow arrowhead
+                // Subtle shadow arrowhead aligned with curve tangent at endpoint
                 const headLen = 8 / this.transform.k;
-                const angle = Math.atan2(dy, dx);
-                const p1X = endX - headLen * Math.cos(angle - Math.PI / 6);
-                const p1Y = endY - headLen * Math.sin(angle - Math.PI / 6);
-                const p2X = endX - headLen * Math.cos(angle + Math.PI / 6);
-                const p2Y = endY - headLen * Math.sin(angle + Math.PI / 6);
+                const tangentAngle = Math.atan2(endY - cy, endX - cx);
+                const p1X = endX - headLen * Math.cos(tangentAngle - Math.PI / 6);
+                const p1Y = endY - headLen * Math.sin(tangentAngle - Math.PI / 6);
+                const p2X = endX - headLen * Math.cos(tangentAngle + Math.PI / 6);
+                const p2Y = endY - headLen * Math.sin(tangentAngle + Math.PI / 6);
 
                 this.ctx.fillStyle = 'rgba(56, 189, 248, 0.22)';
                 this.ctx.beginPath();
@@ -10494,7 +10663,7 @@ class BibleWordMap extends HTMLElement {
             }
         });
 
-        // 2. Draw Original Search Motif Reference Trajectory (Bold Amber/Gold)
+        // 2. Draw Original Search Motif Reference Trajectory (Bold Amber/Gold Arc)
         for (let i = 0; i < this.searchMotifNodes.length - 1; i++) {
             const sNode = this.searchMotifNodes[i];
             const tNode = this.searchMotifNodes[i + 1];
@@ -10508,6 +10677,14 @@ class BibleWordMap extends HTMLElement {
             const sR = (sNode.canvasR || 15) / this.transform.k;
             const tR = (tNode.canvasR || 15) / this.transform.k;
 
+            const nx = -dy / dist;
+            const ny = dx / dist;
+            const curveOffset = 16 / this.transform.k;
+            const midRawX = (sNode.x + tNode.x) / 2;
+            const midRawY = (sNode.y + tNode.y) / 2;
+            const cx = midRawX + nx * curveOffset;
+            const cy = midRawY + ny * curveOffset;
+
             const startX = sNode.x + (dx / dist) * sR;
             const startY = sNode.y + (dy / dist) * sR;
             const endX = tNode.x - (dx / dist) * (tR + (4 / this.transform.k));
@@ -10516,22 +10693,22 @@ class BibleWordMap extends HTMLElement {
             this.ctx.save();
             this.ctx.strokeStyle = '#f59e0b';
             this.ctx.lineWidth = 3.5 / this.transform.k;
-            this.ctx.shadowBlur = 10 / this.transform.k;
-            this.ctx.shadowColor = 'rgba(245, 158, 11, 0.6)';
+            this.ctx.shadowBlur = 12 / this.transform.k;
+            this.ctx.shadowColor = 'rgba(245, 158, 11, 0.65)';
 
-            // Arrow shaft
+            // Arced Arrow shaft
             this.ctx.beginPath();
             this.ctx.moveTo(startX, startY);
-            this.ctx.lineTo(endX, endY);
+            this.ctx.quadraticCurveTo(cx, cy, endX, endY);
             this.ctx.stroke();
 
-            // Arrowhead marker
+            // Arrowhead marker oriented along tangent at endpoint
             const headLen = 14 / this.transform.k;
-            const angle = Math.atan2(dy, dx);
-            const p1X = endX - headLen * Math.cos(angle - Math.PI / 6);
-            const p1Y = endY - headLen * Math.sin(angle - Math.PI / 6);
-            const p2X = endX - headLen * Math.cos(angle + Math.PI / 6);
-            const p2Y = endY - headLen * Math.sin(angle + Math.PI / 6);
+            const tangentAngle = Math.atan2(endY - cy, endX - cx);
+            const p1X = endX - headLen * Math.cos(tangentAngle - Math.PI / 6);
+            const p1Y = endY - headLen * Math.sin(tangentAngle - Math.PI / 6);
+            const p2X = endX - headLen * Math.cos(tangentAngle + Math.PI / 6);
+            const p2Y = endY - headLen * Math.sin(tangentAngle + Math.PI / 6);
 
             this.ctx.fillStyle = '#f59e0b';
             this.ctx.beginPath();
@@ -10541,9 +10718,9 @@ class BibleWordMap extends HTMLElement {
             this.ctx.closePath();
             this.ctx.fill();
 
-            // Midpoint pill badge
-            const midX = (startX + endX) / 2;
-            const midY = (startY + endY) / 2;
+            // Midpoint pill badge at t=0.5 on the bezier curve
+            const midX = 0.25 * startX + 0.5 * cx + 0.25 * endX;
+            const midY = 0.25 * startY + 0.5 * cy + 0.25 * endY;
             const stepLabel = `Step ${i + 1} (Search) ➔`;
             const textScale = this.mapTextScale || 1.0;
             const fontSize = Math.max(8.5, 9.5 * textScale) / this.transform.k;
@@ -10560,7 +10737,11 @@ class BibleWordMap extends HTMLElement {
             this.ctx.shadowBlur = 4 / this.transform.k;
             this.ctx.shadowColor = '#000000';
             this.ctx.beginPath();
-            this.ctx.roundRect(midX - (txtWidth / 2) - pillPadX, midY - (fontSize / 2) - pillPadY, txtWidth + (pillPadX * 2), fontSize + (pillPadY * 2), 4 / this.transform.k);
+            if (this.ctx.roundRect) {
+                this.ctx.roundRect(midX - (txtWidth / 2) - pillPadX, midY - (fontSize / 2) - pillPadY, txtWidth + (pillPadX * 2), fontSize + (pillPadY * 2), 4 / this.transform.k);
+            } else {
+                this.ctx.rect(midX - (txtWidth / 2) - pillPadX, midY - (fontSize / 2) - pillPadY, txtWidth + (pillPadX * 2), fontSize + (pillPadY * 2));
+            }
             this.ctx.fill();
 
             this.ctx.shadowBlur = 0;
@@ -10570,7 +10751,7 @@ class BibleWordMap extends HTMLElement {
             this.ctx.restore();
         }
 
-        // 3. Draw Selected Matching Motif Trajectory (Bold Electric Cyan)
+        // 3. Draw Selected Matching Motif Trajectory (Bold Electric Cyan Arc)
         if (activeMatch && activeMatch.alignedNodes && activeMatch.alignedNodes.length >= 2) {
             for (let i = 0; i < activeMatch.alignedNodes.length - 1; i++) {
                 const sNode = activeMatch.alignedNodes[i];
@@ -10585,6 +10766,14 @@ class BibleWordMap extends HTMLElement {
                 const sR = (sNode.canvasR || 14) / this.transform.k;
                 const tR = (tNode.canvasR || 14) / this.transform.k;
 
+                const nx = -dy / dist;
+                const ny = dx / dist;
+                const curveOffset = -16 / this.transform.k;
+                const midRawX = (sNode.x + tNode.x) / 2;
+                const midRawY = (sNode.y + tNode.y) / 2;
+                const cx = midRawX + nx * curveOffset;
+                const cy = midRawY + ny * curveOffset;
+
                 const startX = sNode.x + (dx / dist) * sR;
                 const startY = sNode.y + (dy / dist) * sR;
                 const endX = tNode.x - (dx / dist) * (tR + (4 / this.transform.k));
@@ -10596,19 +10785,19 @@ class BibleWordMap extends HTMLElement {
                 this.ctx.shadowBlur = 14 / this.transform.k;
                 this.ctx.shadowColor = 'rgba(56, 189, 248, 0.85)';
 
-                // Arrow shaft
+                // Arced Arrow shaft
                 this.ctx.beginPath();
                 this.ctx.moveTo(startX, startY);
-                this.ctx.lineTo(endX, endY);
+                this.ctx.quadraticCurveTo(cx, cy, endX, endY);
                 this.ctx.stroke();
 
-                // Arrowhead marker
+                // Arrowhead marker oriented along tangent at endpoint
                 const headLen = 14 / this.transform.k;
-                const angle = Math.atan2(dy, dx);
-                const p1X = endX - headLen * Math.cos(angle - Math.PI / 6);
-                const p1Y = endY - headLen * Math.sin(angle - Math.PI / 6);
-                const p2X = endX - headLen * Math.cos(angle + Math.PI / 6);
-                const p2Y = endY - headLen * Math.sin(angle + Math.PI / 6);
+                const tangentAngle = Math.atan2(endY - cy, endX - cx);
+                const p1X = endX - headLen * Math.cos(tangentAngle - Math.PI / 6);
+                const p1Y = endY - headLen * Math.sin(tangentAngle - Math.PI / 6);
+                const p2X = endX - headLen * Math.cos(tangentAngle + Math.PI / 6);
+                const p2Y = endY - headLen * Math.sin(tangentAngle + Math.PI / 6);
 
                 this.ctx.fillStyle = '#38bdf8';
                 this.ctx.beginPath();
@@ -10618,9 +10807,9 @@ class BibleWordMap extends HTMLElement {
                 this.ctx.closePath();
                 this.ctx.fill();
 
-                // Midpoint pill badge
-                const midX = (startX + endX) / 2;
-                const midY = (startY + endY) / 2;
+                // Midpoint pill badge at t=0.5 on the bezier curve
+                const midX = 0.25 * startX + 0.5 * cx + 0.25 * endX;
+                const midY = 0.25 * startY + 0.5 * cy + 0.25 * endY;
                 const stepLabel = `Step ${i + 1} ➔ ${activeMatch.displayPct}% Echo`;
                 const textScale = this.mapTextScale || 1.0;
                 const fontSize = Math.max(8.5, 9.5 * textScale) / this.transform.k;
@@ -10637,7 +10826,11 @@ class BibleWordMap extends HTMLElement {
                 this.ctx.shadowBlur = 4 / this.transform.k;
                 this.ctx.shadowColor = '#000000';
                 this.ctx.beginPath();
-                this.ctx.roundRect(midX - (txtWidth / 2) - pillPadX, midY - (fontSize / 2) - pillPadY, txtWidth + (pillPadX * 2), fontSize + (pillPadY * 2), 4 / this.transform.k);
+                if (this.ctx.roundRect) {
+                    this.ctx.roundRect(midX - (txtWidth / 2) - pillPadX, midY - (fontSize / 2) - pillPadY, txtWidth + (pillPadX * 2), fontSize + (pillPadY * 2), 4 / this.transform.k);
+                } else {
+                    this.ctx.rect(midX - (txtWidth / 2) - pillPadX, midY - (fontSize / 2) - pillPadY, txtWidth + (pillPadX * 2), fontSize + (pillPadY * 2));
+                }
                 this.ctx.fill();
 
                 this.ctx.shadowBlur = 0;
@@ -10672,8 +10865,16 @@ class BibleWordMap extends HTMLElement {
         const targetCenterX = this.getInitialCameraCenterX ? this.getInitialCameraCenterX() : (cw / 2);
         const targetCenterY = ch / 2;
 
-        const availW = Math.max(160, (targetCenterX * 2) - (padding * 2));
-        const availH = Math.max(160, ch - (padding * 2));
+        // If padding is a decimal fraction between 0 and 0.5, treat as percentage of viewport
+        let padX = padding;
+        let padY = padding;
+        if (typeof padding === 'number' && padding > 0 && padding < 1) {
+            padX = cw * padding;
+            padY = ch * padding;
+        }
+
+        const availW = Math.max(160, (targetCenterX * 2) - (padX * 2));
+        const availH = Math.max(160, ch - (padY * 2));
 
         const scale = Math.min(4.0, Math.max(0.65, Math.min(availW / (dx || 1.2), availH / (dy || 1.2))));
         const tx = targetCenterX - scale * cx;
@@ -16372,15 +16573,18 @@ class BibleWordMap extends HTMLElement {
                 this.ctx.lineWidth = 2.5 / this.transform.k;
                 this.ctx.strokeStyle = '#ffffff';
                 this.ctx.stroke();
-                // Outer pulsing golden orbit ring
+                // Outer pulsing golden dashed circle
+                this.ctx.save();
                 this.ctx.beginPath();
-                this.ctx.arc(n.x, n.y, drawR + 4.5 / this.transform.k, 0, 2 * Math.PI);
-                this.ctx.lineWidth = 1.6 / this.transform.k;
-                this.ctx.strokeStyle = 'rgba(245, 158, 11, 0.85)';
+                this.ctx.setLineDash([5 / this.transform.k, 3.5 / this.transform.k]);
+                this.ctx.arc(n.x, n.y, drawR + 5.0 / this.transform.k, 0, 2 * Math.PI);
+                this.ctx.lineWidth = 2.0 / this.transform.k;
+                this.ctx.strokeStyle = '#facc15';
                 this.ctx.stroke();
+                this.ctx.restore();
                 // Math icon ∑ centered
                 this.ctx.save();
-                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillStyle = '#1e293b';
                 this.ctx.font = `bold ${Math.round(11 * (this.mapTextScale || 1.0))}px ${this.colors.font}`;
                 this.ctx.textAlign = 'center';
                 this.ctx.textBaseline = 'middle';
@@ -16481,13 +16685,14 @@ class BibleWordMap extends HTMLElement {
                     let currentR = (isHighlighted) ? n.canvasR * 1.3 : n.canvasR;
                     let yOffset = (currentR * this.transform.k) + (4 * textScale);
 
-                    let cleanQuery = n.query || (n.w ? n.w.replace(/^[\[\(]|[\]\)]$/g, '') : '');
-                    let displayTitle = `(${cleanQuery})`;
+                    let rawEq = n.expression || n.query || (n.w ? n.w.replace(/^[\[\(]|[\]\)]$/g, '') : '');
+                    let cleanEq = rawEq.replace(/^[\[\(]|[\]\)]$/g, '').trim();
+                    let displayTitle = `[${cleanEq}]`;
                     this.ctx.lineWidth = 3.5 * textScale;
                     this.ctx.strokeStyle = this.colors.bg;
                     this.ctx.strokeText(displayTitle, 0, yOffset);
 
-                    this.ctx.fillStyle = '#f59e0b';
+                    this.ctx.fillStyle = '#facc15';
                     this.ctx.fillText(displayTitle, 0, yOffset);
 
                     let subText = '∑ Vector Arithmetic';
@@ -16831,8 +17036,12 @@ class BibleWordMap extends HTMLElement {
         let closestNode = null;
         let minDist = Infinity;
         let searchRadius = 20 / this.transform.k;
+        const isMotifMode = Boolean(this.motifResults && this.motifResults.length > 0);
         
         for (let n of this.nodes) {
+            if (isMotifMode && !n.isSearchMotif && !n.isMotifNode && !n.isPseudoNode) {
+                continue;
+            }
             let dx = n.x - logicalX;
             let dy = n.y - logicalY;
             let dist = Math.sqrt(dx*dx + dy*dy);
@@ -17051,6 +17260,10 @@ class BibleWordMap extends HTMLElement {
         }
 
         if (this.hoveredNode) {
+            if (this.hoveredNode.isMotifNode && this.hoveredNode.motifIndex !== undefined) {
+                this.activateMotifMatch(this.hoveredNode.motifIndex);
+                return;
+            }
             if (this.hoveredNode.isPseudoNode) {
                 this.showPseudoNodeInspector(this.hoveredNode, this.lastPseudoNeighbors);
                 return;
@@ -17105,8 +17318,12 @@ class BibleWordMap extends HTMLElement {
         let minDist = Infinity;
         let searchRadius = 24 / this.transform.k;
 
+        const isMotifMode = Boolean(this.motifResults && this.motifResults.length > 0);
         if (this.nodes) {
             for (let n of this.nodes) {
+                if (isMotifMode && !n.isSearchMotif && !n.isMotifNode && !n.isPseudoNode) {
+                    continue;
+                }
                 let dx = n.x - logicalX;
                 let dy = n.y - logicalY;
                 let dist = Math.sqrt(dx * dx + dy * dy);

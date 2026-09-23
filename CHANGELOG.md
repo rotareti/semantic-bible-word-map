@@ -13,14 +13,18 @@
       - **Top 10 Neighbors:** Lists vocabulary words having highest cosine similarity to the computed vector.
       - **Verses:** Renders verses with centroids closest in embedding space to the resultant vector, displaying centroid proximity badges, highlighted keyword matches, and direct verse navigation.
     - Preserves Pseudo-Node interactivity, allowing users to re-open the arithmetic inspector by clicking the Pseudo-Node.
-  - **Motif Matching & Constellation View:** When evaluating directional sequence queries (e.g. `Jesus > Crucified > Raised` or `(King - Babylon) > (Priest - Temple)`):
-    - Computes directional offset vectors across successive stages.
-    - Asynchronously scans the vocabulary for structural matches sharing the internal angle and trajectory, ranking results by structural cosine similarity (e.g. 92% Match).
-    - Overlayed Trajectory Canvas View: Clears existing map nodes on motif search and aligns all matching motifs around the original search motif reference trajectory:
-      - Renders the original search motif with original POS colored dots, golden orbit rings, and bold amber direction arrows.
-      - Highlights the selected matching motif in vibrant electric cyan with prominent step labels and glow.
-      - Displays all other structural matches as translucent shadow outlines in the background (with 22% opacity) along the companion path.
-      - Dynamically highlights any clicked motif card in contrast to the canonical search motif.
+  - **Motif Matching & Trajectory Overlay:** When evaluating directional sequence queries of arbitrary length N (e.g. `Jesus > Crucified > Raised`, `Abraham > Isaac > Jacob > Joseph`, or `Jesus > (Cross + Blood) > Raised`):
+    - **Pseudo-Node Pre-Processing:** Resolves arithmetic stages into 100D dense vectors before source trajectory calculation, treating all stages as uniform vectors agnostic to whether nodes are single words or computed pseudo-nodes.
+    - **Chained KNN Search Algorithm:** Employs a chained K-Nearest Neighbors heuristic ($O(|V| \cdot k^{N-1})$) to project ideal step locations $\mathbf{t}_{i+1} = \mathbf{v}_{X_i} + \mathbf{d}_i$ across normalized displacements $\hat{\mathbf{d}}_i$, evaluating top k nearest candidates per stage.
+    - **Shape & Curvature Scoring:** Scores completed narrative paths using the average directional step cosine similarity minus a curvature penalty calculated from differences in internal angles between successive steps.
+    - **Aligned Trajectory Overlay:** Clears existing map nodes on motif search and aligns all matching motifs around the original search motif reference trajectory:
+      - Renders the original search motif with original POS colored dots, golden orbit rings, and amber direction arcs.
+      - Highlights the active matching motif in electric cyan with glowing shadow and step echo badges.
+      - Displays other matching motifs as translucent shadow trajectories (22% opacity) along companion lanes.
+      - Dynamic Phantom Nodes: Renders pseudo-node stages with dashed gold orbit rings, glowing centers, and math equation labels (e.g. `[Cross + Blood]`).
+      - Directed Arcs & Tangent Arrowheads: Draws motif edges as subtle bezier curves with arrowheads aligned along the curve tangent at endpoints.
+      - Interactive Node Switching & Canvas Dimming: Dims background non-relevant nodes to low opacity with disabled pointer events, allowing users to click motif nodes or cards to highlight specific narrative trajectories.
+      - Bounding Box Camera Pan: Smoothly frames the search motif and selected match with 15% viewport padding.
   - **Search Bar Autocomplete Integration:**
     - Detects operator queries and switches cleanly to word autocomplete for the active token being typed without conflicts.
     - Preserves operators and preceding tokens during autocomplete selection.
