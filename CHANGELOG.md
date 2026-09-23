@@ -39,6 +39,7 @@
     - Added `docs/13-motif-trajectory-matching-spec.md` specifying N-length motif matching, Chained KNN complexity ($O(|V| \cdot k^{N-1})$), curvature penalty scoring, and D3 trajectory overlay rendering.
 
 ### Fixed
+- **Pseudo-Node Verses ReferenceError:** Fixed a runtime ReferenceError in `loadPseudoNodeVerses` where `cleanQuery` was undefined, restoring asynchronous loading and rendering of biblical verse centroids in the Pseudo-Node Study Panel.
 - **Home Reset & Search Clear Cleanup:** Fixed an issue where clicking the site home link or clearing search after a motif search left the map dimmed at 0.05 opacity with lingering motif trajectory artifact lines over the canvas. Now completely purges motif results, pseudo-nodes, and active search flags, cleanly returning to the unfiltered word map.
 - **First Motif Search Initial Zoom & Framing:** Fixed camera pan and zoom on the initial motif search by interrupting in-flight D3 transitions, deriving available viewport width with responsive margins for the Options and Study panels, and preventing over-clamping of the scale factor so the narrative sequence is framed with 15% padding.
 

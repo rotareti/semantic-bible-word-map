@@ -10281,6 +10281,8 @@ class BibleWordMap extends HTMLElement {
                 return;
             }
 
+            const cleanQuery = pseudoNode && (pseudoNode.query || (pseudoNode.w ? pseudoNode.w.replace(/^[\[\(]|[\]\)]$/g, '') : '')) || '';
+
             // Global 2D coordinates of the pseudo-node
             const cx = pseudoNode.globalX !== undefined ? pseudoNode.globalX : (this.lastPseudoNeighbors && this.lastPseudoNeighbors[0] ? this.lastPseudoNeighbors[0].node.x : 0);
             const cy = pseudoNode.globalY !== undefined ? pseudoNode.globalY : (this.lastPseudoNeighbors && this.lastPseudoNeighbors[0] ? this.lastPseudoNeighbors[0].node.y : 0);
