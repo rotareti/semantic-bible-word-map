@@ -78,19 +78,19 @@ To find candidate narrative sequences $X_1 \to X_2 \to \dots \to X_N$ across the
 
 ---
 
-## 4. Path Scoring, Directional Alignment & Curvature Penalty
+## 4. Path Scoring, Curvature Penalty & Christocentric Gravity Weight
 
-Every completed sequence candidate $X = [X_1, X_2, \dots, X_N]$ is scored using a composite fitness function:
+Every completed sequence candidate $X = [X_1, X_2, \dots, X_N]$ is scored using a calibrated composite fitness function that balances geometric congruence with theological resolution.
 
-### A. Directional Cosine Match
-The primary alignment score measures how closely each step in the candidate path matches the corresponding directional vector of the source sequence:
+### A. Directional Cosine Match ($\text{Sim}_{\text{dir}}$)
+Measures how closely each displacement step in the candidate path mirrors the corresponding directional vector of the source sequence:
 
 $$\mathbf{u}_i = X_{i+1} - X_i, \quad \hat{\mathbf{u}}_i = \frac{\mathbf{u}_i}{\|\mathbf{u}_i\|}$$
 
-$$\text{Score}_{\text{dir}} = \frac{1}{N-1} \sum_{i=1}^{N-1} (\hat{\mathbf{d}}_i \cdot \hat{\mathbf{u}}_i)$$
+$$\text{Sim}_{\text{dir}} = \frac{1}{N-1} \sum_{i=1}^{N-1} (\hat{\mathbf{d}}_i \cdot \hat{\mathbf{u}}_i)$$
 
-### B. Curvature Penalty
-When $N \ge 3$, sequences change direction. A narrative trajectory is characterized not only by step directions, but by its internal turning angles (narrative curvature).
+### B. Curvature Penalty ($\Delta \theta$)
+When $N \ge 3$, sequences change direction. A narrative trajectory is characterized not only by individual step directions, but by its internal turning angles (narrative curvature).
 
 For both the source sequence and candidate path, the internal turn angle at each intermediate stage $i \in [2, N-1]$ is computed:
 
@@ -98,14 +98,46 @@ $$\cos(\theta_{\text{source}, i}) = \hat{\mathbf{d}}_{i-1} \cdot \hat{\mathbf{d}
 
 $$\cos(\theta_{\text{target}, i}) = \hat{\mathbf{u}}_{i-1} \cdot \hat{\mathbf{u}}_i$$
 
-The curvature penalty penalizes discrepancies in internal angles:
+Discrepancies in internal angles are normalized against $\pi$:
 
-$$\text{Penalty}_{\text{curv}} = \frac{1}{N-2} \sum_{i=2}^{N-1} |\theta_{\text{source}, i} - \theta_{\text{target}, i}|$$
+$$\Delta \theta = \begin{cases} \frac{1}{(N-2)\pi} \sum_{i=2}^{N-1} |\theta_{\text{source}, i} - \theta_{\text{target}, i}| & \text{for } N \ge 3 \\ 0 & \text{for } N < 3 \end{cases}$$
 
-### C. Final Composite Fitness Score
-$$\text{Fitness}(X) = \max\left(0, \text{Score}_{\text{dir}} - 0.20 \cdot \text{Penalty}_{\text{curv}}\right)$$
+### C. Christocentric Gravity Alignment ($\text{Sim}_{\text{gravity}}$)
+Biblical typology is teleological: narrative arcs systematically resolve toward redemption, covenant fulfillment, and Christ. Pure geometric congruence alone can produce structurally parallel but theologically trivial matches (e.g. `Moses > desert > freedom` matching `Aaron > owl > control`).
 
-Results are ranked by fitness and presented in the Study Panel (top 8 matches).
+To ensure biblical narratives resolve toward New Testament fulfillment, a gravitational anchor is constructed on the fly from the 100D `wordmap_2d.json` vocabulary:
+
+1. **Dynamic Anchor Vector Retrieval:**
+   Construct raw composite vector $\mathbf{v}_{\text{raw}}$ by extracting and averaging the 100D vectors for the canon's core Messianic lemmas:
+   - **BSB (English):** Average `jesus_PROPN`, `christ_PROPN`, and `messiah_PROPN`.
+   - **LXX (Greek):** Average `jesus_G2424_PROPN` and `christ_G5547_PROPN`.
+   - **VUL (Latin):** Average `jesus_iesus_PROPN` and `christ_christus_PROPN`.
+
+2. **L2 Normalization:**
+   $$\mathbf{v}_{\text{Christ}} = \frac{\mathbf{v}_{\text{raw}}}{\|\mathbf{v}_{\text{raw}}\|_2}$$
+
+3. **Terminal Proximity Measure:**
+   Semantic proximity between the sequence's terminal node $X_N$ (the narrative climax/resolution) and the Christ anchor:
+   $$\text{Sim}_{\text{gravity}} = \hat{\mathbf{v}}_{X_N} \cdot \mathbf{v}_{\text{Christ}}$$
+
+### D. Composite Scoring Function
+The overall fitness score $S$ combines directional alignment, curvature penalty, and Christocentric gravity:
+
+$$S = (w_{\text{dir}} \cdot \text{Sim}_{\text{dir}}) - (w_{\text{angle}} \cdot \Delta \theta) + (w_{\text{gravity}} \cdot \text{Sim}_{\text{gravity}})$$
+
+**Calibrated Weight Configurations:**
+- **Christocentric Mode ON (Default):**
+  - $w_{\text{dir}} = 0.50$
+  - $w_{\text{angle}} = 0.15$
+  - $w_{\text{gravity}} = 0.35$
+- **Christocentric Mode OFF (Pure Geometric):**
+  - $w_{\text{dir}} = 0.80$
+  - $w_{\text{angle}} = 0.20$
+  - $w_{\text{gravity}} = 0.00$
+
+A UI pill toggle in the Options panel ("Christocentric mode": On / Off) allows users to switch between theological resolution weighting and unweighted geometric congruence at any time.
+
+Results are ranked by composite score $S$ and presented in the Study Panel (top 14 matches) with calibrated match percentages.
 
 ---
 

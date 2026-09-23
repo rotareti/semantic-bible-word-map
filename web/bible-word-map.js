@@ -665,6 +665,8 @@ class BibleWordMap extends HTMLElement {
     constructor() {
         super();
         this.data2d = null;
+        this.christGravityEnabled = true;
+        this.christAnchorVector = null;
         this.verses = null;
         this.wordToVerses = null;
         this.booksData = null;
@@ -2024,6 +2026,7 @@ class BibleWordMap extends HTMLElement {
                 #bwm-testament-filter,
                 #bwm-sim-labels-filter,
                 #bwm-text-size-filter,
+                #bwm-christ-gravity-filter,
                 #bwm-disambiguation-filter {
                     display: flex;
                     width: 100%;
@@ -2045,6 +2048,7 @@ class BibleWordMap extends HTMLElement {
                 #bwm-testament-filter .bwm-pill-btn,
                 #bwm-sim-labels-filter .bwm-pill-btn,
                 #bwm-text-size-filter .bwm-pill-btn,
+                #bwm-christ-gravity-filter .bwm-pill-btn,
                 #bwm-disambiguation-filter .bwm-pill-btn {
                     flex: 1 1 0;
                     background: transparent;
@@ -2067,6 +2071,7 @@ class BibleWordMap extends HTMLElement {
                 #bwm-testament-filter .bwm-pill-btn:hover,
                 #bwm-sim-labels-filter .bwm-pill-btn:hover,
                 #bwm-text-size-filter .bwm-pill-btn:hover,
+                #bwm-christ-gravity-filter .bwm-pill-btn:hover,
                 #bwm-disambiguation-filter .bwm-pill-btn:hover {
                     background: transparent;
                     color: var(--bwm-text);
@@ -2077,7 +2082,8 @@ class BibleWordMap extends HTMLElement {
                 #bwm-foundation-filter .bwm-pill-btn.active,
                 #bwm-testament-filter .bwm-pill-btn.active,
                 #bwm-sim-labels-filter .bwm-pill-btn.active,
-                #bwm-text-size-filter .bwm-pill-btn.active {
+                #bwm-text-size-filter .bwm-pill-btn.active,
+                #bwm-christ-gravity-filter .bwm-pill-btn.active {
                     background: var(--bwm-node-hover);
                     color: #ffffff;
                     border: none;
@@ -4458,6 +4464,16 @@ class BibleWordMap extends HTMLElement {
                             </div>
                             <div class="bwm-drawer-hint">Scale words, percentages, and labels on the map canvas.</div>
                         </div>
+                        <div class="bwm-drawer-section" id="bwm-christ-gravity-section">
+                            <div class="bwm-drawer-section-header">
+                                <h4>Christocentric Mode</h4>
+                            </div>
+                            <div class="bwm-pill-group" id="bwm-christ-gravity-filter">
+                                <button type="button" class="bwm-pill-btn ${this.christGravityEnabled !== false ? 'active' : ''}" data-christ-gravity="on" title="Bias motif narrative resolution toward Christ (w = 0.35)">On</button>
+                                <button type="button" class="bwm-pill-btn ${this.christGravityEnabled === false ? 'active' : ''}" data-christ-gravity="off" title="Pure geometric alignment without theological weighting">Off</button>
+                            </div>
+                            <div class="bwm-drawer-hint">Apply Christocentric gravity weighting so narrative motif trajectories resolve toward New Testament fulfillment.</div>
+                        </div>
                         <div class="bwm-drawer-section disabled" id="bwm-disambiguation-section">
                             <div class="bwm-drawer-section-header">
                                 <h4>Contextual Disambiguation <span class="bwm-drawer-coming-soon">(Coming Soon)</span></h4>
@@ -4965,6 +4981,19 @@ class BibleWordMap extends HTMLElement {
 
     connectedCallback() {
         let urlParams = new URLSearchParams(window.location.search);
+        if (typeof localStorage !== 'undefined') {
+            try {
+                const savedCg = localStorage.getItem('bwm-christ-gravity');
+                if (savedCg !== null) {
+                    this.christGravityEnabled = (savedCg === 'true');
+                }
+            } catch (e) {}
+        }
+        let cgParam = (urlParams.get('cg') || urlParams.get('gravity') || urlParams.get('christ'));
+        if (cgParam !== null) {
+            this.christGravityEnabled = (cgParam === '1' || cgParam === 'true' || cgParam === 'on');
+        }
+
         let baseParam = (urlParams.get('c') || urlParams.get('canon') || urlParams.get('base') || urlParams.get('foundation') || this.getAttribute('foundation') || 'bsb').toLowerCase();
         if (baseParam === 'lxx' || baseParam === 'l') {
             this.foundation = 'lxx';
@@ -5415,6 +5444,20 @@ class BibleWordMap extends HTMLElement {
                 this.setMapTextSize(size, true);
             });
         });
+
+        const christGravityPills = this.querySelectorAll('#bwm-christ-gravity-filter .bwm-pill-btn');
+        christGravityPills.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const val = btn.getAttribute('data-christ-gravity') === 'on';
+                this.setChristGravityEnabled(val, true);
+            });
+        });
+        if (christGravityPills.length > 0) {
+            christGravityPills.forEach(btn => {
+                const val = btn.getAttribute('data-christ-gravity') === 'on';
+                btn.classList.toggle('active', val === this.christGravityEnabled);
+            });
+        }
 
         const disambigPills = this.querySelectorAll('#bwm-disambiguation-filter .bwm-pill-btn');
         disambigPills.forEach(btn => {
@@ -9803,6 +9846,95 @@ class BibleWordMap extends HTMLElement {
         await this.showPseudoNodeInspector(pseudoNode, top10);
     }
 
+    computeChristAnchorVector() {
+        if (!this.data2d || !Array.isArray(this.data2d) || this.data2d.length === 0) {
+            return null;
+        }
+        if (this.christAnchorVector && this.christAnchorVector.length === 100) {
+            return this.christAnchorVector;
+        }
+
+        let targetIds = [];
+        if (this.foundation === 'lxx') {
+            targetIds = ['jesus_G2424_PROPN', 'christ_G5547_PROPN'];
+        } else if (this.foundation === 'vul') {
+            targetIds = ['jesus_iesus_PROPN', 'christ_christus_PROPN'];
+        } else {
+            // BSB (English)
+            targetIds = ['jesus_PROPN', 'christ_PROPN', 'messiah_PROPN'];
+        }
+
+        const matchedNodes = [];
+        for (const tId of targetIds) {
+            const found = this.data2d.find(d => d.id === tId && d.v);
+            if (found && found.v) {
+                matchedNodes.push(found);
+            }
+        }
+
+        // Fallback by lemma or word name if exact IDs not matched
+        if (matchedNodes.length === 0) {
+            const fallbackWords = ['jesus', 'christ', 'messiah'];
+            for (const fw of fallbackWords) {
+                const found = this.data2d.find(d => d.w && d.w.toLowerCase() === fw && d.v && (d.pos === 'PROPN' || !d.pos));
+                if (found && !matchedNodes.some(m => m.id === found.id)) {
+                    matchedNodes.push(found);
+                }
+            }
+        }
+
+        if (matchedNodes.length === 0) {
+            return null;
+        }
+
+        const dim = matchedNodes[0].v.length;
+        const raw = new Float32Array(dim);
+        for (let i = 0; i < matchedNodes.length; i++) {
+            const v = matchedNodes[i].v;
+            for (let j = 0; j < dim; j++) {
+                raw[j] += v[j];
+            }
+        }
+        const count = matchedNodes.length;
+        for (let j = 0; j < dim; j++) {
+            raw[j] /= count;
+        }
+
+        let magSq = 0;
+        for (let j = 0; j < dim; j++) {
+            magSq += raw[j] * raw[j];
+        }
+        const mag = Math.sqrt(magSq);
+        if (mag < 1e-9) return null;
+
+        const christVector = new Float32Array(dim);
+        for (let j = 0; j < dim; j++) {
+            christVector[j] = raw[j] / mag;
+        }
+
+        this.christAnchorVector = christVector;
+        return this.christAnchorVector;
+    }
+
+    setChristGravityEnabled(enabled, isUserAction = true) {
+        this.christGravityEnabled = Boolean(enabled);
+        if (typeof localStorage !== 'undefined') {
+            try {
+                localStorage.setItem('bwm-christ-gravity', this.christGravityEnabled ? 'true' : 'false');
+            } catch (e) {}
+        }
+        const christGravityPills = this.querySelectorAll('#bwm-christ-gravity-filter .bwm-pill-btn');
+        christGravityPills.forEach(btn => {
+            const val = btn.getAttribute('data-christ-gravity') === 'on';
+            btn.classList.toggle('active', val === this.christGravityEnabled);
+        });
+
+        // Re-execute active motif query so matches re-rank immediately
+        if (this.lastMotifQuery && this.motifResults && this.motifResults.length > 0) {
+            this.executeMotifQuery(this.lastMotifQuery, this.lastMotifAst || this.parseSymbibleQuery(this.lastMotifQuery));
+        }
+    }
+
     async executeMotifQuery(queryStr, ast) {
         // Clear whatever is currently on the map
         if (this.simulation) this.simulation.stop();
@@ -9909,6 +10041,7 @@ class BibleWordMap extends HTMLElement {
         });
 
         this.lastMotifQuery = queryStr;
+        this.lastMotifAst = ast;
         this.motifResults = matches;
         this.activeMotifIdx = 0;
         this.isSearchMode = true;
@@ -9963,7 +10096,13 @@ class BibleWordMap extends HTMLElement {
             sourceAngles.push(Math.acos(clamped));
         }
 
-        // Helper to score a candidate chain: directional match minus curvature penalty
+        const christVec = this.computeChristAnchorVector();
+        const isChristGravity = Boolean(this.christGravityEnabled !== false && christVec);
+        const wDir = isChristGravity ? 0.50 : 0.80;
+        const wAngle = isChristGravity ? 0.15 : 0.20;
+        const wGravity = isChristGravity ? 0.35 : 0.00;
+
+        // Helper to score a candidate chain: directional match, curvature penalty, and Christ-gravity alignment
         const scoreCandidateChain = (chainNodes) => {
             if (!chainNodes || chainNodes.length !== stageCount) return null;
             const stepCosines = [];
@@ -9992,9 +10131,9 @@ class BibleWordMap extends HTMLElement {
                 stepCosines.push(dot);
             }
 
-            const avgCosine = stepCosines.reduce((acc, v) => acc + v, 0) / stepCosines.length;
+            const simDir = stepCosines.reduce((acc, v) => acc + v, 0) / stepCosines.length;
 
-            let curvaturePenalty = 0;
+            let deltaTheta = 0;
             if (stageCount >= 3) {
                 let totalAngleDiff = 0;
                 for (let i = 0; i < stageCount - 2; i++) {
@@ -10007,15 +10146,36 @@ class BibleWordMap extends HTMLElement {
                     totalAngleDiff += Math.abs(sourceAngles[i] - angle);
                 }
                 const avgAngleDiff = totalAngleDiff / (stageCount - 2);
-                curvaturePenalty = (avgAngleDiff / Math.PI) * 0.35;
+                deltaTheta = avgAngleDiff / Math.PI;
             }
 
-            const fitnessScore = avgCosine - curvaturePenalty;
+            // Calculate Christ-Gravity Alignment: proximity of terminal node to Christ anchor
+            let simGravity = 0;
+            if (christVec) {
+                const terminalNode = chainNodes[stageCount - 1];
+                const terminalVec = terminalNode ? terminalNode.v : null;
+                if (terminalVec) {
+                    let termMagSq = 0;
+                    for (let j = 0; j < dim; j++) termMagSq += terminalVec[j] * terminalVec[j];
+                    const termMag = Math.sqrt(termMagSq);
+                    if (termMag > 1e-9) {
+                        let dot = 0;
+                        for (let j = 0; j < dim; j++) {
+                            dot += (terminalVec[j] / termMag) * christVec[j];
+                        }
+                        simGravity = dot;
+                    }
+                }
+            }
+
+            const fitnessScore = (wDir * simDir) - (wAngle * deltaTheta) + (wGravity * simGravity);
             return {
                 fitnessScore,
-                avgCosine,
-                curvaturePenalty,
-                stepCosines
+                simDir,
+                deltaTheta,
+                simGravity,
+                stepCosines,
+                isChristGravity
             };
         };
 
@@ -10046,7 +10206,11 @@ class BibleWordMap extends HTMLElement {
                                 nodes,
                                 sequenceLabels: nodes.map(n => this.formatWord(n.w, n.pos)),
                                 score: scored.fitnessScore,
+                                simDir: scored.simDir,
+                                deltaTheta: scored.deltaTheta,
+                                simGravity: scored.simGravity,
                                 stepCosines: scored.stepCosines,
+                                isChristGravity: scored.isChristGravity,
                                 isCurated: true
                             });
                         }
@@ -10166,13 +10330,17 @@ class BibleWordMap extends HTMLElement {
                 if (seenSequences.has(seqKey)) continue;
 
                 const scored = scoreCandidateChain(chainNodes);
-                if (scored && scored.fitnessScore >= 0.20 && scored.stepCosines.every(c => c >= 0.08)) {
+                if (scored && scored.fitnessScore >= 0.18 && scored.stepCosines.every(c => c >= 0.06)) {
                     seenSequences.add(seqKey);
                     matches.push({
                         nodes: chainNodes,
                         sequenceLabels: chainNodes.map(n => this.formatWord(n.w, n.pos)),
                         score: scored.fitnessScore,
+                        simDir: scored.simDir,
+                        deltaTheta: scored.deltaTheta,
+                        simGravity: scored.simGravity,
                         stepCosines: scored.stepCosines,
+                        isChristGravity: scored.isChristGravity,
                         isCurated: false
                     });
                 }
@@ -10485,7 +10653,9 @@ class BibleWordMap extends HTMLElement {
                         ${seqHtml}
                     </div>
                     <div class="bwm-motif-card-meta">
-                        Structural trajectory alignment: ${(match.score * 100).toFixed(1)}% cosine echo
+                        ${match.isChristGravity && match.simGravity !== undefined
+                            ? `Christ-Gravity: ${(match.simGravity * 100).toFixed(1)}% &bull; Alignment: ${(match.score * 100).toFixed(1)}%`
+                            : `Structural trajectory alignment: ${(match.score * 100).toFixed(1)}% cosine echo`}
                     </div>
                 </div>
             `;
@@ -11242,6 +11412,7 @@ class BibleWordMap extends HTMLElement {
         this._canonicalVerseIndexByFoundation = {};
         this._canonicalChaptersByFoundation = {};
         this._canonicalChapterIndexByFoundation = {};
+        this.christAnchorVector = null;
 
         const lxxPill = this.querySelector('#bwm-btn-foundation-lxx');
         const bsbPill = this.querySelector('#bwm-btn-foundation-bsb');
@@ -11295,6 +11466,7 @@ class BibleWordMap extends HTMLElement {
             this._booksLoadPromise = null;
 
             this.data2d = null;
+            this.christAnchorVector = null;
             this.verses = null;
             this.wordToVerses = null;
             this.sensesData = null;

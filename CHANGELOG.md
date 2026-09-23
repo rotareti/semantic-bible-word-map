@@ -25,6 +25,11 @@
       - Directed Arcs & Tangent Arrowheads: Draws motif edges as subtle bezier curves with arrowheads aligned along the curve tangent at endpoints.
       - Interactive Node Switching & Canvas Dimming: Dims background non-relevant nodes to low opacity with disabled pointer events, allowing users to click motif nodes or cards to highlight specific narrative trajectories.
       - Bounding Box Camera Pan: Smoothly frames the search motif and selected match with 15% viewport padding.
+    - **Christocentric Gravity Weight & UI Toggle:** Enhanced motif trajectory scoring with a teleological gravitational bias toward Christ:
+      - Dynamic Anchor Retrieval: Computes an L2-normalized 100D Christ anchor vector ($\mathbf{v}_{\text{Christ}}$) on the fly from core Messianic lemmas across canons (BSB: `jesus_PROPN`, `christ_PROPN`, `messiah_PROPN`; LXX: `jesus_G2424_PROPN`, `christ_G5547_PROPN`; VUL: `jesus_iesus_PROPN`, `christ_christus_PROPN`).
+      - Updated Composite Scoring Formula: Integrates terminal node semantic proximity ($\text{Sim}_{\text{gravity}} = \hat{\mathbf{v}}_{X_N} \cdot \mathbf{v}_{\text{Christ}}$) into composite path fitness: $S = (w_{\text{dir}} \cdot \text{Sim}_{\text{dir}}) - (w_{\text{angle}} \cdot \Delta \theta) + (w_{\text{gravity}} \cdot \text{Sim}_{\text{gravity}})$.
+      - Calibrated Weight Profiles: Default Christocentric Mode ($w_{\text{dir}} = 0.50$, $w_{\text{angle}} = 0.15$, $w_{\text{gravity}} = 0.35$) biases narrative resolutions toward redemption, while unweighted mode ($w_{\text{dir}} = 0.80$, $w_{\text{angle}} = 0.20$, $w_{\text{gravity}} = 0.00$) evaluates pure geometric congruence.
+      - Options Panel Toggle: Added a "Christocentric mode" pill toggle (On / Off) in the Options drawer (defaulting to On) with live re-scoring and result card metric display.
   - **Search Bar Autocomplete Integration:**
     - Detects operator queries and switches cleanly to word autocomplete for the active token being typed without conflicts.
     - Preserves operators and preceding tokens during autocomplete selection.
