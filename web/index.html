@@ -109,6 +109,18 @@
                     mapEl.selectedBook = null;
                     mapEl.selectedChapter = null;
                     mapEl.isSearchMode = false;
+                    mapEl.pseudoNode = null;
+                    mapEl.activeMotifMatch = null;
+                    mapEl.activeMotifIdx = null;
+                    mapEl.motifResults = null;
+                    mapEl.searchMotifNodes = null;
+                    mapEl.lastPseudoNeighbors = null;
+                    mapEl.lastPseudoAst = null;
+                    mapEl.lastMotifQuery = null;
+                    mapEl.inspectorNode = null;
+                    mapEl.hoveredNode = null;
+                    if (mapEl.unpinStudyPanel) mapEl.unpinStudyPanel();
+                    if (mapEl.wordReopenBtn) mapEl.wordReopenBtn.style.display = 'none';
                     if (mapEl.searchInput) mapEl.searchInput.value = '';
                     if (mapEl.updateClearBtnVisibility) mapEl.updateClearBtnVisibility();
                     if (mapEl.renderActiveWords) mapEl.renderActiveWords();

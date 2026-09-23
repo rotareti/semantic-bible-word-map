@@ -34,6 +34,13 @@
     - Implemented cooperative chunked yielding during motif corpus scanning to prevent UI freezing.
     - Enforced comprehensive search state cleanup to completely purge pseudo-nodes, reset canvas opacity, and clear motif trajectory artifacts when searching regular words or verses, clearing search, or switching views.
     - Gracefully catches missing vocabulary terms and displays a toast notification: "Term '[Word]' not found in the current corpus."
+  - **Technical Architecture Documentation:**
+    - Added `docs/12-vector-arithmetic-and-pseudo-node-spec.md` specifying vector arithmetic grammar, 100D vector computation, phyllotaxis neighbor projection, and verse centroid matching.
+    - Added `docs/13-motif-trajectory-matching-spec.md` specifying N-length motif matching, Chained KNN complexity ($O(|V| \cdot k^{N-1})$), curvature penalty scoring, and D3 trajectory overlay rendering.
+
+### Fixed
+- **Home Reset & Search Clear Cleanup:** Fixed an issue where clicking the site home link or clearing search after a motif search left the map dimmed at 0.05 opacity with lingering motif trajectory artifact lines over the canvas. Now completely purges motif results, pseudo-nodes, and active search flags, cleanly returning to the unfiltered word map.
+- **First Motif Search Initial Zoom & Framing:** Fixed camera pan and zoom on the initial motif search by interrupting in-flight D3 transitions, deriving available viewport width with responsive margins for the Options and Study panels, and preventing over-clamping of the scale factor so the narrative sequence is framed with 15% padding.
 
 ## [12.1.0] - 2026-09-22
 ### Added

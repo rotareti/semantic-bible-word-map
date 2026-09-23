@@ -9357,7 +9357,7 @@ class BibleWordMap extends HTMLElement {
                 ? (this.searchedChapters && this.searchedChapters.length > 0)
                 : (this.viewMode === 'verses')
                     ? (this.searchedVerses && this.searchedVerses.length > 0)
-                    : (this.searchedWords && this.searchedWords.length > 0);
+                    : ((this.searchedWords && this.searchedWords.length > 0) || Boolean(this.motifResults && this.motifResults.length > 0) || Boolean(this.pseudoNode));
         const wrapper = this.querySelector('.bwm-search-input-wrapper');
         if (hasText || hasKeywords) {
             this.searchClearBtn.classList.add('visible');
@@ -9871,6 +9871,10 @@ class BibleWordMap extends HTMLElement {
         this.lastMotifQuery = queryStr;
         this.motifResults = matches;
         this.activeMotifIdx = 0;
+        this.isSearchMode = true;
+        this.userInteracted = false;
+        this._nodesBounds = null;
+        this.updateClearBtnVisibility();
         this.showMotifResultsPanel(queryStr, matches, 0);
         this.activateMotifMatch(0);
     }
@@ -10849,40 +10853,46 @@ class BibleWordMap extends HTMLElement {
         const valid = nodes.filter(n => n.x !== undefined && n.y !== undefined && !isNaN(n.x) && !isNaN(n.y));
         if (valid.length === 0) return;
 
-        const cw = this.logicalWidth || 800;
-        const ch = this.logicalHeight || 600;
+        const cw = this.logicalWidth || this.canvas.width || 800;
+        const ch = this.logicalHeight || this.canvas.height || 600;
 
         const minX = d3.min(valid, d => d.x);
         const maxX = d3.max(valid, d => d.x);
         const minY = d3.min(valid, d => d.y);
         const maxY = d3.max(valid, d => d.y);
 
-        const dx = maxX - minX;
-        const dy = maxY - minY;
+        const dx = maxX - minX || 1;
+        const dy = maxY - minY || 1;
         const cx = (minX + maxX) / 2;
         const cy = (minY + maxY) / 2;
 
-        const targetCenterX = this.getInitialCameraCenterX ? this.getInitialCameraCenterX() : (cw / 2);
-        const targetCenterY = ch / 2;
+        const isMobile = (window.innerWidth <= 768 || cw <= 768);
+        const leftMargin = (this.isOptionsPanelPinned && !isMobile) ? 300 : 0;
+        const rightMargin = (!isMobile && (this.isStudyPanelPinned || this.isStudyPanelVisible())) ? 440 : 0;
+        const effectiveCw = Math.max(cw - leftMargin - rightMargin, 200);
 
         // If padding is a decimal fraction between 0 and 0.5, treat as percentage of viewport
         let padX = padding;
         let padY = padding;
         if (typeof padding === 'number' && padding > 0 && padding < 1) {
-            padX = cw * padding;
+            padX = effectiveCw * padding;
             padY = ch * padding;
         }
 
-        const availW = Math.max(160, (targetCenterX * 2) - (padX * 2));
+        const availW = Math.max(160, effectiveCw - (padX * 2));
         const availH = Math.max(160, ch - (padY * 2));
 
-        const scale = Math.min(4.0, Math.max(0.65, Math.min(availW / (dx || 1.2), availH / (dy || 1.2))));
+        const scale = Math.min(3.5, Math.max(0.20, Math.min(availW / dx, availH / dy)));
+        const targetCenterX = leftMargin + (effectiveCw / 2);
+        const targetCenterY = ch / 2;
+
         const tx = targetCenterX - scale * cx;
         const ty = targetCenterY - scale * cy;
 
         const targetTransform = d3.zoomIdentity.translate(tx, ty).scale(scale);
 
         this.userInteracted = false;
+        d3.select(this.canvas).interrupt();
         d3.select(this.canvas)
             .transition()
             .duration(duration)
@@ -12010,6 +12020,25 @@ class BibleWordMap extends HTMLElement {
     buildAllWordsGraph() {
         if (this.simulation) this.simulation.stop();
         
+        // Fully clear motif matching, pseudo-node, search mode, and inspector state
+        this.motifResults = null;
+        this.searchMotifNodes = null;
+        this.activeMotifMatch = null;
+        this.activeMotifIdx = null;
+        this.pseudoNode = null;
+        this.lastPseudoNeighbors = null;
+        this.lastPseudoAst = null;
+        this.lastMotifQuery = null;
+        this.isSearchMode = false;
+        this.inspectorNode = null;
+        this.hoveredNode = null;
+        if (this.isStudyPanelPinned) this.unpinStudyPanel();
+        if (this.wordCard) {
+            this.wordCard.classList.remove('visible', 'pinned');
+            this.wordCard.innerHTML = '';
+        }
+        if (this.wordReopenBtn) this.wordReopenBtn.style.display = 'none';
+        
         let filteredData = this.data2d;
         
         let minX = d3.min(filteredData, d => d.x);
@@ -12026,6 +12055,7 @@ class BibleWordMap extends HTMLElement {
         let y = (minY + maxY) / 2;
         let scale = 0.90 / Math.max(dx / cw, dy / ch);
         
+        d3.select(this.canvas).interrupt();
         this.transform = d3.zoomIdentity.translate(cw / 2 - scale * x, ch / 2 - scale * y).scale(scale);
         d3.select(this.canvas).call(this.zoom.transform, this.transform);
         
