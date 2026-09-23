@@ -4226,7 +4226,31 @@ class BibleWordMap extends HTMLElement {
 
                 /* Motif Matching Results Study Panel */
                 .bwm-motif-results-container {
-                    padding: 12px 14px;
+                    flex: 1;
+                    min-height: 0;
+                    overflow-y: auto;
+                    padding: 12px 14px 28px 14px;
+                    -webkit-overflow-scrolling: touch;
+                }
+                .bwm-motif-back-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    padding: 3px 8px;
+                    border-radius: 6px;
+                    background: rgba(56, 189, 248, 0.12);
+                    border: 1px solid rgba(56, 189, 248, 0.35);
+                    color: var(--bwm-node-hover, #0284c7);
+                    font-size: 0.78rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.18s ease;
+                    text-decoration: none;
+                    white-space: nowrap;
+                }
+                .bwm-motif-back-btn:hover {
+                    background: rgba(56, 189, 248, 0.22);
+                    border-color: rgba(56, 189, 248, 0.55);
                 }
                 .bwm-motif-summary-card {
                     background: rgba(56, 189, 248, 0.06);
@@ -9669,25 +9693,32 @@ class BibleWordMap extends HTMLElement {
         }
     }
 
+    getNearestNeighbors(vec, k = 10, excludedWords = new Set()) {
+        if (!vec || !this.data2d) return [];
+        const excluded = (excludedWords instanceof Set) ? excludedWords : new Set(Array.isArray(excludedWords) ? excludedWords.map(w => String(w).toLowerCase()) : []);
+        const neighbors = [];
+        for (let i = 0; i < this.data2d.length; i++) {
+            const d = this.data2d[i];
+            if (!d.v || !d.w) continue;
+            if (excluded.has(d.w.toLowerCase())) continue;
+            const sim = this.cosineSimilarity(vec, d.v);
+            if (sim !== null && !isNaN(sim)) {
+                neighbors.push({ node: d, sim });
+            }
+        }
+        neighbors.sort((a, b) => b.sim - a.sim);
+        return neighbors.slice(0, k);
+    }
+
     async executeVectorArithmeticQuery(queryStr, ast) {
         const evalRes = this.evaluateArithmeticAst(ast);
         const calcVector = evalRes.vector;
 
         // Calculate cosine similarity across all vocabulary words in the corpus
         const excludedWords = new Set(evalRes.usedWords.map(w => w.toLowerCase()));
-        const neighbors = [];
-
-        for (let i = 0; i < this.data2d.length; i++) {
-            const d = this.data2d[i];
-            if (!d.v || !d.w) continue;
-            if (excludedWords.has(d.w.toLowerCase())) continue;
-            const sim = this.cosineSimilarity(calcVector, d.v);
-            neighbors.push({ node: d, sim });
-        }
-
-        neighbors.sort((a, b) => b.sim - a.sim);
-        const top10 = neighbors.slice(0, 10);
+        const top10 = this.getNearestNeighbors(calcVector, 10, excludedWords);
         this.lastPseudoNeighbors = top10;
+        const neighbors = this.getNearestNeighbors(calcVector, this.neighborsPerKeyword || 100, excludedWords);
 
         // Compute global embedding centroid (gx, gy) from top 3 nearest words for verse centroid proximity
         let gx = 0, gy = 0;
@@ -9805,7 +9836,9 @@ class BibleWordMap extends HTMLElement {
                 : (wNode.w || sr.usedWords.join(' '));
             return {
                 id: `search_motif_stage_${k}`,
+                originalId: wNode.id,
                 w: cleanTitle,
+                lemma: wNode.w || cleanTitle,
                 label: cleanTitle,
                 pos: sr.isPseudoNode ? 'MATH' : (wNode.pos || (k === 0 ? 'PROPN' : (k === 1 ? 'VERB' : 'NOUN'))),
                 t: wNode.t || 'NT',
@@ -9818,6 +9851,9 @@ class BibleWordMap extends HTMLElement {
                 stepIndex: k,
                 rawX: (sr.x !== undefined && !isNaN(sr.x)) ? sr.x : 0,
                 rawY: (sr.y !== undefined && !isNaN(sr.y)) ? sr.y : 0,
+                originalNode: wNode,
+                original: wNode.original,
+                verse_indices: wNode.verse_indices,
                 x: 0,
                 y: 0
             };
@@ -9849,7 +9885,9 @@ class BibleWordMap extends HTMLElement {
             m.motifIndex = mIdx;
             m.alignedNodes = m.nodes.map((node, k) => ({
                 id: `motif_m${mIdx}_k${k}_${node.id || node.w}`,
+                originalId: node.id,
                 w: node.w,
+                lemma: node.w,
                 label: node.isPseudoNode ? `[${(node.expression || node.w).replace(/^[\[\(]|[\]\)]$/g, '').trim()}]` : this.formatWord(node.w, node.pos),
                 pos: node.pos || 'NOUN',
                 t: node.t || 'OT',
@@ -9863,6 +9901,8 @@ class BibleWordMap extends HTMLElement {
                 rawX: (node.x !== undefined && !isNaN(node.x)) ? node.x : 0,
                 rawY: (node.y !== undefined && !isNaN(node.y)) ? node.y : 0,
                 originalNode: node,
+                original: node.original,
+                verse_indices: node.verse_indices,
                 x: 0,
                 y: 0
             }));
@@ -10200,6 +10240,14 @@ class BibleWordMap extends HTMLElement {
                         </div>
                     </div>
                     <div style="display:flex; align-items:center; gap:8px;">
+                        ${(this.motifResults && this.motifResults.length > 0) ? `
+                            <button type="button" class="bwm-motif-back-btn" id="bwm-pseudo-back-to-motif" title="Back to Motif Results">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                                <span>Motif Results</span>
+                            </button>
+                        ` : ''}
                         ${this.renderPinButton('study')}
                         <button type="button" class="bwm-window-close" id="bwm-word-close" title="Close inspector">&times;</button>
                     </div>
@@ -10229,6 +10277,16 @@ class BibleWordMap extends HTMLElement {
                 </div>
             </div>
         `;
+
+        const backToMotifBtn = this.wordCard.querySelector('#bwm-pseudo-back-to-motif');
+        if (backToMotifBtn) {
+            backToMotifBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (this.lastMotifQuery && this.motifResults) {
+                    this.showMotifResultsPanel(this.lastMotifQuery, this.motifResults, this.activeMotifIdx || 0);
+                }
+            });
+        }
 
         const closeBtn = this.wordCard.querySelector('#bwm-word-close');
         if (closeBtn) {
@@ -17293,11 +17351,18 @@ class BibleWordMap extends HTMLElement {
 
         if (this.hoveredNode) {
             if (this.hoveredNode.isMotifNode && this.hoveredNode.motifIndex !== undefined) {
-                this.activateMotifMatch(this.hoveredNode.motifIndex);
-                return;
+                if (this.activeMotifIdx !== this.hoveredNode.motifIndex) {
+                    this.activateMotifMatch(this.hoveredNode.motifIndex);
+                    return;
+                }
             }
             if (this.hoveredNode.isPseudoNode) {
-                this.showPseudoNodeInspector(this.hoveredNode, this.lastPseudoNeighbors);
+                if (this.hoveredNode.v) {
+                    const top10 = this.getNearestNeighbors(this.hoveredNode.v, 10);
+                    this.showPseudoNodeInspector(this.hoveredNode, top10);
+                } else {
+                    this.showPseudoNodeInspector(this.hoveredNode, this.lastPseudoNeighbors);
+                }
                 return;
             }
             if (isDesktop) {
@@ -18138,6 +18203,28 @@ class BibleWordMap extends HTMLElement {
         }
         if (!this.wordCard) return;
 
+        // Resolve underlying vocabulary node if inspecting a motif trajectory node or synthetic node
+        const vocabNode = node.originalNode
+            || (this.data2d ? (
+                (node.originalId ? this.data2d.find(d => d.id === node.originalId) : null)
+                || (node.id ? this.data2d.find(d => d.id === node.id) : null)
+                || (node.lemma ? this.data2d.find(d => d.w && d.w.toLowerCase() === node.lemma.toLowerCase() && (!node.pos || d.pos === node.pos)) : null)
+                || (node.w ? this.data2d.find(d => d.w && d.w.toLowerCase() === node.w.toLowerCase() && (!node.pos || d.pos === node.pos)) : null)
+                || (node.w ? this.data2d.find(d => d.w && d.w.toLowerCase() === node.w.toLowerCase()) : null)
+            ) : null);
+
+        if (vocabNode) {
+            if (!node.original && vocabNode.original) node.original = vocabNode.original;
+            if ((!node.verse_indices || node.verse_indices.length === 0) && vocabNode.verse_indices) node.verse_indices = vocabNode.verse_indices;
+            if (!node.v && vocabNode.v) node.v = vocabNode.v;
+            if ((!node.pos || node.pos === 'MATH') && vocabNode.pos) node.pos = vocabNode.pos;
+            if (!node.originalId && vocabNode.id) node.originalId = vocabNode.id;
+        }
+
+        const lookupId = node.originalId || (vocabNode && vocabNode.id) || node.id;
+        const actualPos = (vocabNode && vocabNode.pos) || node.pos;
+        const actualW = (vocabNode && vocabNode.w) || node.w;
+
         let isSenseNode = Boolean(node.isSenseNode || (node.id && node.id.includes('__sense_')));
         let isEntityNode = Boolean(node.is_entity || node.isEntityNode || (node.id && node.id.startsWith('entity__')) || (this.entityNodesLookup && this.entityNodesLookup.has(node.id)));
         let senseGroup = null;
@@ -18155,18 +18242,35 @@ class BibleWordMap extends HTMLElement {
                 node.original = parentNode.original;
             }
         }
-        let displayW = (node.short_label ? node.short_label.replace(/\[(.*?)\]/g, '($1)') : '') || this.formatWord(node.w, node.pos);
+        let displayW = (node.short_label ? node.short_label.replace(/\[(.*?)\]/g, '($1)') : '') || this.formatWord(actualW, actualPos);
         if (isEntityNode) {
             displayW = node.canonical_title || node.entity_name || node.title || (node.short_label ? node.short_label.replace(/\[(.*?)\]/g, '($1)') : '') || node.w;
         } else if (isSenseNode && node.sense_label) {
             let lemmaPart = node.lemma || node.w.split(' ')[0];
-            displayW = `${this.formatWord(lemmaPart, node.pos)} (${node.sense_label})`;
+            displayW = `${this.formatWord(lemmaPart, actualPos)} (${node.sense_label})`;
+        } else if (vocabNode && vocabNode.w && !node.isPseudoNode) {
+            displayW = this.formatWord(vocabNode.w, actualPos);
         }
-        let vIds = (node.verse_indices && Array.isArray(node.verse_indices))
+
+        let vIds = (node.verse_indices && Array.isArray(node.verse_indices) && node.verse_indices.length > 0)
             ? node.verse_indices
-            : ((this.wordToVerses && this.wordToVerses[node.id]) ? this.wordToVerses[node.id] : []);
+            : ((vocabNode && vocabNode.verse_indices && Array.isArray(vocabNode.verse_indices) && vocabNode.verse_indices.length > 0)
+                ? vocabNode.verse_indices
+                : ((this.wordToVerses && this.wordToVerses[lookupId])
+                    ? this.wordToVerses[lookupId]
+                    : ((this.wordToVerses && this.wordToVerses[node.id]) ? this.wordToVerses[node.id] : [])));
         let totalOccurrences = vIds.length;
-        let isVersesLoaded = Boolean((node.verse_indices && this.verses) || (this.wordToVerses && this.verses));
+        let isVersesLoaded = Boolean((vIds.length > 0 && this.verses) || (this.wordToVerses && this.verses));
+
+        if (!this.verses || !this.wordToVerses) {
+            this.ensureVersesLoaded().then(vData => {
+                if (vData && this.inspectorNode === node && this.wordCard && this.wordCard.classList.contains('visible')) {
+                    this.verses = vData.verses;
+                    this.wordToVerses = vData.words;
+                    this.showWordInspector(node, this.lastWordInspectorTab || defaultTab);
+                }
+            });
+        }
 
         const bookCounts = {};
         for (let i = 0; i < vIds.length; i++) {
@@ -18186,14 +18290,14 @@ class BibleWordMap extends HTMLElement {
         let occBadgeText = isVersesLoaded ? `${totalOccurrences} occurrence${totalOccurrences === 1 ? '' : 's'}` : 'Loading stats...';
         let booksBadgeText = isVersesLoaded ? `in ${totalBooksWithOcc} of ${activeBooks.length} books` : '';
 
-        let isAlreadyKw = this.isSearchMode && this.searchedWords && this.searchedWords.includes(node.id);
+        let isAlreadyKw = this.isSearchMode && this.searchedWords && (this.searchedWords.includes(lookupId) || this.searchedWords.includes(node.id));
         let actionBtnHtml = '';
         if (this.viewMode === 'words') {
             actionBtnHtml = this.renderPillToggle({
                 isActive: isAlreadyKw,
                 id: 'bwm-word-action-kw',
                 dataAttrs: {
-                    'kw-id': node.id
+                    'kw-id': lookupId
                 },
                 title: isAlreadyKw ? 'Remove keyword from map' : 'Add keyword to map'
             });
@@ -18205,9 +18309,10 @@ class BibleWordMap extends HTMLElement {
             `;
         }
 
+        let actualOriginal = node.original || (vocabNode && vocabNode.original);
         let origHeaderLine = '';
-        if (node.original && Array.isArray(node.original) && node.original.length > 0) {
-            let prim = node.original[0];
+        if (actualOriginal && Array.isArray(actualOriginal) && actualOriginal.length > 0) {
+            let prim = actualOriginal[0];
             if (prim.lemma) {
                 origHeaderLine = `
                     <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: 0.95em;">
@@ -18322,6 +18427,14 @@ class BibleWordMap extends HTMLElement {
                         ${origHeaderLine}
                     </div>
                     <div style="display:flex; align-items:center; gap:8px;">
+                        ${(this.motifResults && this.motifResults.length > 0) ? `
+                            <button type="button" class="bwm-motif-back-btn" id="bwm-word-back-to-motif" title="Back to Motif Results">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                                <span>Motif Results</span>
+                            </button>
+                        ` : ''}
                         ${actionBtnHtml}
                         ${this.renderPinButton('study')}
                         <button type="button" class="bwm-window-close" id="bwm-word-close" title="Close inspector">&times;</button>
@@ -18892,8 +19005,11 @@ class BibleWordMap extends HTMLElement {
         let neighborsPaneHtml = '';
         let top10Neighbors = [];
 
+        if (!nodeVec && vocabNode && vocabNode.v) {
+            nodeVec = vocabNode.v;
+        }
         if (!nodeVec && this.data2d) {
-            let foundIn2d = this.data2d.find(d => d.id === node.id || (d.w.toLowerCase() === node.w.toLowerCase() && (!node.pos || d.pos === node.pos)));
+            let foundIn2d = this.data2d.find(d => d.id === lookupId || d.id === node.id || (d.w.toLowerCase() === actualW.toLowerCase() && (!actualPos || d.pos === actualPos)));
             if (foundIn2d && foundIn2d.v) {
                 nodeVec = foundIn2d.v;
             }
@@ -18914,7 +19030,7 @@ class BibleWordMap extends HTMLElement {
             let allSims = [];
             for (let i = 0; i < this.data2d.length; i++) {
                 let d = this.data2d[i];
-                if (d.id === node.id) continue;
+                if (d.id === lookupId || d.id === node.id) continue;
                 if (!d.v) continue;
                 let s = this.cosineSimilarity(nodeVec, d.v);
                 if (s !== null && !isNaN(s) && s > 0 && s <= 1.00001) {
@@ -19041,6 +19157,17 @@ class BibleWordMap extends HTMLElement {
                 e.stopPropagation();
                 if (this.isStudyPanelPinned) this.unpinStudyPanel();
                 this.hideWordInspector();
+            });
+        }
+
+        // Back to motif results button
+        const backToMotifBtn = this.wordCard.querySelector('#bwm-word-back-to-motif');
+        if (backToMotifBtn) {
+            backToMotifBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (this.lastMotifQuery && this.motifResults) {
+                    this.showMotifResultsPanel(this.lastMotifQuery, this.motifResults, this.activeMotifIdx || 0);
+                }
             });
         }
 

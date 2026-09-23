@@ -42,6 +42,8 @@
 - **Pseudo-Node Verses ReferenceError:** Fixed a runtime ReferenceError in `loadPseudoNodeVerses` where `cleanQuery` was undefined, restoring asynchronous loading and rendering of biblical verse centroids in the Pseudo-Node Study Panel.
 - **Home Reset & Search Clear Cleanup:** Fixed an issue where clicking the site home link or clearing search after a motif search left the map dimmed at 0.05 opacity with lingering motif trajectory artifact lines over the canvas. Now completely purges motif results, pseudo-nodes, and active search flags, cleanly returning to the unfiltered word map.
 - **First Motif Search Initial Zoom & Framing:** Fixed camera pan and zoom on the initial motif search by interrupting in-flight D3 transitions, deriving available viewport width with responsive margins for the Options and Study panels, and preventing over-clamping of the scale factor so the narrative sequence is framed with 15% padding.
+- **Scrollable Motif Results Panel:** Fixed CSS overflow in `.bwm-motif-results-container` to allow scrolling vertically across all motif candidates and their step alignment tables.
+- **Motif Word Node Inspection & Data Resolution:** Fixed word data display when inspecting nodes along motif trajectory paths. Resolved underlying vocabulary metadata (`lemma`, `original`, `pos`, `v`, and `verse_indices`), loaded verse datasets asynchronously when needed, and rendered occurrences, language definitions, Strong's numbers, book distributions, and nearest neighbors. Added bidirectional "Motif Results" back buttons in both the word inspector and pseudo-node inspector headers.
 
 ## [12.1.0] - 2026-09-22
 ### Added
