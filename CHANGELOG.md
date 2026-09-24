@@ -50,25 +50,31 @@
   - **Analogy Motif Projection (The `:` Operator):**
     - Syntax & Precedence: Supports `[Source Expression] : [Target Expression]` (e.g. `Moses > desert > freedom : Jesus`). Evaluates AST precedence: `()` > `+`, `-` > `>` > `:`.
     - Sequential Trajectory Projection: Calculates directional offsets $\mathbf{d}_i = \mathbf{v}_{S_{i+1}} - \mathbf{v}_{S_i}$ from the N-length source trajectory and sequentially projects them from the target seed: $\mathbf{t}_2 = \mathbf{v}_{T_1} + \mathbf{d}_1$, $\mathbf{t}_3 = \mathbf{t}_2 + \mathbf{d}_2$.
-    - Geometric D3 Canvas Visualization:
-      - Dims non-relevant background nodes to 10% opacity.
-      - Draws solid directed arrows with golden glow connecting the source motif sequence.
-      - Injects glowing temporary Pseudo-Nodes into the canvas at the exact computed coordinates for $\mathbf{t}_2$ and $\mathbf{t}_3$.
-      - Draws dashed directed arrows connecting the target seed to the Pseudo-Nodes to illustrate parallel geometric projection.
-      - Automatically pans and zooms the viewport to frame both parallel sequences with 20% viewport padding.
+    - Dual-Lane Parallel Constellation Layout:
+      - Presents source motif sequence and projected analogy trajectory along parallel horizontal lanes with normalized step spacing ($L = 180\text{px}$) and vertical companion offset ($D = 130\text{px}$).
+      - Connects source sequence with solid directed amber arrows and pill badges (`Source: Step 1 ➔ 2`).
+      - Connects target sequence with dashed directed sky-blue arrows and pill badges (`Projected: Step 1 ➔ 2`).
+      - Connects corresponding source and target stages with subtle vertical dashed projection guidelines and centered `:` projection badges.
+      - Maintains focused constellation on the canvas, eliminating background clutter to preserve high framerate rendering and crisp visibility.
+      - Automatically pans and zooms the viewport to frame both parallel sequences with 18% viewport padding, factoring in the Study Panel margin.
     - Projected Analogy Study Panel & Nearest Neighbor Retrieval:
-      - Lists the target anchor and top 5 nearest biblical concepts for each projected step based on cosine similarity (e.g. Step 2: wilderness 91%, exile 85%, death 82%; Step 3: salvation 88%, redemption 85%, resurrection 81%).
-      - Interactive Coordinate Snapping: Clicking any suggested word in the Study Panel visually snaps the Pseudo-Node on the canvas to that word's exact coordinate, with 1-click option to revert to geometric projection.
+      - Lists the target anchor and top 5 nearest biblical concepts for each projected step based on cosine similarity (e.g. `Moses > law : Jesus` yields `impart` 53%, `teaching` 52%, `nullify` 50%, `aspire` 50%, `proof` 49%).
+      - Interactive Coordinate Snapping: Clicking any suggested word in the Study Panel updates the projected step pseudo-node with that word's identity, displaying a snapped badge and checkmark indicator, with 1-click option to revert to geometric projection.
+      - Step Centering: Clicking the Step 1 card or any projected step card centers the camera smoothly on that step.
   - **State Management, Spinner & Error Handling:**
     - Prominently displays the search loading spinner throughout async vector math and motif calculations with guaranteed paint yields.
     - Implemented cooperative chunked yielding during motif corpus scanning to prevent UI freezing.
-    - Enforced comprehensive search state cleanup to completely purge pseudo-nodes, reset canvas opacity, and clear motif trajectory artifacts when searching regular words or verses, clearing search, or switching views.
+    - Enforced comprehensive search state cleanup to completely purge pseudo-nodes, reset canvas opacity, and clear motif and analogy trajectory artifacts when searching regular words or verses, clearing search, or switching views.
     - Gracefully catches missing vocabulary terms and displays a toast notification: "Term '[Word]' not found in the current corpus."
   - **Technical Architecture Documentation:**
     - Added `docs/12-vector-arithmetic-and-pseudo-node-spec.md` specifying vector arithmetic grammar, 100D vector computation, phyllotaxis neighbor projection, and verse centroid matching.
     - Added `docs/13-motif-trajectory-matching-spec.md` specifying N-length motif matching, Chained KNN complexity ($O(|V| \cdot k^{N-1})$), curvature penalty scoring, and D3 trajectory overlay rendering.
 
 ### Fixed
+- **Analogy Projection Mathematical Vector Parity:** Fixed an issue where `cosineSimilarity` failed for typed `Float32Array` vectors by adding `ArrayBuffer.isView` support. Sequential projections now achieve mathematical parity with equivalent vector arithmetic queries (e.g. `Moses > law : Jesus` matches `Jesus + (law - Moses)` returning `impart`, `teaching`, `nullify`, etc. rather than high-frequency stop words).
+- **Analogy Canvas Zoom Extents & Viewport Margins:** Fixed camera zoom and centering for analogy projections. The Study Panel is opened prior to calculating bounds so the effective canvas width accurately accounts for the 440px right panel margin. Restricting `this.nodes` to the analogy constellation ensures the Zoom Extents button cleanly fits the parallel sequence.
+- **Analogy Artifact Cleanup on Subsequent Searches:** Fixed an issue where previous analogy projection lines, dimmed opacity (0.10), and pseudo-nodes lingered on canvas when starting a new search or clearing keywords. Centralized cleanup in `clearAnalogyProjectionState()` purges all analogy pseudo-nodes, resets analogy flags on corpus nodes, and restores standard rendering.
+- **Motif-Consistent Analogy Label Styling:** Harmonized analogy node titles and badge pills with the clean motif badge design: source sequence uses amber titles (`#f59e0b`) and `Source Anchor (Step N)` badges (`#fbbf24`), target anchor uses sky-blue titles (`#38bdf8`) and `Target Anchor (Step 1)` badges (`#7dd3fc`), and projected pseudo-nodes use sky-blue titles and `Projected (Step N)` badges (`#7dd3fc`).
 - **Pseudo-Node Verses ReferenceError:** Fixed a runtime ReferenceError in `loadPseudoNodeVerses` where `cleanQuery` was undefined, restoring asynchronous loading and rendering of biblical verse centroids in the Pseudo-Node Study Panel.
 - **Home Reset & Search Clear Cleanup:** Fixed an issue where clicking the site home link or clearing search after a motif search left the map dimmed at 0.05 opacity with lingering motif trajectory artifact lines over the canvas. Now completely purges motif results, pseudo-nodes, and active search flags, cleanly returning to the unfiltered word map.
 - **First Motif Search Initial Zoom & Framing:** Fixed camera pan and zoom on the initial motif search by interrupting in-flight D3 transitions, deriving available viewport width with responsive margins for the Options and Study panels, and preventing over-clamping of the scale factor so the narrative sequence is framed with 15% padding.
