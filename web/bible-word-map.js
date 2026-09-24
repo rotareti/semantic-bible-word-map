@@ -1295,11 +1295,25 @@ class BibleWordMap extends HTMLElement {
                     background: rgba(16, 185, 129, 0.18);
                     color: #10b981;
                 }
+                .bwm-autocomplete-category.operator {
+                    background: rgba(217, 119, 6, 0.18);
+                    color: #d97706;
+                }
+                .bwm-autocomplete-category.motif {
+                    background: rgba(14, 165, 233, 0.18);
+                    color: #0ea5e9;
+                }
                 .bwm-suggestion-sense {
                     border-left: 3px solid #a855f7;
                 }
                 .bwm-suggestion-entity {
                     border-left: 3px solid #10b981;
+                }
+                .bwm-suggestion-operator {
+                    border-left: 3px solid #d97706;
+                }
+                .bwm-suggestion-motif {
+                    border-left: 3px solid #0ea5e9;
                 }
                 .bwm-connected-entity-banner {
                     display: flex;
@@ -7020,6 +7034,53 @@ class BibleWordMap extends HTMLElement {
         return res;
     }
 
+    canProposeOperators(beforeCursor) {
+        if (!beforeCursor || !beforeCursor.endsWith(' ')) return false;
+        const trimmed = beforeCursor.trim();
+        if (!trimmed) return false;
+        // Do not propose operators if the last character is an operator or comma/delimiter
+        if (/[+->\(\/,;]$/.test(trimmed)) return false;
+        // Do not propose operators after a verse reference (e.g. John 3:16) or chapter (e.g. GEN.1)
+        if (detectVerseReference(trimmed) || detectChapterMatch(trimmed, this.booksData ? this.booksData.books : null)) return false;
+        // Require a keyword/word token or closing parenthesis before the space
+        return /[a-zA-Z0-9_\u0370-\u03FF\u1F00-\u1FFF\)]$/.test(trimmed);
+    }
+
+    getOperatorSuggestions() {
+        return [
+            {
+                type: 'operator-add',
+                category: 'Math',
+                categoryClass: 'operator',
+                icon: '+',
+                title: '<span style="font-family:monospace; font-size:1.15em; font-weight:700; color:#d97706; margin-right:6px;">+</span> <strong>Vector Addition</strong>',
+                desc: 'Add concept to vector formula (e.g. covenant + blood)',
+                action: 'insert-operator',
+                operator: '+'
+            },
+            {
+                type: 'operator-sub',
+                category: 'Math',
+                categoryClass: 'operator',
+                icon: '&minus;',
+                title: '<span style="font-family:monospace; font-size:1.15em; font-weight:700; color:#d97706; margin-right:6px;">&minus;</span> <strong>Vector Subtraction</strong>',
+                desc: 'Subtract concept from vector formula (e.g. king - man)',
+                action: 'insert-operator',
+                operator: '-'
+            },
+            {
+                type: 'operator-motif',
+                category: 'Motif',
+                categoryClass: 'motif',
+                icon: '&#x2794;',
+                title: '<span style="font-size:1.15em; font-weight:700; color:#0ea5e9; margin-right:6px;">➔</span> <strong>Motif Trajectory</strong> <span class="bwm-suggestion-meta">(&gt;)</span>',
+                desc: 'Search sequential narrative typology (e.g. Jesus > Cross > Raised)',
+                action: 'insert-operator',
+                operator: '>'
+            }
+        ];
+    }
+
     updateSearchAutocomplete(forceShowMixed = false) {
         if (!this.searchSuggestionsPopover || !this.searchInput) return;
         const fullVal = this.searchInput.value;
@@ -7028,7 +7089,11 @@ class BibleWordMap extends HTMLElement {
             return;
         }
 
-        const parsed = this.parseSearchTokens(fullVal, this.searchInput.selectionStart);
+        const cursorPos = (this.searchInput.selectionStart !== null && this.searchInput.selectionStart !== undefined)
+            ? this.searchInput.selectionStart
+            : fullVal.length;
+        const parsed = this.parseSearchTokens(fullVal, cursorPos);
+        const beforeCursor = fullVal.slice(0, cursorPos);
         this._searchAutocompletePrefix = parsed.prefix;
 
         const isOperatorQuery = Boolean(parsed.isOperatorQuery || (typeof this.isSymbibleQuery === 'function' && this.isSymbibleQuery(fullVal)));
@@ -7079,6 +7144,9 @@ class BibleWordMap extends HTMLElement {
                     }
                 }
             } else if (parsed.hasTrailingDelimiter) {
+                if (this.canProposeOperators(beforeCursor)) {
+                    suggestions.push(...this.getOperatorSuggestions());
+                }
                 const lastWord = parsed.completedItems[parsed.completedItems.length - 1];
                 if (lastWord) {
                     const companions = this.getSemanticCompanionWords ? this.getSemanticCompanionWords(lastWord, 6) : [];
@@ -7226,9 +7294,12 @@ class BibleWordMap extends HTMLElement {
             }
 
             if (parsed.hasTrailingDelimiter && !parsed.activeToken) {
-            // Trailing delimiter after a word: suggest subsequent words / companions
-            const lastWord = parsed.completedItems[parsed.completedItems.length - 1];
-            if (this.viewMode === 'words') {
+                // Trailing delimiter after a word: suggest operators + subsequent words / companions
+                if (this.canProposeOperators(beforeCursor)) {
+                    suggestions.push(...this.getOperatorSuggestions());
+                }
+                const lastWord = parsed.completedItems[parsed.completedItems.length - 1];
+                if (this.viewMode === 'words') {
                 const companions = this.getSemanticCompanionWords(lastWord, 8);
                 companions.forEach(wEntry => {
                     let posLabel = wEntry.pos ? ` (${wEntry.pos.toLowerCase()})` : '';
@@ -7840,9 +7911,12 @@ class BibleWordMap extends HTMLElement {
 
                         const prioritizeConcrete = hasExactMatch || (semanticTokens.length < 3);
 
+                        const opItems = suggestions.filter(s => s.action === 'insert-operator');
+                        const nonOpSuggestions = suggestions.filter(s => s.action !== 'insert-operator');
+
                         let combined = [];
                         if (prioritizeConcrete) {
-                            suggestions.forEach(s => {
+                            nonOpSuggestions.forEach(s => {
                                 if (s.type !== 'multi-word-search' && s.type !== 'centroid-verse') {
                                     combined.push(s);
                                 }
@@ -7850,11 +7924,14 @@ class BibleWordMap extends HTMLElement {
                             dynamicSuggestions.forEach(ds => combined.push(ds));
                         } else {
                             dynamicSuggestions.forEach(ds => combined.push(ds));
-                            suggestions.forEach(s => {
+                            nonOpSuggestions.forEach(s => {
                                 if (s.type !== 'multi-word-search' && s.type !== 'centroid-verse') {
                                     combined.push(s);
                                 }
                             });
+                        }
+                        if (opItems.length > 0) {
+                            combined = [...opItems, ...combined];
                         }
 
                         this.renderSearchSuggestions(combined, 'Suggestions', `${combined.filter(c => c.type !== 'section-header').length} results`);
@@ -7906,12 +7983,15 @@ class BibleWordMap extends HTMLElement {
                 return;
             }
 
-            const senseClass = item.isSense ? 'bwm-suggestion-sense' : (item.isEntity ? 'bwm-suggestion-entity' : '');
+            const itemClass = (item.action === 'insert-operator')
+                ? (item.operator === '>' ? 'bwm-suggestion-motif' : 'bwm-suggestion-operator')
+                : (item.isSense ? 'bwm-suggestion-sense' : (item.isEntity ? 'bwm-suggestion-entity' : ''));
             const categoryHtml = item.category ? `<span class="bwm-autocomplete-category ${item.categoryClass || ''}">${item.category}</span>` : '';
             html += `
-                <div class="bwm-suggestion-item ${senseClass}"
+                <div class="bwm-suggestion-item ${itemClass}"
                      data-index="${idx}"
                      data-action="${item.action}"
+                     ${item.operator ? `data-operator="${escapeHtml(item.operator)}"` : ''}
                      ${item.entityId ? `data-entity-id="${escapeHtml(item.entityId)}"` : ''}
                      ${item.entityTitle ? `data-entity-title="${escapeHtml(item.entityTitle)}"` : ''}
                      ${item.lemma ? `data-lemma="${escapeHtml(item.lemma)}"` : ''}
@@ -7946,7 +8026,22 @@ class BibleWordMap extends HTMLElement {
                 const action = el.getAttribute('data-action');
                 const prefix = this._searchAutocompletePrefix || '';
 
-                if (action === 'navigate-view-words' || action === 'search-multi-words') {
+                if (action === 'insert-operator') {
+                    const op = el.getAttribute('data-operator');
+                    const cursorPos = (this.searchInput.selectionStart !== null && this.searchInput.selectionStart !== undefined)
+                        ? this.searchInput.selectionStart
+                        : this.searchInput.value.length;
+                    const before = this.searchInput.value.slice(0, cursorPos);
+                    const after = this.searchInput.value.slice(cursorPos);
+                    const trimmedBefore = before.trimEnd();
+                    const newBefore = trimmedBefore + ' ' + op + ' ';
+                    this.searchInput.value = newBefore + after;
+                    this.searchInput.focus();
+                    const newCursor = newBefore.length;
+                    this.searchInput.setSelectionRange(newCursor, newCursor);
+                    this.updateClearBtnVisibility();
+                    this.updateSearchAutocomplete();
+                } else if (action === 'navigate-view-words' || action === 'search-multi-words') {
                     const q = el.getAttribute('data-query');
                     const switchBsb = el.getAttribute('data-switch-bsb') === 'true';
                     this.closeSearchSuggestions();

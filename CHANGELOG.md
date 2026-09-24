@@ -39,6 +39,11 @@
       - Deep Linking & Startup Execution: Automatically deserializes query expressions and weight parameters on app load, executing arithmetic or motif searches seamlessly on startup.
   - **Search Bar Autocomplete Integration:**
     - Detects operator queries and switches cleanly to word autocomplete for the active token being typed without conflicts.
+    - Contextual Operator Autocomplete: When the user enters a space following any valid keyword (e.g. `Jesus `, `covenant `), autocomplete dynamically displays operators at the top of the suggestions list:
+      - `+ Vector Addition` (synthesizes combined concept vectors)
+      - `− Vector Subtraction` (subtracts semantic concept vectors)
+      - `➔ Motif Trajectory (>)` (initiates narrative sequential typological matching)
+    - Automatically dismisses operator suggestions when typing resumes (e.g. `Jesus l`), seamlessly pivoting to matching vocabulary candidates.
     - Preserves operators and preceding tokens during autocomplete selection.
     - Bypasses mixed-view navigation and centroid verse lookups during arithmetic/motif composition.
   - **State Management, Spinner & Error Handling:**
