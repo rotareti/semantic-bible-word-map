@@ -43,9 +43,22 @@
       - `+ Vector Addition` (synthesizes combined concept vectors)
       - `− Vector Subtraction` (subtracts semantic concept vectors)
       - `➔ Motif Trajectory (>)` (initiates narrative sequential typological matching)
+      - `: Analogy Projection (:)` (projects source motif trajectory onto a target seed)
     - Automatically dismisses operator suggestions when typing resumes (e.g. `Jesus l`), seamlessly pivoting to matching vocabulary candidates.
     - Preserves operators and preceding tokens during autocomplete selection.
     - Bypasses mixed-view navigation and centroid verse lookups during arithmetic/motif composition.
+  - **Analogy Motif Projection (The `:` Operator):**
+    - Syntax & Precedence: Supports `[Source Expression] : [Target Expression]` (e.g. `Moses > desert > freedom : Jesus`). Evaluates AST precedence: `()` > `+`, `-` > `>` > `:`.
+    - Sequential Trajectory Projection: Calculates directional offsets $\mathbf{d}_i = \mathbf{v}_{S_{i+1}} - \mathbf{v}_{S_i}$ from the N-length source trajectory and sequentially projects them from the target seed: $\mathbf{t}_2 = \mathbf{v}_{T_1} + \mathbf{d}_1$, $\mathbf{t}_3 = \mathbf{t}_2 + \mathbf{d}_2$.
+    - Geometric D3 Canvas Visualization:
+      - Dims non-relevant background nodes to 10% opacity.
+      - Draws solid directed arrows with golden glow connecting the source motif sequence.
+      - Injects glowing temporary Pseudo-Nodes into the canvas at the exact computed coordinates for $\mathbf{t}_2$ and $\mathbf{t}_3$.
+      - Draws dashed directed arrows connecting the target seed to the Pseudo-Nodes to illustrate parallel geometric projection.
+      - Automatically pans and zooms the viewport to frame both parallel sequences with 20% viewport padding.
+    - Projected Analogy Study Panel & Nearest Neighbor Retrieval:
+      - Lists the target anchor and top 5 nearest biblical concepts for each projected step based on cosine similarity (e.g. Step 2: wilderness 91%, exile 85%, death 82%; Step 3: salvation 88%, redemption 85%, resurrection 81%).
+      - Interactive Coordinate Snapping: Clicking any suggested word in the Study Panel visually snaps the Pseudo-Node on the canvas to that word's exact coordinate, with 1-click option to revert to geometric projection.
   - **State Management, Spinner & Error Handling:**
     - Prominently displays the search loading spinner throughout async vector math and motif calculations with guaranteed paint yields.
     - Implemented cooperative chunked yielding during motif corpus scanning to prevent UI freezing.
