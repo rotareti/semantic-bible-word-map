@@ -125,19 +125,14 @@ The overall fitness score $S$ combines directional alignment, curvature penalty,
 
 $$S = (w_{\text{dir}} \cdot \text{Sim}_{\text{dir}}) - (w_{\text{angle}} \cdot \Delta \theta) + (w_{\text{gravity}} \cdot \text{Sim}_{\text{gravity}})$$
 
-**Calibrated Weight Configurations:**
-- **Christocentric Mode ON (Default):**
-  - $w_{\text{dir}} = 0.50$
-  - $w_{\text{angle}} = 0.15$
-  - $w_{\text{gravity}} = 0.35$
-- **Christocentric Mode OFF (Pure Geometric):**
-  - $w_{\text{dir}} = 0.80$
-  - $w_{\text{angle}} = 0.20$
-  - $w_{\text{gravity}} = 0.00$
+**Calibrated Default Weight Configurations:**
+- Directional Alignment ($w_{\text{dir}}$): `0.50` (range 0.0 to 1.0, step 0.05)
+- Turning Angle Penalty ($w_{\text{angle}}$): `0.15` (range 0.0 to 1.0, step 0.05)
+- Christocentric Gravity ($w_{\text{gravity}}$): `0.35` (range 0.0 to 1.0, step 0.05; set to `0.00` for pure unweighted geometry)
 
-A UI pill toggle in the Options panel ("Christocentric mode": On / Off) allows users to switch between theological resolution weighting and unweighted geometric congruence at any time.
+Three dedicated sliders in the Options panel under "Motif Trajectory Weights" expose real-time adjustment of these parameters with live numeric badge updates and debounced re-ranking. The weights serialize to compact URL query parameters (`wd`, `wa`, `wg`) and omit default values.
 
-Results are ranked by composite score $S$ and presented in the Study Panel (top 14 matches) with calibrated match percentages.
+Results are ranked by composite score $S$ and presented in the Study Panel (top 14 matches) with calibrated match percentages. A 1-click "Share" button in the panel header copies the parameterized URL to the clipboard.
 
 ---
 

@@ -25,11 +25,18 @@
       - Directed Arcs & Tangent Arrowheads: Draws motif edges as subtle bezier curves with arrowheads aligned along the curve tangent at endpoints.
       - Interactive Node Switching & Canvas Dimming: Dims background non-relevant nodes to low opacity with disabled pointer events, allowing users to click motif nodes or cards to highlight specific narrative trajectories.
       - Bounding Box Camera Pan: Smoothly frames the search motif and selected match with 15% viewport padding.
-    - **Christocentric Gravity Weight & UI Toggle:** Enhanced motif trajectory scoring with a teleological gravitational bias toward Christ:
+    - **Christocentric Gravity & Trajectory Weight Sliders:** Enhanced motif trajectory scoring with exposed parameter sliders and teleological gravitational bias toward Christ:
       - Dynamic Anchor Retrieval: Computes an L2-normalized 100D Christ anchor vector ($\mathbf{v}_{\text{Christ}}$) on the fly from core Messianic lemmas across canons (BSB: `jesus_PROPN`, `christ_PROPN`, `messiah_PROPN`; LXX: `jesus_G2424_PROPN`, `christ_G5547_PROPN`; VUL: `jesus_iesus_PROPN`, `christ_christus_PROPN`).
       - Updated Composite Scoring Formula: Integrates terminal node semantic proximity ($\text{Sim}_{\text{gravity}} = \hat{\mathbf{v}}_{X_N} \cdot \mathbf{v}_{\text{Christ}}$) into composite path fitness: $S = (w_{\text{dir}} \cdot \text{Sim}_{\text{dir}}) - (w_{\text{angle}} \cdot \Delta \theta) + (w_{\text{gravity}} \cdot \text{Sim}_{\text{gravity}})$.
-      - Calibrated Weight Profiles: Default Christocentric Mode ($w_{\text{dir}} = 0.50$, $w_{\text{angle}} = 0.15$, $w_{\text{gravity}} = 0.35$) biases narrative resolutions toward redemption, while unweighted mode ($w_{\text{dir}} = 0.80$, $w_{\text{angle}} = 0.20$, $w_{\text{gravity}} = 0.00$) evaluates pure geometric congruence.
-      - Options Panel Toggle: Added a "Christocentric mode" pill toggle (On / Off) in the Options drawer (defaulting to On) with live re-scoring and result card metric display.
+      - Exposed Options Weight Sliders: Added three individual sliders (0.0 to 1.0, step 0.05) in the Options drawer for fine-grained trajectory tuning with real-time numeric badges and debounced re-ranking:
+        - Directional Alignment ($w_{\text{dir}}$): default 0.50
+        - Curvature Turning Penalty ($w_{\text{angle}}$): default 0.15
+        - Christocentric Gravity ($w_{\text{gravity}}$): default 0.35 (setting to 0.00 evaluates pure unweighted geometric congruence)
+    - **URL State Synchronization & 1-Click Sharing for Vector Math & Motifs:**
+      - Query URL Serialization: Synchronizes SymBible expressions into compact URL parameters (`?q=covenant%2Bblood`, `?q=Jesus%3ECross%3ERaised`).
+      - Parameterized Weight & Match State: Serializes non-default weights (`wd`, `wa`, `wg`) and the active motif match index (`mi`), automatically omitting default values to preserve concise links.
+      - 1-Click Copy Share Buttons: Added interactive "Share" buttons in the Pseudo-Node inspector header and Motif Results header to copy the stateful URL to the clipboard with toast feedback.
+      - Deep Linking & Startup Execution: Automatically deserializes query expressions and weight parameters on app load, executing arithmetic or motif searches seamlessly on startup.
   - **Search Bar Autocomplete Integration:**
     - Detects operator queries and switches cleanly to word autocomplete for the active token being typed without conflicts.
     - Preserves operators and preceding tokens during autocomplete selection.

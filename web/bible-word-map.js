@@ -665,7 +665,10 @@ class BibleWordMap extends HTMLElement {
     constructor() {
         super();
         this.data2d = null;
-        this.christGravityEnabled = true;
+        this.motifWeightDir = 0.50;
+        this.motifWeightAngle = 0.15;
+        this.motifWeightGravity = 0.35;
+        this.currentSymbibleQuery = null;
         this.christAnchorVector = null;
         this.verses = null;
         this.wordToVerses = null;
@@ -2026,7 +2029,6 @@ class BibleWordMap extends HTMLElement {
                 #bwm-testament-filter,
                 #bwm-sim-labels-filter,
                 #bwm-text-size-filter,
-                #bwm-christ-gravity-filter,
                 #bwm-disambiguation-filter {
                     display: flex;
                     width: 100%;
@@ -2048,7 +2050,6 @@ class BibleWordMap extends HTMLElement {
                 #bwm-testament-filter .bwm-pill-btn,
                 #bwm-sim-labels-filter .bwm-pill-btn,
                 #bwm-text-size-filter .bwm-pill-btn,
-                #bwm-christ-gravity-filter .bwm-pill-btn,
                 #bwm-disambiguation-filter .bwm-pill-btn {
                     flex: 1 1 0;
                     background: transparent;
@@ -2071,7 +2072,6 @@ class BibleWordMap extends HTMLElement {
                 #bwm-testament-filter .bwm-pill-btn:hover,
                 #bwm-sim-labels-filter .bwm-pill-btn:hover,
                 #bwm-text-size-filter .bwm-pill-btn:hover,
-                #bwm-christ-gravity-filter .bwm-pill-btn:hover,
                 #bwm-disambiguation-filter .bwm-pill-btn:hover {
                     background: transparent;
                     color: var(--bwm-text);
@@ -2082,8 +2082,7 @@ class BibleWordMap extends HTMLElement {
                 #bwm-foundation-filter .bwm-pill-btn.active,
                 #bwm-testament-filter .bwm-pill-btn.active,
                 #bwm-sim-labels-filter .bwm-pill-btn.active,
-                #bwm-text-size-filter .bwm-pill-btn.active,
-                #bwm-christ-gravity-filter .bwm-pill-btn.active {
+                #bwm-text-size-filter .bwm-pill-btn.active {
                     background: var(--bwm-node-hover);
                     color: #ffffff;
                     border: none;
@@ -4464,15 +4463,38 @@ class BibleWordMap extends HTMLElement {
                             </div>
                             <div class="bwm-drawer-hint">Scale words, percentages, and labels on the map canvas.</div>
                         </div>
-                        <div class="bwm-drawer-section" id="bwm-christ-gravity-section">
+                        <div class="bwm-drawer-section" id="bwm-motif-weights-section">
                             <div class="bwm-drawer-section-header">
-                                <h4>Christocentric Mode</h4>
+                                <h4>Motif Trajectory Weights</h4>
                             </div>
-                            <div class="bwm-pill-group" id="bwm-christ-gravity-filter">
-                                <button type="button" class="bwm-pill-btn ${this.christGravityEnabled !== false ? 'active' : ''}" data-christ-gravity="on" title="Bias motif narrative resolution toward Christ (w = 0.35)">On</button>
-                                <button type="button" class="bwm-pill-btn ${this.christGravityEnabled === false ? 'active' : ''}" data-christ-gravity="off" title="Pure geometric alignment without theological weighting">Off</button>
+                            <div class="bwm-weight-slider-group" style="margin-top: 8px;">
+                                <div style="display: flex; justify-content: space-between; align-items: baseline; font-size: 0.84em; font-weight: 600; margin-bottom: 2px;">
+                                    <span style="color: var(--bwm-text);">Directional (w_dir)</span>
+                                    <span id="bwm-motif-weight-dir-val" style="font-family: monospace; color: var(--bwm-node-hover); font-weight: 700;">${Number(this.motifWeightDir || 0.50).toFixed(2)}</span>
+                                </div>
+                                <div class="bwm-slider-container">
+                                    <input type="range" id="bwm-motif-weight-dir" min="0" max="1" step="0.05" value="${this.motifWeightDir !== undefined ? this.motifWeightDir : 0.50}">
+                                </div>
                             </div>
-                            <div class="bwm-drawer-hint">Apply Christocentric gravity weighting so narrative motif trajectories resolve toward New Testament fulfillment.</div>
+                            <div class="bwm-weight-slider-group" style="margin-top: 10px;">
+                                <div style="display: flex; justify-content: space-between; align-items: baseline; font-size: 0.84em; font-weight: 600; margin-bottom: 2px;">
+                                    <span style="color: var(--bwm-text);">Curvature (w_angle)</span>
+                                    <span id="bwm-motif-weight-angle-val" style="font-family: monospace; color: var(--bwm-node-hover); font-weight: 700;">${Number(this.motifWeightAngle || 0.15).toFixed(2)}</span>
+                                </div>
+                                <div class="bwm-slider-container">
+                                    <input type="range" id="bwm-motif-weight-angle" min="0" max="1" step="0.05" value="${this.motifWeightAngle !== undefined ? this.motifWeightAngle : 0.15}">
+                                </div>
+                            </div>
+                            <div class="bwm-weight-slider-group" style="margin-top: 10px;">
+                                <div style="display: flex; justify-content: space-between; align-items: baseline; font-size: 0.84em; font-weight: 600; margin-bottom: 2px;">
+                                    <span style="color: var(--bwm-text);">Christ Gravity (w_gravity)</span>
+                                    <span id="bwm-motif-weight-gravity-val" style="font-family: monospace; color: var(--bwm-node-hover); font-weight: 700;">${Number(this.motifWeightGravity !== undefined ? this.motifWeightGravity : 0.35).toFixed(2)}</span>
+                                </div>
+                                <div class="bwm-slider-container">
+                                    <input type="range" id="bwm-motif-weight-gravity" min="0" max="1" step="0.05" value="${this.motifWeightGravity !== undefined ? this.motifWeightGravity : 0.35}">
+                                </div>
+                            </div>
+                            <div class="bwm-drawer-hint" style="margin-top: 8px;">Adjust weights (0 to 1) for directional step alignment, turning angle penalty, and theological attraction toward Christ.</div>
                         </div>
                         <div class="bwm-drawer-section disabled" id="bwm-disambiguation-section">
                             <div class="bwm-drawer-section-header">
@@ -4983,15 +5005,41 @@ class BibleWordMap extends HTMLElement {
         let urlParams = new URLSearchParams(window.location.search);
         if (typeof localStorage !== 'undefined') {
             try {
-                const savedCg = localStorage.getItem('bwm-christ-gravity');
-                if (savedCg !== null) {
-                    this.christGravityEnabled = (savedCg === 'true');
-                }
+                const savedDir = localStorage.getItem('bwm-motif-weight-dir');
+                if (savedDir !== null) this.motifWeightDir = parseFloat(savedDir);
+                const savedAngle = localStorage.getItem('bwm-motif-weight-angle');
+                if (savedAngle !== null) this.motifWeightAngle = parseFloat(savedAngle);
+                const savedGrav = localStorage.getItem('bwm-motif-weight-gravity');
+                if (savedGrav !== null) this.motifWeightGravity = parseFloat(savedGrav);
             } catch (e) {}
+        }
+        let wdParam = urlParams.get('wd');
+        if (wdParam !== null) {
+            let v = parseFloat(wdParam);
+            if (!isNaN(v)) this.motifWeightDir = Math.max(0, Math.min(1, v));
+        }
+        let waParam = urlParams.get('wa');
+        if (waParam !== null) {
+            let v = parseFloat(waParam);
+            if (!isNaN(v)) this.motifWeightAngle = Math.max(0, Math.min(1, v));
+        }
+        let wgParam = urlParams.get('wg');
+        if (wgParam !== null) {
+            let v = parseFloat(wgParam);
+            if (!isNaN(v)) this.motifWeightGravity = Math.max(0, Math.min(1, v));
+        }
+        let miParam = urlParams.get('mi') || urlParams.get('motif_index');
+        if (miParam !== null) {
+            let v = parseInt(miParam, 10);
+            if (!isNaN(v)) this._pendingMotifIdx = v;
         }
         let cgParam = (urlParams.get('cg') || urlParams.get('gravity') || urlParams.get('christ'));
         if (cgParam !== null) {
-            this.christGravityEnabled = (cgParam === '1' || cgParam === 'true' || cgParam === 'on');
+            if (cgParam === '0' || cgParam === 'false' || cgParam === 'off') {
+                this.motifWeightGravity = 0.0;
+            } else if (cgParam === '1' || cgParam === 'true' || cgParam === 'on') {
+                if (this.motifWeightGravity === 0) this.motifWeightGravity = 0.35;
+            }
         }
 
         let baseParam = (urlParams.get('c') || urlParams.get('canon') || urlParams.get('base') || urlParams.get('foundation') || this.getAttribute('foundation') || 'bsb').toLowerCase();
@@ -5445,17 +5493,54 @@ class BibleWordMap extends HTMLElement {
             });
         });
 
-        const christGravityPills = this.querySelectorAll('#bwm-christ-gravity-filter .bwm-pill-btn');
-        christGravityPills.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const val = btn.getAttribute('data-christ-gravity') === 'on';
-                this.setChristGravityEnabled(val, true);
+        const dirSlider = this.querySelector('#bwm-motif-weight-dir');
+        const dirVal = this.querySelector('#bwm-motif-weight-dir-val');
+        if (dirSlider) {
+            dirSlider.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                if (dirVal) dirVal.textContent = val.toFixed(2);
+                this.motifWeightDir = val;
+                if (this.currentSymbibleQuery) this.updateUrl({ q: this.currentSymbibleQuery, mi: this.activeMotifIdx });
+                this.triggerMotifRescore();
             });
-        });
-        if (christGravityPills.length > 0) {
-            christGravityPills.forEach(btn => {
-                const val = btn.getAttribute('data-christ-gravity') === 'on';
-                btn.classList.toggle('active', val === this.christGravityEnabled);
+            dirSlider.addEventListener('change', () => {
+                if (typeof localStorage !== 'undefined') {
+                    try { localStorage.setItem('bwm-motif-weight-dir', this.motifWeightDir.toString()); } catch (e) {}
+                }
+            });
+        }
+
+        const angleSlider = this.querySelector('#bwm-motif-weight-angle');
+        const angleVal = this.querySelector('#bwm-motif-weight-angle-val');
+        if (angleSlider) {
+            angleSlider.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                if (angleVal) angleVal.textContent = val.toFixed(2);
+                this.motifWeightAngle = val;
+                if (this.currentSymbibleQuery) this.updateUrl({ q: this.currentSymbibleQuery, mi: this.activeMotifIdx });
+                this.triggerMotifRescore();
+            });
+            angleSlider.addEventListener('change', () => {
+                if (typeof localStorage !== 'undefined') {
+                    try { localStorage.setItem('bwm-motif-weight-angle', this.motifWeightAngle.toString()); } catch (e) {}
+                }
+            });
+        }
+
+        const gravitySlider = this.querySelector('#bwm-motif-weight-gravity');
+        const gravityVal = this.querySelector('#bwm-motif-weight-gravity-val');
+        if (gravitySlider) {
+            gravitySlider.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                if (gravityVal) gravityVal.textContent = val.toFixed(2);
+                this.motifWeightGravity = val;
+                if (this.currentSymbibleQuery) this.updateUrl({ q: this.currentSymbibleQuery, mi: this.activeMotifIdx });
+                this.triggerMotifRescore();
+            });
+            gravitySlider.addEventListener('change', () => {
+                if (typeof localStorage !== 'undefined') {
+                    try { localStorage.setItem('bwm-motif-weight-gravity', this.motifWeightGravity.toString()); } catch (e) {}
+                }
             });
         }
 
@@ -6207,6 +6292,28 @@ class BibleWordMap extends HTMLElement {
         let chapters = params.get('ch') || params.get('chapters') || params.get('chapter') || params.get('chap');
         let verses = params.get('v') || params.get('vs') || params.get('verses') || params.get('verse');
         let keywords = params.get('w') || params.get('k') || params.get('keywords') || params.get('keyword') || params.get('words') || params.get('word');
+        let queryExpr = params.get('q') || params.get('query');
+        let wdParam = params.get('wd');
+        let waParam = params.get('wa');
+        let wgParam = params.get('wg');
+        let miParam = params.get('mi') || params.get('motif_index');
+
+        if (wdParam !== null) {
+            let v = parseFloat(wdParam);
+            if (!isNaN(v)) this.motifWeightDir = Math.max(0, Math.min(1, v));
+        }
+        if (waParam !== null) {
+            let v = parseFloat(waParam);
+            if (!isNaN(v)) this.motifWeightAngle = Math.max(0, Math.min(1, v));
+        }
+        if (wgParam !== null) {
+            let v = parseFloat(wgParam);
+            if (!isNaN(v)) this.motifWeightGravity = Math.max(0, Math.min(1, v));
+        }
+        if (miParam !== null) {
+            let v = parseInt(miParam, 10);
+            if (!isNaN(v)) this._pendingMotifIdx = v;
+        }
 
         // Verse connection mode option (?vc=r | w)
         let vcParam = (params.get('vc') || params.get('verse_mode') || params.get('connections') || '').toLowerCase();
@@ -6277,12 +6384,18 @@ class BibleWordMap extends HTMLElement {
             this.searchedChapters = this.parseChapterQuery(chapters);
         }
 
+        if (queryExpr) {
+            this.currentSymbibleQuery = queryExpr;
+        }
+
         this.updateUrl({
             m: view || undefined,
             b: books || undefined,
             ch: chapters || undefined,
             v: verses || undefined,
             w: keywords || undefined,
+            q: queryExpr || undefined,
+            mi: this._pendingMotifIdx || undefined,
             ccm: (this.chapterConnMode !== 'words') ? this.chapterConnMode : undefined
         });
         let currentMode = this.viewMode || view || (verses ? 'verses' : (chapters ? 'chapters' : (books ? 'books' : 'words')));
@@ -6464,7 +6577,14 @@ class BibleWordMap extends HTMLElement {
                     return;
                 }
 
-                if (this._pendingKeywordSearch) {
+                if (queryExpr) {
+                    if (this.searchInput) this.searchInput.value = queryExpr;
+                    if (this.isSymbibleQuery(queryExpr)) {
+                        await this.executeSymbibleQuery(queryExpr);
+                    } else {
+                        this.searchWord(false, true);
+                    }
+                } else if (this._pendingKeywordSearch) {
                     let target = this._pendingKeywordSearch;
                     this._pendingKeywordSearch = null;
                     let p = this.data2d ? (this.data2d.find(d => d.id === target) || this.findMatchesForWordToken(target)[0]) : null;
@@ -8991,6 +9111,7 @@ class BibleWordMap extends HTMLElement {
         }
 
         // Clean up any lingering pseudo-node or motif constellation state
+        this.currentSymbibleQuery = null;
         this.pseudoNode = null;
         this.activeMotifMatch = null;
         this.activeMotifIdx = null;
@@ -9486,6 +9607,7 @@ class BibleWordMap extends HTMLElement {
         this.lastPseudoNeighbors = null;
         this.lastPseudoAst = null;
         this.lastMotifQuery = null;
+        this.currentSymbibleQuery = null;
         if (this.nodes) {
             this.nodes = this.nodes.filter(n => !n.isPseudoNode && !n.isMotifNode && !n.isSearchMotif);
         }
@@ -9842,6 +9964,9 @@ class BibleWordMap extends HTMLElement {
         // Project the neighbor bubbles around the pseudo-node using D3 force simulation
         this.runSimulation();
 
+        this.currentSymbibleQuery = cleanQuery;
+        this.updateUrl({ q: cleanQuery });
+
         // Populate Study Panel with Top 10 Neighbors & Verses tabs
         await this.showPseudoNodeInspector(pseudoNode, top10);
     }
@@ -9916,23 +10041,52 @@ class BibleWordMap extends HTMLElement {
         return this.christAnchorVector;
     }
 
-    setChristGravityEnabled(enabled, isUserAction = true) {
-        this.christGravityEnabled = Boolean(enabled);
-        if (typeof localStorage !== 'undefined') {
-            try {
-                localStorage.setItem('bwm-christ-gravity', this.christGravityEnabled ? 'true' : 'false');
-            } catch (e) {}
+    setMotifWeight(name, value, isUserAction = true) {
+        const num = Math.max(0, Math.min(1, parseFloat(value) || 0));
+        if (name === 'dir') {
+            this.motifWeightDir = num;
+            const el = this.querySelector('#bwm-motif-weight-dir');
+            if (el) el.value = num;
+            const valEl = this.querySelector('#bwm-motif-weight-dir-val');
+            if (valEl) valEl.textContent = num.toFixed(2);
+            if (typeof localStorage !== 'undefined') {
+                try { localStorage.setItem('bwm-motif-weight-dir', num.toString()); } catch (e) {}
+            }
+        } else if (name === 'angle') {
+            this.motifWeightAngle = num;
+            const el = this.querySelector('#bwm-motif-weight-angle');
+            if (el) el.value = num;
+            const valEl = this.querySelector('#bwm-motif-weight-angle-val');
+            if (valEl) valEl.textContent = num.toFixed(2);
+            if (typeof localStorage !== 'undefined') {
+                try { localStorage.setItem('bwm-motif-weight-angle', num.toString()); } catch (e) {}
+            }
+        } else if (name === 'gravity') {
+            this.motifWeightGravity = num;
+            const el = this.querySelector('#bwm-motif-weight-gravity');
+            if (el) el.value = num;
+            const valEl = this.querySelector('#bwm-motif-weight-gravity-val');
+            if (valEl) valEl.textContent = num.toFixed(2);
+            if (typeof localStorage !== 'undefined') {
+                try { localStorage.setItem('bwm-motif-weight-gravity', num.toString()); } catch (e) {}
+            }
         }
-        const christGravityPills = this.querySelectorAll('#bwm-christ-gravity-filter .bwm-pill-btn');
-        christGravityPills.forEach(btn => {
-            const val = btn.getAttribute('data-christ-gravity') === 'on';
-            btn.classList.toggle('active', val === this.christGravityEnabled);
-        });
+        if (this.currentSymbibleQuery) {
+            this.updateUrl({ q: this.currentSymbibleQuery, mi: this.activeMotifIdx });
+        }
+        this.triggerMotifRescore();
+    }
 
-        // Re-execute active motif query so matches re-rank immediately
-        if (this.lastMotifQuery && this.motifResults && this.motifResults.length > 0) {
+    setChristGravityEnabled(enabled, isUserAction = true) {
+        this.setMotifWeight('gravity', enabled ? 0.35 : 0.00, isUserAction);
+    }
+
+    triggerMotifRescore() {
+        if (!this.lastMotifQuery || !this.motifResults || this.motifResults.length === 0) return;
+        if (this._motifRescoreTimer) clearTimeout(this._motifRescoreTimer);
+        this._motifRescoreTimer = setTimeout(() => {
             this.executeMotifQuery(this.lastMotifQuery, this.lastMotifAst || this.parseSymbibleQuery(this.lastMotifQuery));
-        }
+        }, 150);
     }
 
     async executeMotifQuery(queryStr, ast) {
@@ -10040,16 +10194,21 @@ class BibleWordMap extends HTMLElement {
             }));
         });
 
+        this.currentSymbibleQuery = queryStr;
         this.lastMotifQuery = queryStr;
         this.lastMotifAst = ast;
         this.motifResults = matches;
-        this.activeMotifIdx = 0;
+        let initialIdx = (this._pendingMotifIdx !== undefined && this._pendingMotifIdx !== null) ? this._pendingMotifIdx : 0;
+        this._pendingMotifIdx = null;
+        if (initialIdx < 0 || initialIdx >= matches.length) initialIdx = 0;
+        this.activeMotifIdx = initialIdx;
         this.isSearchMode = true;
         this.userInteracted = false;
         this._nodesBounds = null;
         this.updateClearBtnVisibility();
-        this.showMotifResultsPanel(queryStr, matches, 0);
-        this.activateMotifMatch(0);
+        this.showMotifResultsPanel(queryStr, matches, this.activeMotifIdx);
+        this.activateMotifMatch(this.activeMotifIdx);
+        this.updateUrl({ q: queryStr, mi: this.activeMotifIdx });
     }
 
     async findMotifMatches(stageResults, offsets, excludedWords) {
@@ -10097,10 +10256,10 @@ class BibleWordMap extends HTMLElement {
         }
 
         const christVec = this.computeChristAnchorVector();
-        const isChristGravity = Boolean(this.christGravityEnabled !== false && christVec);
-        const wDir = isChristGravity ? 0.50 : 0.80;
-        const wAngle = isChristGravity ? 0.15 : 0.20;
-        const wGravity = isChristGravity ? 0.35 : 0.00;
+        const wDir = (this.motifWeightDir !== undefined) ? this.motifWeightDir : 0.50;
+        const wAngle = (this.motifWeightAngle !== undefined) ? this.motifWeightAngle : 0.15;
+        const wGravity = (this.motifWeightGravity !== undefined) ? this.motifWeightGravity : 0.35;
+        const isChristGravity = Boolean(wGravity > 0 && christVec);
 
         // Helper to score a candidate chain: directional match, curvature penalty, and Christ-gravity alignment
         const scoreCandidateChain = (chainNodes) => {
@@ -10408,6 +10567,10 @@ class BibleWordMap extends HTMLElement {
                         </div>
                     </div>
                     <div style="display:flex; align-items:center; gap:8px;">
+                        <button type="button" class="bwm-study-tab-btn" id="bwm-pseudo-share-btn" title="Copy share link" style="padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                            <span>Share</span>
+                        </button>
                         ${(this.motifResults && this.motifResults.length > 0) ? `
                             <button type="button" class="bwm-motif-back-btn" id="bwm-pseudo-back-to-motif" title="Back to Motif Results">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
@@ -10488,6 +10651,16 @@ class BibleWordMap extends HTMLElement {
                 }
             });
         });
+
+        const shareBtn = this.wordCard.querySelector('#bwm-pseudo-share-btn');
+        if (shareBtn) {
+            shareBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.copyToClipboard(window.location.href, () => {
+                    this.showToast('Arithmetic search link copied to clipboard', 'info');
+                });
+            });
+        }
 
         this.wordCard.classList.add('visible');
         this.wordCard.scrollTop = 0;
@@ -10675,6 +10848,10 @@ class BibleWordMap extends HTMLElement {
                         </div>
                     </div>
                     <div style="display:flex; align-items:center; gap:8px;">
+                        <button type="button" class="bwm-study-tab-btn" id="bwm-motif-share-btn" title="Copy share link" style="padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                            <span>Share</span>
+                        </button>
                         ${this.renderPinButton('study')}
                         <button type="button" class="bwm-window-close" id="bwm-word-close" title="Close inspector">&times;</button>
                     </div>
@@ -10699,11 +10876,22 @@ class BibleWordMap extends HTMLElement {
             });
         }
 
+        const shareBtn = this.wordCard.querySelector('#bwm-motif-share-btn');
+        if (shareBtn) {
+            shareBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.copyToClipboard(window.location.href, () => {
+                    this.showToast('Motif search link copied to clipboard', 'info');
+                });
+            });
+        }
+
         const cards = this.wordCard.querySelectorAll('.bwm-motif-card');
         cards.forEach(card => {
             card.addEventListener('click', () => {
                 const idx = parseInt(card.getAttribute('data-match-idx'), 10);
                 this.activateMotifMatch(idx);
+                this.updateUrl({ q: this.currentSymbibleQuery || queryStr, mi: idx });
             });
         });
 
@@ -10832,6 +11020,10 @@ class BibleWordMap extends HTMLElement {
         // Smoothly frame the search motif and active match nodes with 15% viewport padding
         const nodesToFrame = [...this.searchMotifNodes, ...this.activeMotifMatch.alignedNodes];
         this.frameNodes(nodesToFrame, 0.15, 600);
+
+        if (this.currentSymbibleQuery) {
+            this.updateUrl({ q: this.currentSymbibleQuery, mi: idx });
+        }
     }
 
     drawMotifTrajectories() {
@@ -11327,16 +11519,47 @@ class BibleWordMap extends HTMLElement {
                 url.searchParams.set('m', 'b');
             }
 
-            // 3. Words (w)
-            let words;
-            if ('w' in paramsObj) words = paramsObj.w;
-            else if ('keywords' in paramsObj) words = paramsObj.keywords;
-            else if ('keyword' in paramsObj) words = paramsObj.keyword;
-            else if ('words' in paramsObj) words = paramsObj.words;
-            else if ('k' in paramsObj) words = paramsObj.k;
-            else if ((mode === 'words' || mode === 'w') && this.searchedWords && this.searchedWords.length > 0) words = this.searchedWords.join(',');
-            if (words && (mode === 'words' || mode === 'w')) {
-                url.searchParams.set('w', words);
+            // 3. SymBible Query Expression (q)
+            if (('w' in paramsObj || 'keywords' in paramsObj) && !('q' in paramsObj)) {
+                this.currentSymbibleQuery = null;
+            }
+            if ('q' in paramsObj) {
+                this.currentSymbibleQuery = paramsObj.q || null;
+            }
+
+            let qQuery = null;
+            if ('q' in paramsObj) qQuery = paramsObj.q;
+            else if ('query' in paramsObj) qQuery = paramsObj.query;
+            else if ((mode === 'words' || mode === 'w') && this.currentSymbibleQuery) qQuery = this.currentSymbibleQuery;
+
+            if (qQuery && (mode === 'words' || mode === 'w')) {
+                url.searchParams.set('q', qQuery);
+                // Weight parameters (wd, wa, wg) only written when different from defaults
+                if (this.motifWeightDir !== undefined && Math.abs(this.motifWeightDir - 0.50) > 0.001) {
+                    url.searchParams.set('wd', Number(this.motifWeightDir).toFixed(2).replace(/\.?0+$/, ''));
+                }
+                if (this.motifWeightAngle !== undefined && Math.abs(this.motifWeightAngle - 0.15) > 0.001) {
+                    url.searchParams.set('wa', Number(this.motifWeightAngle).toFixed(2).replace(/\.?0+$/, ''));
+                }
+                if (this.motifWeightGravity !== undefined && Math.abs(this.motifWeightGravity - 0.35) > 0.001) {
+                    url.searchParams.set('wg', Number(this.motifWeightGravity).toFixed(2).replace(/\.?0+$/, ''));
+                }
+                let motifIdx = ('mi' in paramsObj) ? paramsObj.mi : this.activeMotifIdx;
+                if (motifIdx !== undefined && motifIdx !== null && motifIdx > 0) {
+                    url.searchParams.set('mi', motifIdx);
+                }
+            } else {
+                // 3b. Words (w)
+                let words;
+                if ('w' in paramsObj) words = paramsObj.w;
+                else if ('keywords' in paramsObj) words = paramsObj.keywords;
+                else if ('keyword' in paramsObj) words = paramsObj.keyword;
+                else if ('words' in paramsObj) words = paramsObj.words;
+                else if ('k' in paramsObj) words = paramsObj.k;
+                else if ((mode === 'words' || mode === 'w') && this.searchedWords && this.searchedWords.length > 0) words = this.searchedWords.join(',');
+                if (words && (mode === 'words' || mode === 'w')) {
+                    url.searchParams.set('w', words);
+                }
             }
 
             // 4. Verses (v) - format with dot notation (GEN.1.1) to eliminate spaces

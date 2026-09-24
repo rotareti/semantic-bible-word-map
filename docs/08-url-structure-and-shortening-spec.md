@@ -78,6 +78,11 @@ The Semantic Bible Word Map is structured around a natural 4-tier biblical and l
 | **Testament Filter** | `t` | `testament`, `filter` | `all`, `ot`, `nt`, `both` | `all` |
 | **Similarity Labels** | `s` | `sim`, `similarity` | `off`, `h` (`hover`), `a` (`all`) | `h` (`hover`) |
 | **Map Text Scale** | `ts` | `scale`, `font` | `s` (`small`), `m` (`medium`), `l` (`large`) | Responsive default |
+| **SymBible Query** | `q` | `query` | Math/motif expression (`covenant%2Bblood`, `Jesus%3ECross%3ERaised`) | None (empty) |
+| **Directional Weight** | `wd` | None | Float in [0.0, 1.0] (e.g. `wd=0.7`) | `0.50` |
+| **Curvature Penalty Weight** | `wa` | None | Float in [0.0, 1.0] (e.g. `wa=0.2`) | `0.15` |
+| **Christocentric Gravity Weight** | `wg` | `cg`, `gravity`, `christ` | Float in [0.0, 1.0] (e.g. `wg=0.0` for pure geometry) | `0.35` |
+| **Motif Match Index** | `mi` | `motif_index` | 0-indexed integer (e.g. `mi=2`) | `0` |
 
 > [!NOTE]
 > Distinguishing Mode from Entities:
@@ -146,6 +151,9 @@ Multiple entities are joined with standard commas (`,`), which require no URL pe
 | **Chapter Mode (Future: Genesis 1 in BSB)** | `?view=chapters&chapters=GEN.1` (30 chars) | `?m=ch&ch=GEN.1` (14 chars) | **-53.3%** |
 | **Book Mode (Genesis & Exodus in VUL)** | `?canon=vul&view=books&books=GEN,EXO` (35 chars) | `?c=vul&m=b&b=GEN,EXO` (20 chars) | **-42.9%** |
 | **Patristic Work (Future: Didache in AF)** | `?canon=af&view=books&books=DID` (29 chars) | `?c=af&m=b&b=DID` (15 chars) | **-48.3%** |
+| **Vector Arithmetic (BSB: covenant + blood)** | *(new feature)* | `?q=covenant%2Bblood` (20 chars) | **Canonical** |
+| **Motif Trajectory (BSB: Jesus > Cross > Raised)** | *(new feature)* | `?q=Jesus%3ECross%3ERaised` (26 chars) | **Canonical** |
+| **Motif Trajectory (Non-default weights & match 2)** | *(new feature)* | `?q=Jesus%3ECross%3ERaised&wg=0&mi=2` (37 chars) | **Canonical** |
 
 ---
 
