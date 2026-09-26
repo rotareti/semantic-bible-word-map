@@ -8,9 +8,9 @@
   - **Concentric Radial Metrics:** Annotated every word, verse, chapter, and book with radial distance $r = \sqrt{x^2 + y^2}$ and 100D cosine alignment to Christ ($\text{sim}_{\text{Christ}}$).
   - **Christ Anchor Node:** Injected a canonical anchor pseudo-node at $(0, 0)$ mapped to primary confession verses in the verse index.
   - **Gospel Centering in Book Map:** Shifted book map coordinates across all canons to center on the Gospel cluster (Matthew, Mark, Luke, John) at the origin.
-  - **Study Card Christ Alignment Badges:** Added Christological alignment badges to Word, Verse, Chapter, and Book inspector headers.
+  - **Clean Study Card Interface:** Preserved an uncluttered inspector card design without intrusive alignment badges, allowing the natural spatial geometry and concentric distribution of scripture to speak for itself.
   - **Modular Corpus Management Framework:** Implemented `pipeline/corpus_manager.py` to standardize corpus ingestion, training, map projection, and centroid generation for future historical corpora (such as the Early Church Fathers).
-  - **Architectural Specification:** Created `docs/15-christocentric-map-architecture.md` detailing linear algebra in $\mathbb{R}^{100}$ vs $\mathbb{R}^2$, hybrid anchor synthesis, and topological zones.
+  - **Architectural Specification & Guide:** Created `docs/15-christocentric-map-architecture.md` outlining the implementation, linear algebra in $\mathbb{R}^{100}$ vs $\mathbb{R}^2$, hybrid anchor synthesis, concentric layout changes, and Patristic ingestion.
 
 ## [13.0.1] - 2026-09-26
 ### Added
