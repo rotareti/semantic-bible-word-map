@@ -668,6 +668,7 @@ class BibleWordMap extends HTMLElement {
         this.motifWeightDir = 0.50;
         this.motifWeightAngle = 0.15;
         this.motifWeightGravity = 0.35;
+        this.motifWeightPos = 0.10;
         this.currentSymbibleQuery = null;
         this.christAnchorVector = null;
         this.verses = null;
@@ -4729,7 +4730,16 @@ class BibleWordMap extends HTMLElement {
                                     <input type="range" id="bwm-motif-weight-gravity" min="0" max="1" step="0.05" value="${this.motifWeightGravity !== undefined ? this.motifWeightGravity : 0.35}">
                                 </div>
                             </div>
-                            <div class="bwm-drawer-hint" style="margin-top: 8px;">Adjust weights (0 to 1) for directional step alignment, turning angle penalty, and theological attraction toward Christ.</div>
+                            <div class="bwm-weight-slider-group" style="margin-top: 10px;">
+                                <div style="display: flex; justify-content: space-between; align-items: baseline; font-size: 0.84em; font-weight: 600; margin-bottom: 2px;">
+                                    <span style="color: var(--bwm-text);">Syntactic POS (w_pos)</span>
+                                    <span id="bwm-motif-weight-pos-val" style="font-family: monospace; color: var(--bwm-node-hover); font-weight: 700;">${Number(this.motifWeightPos !== undefined ? this.motifWeightPos : 0.10).toFixed(2)}</span>
+                                </div>
+                                <div class="bwm-slider-container">
+                                    <input type="range" id="bwm-motif-weight-pos" min="0" max="0.50" step="0.05" value="${this.motifWeightPos !== undefined ? this.motifWeightPos : 0.10}">
+                                </div>
+                            </div>
+                            <div class="bwm-drawer-hint" style="margin-top: 8px;">Adjust weights (0 to 1) for directional alignment, turning angle penalty, Christ gravity, and soft syntactic part-of-speech structure.</div>
                         </div>
                         <div class="bwm-drawer-section disabled" id="bwm-disambiguation-section">
                             <div class="bwm-drawer-section-header">
@@ -5246,6 +5256,8 @@ class BibleWordMap extends HTMLElement {
                 if (savedAngle !== null) this.motifWeightAngle = parseFloat(savedAngle);
                 const savedGrav = localStorage.getItem('bwm-motif-weight-gravity');
                 if (savedGrav !== null) this.motifWeightGravity = parseFloat(savedGrav);
+                const savedPos = localStorage.getItem('bwm-motif-weight-pos');
+                if (savedPos !== null) this.motifWeightPos = parseFloat(savedPos);
             } catch (e) {}
         }
         let wdParam = urlParams.get('wd');
@@ -5262,6 +5274,11 @@ class BibleWordMap extends HTMLElement {
         if (wgParam !== null) {
             let v = parseFloat(wgParam);
             if (!isNaN(v)) this.motifWeightGravity = Math.max(0, Math.min(1, v));
+        }
+        let wpParam = urlParams.get('wp');
+        if (wpParam !== null) {
+            let v = parseFloat(wpParam);
+            if (!isNaN(v)) this.motifWeightPos = Math.max(0, Math.min(1, v));
         }
         let miParam = urlParams.get('mi') || urlParams.get('motif_index');
         if (miParam !== null) {
@@ -5786,6 +5803,23 @@ class BibleWordMap extends HTMLElement {
             gravitySlider.addEventListener('change', () => {
                 if (typeof localStorage !== 'undefined') {
                     try { localStorage.setItem('bwm-motif-weight-gravity', this.motifWeightGravity.toString()); } catch (e) {}
+                }
+            });
+        }
+
+        const posSlider = this.querySelector('#bwm-motif-weight-pos');
+        const posVal = this.querySelector('#bwm-motif-weight-pos-val');
+        if (posSlider) {
+            posSlider.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                if (posVal) posVal.textContent = val.toFixed(2);
+                this.motifWeightPos = val;
+                if (this.currentSymbibleQuery) this.updateUrl({ q: this.currentSymbibleQuery, mi: this.activeMotifIdx });
+                this.triggerMotifRescore();
+            });
+            posSlider.addEventListener('change', () => {
+                if (typeof localStorage !== 'undefined') {
+                    try { localStorage.setItem('bwm-motif-weight-pos', this.motifWeightPos.toString()); } catch (e) {}
                 }
             });
         }
@@ -6542,6 +6576,7 @@ class BibleWordMap extends HTMLElement {
         let wdParam = params.get('wd');
         let waParam = params.get('wa');
         let wgParam = params.get('wg');
+        let wpParam = params.get('wp');
         let miParam = params.get('mi') || params.get('motif_index');
 
         if (wdParam !== null) {
@@ -6555,6 +6590,10 @@ class BibleWordMap extends HTMLElement {
         if (wgParam !== null) {
             let v = parseFloat(wgParam);
             if (!isNaN(v)) this.motifWeightGravity = Math.max(0, Math.min(1, v));
+        }
+        if (wpParam !== null) {
+            let v = parseFloat(wpParam);
+            if (!isNaN(v)) this.motifWeightPos = Math.max(0, Math.min(1, v));
         }
         if (miParam !== null) {
             let v = parseInt(miParam, 10);
@@ -10119,6 +10158,17 @@ class BibleWordMap extends HTMLElement {
         let clean = term.trim();
         let low = clean.toLowerCase();
 
+        // 0. If term has a POS tag like word_POS (e.g. walk_VERB or jesus_PROPN)
+        if (clean.includes('_')) {
+            let idMatch = this.data2d.find(d => d.id && d.id.toLowerCase() === low);
+            if (idMatch) return idMatch;
+            const parts = clean.split('_');
+            const wordPart = parts[0].toLowerCase();
+            const posPart = parts[parts.length - 1].toUpperCase();
+            let posMatch = this.data2d.find(d => d.w && d.w.toLowerCase() === wordPart && d.pos && d.pos.toUpperCase() === posPart);
+            if (posMatch) return posMatch;
+        }
+
         // 1. Existing word matches
         let directMatches = this.findMatchesForWordToken ? this.findMatchesForWordToken(clean) : [];
         if (directMatches && directMatches.length > 0) {
@@ -10249,7 +10299,52 @@ class BibleWordMap extends HTMLElement {
         }
     }
 
-    getNearestNeighbors(vec, k = 10, excludedWords = new Set()) {
+    computePosMatchScore(candPos, sourcePos) {
+        if (!candPos || !sourcePos) return 0;
+        const cP = String(candPos).toUpperCase();
+        const sP = String(sourcePos).toUpperCase();
+        if (sP === 'MATH' || cP === 'MATH') return 0.5;
+
+        // Exact match
+        if (cP === sP) {
+            // Verbs and Adjectives weighted heavier per user direction
+            if (sP === 'VERB') return 1.30;
+            if (sP === 'ADJ') return 1.25;
+            if (sP === 'ADV') return 1.15;
+            return 1.0;
+        }
+
+        // Fluidity between Noun and Proper Noun (people <-> objects typological shifts)
+        if ((sP === 'NOUN' && cP === 'PROPN') || (sP === 'PROPN' && cP === 'NOUN')) {
+            return 0.85;
+        }
+
+        return 0.0;
+    }
+
+    computePosBonus(candPos, targetPos) {
+        if (!candPos || !targetPos) return 0;
+        const cP = String(candPos).toUpperCase();
+        const tP = String(targetPos).toUpperCase();
+        if (tP === 'MATH' || cP === 'MATH') return 0;
+
+        // Exact match bonus
+        if (cP === tP) {
+            if (tP === 'VERB') return 0.07;
+            if (tP === 'ADJ') return 0.06;
+            if (tP === 'ADV') return 0.06;
+            return 0.05;
+        }
+
+        // Fluidity between Noun and Proper Noun
+        if ((tP === 'NOUN' && cP === 'PROPN') || (tP === 'PROPN' && cP === 'NOUN')) {
+            return 0.04;
+        }
+
+        return 0.0;
+    }
+
+    getNearestNeighbors(vec, k = 10, excludedWords = new Set(), targetPos = null) {
         if (!vec || !this.data2d) return [];
         const excluded = (excludedWords instanceof Set) ? excludedWords : new Set(Array.isArray(excludedWords) ? excludedWords.map(w => String(w).toLowerCase()) : []);
         const neighbors = [];
@@ -10259,10 +10354,19 @@ class BibleWordMap extends HTMLElement {
             if (excluded.has(d.w.toLowerCase())) continue;
             const sim = this.cosineSimilarity(vec, d.v);
             if (sim !== null && !isNaN(sim)) {
-                neighbors.push({ node: d, sim });
+                let posBonus = 0;
+                if (targetPos) {
+                    posBonus = this.computePosBonus(d.pos, targetPos);
+                }
+                const effectiveSim = sim + posBonus;
+                neighbors.push({ node: d, sim, effectiveSim, posBonus });
             }
         }
-        neighbors.sort((a, b) => b.sim - a.sim);
+        if (targetPos) {
+            neighbors.sort((a, b) => b.effectiveSim - a.effectiveSim);
+        } else {
+            neighbors.sort((a, b) => b.sim - a.sim);
+        }
         return neighbors.slice(0, k);
     }
 
@@ -10461,6 +10565,15 @@ class BibleWordMap extends HTMLElement {
             if (typeof localStorage !== 'undefined') {
                 try { localStorage.setItem('bwm-motif-weight-gravity', num.toString()); } catch (e) {}
             }
+        } else if (name === 'pos') {
+            this.motifWeightPos = num;
+            const el = this.querySelector('#bwm-motif-weight-pos');
+            if (el) el.value = num;
+            const valEl = this.querySelector('#bwm-motif-weight-pos-val');
+            if (valEl) valEl.textContent = num.toFixed(2);
+            if (typeof localStorage !== 'undefined') {
+                try { localStorage.setItem('bwm-motif-weight-pos', num.toString()); } catch (e) {}
+            }
         }
         if (this.currentSymbibleQuery) {
             this.updateUrl({ q: this.currentSymbibleQuery, mi: this.activeMotifIdx });
@@ -10646,13 +10759,21 @@ class BibleWordMap extends HTMLElement {
             sourceAngles.push(Math.acos(clamped));
         }
 
+        // Source POS tag sequence for syntactic weighting
+        const sourcePosList = stageResults.map((sr, k) => {
+            if (sr.isPseudoNode) return 'MATH';
+            return (sr.wordNode && sr.wordNode.pos) ? sr.wordNode.pos : (k === 0 ? 'PROPN' : (k === 1 ? 'VERB' : 'NOUN'));
+        });
+        const sourcePosSet = new Set(sourcePosList.map(p => String(p).toUpperCase()));
+
         const christVec = this.computeChristAnchorVector();
         const wDir = (this.motifWeightDir !== undefined) ? this.motifWeightDir : 0.50;
         const wAngle = (this.motifWeightAngle !== undefined) ? this.motifWeightAngle : 0.15;
         const wGravity = (this.motifWeightGravity !== undefined) ? this.motifWeightGravity : 0.35;
+        const wPos = (this.motifWeightPos !== undefined) ? this.motifWeightPos : 0.10;
         const isChristGravity = Boolean(wGravity > 0 && christVec);
 
-        // Helper to score a candidate chain: directional match, curvature penalty, and Christ-gravity alignment
+        // Helper to score a candidate chain: directional match, curvature penalty, Christ-gravity alignment, and POS syntax
         const scoreCandidateChain = (chainNodes) => {
             if (!chainNodes || chainNodes.length !== stageCount) return null;
             const stepCosines = [];
@@ -10718,12 +10839,22 @@ class BibleWordMap extends HTMLElement {
                 }
             }
 
-            const fitnessScore = (wDir * simDir) - (wAngle * deltaTheta) + (wGravity * simGravity);
+            // Syntactic POS matching ratio and bonus
+            let totalPosScore = 0;
+            for (let i = 0; i < stageCount; i++) {
+                const cPos = chainNodes[i] ? chainNodes[i].pos : null;
+                const sPos = sourcePosList[i];
+                totalPosScore += this.computePosMatchScore(cPos, sPos);
+            }
+            const rPos = totalPosScore / stageCount;
+
+            const fitnessScore = (wDir * simDir) - (wAngle * deltaTheta) + (wGravity * simGravity) + (wPos * rPos);
             return {
                 fitnessScore,
                 simDir,
                 deltaTheta,
                 simGravity,
+                rPos,
                 stepCosines,
                 isChristGravity
             };
@@ -10759,6 +10890,7 @@ class BibleWordMap extends HTMLElement {
                                 simDir: scored.simDir,
                                 deltaTheta: scored.deltaTheta,
                                 simGravity: scored.simGravity,
+                                rPos: scored.rPos,
                                 stepCosines: scored.stepCosines,
                                 isChristGravity: scored.isChristGravity,
                                 isCurated: true
@@ -10779,7 +10911,7 @@ class BibleWordMap extends HTMLElement {
             const f = d.f || 1;
             // Valid target vocabulary pool
             if (f < 6 && d.pos !== 'PROPN') continue;
-            if (d.pos && d.pos !== 'PROPN' && d.pos !== 'NOUN' && d.pos !== 'VERB') continue;
+            if (d.pos && d.pos !== 'PROPN' && d.pos !== 'NOUN' && d.pos !== 'VERB' && !sourcePosSet.has(d.pos.toUpperCase())) continue;
 
             let magSq = 0;
             for (let j = 0; j < dim; j++) magSq += d.v[j] * d.v[j];
@@ -10800,7 +10932,8 @@ class BibleWordMap extends HTMLElement {
         }
 
         // Valid starting words: nouns, verbs, proper nouns with frequency >= 10
-        const startPool = candidatePool.filter(c => (c.pos === 'PROPN' || c.pos === 'NOUN' || c.pos === 'VERB') && c.f >= 10);
+        const startPos = sourcePosList[0] ? sourcePosList[0].toUpperCase() : 'PROPN';
+        const startPool = candidatePool.filter(c => (c.pos === 'PROPN' || c.pos === 'NOUN' || c.pos === 'VERB' || (c.pos && c.pos.toUpperCase() === startPos)) && c.f >= 10);
         startPool.sort((a, b) => b.f - a.f);
 
         const maxStartPool = Math.min(220, startPool.length);
@@ -10889,6 +11022,7 @@ class BibleWordMap extends HTMLElement {
                         simDir: scored.simDir,
                         deltaTheta: scored.deltaTheta,
                         simGravity: scored.simGravity,
+                        rPos: scored.rPos,
                         stepCosines: scored.stepCosines,
                         isChristGravity: scored.isChristGravity,
                         isCurated: false
@@ -11219,7 +11353,7 @@ class BibleWordMap extends HTMLElement {
                     <div class="bwm-motif-card-meta">
                         ${match.isChristGravity && match.simGravity !== undefined
                             ? `Christ-Gravity: ${(match.simGravity * 100).toFixed(1)}% &bull; Alignment: ${(match.score * 100).toFixed(1)}%`
-                            : `Structural trajectory alignment: ${(match.score * 100).toFixed(1)}% cosine echo`}
+                            : `Structural trajectory alignment: ${(match.score * 100).toFixed(1)}% cosine echo`}${match.rPos !== undefined ? ` &bull; POS: ${(match.rPos * 100).toFixed(0)}%` : ''}
                     </div>
                 </div>
             `;
@@ -11647,7 +11781,226 @@ class BibleWordMap extends HTMLElement {
 
     drawAnalogyProjection() {
         if (!this.activeAnalogyProjection) return;
+        const { sourceNodes, targetSeedNode, projectedSteps, pseudoNodes } = this.activeAnalogyProjection;
+        if (!sourceNodes || sourceNodes.length < 2 || !targetSeedNode) return;
+
+        // 1. Draw Source Motif Sequence: Solid directed arrows with golden glow
+        for (let i = 0; i < sourceNodes.length - 1; i++) {
+            const sNode = sourceNodes[i].node;
+            const tNode = sourceNodes[i + 1].node;
+            if (!sNode || !tNode || sNode.x === undefined || tNode.x === undefined) continue;
+
+            const dx = tNode.x - sNode.x;
+            const dy = tNode.y - sNode.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 1) continue;
+
+            const sR = (sNode.canvasR || 15) / this.transform.k;
+            const tR = (tNode.canvasR || 15) / this.transform.k;
+
+            const startX = sNode.x + (dx / dist) * sR;
+            const startY = sNode.y + (dy / dist) * sR;
+            const endX = tNode.x - (dx / dist) * (tR + (4 / this.transform.k));
+            const endY = tNode.y - (dy / dist) * (tR + (4 / this.transform.k));
+
+            this.ctx.save();
+            this.ctx.setLineDash([]);
+            this.ctx.strokeStyle = '#f59e0b';
+            this.ctx.lineWidth = 3.5 / this.transform.k;
+            this.ctx.shadowBlur = 14 / this.transform.k;
+            this.ctx.shadowColor = 'rgba(245, 158, 11, 0.75)';
+
+            this.ctx.beginPath();
+            this.ctx.moveTo(startX, startY);
+            this.ctx.lineTo(endX, endY);
+            this.ctx.stroke();
+
+            // Arrowhead
+            const headLen = 14 / this.transform.k;
+            const angle = Math.atan2(endY - startY, endX - startX);
+            const p1X = endX - headLen * Math.cos(angle - Math.PI / 6);
+            const p1Y = endY - headLen * Math.sin(angle - Math.PI / 6);
+            const p2X = endX - headLen * Math.cos(angle + Math.PI / 6);
+            const p2Y = endY - headLen * Math.sin(angle + Math.PI / 6);
+
+            this.ctx.fillStyle = '#f59e0b';
+            this.ctx.beginPath();
+            this.ctx.moveTo(endX, endY);
+            this.ctx.lineTo(p1X, p1Y);
+            this.ctx.lineTo(p2X, p2Y);
+            this.ctx.closePath();
+            this.ctx.fill();
+
+            // Step Label pill badge
+            const midX = (startX + endX) / 2;
+            const midY = (startY + endY) / 2;
+            const stepLabel = `Source: Step ${i + 1} ➔ ${i + 2}`;
+            const textScale = this.mapTextScale || 1.0;
+            const fontSize = Math.max(8.5, 9.5 * textScale) / this.transform.k;
+
+            this.ctx.font = `bold ${fontSize}px ${this.colors.font}`;
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+
+            const txtWidth = this.ctx.measureText(stepLabel).width;
+            const pillPadX = 6 / this.transform.k;
+            const pillPadY = 3 / this.transform.k;
+
+            this.ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+            this.ctx.shadowBlur = 4 / this.transform.k;
+            this.ctx.shadowColor = '#000000';
+            this.ctx.beginPath();
+            if (this.ctx.roundRect) {
+                this.ctx.roundRect(midX - (txtWidth / 2) - pillPadX, midY - (fontSize / 2) - pillPadY, txtWidth + (pillPadX * 2), fontSize + (pillPadY * 2), 4 / this.transform.k);
+            } else {
+                this.ctx.rect(midX - (txtWidth / 2) - pillPadX, midY - (fontSize / 2) - pillPadY, txtWidth + (pillPadX * 2), fontSize + (pillPadY * 2));
+            }
+            this.ctx.fill();
+
+            this.ctx.shadowBlur = 0;
+            this.ctx.fillStyle = '#fbbf24';
+            this.ctx.fillText(stepLabel, midX, midY);
+
+            this.ctx.restore();
+        }
+
+        // 2. Draw Target Projected Trajectory: Dashed directed arrows connecting Target Seed to Pseudo-Nodes
+        const targetChain = [targetSeedNode, ...(pseudoNodes || projectedSteps.map(p => p.pseudoNode))];
+        for (let i = 0; i < targetChain.length - 1; i++) {
+            const sNode = targetChain[i];
+            const tNode = targetChain[i + 1];
+            if (!sNode || !tNode || sNode.x === undefined || tNode.x === undefined) continue;
+
+            const dx = tNode.x - sNode.x;
+            const dy = tNode.y - sNode.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 1) continue;
+
+            const sR = (sNode.canvasR || 15) / this.transform.k;
+            const tR = (tNode.canvasR || 15) / this.transform.k;
+
+            const startX = sNode.x + (dx / dist) * sR;
+            const startY = sNode.y + (dy / dist) * sR;
+            const endX = tNode.x - (dx / dist) * (tR + (4 / this.transform.k));
+            const endY = tNode.y - (dy / dist) * (tR + (4 / this.transform.k));
+
+            this.ctx.save();
+            this.ctx.setLineDash([8 / this.transform.k, 5 / this.transform.k]);
+            this.ctx.strokeStyle = '#38bdf8';
+            this.ctx.lineWidth = 3.5 / this.transform.k;
+            this.ctx.shadowBlur = 16 / this.transform.k;
+            this.ctx.shadowColor = 'rgba(56, 189, 248, 0.75)';
+
+            this.ctx.beginPath();
+            this.ctx.moveTo(startX, startY);
+            this.ctx.lineTo(endX, endY);
+            this.ctx.stroke();
+
+            // Arrowhead
+            this.ctx.setLineDash([]);
+            const headLen = 14 / this.transform.k;
+            const angle = Math.atan2(endY - startY, endX - startX);
+            const p1X = endX - headLen * Math.cos(angle - Math.PI / 6);
+            const p1Y = endY - headLen * Math.sin(angle - Math.PI / 6);
+            const p2X = endX - headLen * Math.cos(angle + Math.PI / 6);
+            const p2Y = endY - headLen * Math.sin(angle + Math.PI / 6);
+
+            this.ctx.fillStyle = '#38bdf8';
+            this.ctx.beginPath();
+            this.ctx.moveTo(endX, endY);
+            this.ctx.lineTo(p1X, p1Y);
+            this.ctx.lineTo(p2X, p2Y);
+            this.ctx.closePath();
+            this.ctx.fill();
+
+            // Midpoint pill badge
+            const midX = (startX + endX) / 2;
+            const midY = (startY + endY) / 2;
+            const stepLabel = `Projected: Step ${i + 1} ➔ ${i + 2} (Dashed)`;
+            const textScale = this.mapTextScale || 1.0;
+            const fontSize = Math.max(8.5, 9.5 * textScale) / this.transform.k;
+
+            this.ctx.font = `bold ${fontSize}px ${this.colors.font}`;
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+
+            const txtWidth = this.ctx.measureText(stepLabel).width;
+            const pillPadX = 6 / this.transform.k;
+            const pillPadY = 3 / this.transform.k;
+
+            this.ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+            this.ctx.shadowBlur = 4 / this.transform.k;
+            this.ctx.shadowColor = '#000000';
+            this.ctx.beginPath();
+            if (this.ctx.roundRect) {
+                this.ctx.roundRect(midX - (txtWidth / 2) - pillPadX, midY - (fontSize / 2) - pillPadY, txtWidth + (pillPadX * 2), fontSize + (pillPadY * 2), 4 / this.transform.k);
+            } else {
+                this.ctx.rect(midX - (txtWidth / 2) - pillPadX, midY - (fontSize / 2) - pillPadY, txtWidth + (pillPadX * 2), fontSize + (pillPadY * 2));
+            }
+            this.ctx.fill();
+
+            this.ctx.shadowBlur = 0;
+            this.ctx.fillStyle = '#7dd3fc';
+            this.ctx.fillText(stepLabel, midX, midY);
+
+            this.ctx.restore();
+        }
+
+        // 3. Draw vertical projection guide lines connecting corresponding source and target steps
+        for (let i = 0; i < sourceNodes.length; i++) {
+            const sNode = sourceNodes[i].node;
+            const pStep = (i > 0 && projectedSteps) ? projectedSteps[i - 1] : null;
+            const tNode = (i === 0) ? targetSeedNode : (pStep ? pStep.pseudoNode : null);
+            if (!sNode || !tNode || sNode.x === undefined || tNode.x === undefined) continue;
+
+            const sR = (sNode.canvasR || 15) / this.transform.k;
+            const tR = (tNode.canvasR || 15) / this.transform.k;
+            const startY = sNode.y + sR + (3 / this.transform.k);
+            const endY = tNode.y - tR - (3 / this.transform.k);
+            if (endY <= startY) continue;
+
+            const midX = (sNode.x + tNode.x) / 2;
+            const midY = (startY + endY) / 2;
+
+            this.ctx.save();
+            this.ctx.setLineDash([4 / this.transform.k, 4 / this.transform.k]);
+            this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+            this.ctx.lineWidth = 1.5 / this.transform.k;
+
+            this.ctx.beginPath();
+            this.ctx.moveTo(sNode.x, startY);
+            this.ctx.lineTo(tNode.x, endY);
+            this.ctx.stroke();
+
+            // Small projection icon badge
+            const textScale = this.mapTextScale || 1.0;
+            const fontSize = Math.max(8, 8.5 * textScale) / this.transform.k;
+            this.ctx.font = `bold ${fontSize}px ${this.colors.font}`;
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+
+            const badgeText = (i === 0) ? 'Anchor' : ': Projection';
+            const txtWidth = this.ctx.measureText(badgeText).width;
+            const padX = 4 / this.transform.k;
+            const padY = 2 / this.transform.k;
+
+            this.ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+            this.ctx.beginPath();
+            if (this.ctx.roundRect) {
+                this.ctx.roundRect(midX - (txtWidth / 2) - padX, midY - (fontSize / 2) - padY, txtWidth + (padX * 2), fontSize + (padY * 2), 3 / this.transform.k);
+            } else {
+                this.ctx.rect(midX - (txtWidth / 2) - padX, midY - (fontSize / 2) - padY, txtWidth + (padX * 2), fontSize + (padY * 2));
+            }
+            this.ctx.fill();
+
+            this.ctx.setLineDash([]);
+            this.ctx.fillStyle = 'rgba(148, 163, 184, 0.9)';
+            this.ctx.fillText(badgeText, midX, midY);
+
+            this.ctx.restore();
+        }
     }
+
     async executeAnalogyProjectionQuery(queryStr, ast) {
         if (!ast.source || ast.source.type !== 'MotifSequence' || !ast.source.stages || ast.source.stages.length < 2) {
             throw new Error('Analogy projection requires a source sequence of at least two concepts separated by > (e.g. Moses > desert > freedom : Jesus).');
@@ -11716,129 +12069,245 @@ class BibleWordMap extends HTMLElement {
             }
             current100d = next100d;
 
-            // Nearest neighbor retrieval (top 5 real words based on cosine similarity)
-            const top5 = this.getNearestNeighbors(next100d, 5, usedWords);
-            const neighbors = top5.map((nn, rank) => ({
-                rank: rank + 1,
-                node: nn.node,
-                word: nn.node.w,
-                id: nn.node.id,
-                pos: nn.node.pos,
-                sim: nn.sim,
-                pct: Math.max(0, Math.min(100, Math.round(nn.sim * 100)))
-            }));
-            const topNeighbor = neighbors[0] || null;
-
             projectedSteps.push({
                 stepNum,
                 sourceWord: sourceStageName,
                 sourcePos: sourceStagePos,
                 targetVector: next100d,
-                neighbors,
-                topNeighbor,
+                neighbors: [],
+                topNeighbor: null,
                 snappedWord: null
             });
         }
 
-        // 4. Physics Cluster Layout for Resultant Projection
-        // Centers a Pseudo-Node at (0, 0) and clusters surrounding projection words using D3 force simulation
-        const cleanQuery = queryStr.trim();
-        const pseudoNode = {
-            id: `pseudo__analogy__${cleanQuery}`,
-            w: `(${cleanQuery})`,
-            label: `[${cleanQuery}]`,
-            query: cleanQuery,
-            isPseudoNode: true,
-            isAnalogyPseudoNode: true,
-            isKw: true,
-            x: 0,
-            y: 0,
-            fx: 0,
-            fy: 0,
-            v: current100d,
-            pos: 'MATH',
-            t: 'Both',
-            f: 1
-        };
-
-        const limit = this.neighborsPerKeyword || 50;
-        const clusterNeighbors = this.getNearestNeighbors(current100d, limit, usedWords);
-
-        const neighborNodes = clusterNeighbors.slice(0, limit).map(nn => ({
-            id: nn.node.id,
-            w: nn.node.w,
-            pos: nn.node.pos,
-            t: nn.node.t,
-            f: nn.node.f,
-            sim: nn.sim,
-            sourceKw: pseudoNode.id,
-            isKw: false,
-            isAnalogyWord: true,
-            v: nn.node.v,
-            original: nn.node.original
-        }));
-
-        this.allSearchNodes = [pseudoNode, ...neighborNodes];
-
-        let minSim = d3.min(neighborNodes, n => n.sim) || 0;
-        let maxSim = d3.max(neighborNodes, n => n.sim) || 1;
-        neighborNodes.forEach(n => {
-            n.normSim = (n.sim - minSim) / (maxSim - minSim || 1);
-        });
-        pseudoNode.normSim = 1;
-
-        const clusterLinks = neighborNodes.map(n => ({
-            source: n.id,
-            target: pseudoNode.id,
-            type: 'direct',
-            sim: n.sim
-        }));
-
-        this.allSearchLinks = clusterLinks;
-        this.nodes = [pseudoNode];
-        this.links = [];
-        this.pseudoNode = pseudoNode;
+        // 4. Dual-Lane Parallel Constellation Layout with Clustered Real Words
+        const N = sourceStageResults.length;
+        const L = 260; // Comfortable distance between steps
+        const D = 220; // Vertical distance between lanes
 
         const sourceNodes = sourceStageResults.map((sr, idx) => {
             const wNode = sr.wordNode || {};
             const wordTitle = sr.isPseudoNode
                 ? (sr.expression || sr.usedWords.join(' + '))
                 : (wNode.w || sr.usedWords[0] || `Stage ${idx + 1}`);
+            const x = (idx - (N - 1) / 2) * L;
+            const y = -D / 2;
+            const mapNode = {
+                id: `analogy_src_${idx}`,
+                w: wordTitle,
+                label: wordTitle,
+                x: x,
+                y: y,
+                fx: x,
+                fy: y,
+                originalX: x,
+                originalY: y,
+                canvasR: 15 / this.transform.k,
+                isAnalogySource: true,
+                analogyStep: idx + 1,
+                isKw: true,
+                pos: wNode.pos || 'NOUN',
+                f: wNode.f || 1,
+                originalNode: wNode,
+                verse_indices: wNode.verse_indices
+            };
             return {
                 index: idx,
                 title: wordTitle,
                 res: sr,
                 vector: sr.vector,
-                node: wNode
+                x: x,
+                y: y,
+                node: mapNode
             };
         });
+
+        const targetSeedNode = {
+            id: 'analogy_target_seed',
+            w: targetSeedTitle,
+            label: targetSeedTitle,
+            x: -(N - 1) / 2 * L,
+            y: D / 2,
+            fx: -(N - 1) / 2 * L,
+            fy: D / 2,
+            originalX: -(N - 1) / 2 * L,
+            originalY: D / 2,
+            canvasR: 15 / this.transform.k,
+            isAnalogyTargetSeed: true,
+            analogyStep: 1,
+            isKw: true,
+            pos: targetSeedWordNode.pos || 'PROPN',
+            f: targetSeedWordNode.f || 1,
+            originalNode: targetSeedWordNode,
+            verse_indices: targetSeedWordNode.verse_indices
+        };
+
+        const allProjectedWords = [];
+        const clusterLinks = [];
+        const candPerStep = Math.min(16, Math.max(8, Math.floor((this.neighborsPerKeyword || 50) / offsets100d.length)));
+
+        for (let i = 0; i < projectedSteps.length; i++) {
+            const step = projectedSteps[i];
+            const k = i + 1;
+            const x = (k - (N - 1) / 2) * L;
+            const y = D / 2;
+
+            // Retrieve nearest real vocabulary words with POS syntactic bonus
+            const nnList = this.getNearestNeighbors(step.targetVector, candPerStep, usedWords, step.sourcePos);
+
+            const top5 = nnList.slice(0, 5).map((nn, rank) => ({
+                rank: rank + 1,
+                node: nn.node,
+                word: nn.node.w,
+                id: nn.node.id,
+                pos: nn.node.pos,
+                sim: nn.sim,
+                effectiveSim: nn.effectiveSim !== undefined ? nn.effectiveSim : nn.sim,
+                posBonus: nn.posBonus || 0,
+                hasPosMatch: Boolean(nn.posBonus && nn.posBonus > 0),
+                pct: Math.max(0, Math.min(100, Math.round((nn.effectiveSim !== undefined ? nn.effectiveSim : nn.sim) * 100)))
+            }));
+
+            step.neighbors = top5;
+            step.topNeighbor = top5[0] || null;
+
+            const pseudoNode = {
+                id: `analogy_pseudo_step_${step.stepNum}`,
+                w: step.topNeighbor ? step.topNeighbor.word : `Proj: ${step.sourceWord}`,
+                label: step.topNeighbor ? `[${this.formatWord(step.topNeighbor.word, step.topNeighbor.pos)}]` : `[Proj: ${step.sourceWord}]`,
+                query: queryStr,
+                isPseudoNode: true,
+                isAnalogyPseudoNode: true,
+                analogyStep: step.stepNum,
+                x: x,
+                y: y,
+                fx: x,
+                fy: y,
+                originalX: x,
+                originalY: y,
+                canvasR: 15 / this.transform.k,
+                v: step.targetVector,
+                sourceStage: step.sourceWord,
+                sourceStagePos: step.sourcePos,
+                topNeighbor: step.topNeighbor,
+                snappedWord: null,
+                pos: step.topNeighbor ? step.topNeighbor.pos : 'MATH',
+                f: 1
+            };
+            step.pseudoNode = pseudoNode;
+            pseudoNodes.push(pseudoNode);
+
+            // Populate cluster of surrounding real words around this pseudo-node
+            nnList.forEach((nn, candIdx) => {
+                usedWords.add(nn.node.w.toLowerCase());
+                const angle = (candIdx / nnList.length) * Math.PI * 2;
+                const distR = 50 + (1 - (nn.sim || 0.5)) * 60;
+                const wordNode = {
+                    id: nn.node.id,
+                    w: nn.node.w,
+                    pos: nn.node.pos,
+                    t: nn.node.t || 'NT',
+                    f: nn.node.f || 1,
+                    sim: nn.sim,
+                    effectiveSim: nn.effectiveSim !== undefined ? nn.effectiveSim : nn.sim,
+                    posBonus: nn.posBonus || 0,
+                    sourceKw: pseudoNode.id,
+                    isKw: false,
+                    isAnalogyWord: true,
+                    analogyStep: step.stepNum,
+                    x: x + Math.cos(angle) * distR,
+                    y: y + Math.sin(angle) * distR,
+                    v: nn.node.v,
+                    original: nn.node.original,
+                    originalNode: nn.node,
+                    verse_indices: nn.node.verse_indices
+                };
+                allProjectedWords.push(wordNode);
+                clusterLinks.push({
+                    source: wordNode.id,
+                    target: pseudoNode.id,
+                    type: 'direct',
+                    sim: nn.sim
+                });
+            });
+        }
+
+        // Normalize similarity across surrounding words for visual contrast
+        let minSim = d3.min(allProjectedWords, n => n.sim) || 0;
+        let maxSim = d3.max(allProjectedWords, n => n.sim) || 1;
+        allProjectedWords.forEach(n => {
+            n.normSim = (n.sim - minSim) / (maxSim - minSim || 1);
+        });
+
+        this.nodes = [
+            ...sourceNodes.map(s => s.node),
+            targetSeedNode,
+            ...pseudoNodes,
+            ...allProjectedWords
+        ];
+        this.links = clusterLinks;
+        this.allSearchNodes = [...this.nodes];
+        this.allSearchLinks = [...this.links];
+        this.pseudoNode = pseudoNodes[pseudoNodes.length - 1];
 
         this.activeAnalogyProjection = {
             queryStr,
             ast,
-            pseudoNode,
-            resultVector: current100d,
             sourceNodes,
+            targetSeedNode,
             targetSeedTitle,
             targetSeedWordNode,
-            projectedSteps
+            projectedSteps,
+            pseudoNodes,
+            pseudoNode: this.pseudoNode
         };
         this.lastAnalogyAst = ast;
         this.currentSymbibleQuery = queryStr;
         this.isSearchMode = true;
         this.userInteracted = false;
         this._nodesBounds = null;
-        this.searchedWords = [pseudoNode.id];
+        this.searchedWords = [targetSeedNode.id, ...sourceNodes.map(s => s.node.id)];
         this.drawerWords = [];
         this.updateClearBtnVisibility();
         this.renderActiveWords();
         this.updateUrl({ q: queryStr });
 
-        // Project the neighbor bubbles around the pseudo-node using D3 force simulation
-        this.runSimulation();
+        // Run D3 force simulation: Trajectory nodes remain pinned by fx/fy, surrounding words relax organically
+        this.runAnalogySimulation();
 
-        // 5. Open Study Panel
+        // Open Study Panel
         this.showAnalogyProjectionPanel(this.activeAnalogyProjection);
+    }
+
+    runAnalogySimulation() {
+        if (this.simulation) this.simulation.stop();
+        if (this.spawnInterval) {
+            clearInterval(this.spawnInterval);
+            this.spawnInterval = null;
+        }
+
+        const LCG = d3.randomLcg(42);
+
+        this.simulation = d3.forceSimulation(this.nodes)
+            .randomSource(LCG)
+            .velocityDecay(0.40)
+            .force("link", d3.forceLink(this.links).id(d => d.id).distance(d => Math.max(35, (1 - (d.sim || 0.5)) * 140)).strength(0.85))
+            .force("charge", d3.forceManyBody().strength(-140))
+            .force("collide", d3.forceCollide().radius(d => d.isKw ? 28 : 15))
+            .on("tick", () => {
+                this.draw();
+            })
+            .on("end", () => {
+                this.draw();
+            });
+
+        // Let simulation settle slightly before framing
+        for (let i = 0; i < 25; i++) {
+            this.simulation.tick();
+        }
+
+        this.draw();
+        this.frameNodes(this.nodes, 0.18, 600);
     }
 
     showAnalogyProjectionPanel(analogyData, activeStepNum = null) {
@@ -11853,7 +12322,7 @@ class BibleWordMap extends HTMLElement {
             this.wordReopenBtn.style.display = 'none';
         }
 
-        const { queryStr, sourceNodes, targetSeedTitle, targetSeedWordNode, projectedSteps, pseudoNode } = analogyData;
+        const { queryStr, sourceNodes, targetSeedTitle, targetSeedWordNode, projectedSteps, pseudoNode, pseudoNodes } = analogyData;
         const displayQuery = queryStr.replace(/>/g, ' ➔ ').replace(/:/g, ' : ');
 
         let stepsHtml = `
@@ -11891,7 +12360,10 @@ class BibleWordMap extends HTMLElement {
                                 <div class="bwm-analogy-candidate-bar" style="width: ${item.pct}%;"></div>
                             </div>
                         </div>
-                        <div class="bwm-analogy-candidate-sim">${(item.sim * 100).toFixed(1)}%</div>
+                        <div class="bwm-analogy-candidate-sim">
+                            ${item.hasPosMatch ? `<span style="font-size:0.75em; color:var(--bwm-color-accent, #38bdf8); margin-right:4px;" title="Syntactic POS match bonus">+POS</span>` : ''}
+                            ${((item.effectiveSim !== undefined ? item.effectiveSim : item.sim) * 100).toFixed(1)}%
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -11933,7 +12405,7 @@ class BibleWordMap extends HTMLElement {
             </div>
             <div class="bwm-analogy-results-container">
                 <div class="bwm-analogy-summary-card">
-                    Extracts the geometric trajectory of the source motif and sequentially projects it onto the target anchor. Surrounding cluster shows nearest biblical concepts from resultant projection. Click any word to inspect its study details.
+                    Extracts the geometric trajectory of the source motif and sequentially projects it onto the target anchor. Surrounding clusters show nearest biblical concepts along the trajectory. Click any word to inspect its study details.
                 </div>
                 ${stepsHtml}
             </div>
@@ -11959,14 +12431,15 @@ class BibleWordMap extends HTMLElement {
             });
         }
 
-        // Step cards click: center on pseudo-node
+        // Step cards click: center on corresponding pseudo-node
         projectedSteps.forEach(step => {
             const stepCard = this.wordCard.querySelector(`.bwm-analogy-step-card[data-step="${step.stepNum}"]`);
             if (stepCard) {
                 stepCard.addEventListener('click', (e) => {
                     if (e.target.closest('.bwm-analogy-candidate-item') || e.target.closest('button')) return;
-                    if (pseudoNode) {
-                        this.centerOnNode(pseudoNode, 500);
+                    const pNode = step.pseudoNode || (pseudoNodes && pseudoNodes[step.stepNum - 2]) || pseudoNode;
+                    if (pNode) {
+                        this.centerOnNode(pNode, 500);
                     }
                 });
             }
@@ -12268,6 +12741,9 @@ class BibleWordMap extends HTMLElement {
                 }
                 if (this.motifWeightGravity !== undefined && Math.abs(this.motifWeightGravity - 0.35) > 0.001) {
                     url.searchParams.set('wg', Number(this.motifWeightGravity).toFixed(2).replace(/\.?0+$/, ''));
+                }
+                if (this.motifWeightPos !== undefined && Math.abs(this.motifWeightPos - 0.10) > 0.001) {
+                    url.searchParams.set('wp', Number(this.motifWeightPos).toFixed(2).replace(/\.?0+$/, ''));
                 }
                 let motifIdx = ('mi' in paramsObj) ? paramsObj.mi : this.activeMotifIdx;
                 if (motifIdx !== undefined && motifIdx !== null && motifIdx > 0) {
@@ -17679,7 +18155,7 @@ class BibleWordMap extends HTMLElement {
             let isSearchMotifNode = Boolean(n.isSearchMotif);
             let isMotifMatched = Boolean(n.isHighlighted || (this.activeMotifMatch && this.activeMotifMatch.alignedNodes && this.activeMotifMatch.alignedNodes.some(mn => mn.id === n.id)));
             let isShadowMotifNode = Boolean(n.isMotifNode && !isMotifMatched);
-            let matchesT = this.matchesTestament(n.t || n.testament) || isHighlighted || n.isFocusedBook || n.isFocusedVerse || n.isFocusedChapter || n.isPseudoNode || isMotifMatched || isSearchMotifNode || n.isAnalogySource || n.isAnalogyTargetSeed || n.isAnalogyPseudoNode || n.isAnalogySnapped;
+            let matchesT = this.matchesTestament(n.t || n.testament) || isHighlighted || n.isFocusedBook || n.isFocusedVerse || n.isFocusedChapter || n.isPseudoNode || isMotifMatched || isSearchMotifNode || n.isAnalogySource || n.isAnalogyTargetSeed || n.isAnalogyPseudoNode || n.isAnalogySnapped || n.isAnalogyWord;
             
             this.ctx.beginPath();
             
@@ -18328,7 +18804,10 @@ class BibleWordMap extends HTMLElement {
                     
                     let subText = '';
                     let subTextColor = this.colors.nodeDef || '#888888';
-                    if (isUnifiedContext) {
+                    if (n.isAnalogyWord) {
+                        subText = `${Math.round((n.effectiveSim !== undefined ? n.effectiveSim : (n.sim || 0)) * 100)}%${n.pos ? ` · ${n.pos.toLowerCase()}` : ''}`;
+                        subTextColor = '#38bdf8';
+                    } else if (isUnifiedContext) {
                         subText = '(Unified Context)';
                         subTextColor = '#a855f7';
                     } else if (origLemma && hasDuplicate && n.pos) {
@@ -19760,6 +20239,14 @@ class BibleWordMap extends HTMLElement {
                                 <span>Motif Results</span>
                             </button>
                         ` : ''}
+                        ${(this.activeAnalogyProjection) ? `
+                            <button type="button" class="bwm-motif-back-btn" id="bwm-word-back-to-analogy" title="Back to Projection">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                                <span>Projection</span>
+                            </button>
+                        ` : ''}
                         ${actionBtnHtml}
                         ${this.renderPinButton('study')}
                         <button type="button" class="bwm-window-close" id="bwm-word-close" title="Close inspector">&times;</button>
@@ -20492,6 +20979,17 @@ class BibleWordMap extends HTMLElement {
                 e.stopPropagation();
                 if (this.lastMotifQuery && this.motifResults) {
                     this.showMotifResultsPanel(this.lastMotifQuery, this.motifResults, this.activeMotifIdx || 0);
+                }
+            });
+        }
+
+        // Back to analogy projection button
+        const backToAnalogyBtn = this.wordCard.querySelector('#bwm-word-back-to-analogy');
+        if (backToAnalogyBtn) {
+            backToAnalogyBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (this.activeAnalogyProjection) {
+                    this.showAnalogyProjectionPanel(this.activeAnalogyProjection);
                 }
             });
         }
