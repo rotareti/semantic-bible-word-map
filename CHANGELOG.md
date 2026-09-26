@@ -1,5 +1,17 @@
 # Changelog
 
+## [13.2.0] - 2026-09-26
+### Added
+- **Click+Drag Resizable Study Panel for Desktop:**
+  - **Dynamic Horizontal Resizing:** Enabled smooth click+drag resizing along the left edge of the study panel on desktop screens (> 768px), making multi-column chapter reading and extensive cross-reference study significantly more spacious and comfortable.
+  - **Hover-Activated Visual Handle:** Displays an elegant, theme-adaptive resize handle on hover (with a 2px boundary line and centered tactile grip pill), keeping the reading experience uncluttered when not resizing.
+  - **Minimum Width Preservation:** Enforces a minimum width of 440px (the panel's default width) while dynamically calculating safe maximum limits based on pinned options panel and viewport width.
+  - **Keyboard Accessibility & Shortcuts:** Supported ARIA separator role semantics on the resize handle with `ArrowLeft` (expand), `ArrowRight` (shrink), `Home` (reset to 440px), and `End` (expand to max).
+  - **Double-Click Reset:** Double-clicking the resize handle instantly resets the study panel to its default 440px width.
+  - **Persistent Sizing:** Retains user-adjusted panel width across sessions via localStorage (`bwm-study-panel-width`).
+  - **Coordinated Canvas Viewport & Zoom Extents:** Updated camera centering and zoom extents padding (`--bwm-study-panel-width`) so the visual canvas and recenter button seamlessly adjust to the study panel's resized width.
+  - **Exclusive Scope:** Confined resizing strictly to the study panel cards without impacting the options drawer, legend, or modal dialogs.
+
 ## [13.1.0] - 2026-09-26
 ### Added
 - **Christocentric Map Architecture & Canonical Anchor:**

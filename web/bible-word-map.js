@@ -728,6 +728,8 @@ class BibleWordMap extends HTMLElement {
         this.searchRecoveryPopover = null;
         this.isOptionsPanelPinned = false;
         this.isStudyPanelPinned = false;
+        this.studyPanelWidth = 440;
+        this._isResizingStudyPanel = false;
         
         this.innerHTML = `
             <style>
@@ -759,6 +761,7 @@ class BibleWordMap extends HTMLElement {
                     --bwm-radial-label-bg: rgba(0, 0, 0, 0.85);
                     --bwm-radial-label-border: none;
                     --bwm-font: system-ui, -apple-system, sans-serif;
+                    --bwm-study-panel-width: 440px;
                 }
                 @media (prefers-color-scheme: dark) {
                     :root:not([data-theme="light"]) bible-word-map,
@@ -2369,7 +2372,8 @@ class BibleWordMap extends HTMLElement {
                     top: 48px;
                     bottom: 0;
                     right: 0;
-                    width: 440px;
+                    width: var(--bwm-study-panel-width, 440px);
+                    min-width: 440px;
                     max-width: calc(100% - 40px);
                     height: auto;
                     max-height: none;
@@ -2437,6 +2441,77 @@ class BibleWordMap extends HTMLElement {
                 /* 3. Mobile Bottom Sheet Handle */
                 .bwm-sheet-handle {
                     display: none;
+                }
+
+                /* Study Panel Desktop Resize Handle */
+                .bwm-study-resize-handle {
+                    display: none;
+                    position: absolute;
+                    top: 0;
+                    bottom: 0;
+                    left: 0;
+                    width: 12px;
+                    cursor: ew-resize;
+                    z-index: 10035;
+                    touch-action: none;
+                    user-select: none;
+                    -webkit-user-select: none;
+                    box-sizing: border-box;
+                    align-items: center;
+                    justify-content: center;
+                }
+                @media (min-width: 769px) {
+                    .bwm-study-resize-handle {
+                        display: flex;
+                    }
+                }
+                .bwm-study-resize-handle::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    bottom: 0;
+                    left: 0;
+                    width: 2px;
+                    background: transparent;
+                    transition: background-color 0.15s ease;
+                }
+                .bwm-study-resize-grip {
+                    width: 4px;
+                    height: 44px;
+                    border-radius: 2px;
+                    background: var(--bwm-border);
+                    opacity: 0;
+                    transform: scaleY(0.6);
+                    transition: opacity 0.15s ease, transform 0.15s ease, background-color 0.15s ease;
+                    pointer-events: none;
+                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+                }
+                .bwm-study-resize-handle:hover::before,
+                .bwm-study-resize-handle:focus-visible::before,
+                .bwm-study-resize-handle.is-resizing::before {
+                    background: var(--bwm-node-hover, #2563eb);
+                }
+                .bwm-study-resize-handle:hover .bwm-study-resize-grip,
+                .bwm-study-resize-handle:focus-visible .bwm-study-resize-grip,
+                .bwm-study-resize-handle.is-resizing .bwm-study-resize-grip {
+                    opacity: 1;
+                    transform: scaleY(1);
+                    background: var(--bwm-node-hover, #2563eb);
+                }
+                .bwm-study-resize-handle:focus-visible {
+                    outline: none;
+                }
+                bible-word-map.bwm-study-resizing {
+                    cursor: ew-resize !important;
+                    user-select: none !important;
+                    -webkit-user-select: none !important;
+                }
+                bible-word-map.bwm-study-resizing canvas {
+                    pointer-events: none !important;
+                }
+                bible-word-map.bwm-study-resizing .bwm-window-card {
+                    user-select: none !important;
+                    -webkit-user-select: none !important;
                 }
 
                 /* 4. Shared Header */
@@ -2935,7 +3010,7 @@ class BibleWordMap extends HTMLElement {
                 }
                 @media (min-width: 769px) {
                     .bwm-zoom-extents-btn.study-open {
-                        right: 460px;
+                        right: calc(var(--bwm-study-panel-width, 440px) + 20px);
                     }
                 }
                 .bwm-zoom-extents-btn.visible {
@@ -4858,10 +4933,10 @@ class BibleWordMap extends HTMLElement {
                     </button>
                 </div>
                 <div class="bwm-radial-menu" id="bwm-radial-menu"></div>
-                <div class="bwm-window-card bwm-word-card" id="bwm-word-card"></div>
-                <div class="bwm-window-card bwm-chapter-card" id="bwm-chapter-card"></div>
-                <div class="bwm-window-card bwm-book-card" id="bwm-book-card"></div>
-                <div class="bwm-window-card bwm-verse-card" id="bwm-verse-card"></div>
+                <div class="bwm-window-card bwm-word-card" id="bwm-word-card">${this.renderStudyResizeHandle()}</div>
+                <div class="bwm-window-card bwm-chapter-card" id="bwm-chapter-card">${this.renderStudyResizeHandle()}</div>
+                <div class="bwm-window-card bwm-book-card" id="bwm-book-card">${this.renderStudyResizeHandle()}</div>
+                <div class="bwm-window-card bwm-verse-card" id="bwm-verse-card">${this.renderStudyResizeHandle()}</div>
                 <div class="bwm-legend-overlay" id="bwm-legend-overlay">
                     <div class="bwm-legend-header">
                         <button type="button" class="bwm-legend-back-btn" id="bwm-legend-back-btn" aria-label="Back to Map View" title="Back to Map View">
@@ -5448,6 +5523,9 @@ class BibleWordMap extends HTMLElement {
             this.chapterCard.addEventListener('mousedown', (e) => e.stopPropagation());
             this.setupMobileSwipeToDismiss(this.chapterCard, () => this.hideChapterCard());
         }
+
+        this.initStudyPanelWidth();
+        this.setupStudyPanelResizeListeners();
 
         this.addEventListener('click', (e) => {
             const pinBtn = e.target.closest('.bwm-panel-pin-btn');
@@ -6253,6 +6331,7 @@ class BibleWordMap extends HTMLElement {
 
     resize() {
         this.updateTopBarHeight();
+        this.updateStudyPanelWidthOnResize();
         if (!this._userSelectedTextSize) {
             const isMobile = window.innerWidth <= 768;
             const targetSize = isMobile ? 'small' : 'medium';
@@ -11297,6 +11376,7 @@ class BibleWordMap extends HTMLElement {
 
         this.wordCard.innerHTML = `
             <div class="bwm-sheet-handle"></div>
+            ${this.renderStudyResizeHandle()}
             <div class="bwm-window-header">
                 <div class="bwm-window-header-top">
                     <div class="bwm-window-title-group">
@@ -11561,6 +11641,7 @@ class BibleWordMap extends HTMLElement {
 
         this.wordCard.innerHTML = `
             <div class="bwm-sheet-handle"></div>
+            ${this.renderStudyResizeHandle()}
             <div class="bwm-window-header">
                 <div class="bwm-window-header-top">
                     <div class="bwm-window-title-group">
@@ -12791,6 +12872,7 @@ class BibleWordMap extends HTMLElement {
 
         this.wordCard.innerHTML = `
             <div class="bwm-sheet-handle"></div>
+            ${this.renderStudyResizeHandle()}
             <div class="bwm-window-header">
                 <div class="bwm-window-header-top">
                     <div class="bwm-window-title-group">
@@ -12893,7 +12975,7 @@ class BibleWordMap extends HTMLElement {
 
         const isMobile = (window.innerWidth <= 768 || cw <= 768);
         const leftMargin = (this.isOptionsPanelPinned && !isMobile) ? 300 : 0;
-        const rightMargin = (!isMobile && (this.isStudyPanelPinned || this.isStudyPanelVisible())) ? 440 : 0;
+        const rightMargin = (!isMobile && (this.isStudyPanelPinned || this.isStudyPanelVisible())) ? this.getStudyPanelWidth() : 0;
         const effectiveCw = Math.max(cw - leftMargin - rightMargin, 200);
 
         // If padding is a decimal fraction between 0 and 0.5, treat as percentage of viewport
@@ -13934,7 +14016,7 @@ class BibleWordMap extends HTMLElement {
         const pad = isMobile ? 0.88 : 0.92;
         
         let leftMargin = (this.isOptionsPanelPinned && !isMobile) ? 300 : 0;
-        let rightMargin = (!isMobile && (this.isStudyPanelPinned || this.isStudyPanelVisible())) ? 440 : 0;
+        let rightMargin = (!isMobile && (this.isStudyPanelPinned || this.isStudyPanelVisible())) ? this.getStudyPanelWidth() : 0;
         let effectiveCw = Math.max(cw - leftMargin - rightMargin, 300);
         
         // Target scale to fit bounds with responsive padding
@@ -13993,7 +14075,7 @@ class BibleWordMap extends HTMLElement {
         const pad = (paddingFactor !== undefined) ? paddingFactor : defaultPadding;
         
         let leftMargin = (this.isOptionsPanelPinned && !isMobile) ? 300 : 0;
-        let rightMargin = (!isMobile && (this.isStudyPanelPinned || this.isStudyPanelVisible())) ? 440 : 0;
+        let rightMargin = (!isMobile && (this.isStudyPanelPinned || this.isStudyPanelVisible())) ? this.getStudyPanelWidth() : 0;
         let effectiveCw = Math.max(cw - leftMargin - rightMargin, 300);
         
         let targetScale = pad / Math.max(dx / effectiveCw, dy / ch);
@@ -15125,7 +15207,7 @@ class BibleWordMap extends HTMLElement {
         let cw = this.logicalWidth || 800;
         const isMobile = (window.innerWidth <= 768 || cw <= 768);
         let leftMargin = (this.isOptionsPanelPinned && !isMobile) ? 300 : 0;
-        let rightMargin = (!isMobile && (this.isStudyPanelPinned || this.isStudyPanelVisible())) ? 440 : 0;
+        let rightMargin = (!isMobile && (this.isStudyPanelPinned || this.isStudyPanelVisible())) ? this.getStudyPanelWidth() : 0;
         let effectiveCw = Math.max(cw - leftMargin - rightMargin, 300);
         return leftMargin + effectiveCw / 2;
     }
@@ -15145,6 +15227,10 @@ class BibleWordMap extends HTMLElement {
     onStudyPanelVisibilityChange(opened = true) {
         if (this.isStudyPanelVisible()) {
             this.updateZoomExtentsPosition();
+            const activeCard = this.getActiveStudyCard();
+            if (activeCard) {
+                this.ensureStudyResizeHandle(activeCard);
+            }
         }
         if (this._studyVisibilityTimeout) {
             clearTimeout(this._studyVisibilityTimeout);
@@ -15160,6 +15246,193 @@ class BibleWordMap extends HTMLElement {
                 }
             }
         }, 20);
+    }
+
+    renderStudyResizeHandle() {
+        const w = (this.studyPanelWidth) ? this.studyPanelWidth : 440;
+        return `<div class="bwm-study-resize-handle" role="separator" aria-orientation="vertical" aria-label="Resize study panel" aria-valuenow="${w}" aria-valuemin="440" tabindex="0" title="Drag to resize study panel (double-click to reset)"><div class="bwm-study-resize-grip"></div></div>`;
+    }
+
+    ensureStudyResizeHandle(card) {
+        if (!card || card.querySelector('.bwm-study-resize-handle')) return;
+        const handle = document.createElement('div');
+        handle.className = 'bwm-study-resize-handle';
+        handle.setAttribute('role', 'separator');
+        handle.setAttribute('aria-orientation', 'vertical');
+        handle.setAttribute('aria-label', 'Resize study panel');
+        handle.setAttribute('aria-valuenow', this.getStudyPanelWidth().toString());
+        handle.setAttribute('aria-valuemin', '440');
+        handle.setAttribute('tabindex', '0');
+        handle.setAttribute('title', 'Drag to resize study panel (double-click to reset)');
+        handle.innerHTML = '<div class="bwm-study-resize-grip"></div>';
+        card.insertBefore(handle, card.firstChild);
+    }
+
+    getStudyPanelWidth() {
+        return this.studyPanelWidth || 440;
+    }
+
+    getStudyPanelMaxWidth() {
+        const leftReserved = (this.isOptionsPanelPinned && window.innerWidth >= 1024) ? 340 : 80;
+        const maxByMargin = window.innerWidth - leftReserved;
+        const maxByPct = Math.floor(window.innerWidth * 0.9);
+        return Math.max(440, Math.min(maxByMargin, maxByPct));
+    }
+
+    setStudyPanelWidth(width, saveToStorage = true) {
+        const minW = 440;
+        const maxW = this.getStudyPanelMaxWidth();
+        const clamped = Math.max(minW, Math.min(Math.round(width), maxW));
+        this.studyPanelWidth = clamped;
+        this.style.setProperty('--bwm-study-panel-width', `${clamped}px`);
+
+        const handles = this.querySelectorAll('.bwm-study-resize-handle');
+        handles.forEach(h => {
+            h.setAttribute('aria-valuenow', clamped.toString());
+            h.setAttribute('aria-valuemax', maxW.toString());
+        });
+
+        if (saveToStorage && typeof localStorage !== 'undefined') {
+            try {
+                localStorage.setItem('bwm-study-panel-width', clamped.toString());
+            } catch (e) {}
+        }
+        this.updateZoomExtentsPosition();
+        return clamped;
+    }
+
+    initStudyPanelWidth() {
+        let saved = null;
+        if (typeof localStorage !== 'undefined') {
+            try {
+                const raw = localStorage.getItem('bwm-study-panel-width');
+                if (raw) {
+                    const parsed = parseInt(raw, 10);
+                    if (!isNaN(parsed) && parsed >= 440) {
+                        saved = parsed;
+                    }
+                }
+            } catch (e) {}
+        }
+        const initialWidth = saved || 440;
+        this.setStudyPanelWidth(initialWidth, false);
+    }
+
+    resetStudyPanelWidth() {
+        this.setStudyPanelWidth(440, true);
+        if (this.isStudyPanelPinned) {
+            this.zoomExtents(300);
+        }
+    }
+
+    updateStudyPanelWidthOnResize() {
+        if (window.innerWidth <= 768) return;
+        const maxW = this.getStudyPanelMaxWidth();
+        if (this.studyPanelWidth > maxW) {
+            this.setStudyPanelWidth(maxW, false);
+        }
+    }
+
+    setupStudyPanelResizeListeners() {
+        this.addEventListener('pointerdown', (e) => {
+            const handle = e.target.closest('.bwm-study-resize-handle');
+            if (!handle) return;
+            if (window.innerWidth <= 768) return;
+            if (e.button !== 0) return;
+            e.stopPropagation();
+            e.preventDefault();
+            this.startStudyPanelResize(e, handle);
+        }, true);
+
+        this.addEventListener('dblclick', (e) => {
+            const handle = e.target.closest('.bwm-study-resize-handle');
+            if (!handle) return;
+            if (window.innerWidth <= 768) return;
+            e.stopPropagation();
+            e.preventDefault();
+            this.resetStudyPanelWidth();
+        }, true);
+
+        this.addEventListener('keydown', (e) => {
+            const handle = e.target.closest('.bwm-study-resize-handle');
+            if (!handle) return;
+            if (window.innerWidth <= 768) return;
+            const step = e.shiftKey ? 40 : 20;
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                this.setStudyPanelWidth(this.getStudyPanelWidth() + step, true);
+                if (this.isStudyPanelPinned) this.zoomExtents(200);
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                this.setStudyPanelWidth(this.getStudyPanelWidth() - step, true);
+                if (this.isStudyPanelPinned) this.zoomExtents(200);
+            } else if (e.key === 'Home') {
+                e.preventDefault();
+                this.resetStudyPanelWidth();
+            } else if (e.key === 'End') {
+                e.preventDefault();
+                this.setStudyPanelWidth(this.getStudyPanelMaxWidth(), true);
+                if (this.isStudyPanelPinned) this.zoomExtents(200);
+            }
+        });
+    }
+
+    startStudyPanelResize(e, handle) {
+        this._isResizingStudyPanel = true;
+        const startX = e.clientX;
+        const startWidth = this.getStudyPanelWidth();
+        const activeCard = handle.closest('.bwm-window-card') || this.getActiveStudyCard();
+
+        handle.classList.add('is-resizing');
+        if (activeCard) activeCard.classList.add('is-resizing');
+        this.classList.add('bwm-study-resizing');
+        document.body.style.cursor = 'ew-resize';
+        document.body.style.userSelect = 'none';
+
+        try {
+            if (handle.setPointerCapture && e.pointerId !== undefined) {
+                handle.setPointerCapture(e.pointerId);
+            }
+        } catch (err) {}
+
+        const onPointerMove = (moveEvt) => {
+            if (!this._isResizingStudyPanel) return;
+            const deltaX = startX - moveEvt.clientX;
+            const newWidth = startWidth + deltaX;
+            this.setStudyPanelWidth(newWidth, false);
+        };
+
+        const onPointerUp = (upEvt) => {
+            if (!this._isResizingStudyPanel) return;
+            this._isResizingStudyPanel = false;
+
+            handle.classList.remove('is-resizing');
+            if (activeCard) activeCard.classList.remove('is-resizing');
+            this.classList.remove('bwm-study-resizing');
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+
+            try {
+                if (handle.releasePointerCapture && upEvt && upEvt.pointerId !== undefined) {
+                    handle.releasePointerCapture(upEvt.pointerId);
+                }
+            } catch (err) {}
+
+            window.removeEventListener('pointermove', onPointerMove, true);
+            window.removeEventListener('pointerup', onPointerUp, true);
+            window.removeEventListener('pointercancel', onPointerUp, true);
+
+            const finalWidth = this.getStudyPanelWidth();
+            this.setStudyPanelWidth(finalWidth, true);
+
+            if (this.isStudyPanelPinned) {
+                this.zoomExtents(300);
+            }
+        };
+
+        window.addEventListener('pointermove', onPointerMove, true);
+        window.addEventListener('pointerup', onPointerUp, true);
+        window.addEventListener('pointercancel', onPointerUp, true);
     }
 
     buildWordPattern(kw) {
@@ -15405,6 +15678,7 @@ class BibleWordMap extends HTMLElement {
 
         this.bookCard.innerHTML = `
             <div class="bwm-sheet-handle"></div>
+            ${this.renderStudyResizeHandle()}
             ${tabsHtml}
             <div class="bwm-window-header">
                 <div class="bwm-window-header-top">
@@ -16811,6 +17085,7 @@ class BibleWordMap extends HTMLElement {
 
         this.chapterCard.innerHTML = `
             <div class="bwm-sheet-handle"></div>
+            ${this.renderStudyResizeHandle()}
             ${tabsHtml}
             <div class="bwm-window-header">
                 <div class="bwm-window-header-top">
@@ -17687,6 +17962,7 @@ class BibleWordMap extends HTMLElement {
 
         this.verseCard.innerHTML = `
             <div class="bwm-sheet-handle"></div>
+            ${this.renderStudyResizeHandle()}
             ${tabsHtml}
             <div class="bwm-window-header">
                 <div class="bwm-window-header-top">
@@ -20648,6 +20924,7 @@ class BibleWordMap extends HTMLElement {
 
         let headerHtml = `
             <div class="bwm-sheet-handle"></div>
+            ${this.renderStudyResizeHandle()}
             <div class="bwm-window-header">
                 <div class="bwm-window-header-top">
                     <div class="bwm-window-title-group">
