@@ -1,5 +1,17 @@
 # Changelog
 
+## [13.1.0] - 2026-09-26
+### Added
+- **Christocentric Map Architecture & Canonical Anchor:**
+  - **Theological Vector Disambiguation:** Engineered a cross-canon composite anchor uniting core Messianic lemma tokens (`jesus`, `christ`, `messiah`, `savior`, `lord`) with landmark kerygmatic confession passages (John 1:1, 1:14, Matthew 16:16, Philippians 2:6-11, Colossians 1:15-20, Hebrews 1:1-3, Isaiah 53:5) into a unified 100D reference pole ($\hat{\mathbf{v}}_{\text{Christ}}$).
+  - **Origin Centering at (0, 0):** Translated 2D projection space across BSB, LXX, and VUL so that $(x_{\text{Christ}}, y_{\text{Christ}}) = (0.0, 0.0)$, situating the Gospel narratives and Christological core at the geometric epicenter of the map.
+  - **Concentric Radial Metrics:** Annotated every word, verse, chapter, and book with radial distance $r = \sqrt{x^2 + y^2}$ and 100D cosine alignment to Christ ($\text{sim}_{\text{Christ}}$).
+  - **Christ Anchor Node:** Injected a canonical anchor pseudo-node at $(0, 0)$ mapped to primary confession verses in the verse index.
+  - **Gospel Centering in Book Map:** Shifted book map coordinates across all canons to center on the Gospel cluster (Matthew, Mark, Luke, John) at the origin.
+  - **Study Card Christ Alignment Badges:** Added Christological alignment badges to Word, Verse, Chapter, and Book inspector headers.
+  - **Modular Corpus Management Framework:** Implemented `pipeline/corpus_manager.py` to standardize corpus ingestion, training, map projection, and centroid generation for future historical corpora (such as the Early Church Fathers).
+  - **Architectural Specification:** Created `docs/15-christocentric-map-architecture.md` detailing linear algebra in $\mathbb{R}^{100}$ vs $\mathbb{R}^2$, hybrid anchor synthesis, and topological zones.
+
 ## [13.0.1] - 2026-09-26
 ### Added
 - **Analogy Projections (`:` Syntax & Dual-Lane Trajectories):** Integrated analogy projection into the SymBible Query Language (`[Source Motif] : [Target Seed]`, e.g. `Moses > Law : Joseph`):
