@@ -5288,7 +5288,7 @@ class BibleWordMap extends HTMLElement {
             this.foundation = 'bsb';
         }
 
-        const vParam = '?v=13.0.0';
+        const vParam = '?v=13.0.1';
         if (this.foundation === 'lxx') {
             this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -6186,7 +6186,7 @@ class BibleWordMap extends HTMLElement {
         this._wordsLoadPromise = (async () => {
             try {
                 const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-                const vParam = '?v=13.0.0';
+                const vParam = '?v=13.0.1';
                 let src2d = this.src2d;
                 if (!src2d) {
                     if (this.foundation === 'lxx') {
@@ -6259,7 +6259,7 @@ class BibleWordMap extends HTMLElement {
         this._versesLoadPromise = (async () => {
             try {
                 const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-                const vParam = '?v=13.0.0';
+                const vParam = '?v=13.0.1';
                 let srcVerses = this.srcVerses;
                 let srcVersemap = this.srcVersemap;
                 if (!srcVerses || !srcVersemap) {
@@ -6351,7 +6351,7 @@ class BibleWordMap extends HTMLElement {
         this._chaptersLoadPromise = (async () => {
             try {
                 const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-                const vParam = '?v=13.0.0';
+                const vParam = '?v=13.0.1';
                 let srcChapters = this.srcChapters;
                 if (!srcChapters) {
                     if (this.foundation === 'lxx') {
@@ -6400,7 +6400,7 @@ class BibleWordMap extends HTMLElement {
         this._booksLoadPromise = (async () => {
             try {
                 const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-                const vParam = '?v=13.0.0';
+                const vParam = '?v=13.0.1';
                 let srcBooks = this.srcBooks;
                 if (!srcBooks) {
                     if (this.foundation === 'lxx') {
@@ -6483,7 +6483,7 @@ class BibleWordMap extends HTMLElement {
         }
 
         const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-        const vParam = '?v=13.0.0';
+        const vParam = '?v=13.0.1';
         if (this.foundation === 'lxx') {
             this.src2d = getAttr('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = getAttr('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -8550,7 +8550,7 @@ class BibleWordMap extends HTMLElement {
 
         this._englishSemanticDataPromise = (async () => {
             const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-            const vParam = '?v=13.0.0';
+            const vParam = '?v=13.0.1';
             const wordmapSrc = getAttr('src-2d-bsb') || getAttr('src-2d') || ('data/output/wordmap_2d.json' + vParam);
             const versesSrc = getAttr('src-verses-bsb') || getAttr('src-verses') || ('data/output/verse_index.json' + vParam);
             const versemapSrc = getAttr('src-versemap-bsb') || getAttr('src-versemap') || ('data/output/versemap_2d.json' + vParam);
@@ -8624,7 +8624,7 @@ class BibleWordMap extends HTMLElement {
         if (this._cachedWordmaps[foundation]) {
             return this._cachedWordmaps[foundation];
         }
-        const vParam = '?v=13.0.0';
+        const vParam = '?v=13.0.1';
         let src = '';
         if (foundation === 'lxx') {
             src = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
@@ -12668,7 +12668,7 @@ class BibleWordMap extends HTMLElement {
         }
 
         const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-        const vParam = '?v=13.0.0';
+        const vParam = '?v=13.0.1';
         if (foundation === 'lxx') {
             this.src2d = getAttr('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = getAttr('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);

@@ -1,5 +1,11 @@
 # Changelog
 
+## [13.0.1] - 2026-09-25
+### Fixed
+- **Analogy Study Panel Dark Mode Styling:** Fixed bright white backgrounds on analogy step cards in dark mode by introducing the `--bwm-card-bg` theme variable (`#1e1e1e` in dark mode, `#ffffff` in light mode), styling `.bwm-study-tab-btn`, and adjusting candidate ranks, badges, and titles for crisp dark mode contrast.
+- **Analogy Study Panel Share Button Removal:** Removed the redundant share link button from the Projected Analogy study panel header, as the global share link at the top of the page already shares the stateful URL.
+- **Projection Info Reopen Navigation:** Fixed the top-right map reopen button when closing the Projected Analogy study panel. Instead of displaying the first search word (e.g. "Jesus Info") and opening the generic word study drawer, the button now displays "Projection info" and re-opens the Projected Analogy panel. Clicking any analogy node on the canvas also re-opens the analogy panel focused on that step.
+
 ## [13.0.0] - 2026-09-23
 ### Added
 - **Symbible Query Language (Vector Arithmetic & Motif Matching):** Integrated a custom query language parser and visualization engine directly into the primary search bar:
@@ -72,9 +78,6 @@
 
 ### Fixed
 - **Analogy Projection Mathematical Vector Parity:** Fixed an issue where `cosineSimilarity` failed for typed `Float32Array` vectors by adding `ArrayBuffer.isView` support. Sequential projections now achieve mathematical parity with equivalent vector arithmetic queries (e.g. `Moses > law : Jesus` matches `Jesus + (law - Moses)` returning `impart`, `teaching`, `nullify`, etc. rather than high-frequency stop words).
-- **Analogy Study Panel Dark Mode Styling:** Fixed bright white backgrounds on analogy step cards in dark mode by introducing the `--bwm-card-bg` theme variable (`#1e1e1e` in dark mode, `#ffffff` in light mode), styling `.bwm-study-tab-btn`, and adjusting candidate ranks, badges, and titles for crisp dark mode contrast.
-- **Analogy Study Panel Share Button Removal:** Removed the redundant share link button from the Projected Analogy study panel header, as the global share link at the top of the page already shares the stateful URL.
-- **Projection Info Reopen Navigation:** Fixed the top-right map reopen button when closing the Projected Analogy study panel. Instead of displaying the first search word (e.g. "Jesus Info") and opening the generic word study drawer, the button now displays "Projection info" and re-opens the Projected Analogy panel. Clicking any analogy node on the canvas also re-opens the analogy panel focused on that step.
 - **Analogy Canvas Zoom Extents & Viewport Margins:** Fixed camera zoom and centering for analogy projections. The Study Panel is opened prior to calculating bounds so the effective canvas width accurately accounts for the 440px right panel margin. Restricting `this.nodes` to the analogy constellation ensures the Zoom Extents button cleanly fits the parallel sequence.
 - **Analogy Artifact Cleanup on Subsequent Searches:** Fixed an issue where previous analogy projection lines, dimmed opacity (0.10), and pseudo-nodes lingered on canvas when starting a new search or clearing keywords. Centralized cleanup in `clearAnalogyProjectionState()` purges all analogy pseudo-nodes, resets analogy flags on corpus nodes, and restores standard rendering.
 - **Motif-Consistent Analogy Label Styling:** Harmonized analogy node titles and badge pills with the clean motif badge design: source sequence uses amber titles (`#f59e0b`) and `Source Anchor (Step N)` badges (`#fbbf24`), target anchor uses sky-blue titles (`#38bdf8`) and `Target Anchor (Step 1)` badges (`#7dd3fc`), and projected pseudo-nodes use sky-blue titles and `Projected (Step N)` badges (`#7dd3fc`).
