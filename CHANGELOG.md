@@ -1,7 +1,18 @@
 # Changelog
 
-## [13.0.2] - 2026-09-26
+## [13.0.1] - 2026-09-26
 ### Added
+- **Analogy Projections (`:` Syntax & Dual-Lane Trajectories):** Integrated analogy projection into the SymBible Query Language (`[Source Motif] : [Target Seed]`, e.g. `Moses > Law : Joseph`):
+  - **100D Trajectory Propagation & Offset Calculation:** Propagates source motif step displacements $\mathbf{d}_i = \mathbf{v}_{S_{i+1}} - \mathbf{v}_{S_i}$ onto the target seed point $\mathbf{t}_1 = \mathbf{v}_{Y_1}$ in 100-dimensional space ($\mathbf{t}_{i+1} = \mathbf{t}_i + \mathbf{d}_i$).
+  - **Dual-Lane Constellation Visualization:** Renders the source motif in an upper amber lane and target projection steps in a lower sky-blue lane, connected by dashed vertical guidelines with step badges ("Anchor", ": Projection").
+  - **Organic Real Word Clusters:** Relaxes candidate real vocabulary words around projected pseudo-nodes using a dedicated D3 force simulation while pinning trajectory anchor nodes (`fx`, `fy`).
+  - **Candidate Synchronization & Scoring:** Aligns candidate scoring with motif composite weights (directional congruence, Christ gravity, POS bonuses, and low-frequency noise filtering $f \ge 6$) to surface typologically relevant candidates.
+  - **Interactive Word Study & Back Navigation:** Clicking any projected candidate word opens its full Word Study panel without discarding projection state. Added a `< Projection` back button to jump back to the projection study panel. Pseudo-nodes re-open the Projected Analogy panel.
+  - **Architectural Spec:** Added `docs/14-analogy-projection-spec.md` documenting syntax, offset propagation, candidate pool filtering, composite scoring, and canvas state discipline.
+- **Syntactic (POS) Weighting for Motif Matching & Analogy Projection:**
+  - **POS Tag Extraction:** Parses grammatical POS tags from lemma identifiers (`word_POS`, e.g. `walk_VERB`, `jesus_PROPN`) across query terms.
+  - **Motif Matching Syntactic Score ($w_{\text{pos}}$):** Added a configurable weight slider ($w_{\text{pos}}$, default 0.10, URL param `wp`) to the Options drawer that calculates the syntactic match ratio against the source motif. Verbs (1.30) and adjectives (1.25) are prioritized, with typological fluidity between nouns and proper nouns (0.85).
+  - **Analogy Projection Syntactic Bonus:** Applies a similarity bonus during candidate retrieval when matching the corresponding source stage POS (+0.07 for verbs, +0.06 for adjectives, +0.05 for nouns/proper nouns). Marks matches with a `+POS` badge in the Study Panel.
 - **Keyboard Navigation & Quick Shortcuts:**
   - Added `/` shortcut to jump into a clean, focused search bar from anywhere on the page for mouse-free navigation.
   - Added `O` / `Alt+O` shortcut to toggle the Options drawer and `S` / `Alt+S` to toggle the Study panel.
@@ -28,26 +39,12 @@
 - **Pseudo-Node Inspector Navigation & Cleanup:**
   - Fixed reopen info button (e.g. `(faith + perseverance) Info`) to return directly to the Pseudo-Node inspector instead of the Word Study panel.
   - Removed redundant share button from the computed pseudo-node study panel.
-- **Analogy Projection Candidate Synchronization:**
-  - Aligned candidate scoring in Analogy Projections with Motif composite scoring (directional congruence, Christ gravity, POS bonuses, and low-frequency noise filtering) so projections like `Moses > Law : Joseph` reliably surface `physician` as the top projection candidate.
-
-## [13.0.1] - 2026-09-25
-### Added
-- **Syntactic (POS) Weighting for Motif Matching & Analogy Projection:** Introduced soft syntactic bonus scoring across motif search and analogy projections:
-  - POS Tag Extraction: Parses grammatical POS tags from lemma identifiers (`word_POS`, e.g. `walk_VERB`, `jesus_PROPN`) across query terms.
-  - Motif Matching Syntactic Score ($w_{\text{pos}}$): Added a configurable weight slider ($w_{\text{pos}}$, default 0.10, URL param `wp`) to the Options drawer that calculates the syntactic match ratio $R_{\text{pos}}$ against the source motif. Verbs (1.30 match weight) and adjectives (1.25 match weight) are prioritized, with typological fluidity between nouns and proper nouns (0.85 match weight).
-  - Analogy Projection Syntactic Bonus: Applies a flat similarity bonus during nearest neighbor retrieval when a candidate matches the corresponding source stage POS (+0.07 for verbs, +0.06 for adjectives, +0.05 for nouns/proper nouns, +0.04 for noun/proper noun fluidity). Re-sorts candidates by effective similarity and marks matches with a `+POS` indicator badge in the Study Panel.
-- **Analogy Projection Dual-Lane Trajectory with Real Word Clusters:**
-  - Preserved the dual-lane parallel constellation layout: Top lane displays the source motif sequence with solid amber directed arrows, bottom lane displays the target projection trajectory with dashed sky-blue directed arrows and vertical dashed guidelines.
-  - Pinned trajectory anchor nodes and pseudo-nodes in place (`fx`, `fy`), while populating an organic cluster of projected real vocabulary words around each pseudo-node using the D3 force simulation.
-  - Interactive Word Study Navigation: Clicking any projected real word on the canvas or candidate item in the Study Panel centers on the word and opens its complete Word Study panel (with verse occurrences, definitions, and language stats) without wiping out the projection state. Added a `< Projection` back button in the Word Study header to jump back to the projection panel at any time. Clicking pseudo-nodes re-opens the Projected Analogy panel.
-
-### Fixed
 - **Analogy Study Panel Dark Mode Styling:** Fixed bright white backgrounds on analogy step cards in dark mode by introducing the `--bwm-card-bg` theme variable (`#1e1e1e` in dark mode, `#ffffff` in light mode), styling `.bwm-study-tab-btn`, and adjusting candidate ranks, badges, and titles for crisp dark mode contrast.
-- **Analogy & Motif Study Panel Share Button Removal:** Removed the redundant share link buttons from both the Projected Analogy and Motif Results study panel headers, as the global share link at the top of the page already shares the stateful URL.
+- **Analogy & Motif Study Panel Share Button Removal:** Removed redundant share link buttons from both the Projected Analogy and Motif Results study panel headers, as the global share link at the top of the page already shares the stateful URL.
 - **Projection Info Reopen Navigation:** Fixed the top-right map reopen button when closing the Projected Analogy study panel. The button displays "Projection info" and re-opens the Projected Analogy panel.
 - **Active Words Drawer Cleanup for Motif & Projection Modes:** In the Options drawer under "ACTIVE WORDS", suppressed extraneous "analogy" checkboxes and displayed clean empty state indicators ("No active words for Projection" or "No active words for Motif") depending on the active exploration mode.
 - **Neighbor Slider Dynamic Re-Projection:** Connected the Options drawer neighbor slider to re-execute analogy projections in real-time.
+- **Home Reset Projection Clearance:** Reset active analogy projection and AST state when clicking the Home reset button.
 
 ## [13.0.0] - 2026-09-23
 ### Added
