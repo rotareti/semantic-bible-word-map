@@ -1,5 +1,6 @@
 import json
 import math
+import os
 from collections import Counter, defaultdict
 
 BIBLE_BOOKS = [
@@ -270,6 +271,23 @@ def main():
     max_range = max(max(abs(x) for x in raw_x), max(abs(y) for y in raw_y)) or 1.0
     target_scale = 8.0 / max_range
 
+    # Calculate Gospel centroid to center books around Christ
+    gospel_codes = {'MAT', 'MRK', 'LUK', 'JHN'}
+    gospel_xs = [raw_x[i] * target_scale for i, b in enumerate(BIBLE_BOOKS) if b["code"] in gospel_codes]
+    gospel_ys = [raw_y[i] * target_scale for i, b in enumerate(BIBLE_BOOKS) if b["code"] in gospel_codes]
+    gospel_cx = sum(gospel_xs) / len(gospel_xs) if gospel_xs else 0.0
+    gospel_cy = sum(gospel_ys) / len(gospel_ys) if gospel_ys else 0.0
+
+    # Load Christ anchor vector if available
+    christ_vec = None
+    anchor_path = 'data/output/christ_anchor_bsb.json'
+    if os.path.exists(anchor_path):
+        try:
+            with open(anchor_path, 'r', encoding='utf-8') as f:
+                christ_vec = json.load(f).get('v')
+        except Exception:
+            pass
+
     # 6. Generate links between books (connect each book to its top 2 closest neighbors)
     links_set = set()
     book_links = []
@@ -290,6 +308,10 @@ def main():
     for i, b_info in enumerate(BIBLE_BOOKS):
         b_code = b_info["code"]
         total_words = sum(book_word_counts[b_code].values())
+        bx = round((raw_x[i] * target_scale) - gospel_cx, 3)
+        by = round((raw_y[i] * target_scale) - gospel_cy, 3)
+        r = round(math.sqrt(bx * bx + by * by), 3)
+        sim_c = round(sum(a * b for a, b in zip(book_centroids[b_code], christ_vec)), 4) if christ_vec else None
         node = {
             "id": b_code,
             "code": b_code,
@@ -299,8 +321,10 @@ def main():
             "order": b_info["order"],
             "verses": book_verse_counts[b_code],
             "total_words": total_words,
-            "x": round(raw_x[i] * target_scale, 3),
-            "y": round(raw_y[i] * target_scale, 3),
+            "x": bx,
+            "y": by,
+            "r": r,
+            "sim_christ": sim_c,
             "v": book_centroids[b_code],
             "top_words": book_distinctive_words[b_code],
             "closest_words": [],
@@ -313,6 +337,7 @@ def main():
         json.dump({"books": output_books, "links": book_links}, f, separators=(',', ':'))
 
     print(f"Successfully generated book map data with {len(output_books)} books and {len(book_links)} links!")
+
     print(f"Saved to {out_file}")
 
 if __name__ == '__main__':

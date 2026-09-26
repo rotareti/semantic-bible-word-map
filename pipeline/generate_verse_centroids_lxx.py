@@ -51,6 +51,9 @@ def main():
     coords_2d = []
     top_content_words = []
     verse_meta = []
+    book_sum_x = defaultdict(float)
+    book_sum_y = defaultdict(float)
+    book_cnt = defaultdict(int)
 
     CONTENT_POS = {'NOUN', 'VERB', 'PROPN', 'ADJ', 'ADV'}
     STOPWORDS = {
@@ -71,7 +74,7 @@ def main():
 
         w_ids = verse_to_words[vi]
         if not w_ids:
-            coords_2d.append((0.0, 0.0))
+            coords_2d.append(None)
             top_content_words.append([])
             continue
 
@@ -96,12 +99,28 @@ def main():
             centroid_matrix[vi] = vec / norm
 
         if total_weight > 0:
-            coords_2d.append((round(weighted_x / total_weight, 3), round(weighted_y / total_weight, 3)))
+            vx = round(weighted_x / total_weight, 3)
+            vy = round(weighted_y / total_weight, 3)
+            coords_2d.append((vx, vy))
+            book_sum_x[b_code] += vx
+            book_sum_y[b_code] += vy
+            book_cnt[b_code] += 1
         else:
-            coords_2d.append((0.0, 0.0))
+            coords_2d.append(None)
 
         content_candidates.sort(key=lambda item: item[1], reverse=True)
         top_content_words.append([item[0] for item in content_candidates[:12]])
+
+    # Assign book centroid to verses with no vocabulary content
+    for vi in range(total_verses):
+        if coords_2d[vi] is None:
+            b_code = verse_meta[vi][1]
+            cnt = book_cnt.get(b_code, 0)
+            if cnt > 0:
+                coords_2d[vi] = (round(book_sum_x[b_code] / cnt, 3), round(book_sum_y[b_code] / cnt, 3))
+            else:
+                coords_2d[vi] = (5.0, 5.0)
+
 
     # Batch compute top-16 cross-references using matrix multiplication
     print("Computing top-16 semantic cross-references for all verses...")
@@ -134,6 +153,15 @@ def main():
             all_refs[global_idx] = refs_for_verse
 
     print("Assembling final verse dataset...")
+    christ_vec = None
+    anchor_path = 'data/output/christ_anchor_lxx.json'
+    if os.path.exists(anchor_path):
+        try:
+            with open(anchor_path, 'r', encoding='utf-8') as f:
+                christ_vec = np.array(json.load(f).get('v'), dtype=np.float32)
+        except Exception:
+            pass
+
     output_records = []
     for vi in range(total_verses):
         ref, b_code, c_num, v_num = verse_meta[vi]
@@ -141,13 +169,18 @@ def main():
         c_words = top_content_words[vi]
         c_refs = all_refs[vi]
 
-        output_records.append({
+        rec = {
             "id": ref,
             "x": cx,
             "y": cy,
             "w": c_words,
             "r": c_refs
-        })
+        }
+        if christ_vec is not None:
+            c_norm = np.linalg.norm(centroid_matrix[vi])
+            if c_norm > 1e-6:
+                rec["sc"] = round(float(np.dot(centroid_matrix[vi], christ_vec)), 3)
+        output_records.append(rec)
 
     output_data = {
         "count": total_verses,

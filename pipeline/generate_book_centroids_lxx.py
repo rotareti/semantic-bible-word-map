@@ -297,9 +297,36 @@ def main():
     max_range = max(float(np.max(np.abs(raw_x))), float(np.max(np.abs(raw_y)))) or 1.0
     target_scale = 8.0 / max_range
 
+    # Calculate Gospel centroid to center Greek books around Christ
+    gospel_codes = {'MAT', 'MRK', 'LUK', 'JHN'}
+    gospel_xs = [raw_x[i] * target_scale for i, b in enumerate(book_records) if b['code'] in gospel_codes]
+    gospel_ys = [raw_y[i] * target_scale for i, b in enumerate(book_records) if b['code'] in gospel_codes]
+    gospel_cx = float(np.mean(gospel_xs)) if len(gospel_xs) > 0 else 0.0
+    gospel_cy = float(np.mean(gospel_ys)) if len(gospel_ys) > 0 else 0.0
+
+    # Load Christ anchor vector if available
+    christ_vec = None
+    anchor_path = 'data/output/christ_anchor_lxx.json'
+    if os.path.exists(anchor_path):
+        try:
+            with open(anchor_path, 'r', encoding='utf-8') as f:
+                christ_vec = np.array(json.load(f).get('v'), dtype=np.float32)
+        except Exception:
+            pass
+
     for i, b in enumerate(book_records):
-        b['x'] = round(float(raw_x[i] * target_scale), 3)
-        b['y'] = round(float(raw_y[i] * target_scale), 3)
+        bx = round(float((raw_x[i] * target_scale) - gospel_cx), 3)
+        by = round(float((raw_y[i] * target_scale) - gospel_cy), 3)
+        b['x'] = bx
+        b['y'] = by
+        b['r'] = round(math.sqrt(bx * bx + by * by), 3)
+        if christ_vec is not None and 'v' in b and len(b['v']) > 0:
+            bv = np.array(b['v'], dtype=np.float32)
+            norm_bv = np.linalg.norm(bv)
+            norm_cv = np.linalg.norm(christ_vec)
+            if norm_bv > 1e-6 and norm_cv > 1e-6:
+                b['sim_christ'] = round(float(np.dot(bv, christ_vec) / (norm_bv * norm_cv)), 4)
+
 
         sim_scores = []
         for j, other in enumerate(book_records):

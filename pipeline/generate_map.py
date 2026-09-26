@@ -164,14 +164,34 @@ if __name__ == '__main__':
             originals.sort(key=lambda x: x['count'], reverse=True)
             node['original'] = originals[:5]
             
+    print("Centering map around Christ anchor (0, 0)...")
+    from christ_anchor import compute_christ_anchor, center_nodes_2d, synthesize_christ_anchor_node
+    anchor = compute_christ_anchor('bsb', out_2d, v_idx)
+    out_2d = center_nodes_2d(out_2d, anchor['center_2d'], anchor['v'])
+    anchor_node = synthesize_christ_anchor_node(anchor, 'bsb')
+    out_2d.insert(0, anchor_node)
+
+    with open('data/output/christ_anchor_bsb.json', 'w', encoding='utf-8') as f:
+        json.dump(anchor, f, indent=2, ensure_ascii=False)
+
     print("Saving map to data/output/...")
     with open('data/output/wordmap_2d.json', 'w', encoding='utf-8') as f:
         json.dump(out_2d, f, separators=(',', ':'), ensure_ascii=False)
     print("Filtering verse index...")
     valid_words = set(words)
     filtered_word_to_verse = {w: v_idx['words'][w] for w in valid_words if w in v_idx['words']}
+
+    # Map anchor node to landmark verses
+    landmark_indices = []
+    for r in anchor['verses_used']:
+        for vi, line in enumerate(v_idx['verses']):
+            if line.startswith(r + '|'):
+                landmark_indices.append(vi)
+                break
+    filtered_word_to_verse[anchor_node['id']] = landmark_indices
             
     with open('data/output/verse_index.json', 'w') as f:
         json.dump({'verses': v_idx['verses'], 'words': filtered_word_to_verse}, f, separators=(',', ':'))
         
     print("Map and Index saved successfully.")
+

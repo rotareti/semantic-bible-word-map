@@ -258,6 +258,15 @@ def main():
 
     # 8. Assemble final Chapter records
     print("Packaging compact chaptermap_2d_vul.json...")
+    christ_vec = None
+    anchor_path = 'data/output/christ_anchor_vul.json'
+    if os.path.exists(anchor_path):
+        try:
+            with open(anchor_path, 'r', encoding='utf-8') as f:
+                christ_vec = np.array(json.load(f).get('v'), dtype=np.float32)
+        except Exception:
+            pass
+
     chapters_output = []
 
     for i, ch_id in enumerate(canonical_ch_order):
@@ -273,6 +282,12 @@ def main():
         ch_verses_cnt = len(chapter_verses[ch_id])
         x, y = chapter_coords_2d[i]
         centroid_vec = [round(float(val), 3) for val in chapter_matrix[i]]
+        rad = round(math.sqrt(x * x + y * y), 3)
+        sim_c = None
+        if christ_vec is not None:
+            c_norm = np.linalg.norm(chapter_matrix[i])
+            if c_norm > 1e-6:
+                sim_c = round(float(np.dot(chapter_matrix[i], christ_vec)), 4)
 
         chapter_record = {
             "id": ch_id,
@@ -285,6 +300,8 @@ def main():
             "verses": ch_verses_cnt,
             "x": x,
             "y": y,
+            "rad": rad,
+            "sim_christ": sim_c,
             "v": centroid_vec,
             "w": chapter_top_words[i],
             "r": top_chapter_refs[i],

@@ -203,6 +203,23 @@ def main():
     coords_2d = eigvecs[:, :2] * np.sqrt(np.maximum(eigvals[:2], 0))
     coords_2d = (coords_2d - coords_2d.mean(axis=0)) / (coords_2d.std(axis=0) + 1e-6) * 2.0
 
+    # Center coordinates around the Gospel books
+    gospel_codes = {'MAT', 'MRK', 'LUK', 'JHN'}
+    gospel_indices = [idx for idx, b in enumerate(BIBLE_BOOKS) if b['code'] in gospel_codes]
+    if gospel_indices:
+        gospel_center = coords_2d[gospel_indices].mean(axis=0)
+        coords_2d = coords_2d - gospel_center
+
+    # Load Christ anchor vector if available
+    christ_vec = None
+    anchor_path = 'data/output/christ_anchor_vul.json'
+    if os.path.exists(anchor_path):
+        try:
+            with open(anchor_path, 'r', encoding='utf-8') as f:
+                christ_vec = np.array(json.load(f).get('v'), dtype=np.float32)
+        except Exception:
+            pass
+
     # Build Nearest Neighbors & Graph Links
     links = []
     books_out = []
@@ -240,6 +257,17 @@ def main():
             if len(top_w) >= 10:
                 break
 
+        bx = round(float(coords_2d[i, 0]), 2)
+        by = round(float(coords_2d[i, 1]), 2)
+        r = round(math.sqrt(bx * bx + by * by), 3)
+        sim_c = None
+        if christ_vec is not None:
+            bv = np.array(book_vectors[b_code], dtype=np.float32)
+            norm_bv = np.linalg.norm(bv)
+            norm_cv = np.linalg.norm(christ_vec)
+            if norm_bv > 1e-6 and norm_cv > 1e-6:
+                sim_c = round(float(np.dot(bv, christ_vec) / (norm_bv * norm_cv)), 4)
+
         books_out.append({
             "id": b_code,
             "code": b_code,
@@ -252,10 +280,13 @@ def main():
             "top_words": top_w,
             "closest_words": [],
             "v": [round(float(val), 3) for val in book_vectors[b_code]],
-            "x": round(float(coords_2d[i, 0]), 2),
-            "y": round(float(coords_2d[i, 1]), 2),
+            "x": bx,
+            "y": by,
+            "r": r,
+            "sim_christ": sim_c,
             "nearest_books": sims[:10]
         })
+
 
     # Cross-testament semantic bridges
     ot_codes = [b['code'] for b in BIBLE_BOOKS if b['testament'] == 'OT']
