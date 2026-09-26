@@ -5631,7 +5631,12 @@ class BibleWordMap extends HTMLElement {
                     }
                 } else {
                     this.neighborsPerKeyword = val;
-                    if (this.pseudoNode && this.lastPseudoAst) {
+                    if (this.activeAnalogyProjection && this.lastAnalogyAst) {
+                        clearTimeout(this._pseudoSliderTimeout);
+                        this._pseudoSliderTimeout = setTimeout(() => {
+                            this.executeAnalogyProjectionQuery(this.activeAnalogyProjection.queryStr, this.lastAnalogyAst);
+                        }, 60);
+                    } else if (this.pseudoNode && this.lastPseudoAst) {
                         clearTimeout(this._pseudoSliderTimeout);
                         this._pseudoSliderTimeout = setTimeout(() => {
                             this.executeVectorArithmeticQuery(this.pseudoNode.query, this.lastPseudoAst);
@@ -5667,7 +5672,9 @@ class BibleWordMap extends HTMLElement {
                         this.searchVerses(true);
                     }
                 } else {
-                    if (this.pseudoNode && this.lastPseudoAst) {
+                    if (this.activeAnalogyProjection && this.lastAnalogyAst) {
+                        this.executeAnalogyProjectionQuery(this.activeAnalogyProjection.queryStr, this.lastAnalogyAst);
+                    } else if (this.pseudoNode && this.lastPseudoAst) {
                         this.executeVectorArithmeticQuery(this.pseudoNode.query, this.lastPseudoAst);
                     } else if (this.isSearchMode && this.searchedWords && this.searchedWords.length > 0) {
                         this.searchWord(true);
@@ -9891,6 +9898,7 @@ class BibleWordMap extends HTMLElement {
 
     clearAnalogyProjectionState() {
         this.activeAnalogyProjection = null;
+        this.lastAnalogyAst = null;
         if (this.nodes && this.nodes.length > 0) {
             this.nodes = this.nodes.filter(n => !n.isAnalogyPseudoNode);
             for (let i = 0; i < this.nodes.length; i++) {
@@ -9898,11 +9906,20 @@ class BibleWordMap extends HTMLElement {
                 n.isAnalogySource = false;
                 n.isAnalogyTargetSeed = false;
                 n.isAnalogySnapped = false;
+                n.isAnalogyWord = false;
                 n.analogyStep = undefined;
             }
         }
         if (this.allSearchNodes && this.allSearchNodes.length > 0) {
             this.allSearchNodes = this.allSearchNodes.filter(n => !n.isAnalogyPseudoNode);
+            for (let i = 0; i < this.allSearchNodes.length; i++) {
+                const n = this.allSearchNodes[i];
+                n.isAnalogySource = false;
+                n.isAnalogyTargetSeed = false;
+                n.isAnalogySnapped = false;
+                n.isAnalogyWord = false;
+                n.analogyStep = undefined;
+            }
         }
         if (this.data2d) {
             for (let i = 0; i < this.data2d.length; i++) {
@@ -9910,6 +9927,7 @@ class BibleWordMap extends HTMLElement {
                 d.isAnalogySource = false;
                 d.isAnalogyTargetSeed = false;
                 d.isAnalogySnapped = false;
+                d.isAnalogyWord = false;
                 d.analogyStep = undefined;
             }
         }
@@ -11221,10 +11239,6 @@ class BibleWordMap extends HTMLElement {
                         </div>
                     </div>
                     <div style="display:flex; align-items:center; gap:8px;">
-                        <button type="button" class="bwm-study-tab-btn" id="bwm-motif-share-btn" title="Copy share link" style="padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-                            <span>Share</span>
-                        </button>
                         ${this.renderPinButton('study')}
                         <button type="button" class="bwm-window-close" id="bwm-word-close" title="Close inspector">&times;</button>
                     </div>
@@ -11246,16 +11260,6 @@ class BibleWordMap extends HTMLElement {
                 e.stopPropagation();
                 if (this.isStudyPanelPinned) this.unpinStudyPanel();
                 this.hideWordInspector();
-            });
-        }
-
-        const shareBtn = this.wordCard.querySelector('#bwm-motif-share-btn');
-        if (shareBtn) {
-            shareBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.copyToClipboard(window.location.href, () => {
-                    this.showToast('Motif search link copied to clipboard', 'info');
-                });
             });
         }
 
@@ -11643,223 +11647,6 @@ class BibleWordMap extends HTMLElement {
 
     drawAnalogyProjection() {
         if (!this.activeAnalogyProjection) return;
-        const { sourceNodes, targetSeedNode, projectedSteps } = this.activeAnalogyProjection;
-        if (!sourceNodes || sourceNodes.length < 2 || !targetSeedNode) return;
-
-        // 1. Draw Source Motif Sequence: Solid directed arrows with golden glow
-        for (let i = 0; i < sourceNodes.length - 1; i++) {
-            const sNode = sourceNodes[i].node;
-            const tNode = sourceNodes[i + 1].node;
-            if (!sNode || !tNode || sNode.x === undefined || tNode.x === undefined) continue;
-
-            const dx = tNode.x - sNode.x;
-            const dy = tNode.y - sNode.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < 1) continue;
-
-            const sR = (sNode.canvasR || 15) / this.transform.k;
-            const tR = (tNode.canvasR || 15) / this.transform.k;
-
-            const startX = sNode.x + (dx / dist) * sR;
-            const startY = sNode.y + (dy / dist) * sR;
-            const endX = tNode.x - (dx / dist) * (tR + (4 / this.transform.k));
-            const endY = tNode.y - (dy / dist) * (tR + (4 / this.transform.k));
-
-            this.ctx.save();
-            this.ctx.setLineDash([]);
-            this.ctx.strokeStyle = '#f59e0b';
-            this.ctx.lineWidth = 3.5 / this.transform.k;
-            this.ctx.shadowBlur = 14 / this.transform.k;
-            this.ctx.shadowColor = 'rgba(245, 158, 11, 0.75)';
-
-            this.ctx.beginPath();
-            this.ctx.moveTo(startX, startY);
-            this.ctx.lineTo(endX, endY);
-            this.ctx.stroke();
-
-            // Arrowhead
-            const headLen = 14 / this.transform.k;
-            const angle = Math.atan2(endY - startY, endX - startX);
-            const p1X = endX - headLen * Math.cos(angle - Math.PI / 6);
-            const p1Y = endY - headLen * Math.sin(angle - Math.PI / 6);
-            const p2X = endX - headLen * Math.cos(angle + Math.PI / 6);
-            const p2Y = endY - headLen * Math.sin(angle + Math.PI / 6);
-
-            this.ctx.fillStyle = '#f59e0b';
-            this.ctx.beginPath();
-            this.ctx.moveTo(endX, endY);
-            this.ctx.lineTo(p1X, p1Y);
-            this.ctx.lineTo(p2X, p2Y);
-            this.ctx.closePath();
-            this.ctx.fill();
-
-            // Step Label pill badge
-            const midX = (startX + endX) / 2;
-            const midY = (startY + endY) / 2;
-            const stepLabel = `Source: Step ${i + 1} ➔ ${i + 2}`;
-            const textScale = this.mapTextScale || 1.0;
-            const fontSize = Math.max(8.5, 9.5 * textScale) / this.transform.k;
-
-            this.ctx.font = `bold ${fontSize}px ${this.colors.font}`;
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
-
-            const txtWidth = this.ctx.measureText(stepLabel).width;
-            const pillPadX = 6 / this.transform.k;
-            const pillPadY = 3 / this.transform.k;
-
-            this.ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-            this.ctx.shadowBlur = 4 / this.transform.k;
-            this.ctx.shadowColor = '#000000';
-            this.ctx.beginPath();
-            if (this.ctx.roundRect) {
-                this.ctx.roundRect(midX - (txtWidth / 2) - pillPadX, midY - (fontSize / 2) - pillPadY, txtWidth + (pillPadX * 2), fontSize + (pillPadY * 2), 4 / this.transform.k);
-            } else {
-                this.ctx.rect(midX - (txtWidth / 2) - pillPadX, midY - (fontSize / 2) - pillPadY, txtWidth + (pillPadX * 2), fontSize + (pillPadY * 2));
-            }
-            this.ctx.fill();
-
-            this.ctx.shadowBlur = 0;
-            this.ctx.fillStyle = '#fbbf24';
-            this.ctx.fillText(stepLabel, midX, midY);
-
-            this.ctx.restore();
-        }
-
-        // 2. Draw Target Projected Trajectory: Dashed directed arrows connecting Target Seed to Pseudo-Nodes
-        const targetChain = [targetSeedNode, ...projectedSteps.map(p => p.pseudoNode)];
-        for (let i = 0; i < targetChain.length - 1; i++) {
-            const sNode = targetChain[i];
-            const tNode = targetChain[i + 1];
-            if (!sNode || !tNode || sNode.x === undefined || tNode.x === undefined) continue;
-
-            const dx = tNode.x - sNode.x;
-            const dy = tNode.y - sNode.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < 1) continue;
-
-            const sR = (sNode.canvasR || 15) / this.transform.k;
-            const tR = (tNode.canvasR || 15) / this.transform.k;
-
-            const startX = sNode.x + (dx / dist) * sR;
-            const startY = sNode.y + (dy / dist) * sR;
-            const endX = tNode.x - (dx / dist) * (tR + (4 / this.transform.k));
-            const endY = tNode.y - (dy / dist) * (tR + (4 / this.transform.k));
-
-            this.ctx.save();
-            this.ctx.setLineDash([8 / this.transform.k, 5 / this.transform.k]);
-            this.ctx.strokeStyle = '#38bdf8';
-            this.ctx.lineWidth = 3.5 / this.transform.k;
-            this.ctx.shadowBlur = 16 / this.transform.k;
-            this.ctx.shadowColor = 'rgba(56, 189, 248, 0.75)';
-
-            this.ctx.beginPath();
-            this.ctx.moveTo(startX, startY);
-            this.ctx.lineTo(endX, endY);
-            this.ctx.stroke();
-
-            // Arrowhead
-            this.ctx.setLineDash([]);
-            const headLen = 14 / this.transform.k;
-            const angle = Math.atan2(endY - startY, endX - startX);
-            const p1X = endX - headLen * Math.cos(angle - Math.PI / 6);
-            const p1Y = endY - headLen * Math.sin(angle - Math.PI / 6);
-            const p2X = endX - headLen * Math.cos(angle + Math.PI / 6);
-            const p2Y = endY - headLen * Math.sin(angle + Math.PI / 6);
-
-            this.ctx.fillStyle = '#38bdf8';
-            this.ctx.beginPath();
-            this.ctx.moveTo(endX, endY);
-            this.ctx.lineTo(p1X, p1Y);
-            this.ctx.lineTo(p2X, p2Y);
-            this.ctx.closePath();
-            this.ctx.fill();
-
-            // Midpoint pill badge
-            const midX = (startX + endX) / 2;
-            const midY = (startY + endY) / 2;
-            const stepLabel = `Projected: Step ${i + 1} ➔ ${i + 2} (Dashed)`;
-            const textScale = this.mapTextScale || 1.0;
-            const fontSize = Math.max(8.5, 9.5 * textScale) / this.transform.k;
-
-            this.ctx.font = `bold ${fontSize}px ${this.colors.font}`;
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
-
-            const txtWidth = this.ctx.measureText(stepLabel).width;
-            const pillPadX = 6 / this.transform.k;
-            const pillPadY = 3 / this.transform.k;
-
-            this.ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-            this.ctx.shadowBlur = 4 / this.transform.k;
-            this.ctx.shadowColor = '#000000';
-            this.ctx.beginPath();
-            if (this.ctx.roundRect) {
-                this.ctx.roundRect(midX - (txtWidth / 2) - pillPadX, midY - (fontSize / 2) - pillPadY, txtWidth + (pillPadX * 2), fontSize + (pillPadY * 2), 4 / this.transform.k);
-            } else {
-                this.ctx.rect(midX - (txtWidth / 2) - pillPadX, midY - (fontSize / 2) - pillPadY, txtWidth + (pillPadX * 2), fontSize + (pillPadY * 2));
-            }
-            this.ctx.fill();
-
-            this.ctx.shadowBlur = 0;
-            this.ctx.fillStyle = '#7dd3fc';
-            this.ctx.fillText(stepLabel, midX, midY);
-
-            this.ctx.restore();
-        }
-
-        // 3. Draw vertical projection guide lines connecting corresponding source and target steps
-        for (let i = 0; i < sourceNodes.length; i++) {
-            const sNode = sourceNodes[i].node;
-            const tNode = (i === 0) ? targetSeedNode : (projectedSteps[i - 1] ? projectedSteps[i - 1].pseudoNode : null);
-            if (!sNode || !tNode || sNode.x === undefined || tNode.x === undefined) continue;
-
-            const sR = (sNode.canvasR || 15) / this.transform.k;
-            const tR = (tNode.canvasR || 15) / this.transform.k;
-            const startY = sNode.y + sR + (3 / this.transform.k);
-            const endY = tNode.y - tR - (3 / this.transform.k);
-            if (endY <= startY) continue;
-
-            const midX = (sNode.x + tNode.x) / 2;
-            const midY = (startY + endY) / 2;
-
-            this.ctx.save();
-            this.ctx.setLineDash([4 / this.transform.k, 4 / this.transform.k]);
-            this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
-            this.ctx.lineWidth = 1.5 / this.transform.k;
-
-            this.ctx.beginPath();
-            this.ctx.moveTo(sNode.x, startY);
-            this.ctx.lineTo(tNode.x, endY);
-            this.ctx.stroke();
-
-            // Small projection icon badge
-            const textScale = this.mapTextScale || 1.0;
-            const fontSize = Math.max(8, 8.5 * textScale) / this.transform.k;
-            this.ctx.font = `bold ${fontSize}px ${this.colors.font}`;
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
-
-            const badgeText = (i === 0) ? 'Anchor' : ': Projection';
-            const txtWidth = this.ctx.measureText(badgeText).width;
-            const padX = 4 / this.transform.k;
-            const padY = 2 / this.transform.k;
-
-            this.ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-            this.ctx.beginPath();
-            if (this.ctx.roundRect) {
-                this.ctx.roundRect(midX - (txtWidth / 2) - padX, midY - (fontSize / 2) - padY, txtWidth + (padX * 2), fontSize + (padY * 2), 3 / this.transform.k);
-            } else {
-                this.ctx.rect(midX - (txtWidth / 2) - padX, midY - (fontSize / 2) - padY, txtWidth + (padX * 2), fontSize + (padY * 2));
-            }
-            this.ctx.fill();
-
-            this.ctx.setLineDash([]);
-            this.ctx.fillStyle = 'rgba(148, 163, 184, 0.9)';
-            this.ctx.fillText(badgeText, midX, midY);
-
-            this.ctx.restore();
-        }
     }
     async executeAnalogyProjectionQuery(queryStr, ast) {
         if (!ast.source || ast.source.type !== 'MotifSequence' || !ast.source.stages || ast.source.stages.length < 2) {
@@ -11953,123 +11740,105 @@ class BibleWordMap extends HTMLElement {
             });
         }
 
-        // 4. Dual-Lane Parallel Constellation Layout
-        // Aligns the source sequence along the top lane and the target projection along the bottom lane
-        const N = sourceStageResults.length;
-        const L = 180;
-        const D = 130;
+        // 4. Physics Cluster Layout for Resultant Projection
+        // Centers a Pseudo-Node at (0, 0) and clusters surrounding projection words using D3 force simulation
+        const cleanQuery = queryStr.trim();
+        const pseudoNode = {
+            id: `pseudo__analogy__${cleanQuery}`,
+            w: `(${cleanQuery})`,
+            label: `[${cleanQuery}]`,
+            query: cleanQuery,
+            isPseudoNode: true,
+            isAnalogyPseudoNode: true,
+            isKw: true,
+            x: 0,
+            y: 0,
+            fx: 0,
+            fy: 0,
+            v: current100d,
+            pos: 'MATH',
+            t: 'Both',
+            f: 1
+        };
+
+        const limit = this.neighborsPerKeyword || 50;
+        const clusterNeighbors = this.getNearestNeighbors(current100d, limit, usedWords);
+
+        const neighborNodes = clusterNeighbors.slice(0, limit).map(nn => ({
+            id: nn.node.id,
+            w: nn.node.w,
+            pos: nn.node.pos,
+            t: nn.node.t,
+            f: nn.node.f,
+            sim: nn.sim,
+            sourceKw: pseudoNode.id,
+            isKw: false,
+            isAnalogyWord: true,
+            v: nn.node.v,
+            original: nn.node.original
+        }));
+
+        this.allSearchNodes = [pseudoNode, ...neighborNodes];
+
+        let minSim = d3.min(neighborNodes, n => n.sim) || 0;
+        let maxSim = d3.max(neighborNodes, n => n.sim) || 1;
+        neighborNodes.forEach(n => {
+            n.normSim = (n.sim - minSim) / (maxSim - minSim || 1);
+        });
+        pseudoNode.normSim = 1;
+
+        const clusterLinks = neighborNodes.map(n => ({
+            source: n.id,
+            target: pseudoNode.id,
+            type: 'direct',
+            sim: n.sim
+        }));
+
+        this.allSearchLinks = clusterLinks;
+        this.nodes = [pseudoNode];
+        this.links = [];
+        this.pseudoNode = pseudoNode;
 
         const sourceNodes = sourceStageResults.map((sr, idx) => {
             const wNode = sr.wordNode || {};
             const wordTitle = sr.isPseudoNode
                 ? (sr.expression || sr.usedWords.join(' + '))
                 : (wNode.w || sr.usedWords[0] || `Stage ${idx + 1}`);
-            const x = (idx - (N - 1) / 2) * L;
-            const y = -D / 2;
-            const mapNode = {
-                id: `analogy_src_${idx}`,
-                w: wordTitle,
-                label: wordTitle,
-                x: x,
-                y: y,
-                originalX: x,
-                originalY: y,
-                canvasR: 15 / this.transform.k,
-                isAnalogySource: true,
-                analogyStep: idx + 1,
-                isKw: true,
-                pos: wNode.pos || 'NOUN',
-                f: wNode.f || 1
-            };
             return {
                 index: idx,
                 title: wordTitle,
                 res: sr,
                 vector: sr.vector,
-                x: x,
-                y: y,
-                node: mapNode
+                node: wNode
             };
         });
-
-        const targetSeedNode = {
-            id: 'analogy_target_seed',
-            w: targetSeedTitle,
-            label: targetSeedTitle,
-            x: -(N - 1) / 2 * L,
-            y: D / 2,
-            originalX: -(N - 1) / 2 * L,
-            originalY: D / 2,
-            canvasR: 15 / this.transform.k,
-            isAnalogyTargetSeed: true,
-            analogyStep: 1,
-            isKw: true,
-            pos: targetSeedWordNode.pos || 'PROPN',
-            f: targetSeedWordNode.f || 1
-        };
-
-        for (let i = 0; i < projectedSteps.length; i++) {
-            const step = projectedSteps[i];
-            const k = i + 1;
-            const x = (k - (N - 1) / 2) * L;
-            const y = D / 2;
-            const topNeighbor = step.topNeighbor;
-            const pseudoNode = {
-                id: `analogy_pseudo_step_${step.stepNum}`,
-                w: topNeighbor ? topNeighbor.word : `Proj: ${step.sourceWord}`,
-                label: topNeighbor ? `[${this.formatWord(topNeighbor.word, topNeighbor.pos)}]` : `[Proj: ${step.sourceWord}]`,
-                isPseudoNode: true,
-                isAnalogyPseudoNode: true,
-                analogyStep: step.stepNum,
-                x: x,
-                y: y,
-                originalX: x,
-                originalY: y,
-                canvasR: 15 / this.transform.k,
-                v: step.targetVector,
-                sourceStage: step.sourceWord,
-                sourceStagePos: step.sourcePos,
-                topNeighbor: topNeighbor,
-                snappedWord: null,
-                pos: topNeighbor ? topNeighbor.pos : 'MATH',
-                f: 1
-            };
-            step.pseudoNode = pseudoNode;
-            pseudoNodes.push(pseudoNode);
-        }
-
-        this.nodes = [
-            ...sourceNodes.map(s => s.node),
-            targetSeedNode,
-            ...pseudoNodes
-        ];
-        this.links = [];
-        this.allSearchNodes = [...this.nodes];
 
         this.activeAnalogyProjection = {
             queryStr,
             ast,
+            pseudoNode,
+            resultVector: current100d,
             sourceNodes,
-            targetSeedNode,
             targetSeedTitle,
-            projectedSteps,
-            pseudoNodes
+            targetSeedWordNode,
+            projectedSteps
         };
+        this.lastAnalogyAst = ast;
         this.currentSymbibleQuery = queryStr;
         this.isSearchMode = true;
-        this.searchedWords = [targetSeedNode.id, ...sourceNodes.map(s => s.node.id)];
-        this.drawerWords = [...this.searchedWords];
+        this.userInteracted = false;
+        this._nodesBounds = null;
+        this.searchedWords = [pseudoNode.id];
+        this.drawerWords = [];
         this.updateClearBtnVisibility();
         this.renderActiveWords();
         this.updateUrl({ q: queryStr });
 
-        this.draw();
+        // Project the neighbor bubbles around the pseudo-node using D3 force simulation
+        this.runSimulation();
 
-        // 5. Open Study Panel FIRST so viewport padding accounts for study panel
+        // 5. Open Study Panel
         this.showAnalogyProjectionPanel(this.activeAnalogyProjection);
-
-        // 6. Frame both parallel sequences cleanly within the visible viewport
-        this.frameNodes(this.nodes, 0.18, 600);
     }
 
     showAnalogyProjectionPanel(analogyData, activeStepNum = null) {
@@ -12084,7 +11853,7 @@ class BibleWordMap extends HTMLElement {
             this.wordReopenBtn.style.display = 'none';
         }
 
-        const { queryStr, sourceNodes, targetSeedNode, targetSeedTitle, projectedSteps } = analogyData;
+        const { queryStr, sourceNodes, targetSeedTitle, targetSeedWordNode, projectedSteps, pseudoNode } = analogyData;
         const displayQuery = queryStr.replace(/>/g, ' ➔ ').replace(/:/g, ' : ');
 
         let stepsHtml = `
@@ -12097,29 +11866,26 @@ class BibleWordMap extends HTMLElement {
                     <span>${escapeHtml(targetSeedTitle)}</span>
                 </div>
                 <div class="bwm-analogy-step-subtext">
-                    Initial target anchor projected from source concept <strong>${escapeHtml(sourceNodes[0].title)}</strong>.
+                    Initial target anchor projected from source concept <strong>${escapeHtml(sourceNodes && sourceNodes[0] ? sourceNodes[0].title : '')}</strong>.
                 </div>
             </div>
         `;
 
         projectedSteps.forEach(step => {
             const isActive = (activeStepNum === step.stepNum);
-            const snappedWord = step.snappedWord;
 
             let candidatesHtml = step.neighbors.map(item => {
-                const isItemSnapped = Boolean(snappedWord && (snappedWord.id === item.id || snappedWord.w.toLowerCase() === item.word.toLowerCase()));
                 const posLabel = item.pos ? ` (${item.pos.toLowerCase()})` : '';
                 return `
-                    <div class="bwm-analogy-candidate-item ${isItemSnapped ? 'snapped' : ''}"
+                    <div class="bwm-analogy-candidate-item"
                          data-step="${step.stepNum}"
                          data-word-id="${escapeHtml(item.id)}"
-                         title="Snap Pseudo-Node to '${escapeHtml(item.word)}'">
+                         title="Inspect word '${escapeHtml(item.word)}'">
                         <div class="bwm-analogy-candidate-rank">${item.rank}</div>
                         <div class="bwm-analogy-candidate-info">
                             <div class="bwm-analogy-candidate-word">
                                 <strong>${escapeHtml(this.formatWord(item.word, item.pos))}</strong>
                                 <span style="font-size:0.8em; color:var(--bwm-text-muted);">${posLabel}</span>
-                                ${isItemSnapped ? '<span class="bwm-analogy-snap-indicator">&check; Snapped</span>' : ''}
                             </div>
                             <div class="bwm-analogy-candidate-bar-wrapper">
                                 <div class="bwm-analogy-candidate-bar" style="width: ${item.pct}%;"></div>
@@ -12142,13 +11908,6 @@ class BibleWordMap extends HTMLElement {
                     <div class="bwm-analogy-candidate-list">
                         ${candidatesHtml}
                     </div>
-                    ${snappedWord ? `
-                        <div style="margin-top: 8px; text-align: right;">
-                            <button type="button" class="bwm-study-tab-btn" data-action="unsnap-step" data-step="${step.stepNum}" style="padding: 3px 8px; font-size: 0.74rem;">
-                                Reset to Geometric Projection
-                            </button>
-                        </div>
-                    ` : ''}
                 </div>
             `;
         });
@@ -12174,7 +11933,7 @@ class BibleWordMap extends HTMLElement {
             </div>
             <div class="bwm-analogy-results-container">
                 <div class="bwm-analogy-summary-card">
-                    Extracts the geometric trajectory of the source motif and sequentially projects it onto the target anchor. Click any suggested word below to snap the Pseudo-Node to that coordinate.
+                    Extracts the geometric trajectory of the source motif and sequentially projects it onto the target anchor. Surrounding cluster shows nearest biblical concepts from resultant projection. Click any word to inspect its study details.
                 </div>
                 ${stepsHtml}
             </div>
@@ -12189,98 +11948,43 @@ class BibleWordMap extends HTMLElement {
             });
         }
 
-        // Step 1 anchor card click: center on anchor
+        // Step 1 anchor card click: center on anchor node if present or pseudo-node
         const anchorCard = this.wordCard.querySelector('.bwm-analogy-step-card[data-step="1"]');
-        if (anchorCard && targetSeedNode) {
+        if (anchorCard) {
             anchorCard.addEventListener('click', () => {
-                this.centerOnNode(targetSeedNode, 500);
+                const targetNode = (targetSeedWordNode && this.nodes ? this.nodes.find(n => n.id === targetSeedWordNode.id) : null) || (this.nodes ? this.nodes.find(n => n.w?.toLowerCase() === targetSeedTitle?.toLowerCase()) : null) || pseudoNode;
+                if (targetNode) {
+                    this.centerOnNode(targetNode, 500);
+                }
             });
         }
 
-        // Step cards click: center on projected step pseudo-node
+        // Step cards click: center on pseudo-node
         projectedSteps.forEach(step => {
             const stepCard = this.wordCard.querySelector(`.bwm-analogy-step-card[data-step="${step.stepNum}"]`);
-            if (stepCard && step.pseudoNode) {
+            if (stepCard) {
                 stepCard.addEventListener('click', (e) => {
                     if (e.target.closest('.bwm-analogy-candidate-item') || e.target.closest('button')) return;
-                    this.centerOnNode(step.pseudoNode, 500);
+                    if (pseudoNode) {
+                        this.centerOnNode(pseudoNode, 500);
+                    }
                 });
             }
         });
 
-        // Candidate click: snap pseudo-node to actual word identity
+        // Candidate click: center on word and open Word Study panel
         this.wordCard.querySelectorAll('.bwm-analogy-candidate-item').forEach(el => {
             el.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const stepNum = parseInt(el.getAttribute('data-step'), 10);
                 const wordId = el.getAttribute('data-word-id');
-                const step = projectedSteps.find(p => p.stepNum === stepNum);
-                if (!step) return;
-
-                const clickedWordNode = this.data2d ? this.data2d.find(d => d.id === wordId) : null;
+                const clickedWordNode = (this.nodes ? this.nodes.find(n => n.id === wordId) : null) || (this.data2d ? this.data2d.find(d => d.id === wordId) : null);
                 if (!clickedWordNode) return;
 
-                if (step.snappedWord && step.snappedWord.id === clickedWordNode.id) {
-                    // Unsnap
-                    step.pseudoNode.snappedWord = null;
-                    step.pseudoNode.label = step.pseudoNode.topNeighbor
-                        ? `[${this.formatWord(step.pseudoNode.topNeighbor.word, step.pseudoNode.topNeighbor.pos)}]`
-                        : `[Proj: ${step.sourceWord}]`;
-                    step.pseudoNode.w = step.pseudoNode.topNeighbor ? step.pseudoNode.topNeighbor.word : `Proj: ${step.sourceWord}`;
-                    step.pseudoNode.pos = step.pseudoNode.topNeighbor ? step.pseudoNode.topNeighbor.pos : 'MATH';
-                    step.snappedWord = null;
-                    clickedWordNode.isAnalogySnapped = false;
-                } else {
-                    if (step.snappedWord) {
-                        step.snappedWord.isAnalogySnapped = false;
-                    }
-                    step.pseudoNode.snappedWord = clickedWordNode;
-                    step.pseudoNode.label = this.formatWord(clickedWordNode.w, clickedWordNode.pos);
-                    step.pseudoNode.w = clickedWordNode.w;
-                    step.pseudoNode.pos = clickedWordNode.pos;
-                    step.snappedWord = clickedWordNode;
-                    clickedWordNode.isAnalogySnapped = true;
-                    this.showToast(`Snapped Step ${stepNum} Pseudo-Node to '${clickedWordNode.w}'`, 'info');
+                const mapNode = this.nodes ? this.nodes.find(n => n.id === clickedWordNode.id) : null;
+                if (mapNode) {
+                    this.centerOnNode(mapNode, 500);
                 }
-
-                this.draw();
-                const allFrameNodes = [
-                    ...sourceNodes.map(s => s.node),
-                    targetSeedNode,
-                    ...pseudoNodes
-                ];
-                this.frameNodes(allFrameNodes, 0.18, 500);
-                this.showAnalogyProjectionPanel(analogyData, stepNum);
-            });
-        });
-
-        // Unsnap button click
-        this.wordCard.querySelectorAll('button[data-action="unsnap-step"]').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const stepNum = parseInt(btn.getAttribute('data-step'), 10);
-                const step = projectedSteps.find(p => p.stepNum === stepNum);
-                if (!step) return;
-
-                if (step.snappedWord) {
-                    step.snappedWord.isAnalogySnapped = false;
-                }
-                step.pseudoNode.snappedWord = null;
-                step.pseudoNode.label = step.pseudoNode.topNeighbor
-                    ? `[${this.formatWord(step.pseudoNode.topNeighbor.word, step.pseudoNode.topNeighbor.pos)}]`
-                    : `[Proj: ${step.sourceWord}]`;
-                step.pseudoNode.w = step.pseudoNode.topNeighbor ? step.pseudoNode.topNeighbor.word : `Proj: ${step.sourceWord}`;
-                step.pseudoNode.pos = step.pseudoNode.topNeighbor ? step.pseudoNode.topNeighbor.pos : 'MATH';
-                step.snappedWord = null;
-
-                this.draw();
-                const allFrameNodes = [
-                    ...sourceNodes.map(s => s.node),
-                    targetSeedNode,
-                    ...pseudoNodes
-                ];
-                this.frameNodes(allFrameNodes, 0.18, 500);
-                this.showAnalogyProjectionPanel(analogyData, stepNum);
+                this.showWordInspector(clickedWordNode, 'verses');
             });
         });
 
@@ -12900,6 +12604,18 @@ class BibleWordMap extends HTMLElement {
                 item.appendChild(label);
                 container.appendChild(item);
             });
+            return;
+        }
+
+        if (this.activeAnalogyProjection) {
+            if (this.drawerClearAllBtn) this.drawerClearAllBtn.classList.remove('visible');
+            container.innerHTML = '<div class="bwm-empty-state">No active words for Projection</div>';
+            return;
+        }
+
+        if (this.activeMotifMatch || (this.motifResults && this.motifResults.length > 0)) {
+            if (this.drawerClearAllBtn) this.drawerClearAllBtn.classList.remove('visible');
+            container.innerHTML = '<div class="bwm-empty-state">No active words for Motif</div>';
             return;
         }
 
@@ -18023,6 +17739,7 @@ class BibleWordMap extends HTMLElement {
                     n.isAnalogyTargetSeed ||
                     n.isAnalogyPseudoNode ||
                     n.isAnalogySnapped ||
+                    n.isAnalogyWord ||
                     (this.hoveredNode === n)
                 );
                 this.ctx.globalAlpha = isRelevant ? 1.0 : 0.10;
@@ -18244,6 +17961,7 @@ class BibleWordMap extends HTMLElement {
                     n.isAnalogyTargetSeed ||
                     n.isAnalogyPseudoNode ||
                     n.isAnalogySnapped ||
+                    n.isAnalogyWord ||
                     (this.hoveredNode === n)
                 );
                 labelAlpha = isRelevant ? 1.0 : 0.0;
@@ -18260,7 +17978,7 @@ class BibleWordMap extends HTMLElement {
             }
             this.ctx.globalAlpha = labelAlpha;
             
-            let showLabel = n.isAnalogyPseudoNode || n.isAnalogyTargetSeed || n.isAnalogySource || n.isPseudoNode || isSearchMotifNode || isMotifMatched || (!isMotifMode && !this.activeAnalogyProjection && (n.isChapter || n.isChapterVerse || n.isVerse || n.isBook || n.isSenseNode || n.isEntityNode || n.is_entity || (matchesT && (this.isSearchMode || n.isKw || autoShowLabels || n.isBookWord || n.isVerseWord || n.isChapterWord || isHighlighted))));
+            let showLabel = n.isAnalogyPseudoNode || n.isAnalogyTargetSeed || n.isAnalogySource || n.isAnalogyWord || n.isPseudoNode || isSearchMotifNode || isMotifMatched || (!isMotifMode && !this.activeAnalogyProjection && (n.isChapter || n.isChapterVerse || n.isVerse || n.isBook || n.isSenseNode || n.isEntityNode || n.is_entity || (matchesT && (this.isSearchMode || n.isKw || autoShowLabels || n.isBookWord || n.isVerseWord || n.isChapterWord || isHighlighted))));
             if (showLabel) {
                 this.ctx.shadowBlur = 0;
                 
@@ -18946,7 +18664,7 @@ class BibleWordMap extends HTMLElement {
             }
             if (this.hoveredNode.isPseudoNode) {
                 if (this.hoveredNode.isAnalogyPseudoNode && this.activeAnalogyProjection) {
-                    this.showAnalogyProjectionPanel(this.activeAnalogyProjection, this.hoveredNode.analogyStep);
+                    this.showAnalogyProjectionPanel(this.activeAnalogyProjection);
                     return;
                 }
                 if (this.hoveredNode.v) {
@@ -18957,8 +18675,14 @@ class BibleWordMap extends HTMLElement {
                 }
                 return;
             }
-            if (this.activeAnalogyProjection && (this.hoveredNode.isAnalogySource || this.hoveredNode.isAnalogyTargetSeed || this.hoveredNode.isAnalogyPseudoNode)) {
-                this.showAnalogyProjectionPanel(this.activeAnalogyProjection, this.hoveredNode.analogyStep || 1);
+            if (this.activeAnalogyProjection) {
+                if (this.wordCard && this.wordCard.classList.contains('visible') && this.inspectorNode === this.hoveredNode) {
+                    if (!this.isStudyPanelPinned) {
+                        this.hideWordInspector();
+                    }
+                } else {
+                    this.showWordInspector(this.hoveredNode, this.lastWordInspectorTab || 'verses');
+                }
                 return;
             }
             if (isDesktop) {

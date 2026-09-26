@@ -3,8 +3,12 @@
 ## [13.0.1] - 2026-09-25
 ### Fixed
 - **Analogy Study Panel Dark Mode Styling:** Fixed bright white backgrounds on analogy step cards in dark mode by introducing the `--bwm-card-bg` theme variable (`#1e1e1e` in dark mode, `#ffffff` in light mode), styling `.bwm-study-tab-btn`, and adjusting candidate ranks, badges, and titles for crisp dark mode contrast.
-- **Analogy Study Panel Share Button Removal:** Removed the redundant share link button from the Projected Analogy study panel header, as the global share link at the top of the page already shares the stateful URL.
-- **Projection Info Reopen Navigation:** Fixed the top-right map reopen button when closing the Projected Analogy study panel. Instead of displaying the first search word (e.g. "Jesus Info") and opening the generic word study drawer, the button now displays "Projection info" and re-opens the Projected Analogy panel. Clicking any analogy node on the canvas also re-opens the analogy panel focused on that step.
+- **Analogy & Motif Study Panel Share Button Removal:** Removed the redundant share link buttons from both the Projected Analogy and Motif Results study panel headers, as the global share link at the top of the page already shares the stateful URL.
+- **Projection Info Reopen Navigation:** Fixed the top-right map reopen button when closing the Projected Analogy study panel. Instead of displaying the first search word (e.g. "Jesus Info") and opening the generic word study drawer, the button now displays "Projection info" and re-opens the Projected Analogy panel.
+- **Analogy Projection Physics Cluster Layout:** Replaced the static dual-lane single pseudo-node layout with an interactive physics cluster. Centered a pseudo-node representing the resultant projection at `(0, 0)` with surrounding nearest neighbor words dynamically clustered via the D3 force simulation to visualize relational proximity.
+- **Word Study Inspection for Projection Nodes:** Enabled direct word inspection for all projected words in the cluster and candidate items in the Projected Analogy panel, centering on the word and opening the Word Study panel with verse occurrences. Clicking the center pseudo-node re-opens the Projected Analogy panel.
+- **Active Words Drawer Cleanup for Motif & Projection Modes:** In the Options drawer under "ACTIVE WORDS", suppressed extraneous "analogy" checkboxes and displayed clean empty state indicators ("No active words for Projection" or "No active words for Motif") depending on the active exploration mode.
+- **Neighbor Slider Dynamic Re-Projection:** Connected the Options drawer neighbor slider to re-execute analogy projections in real-time.
 
 ## [13.0.0] - 2026-09-23
 ### Added
