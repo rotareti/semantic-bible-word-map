@@ -5363,7 +5363,7 @@ class BibleWordMap extends HTMLElement {
             this.foundation = 'bsb';
         }
 
-        const vParam = '?v=13.0.1';
+        const vParam = '?v=13.1.0';
         if (this.foundation === 'lxx') {
             this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -6362,7 +6362,7 @@ class BibleWordMap extends HTMLElement {
         this._wordsLoadPromise = (async () => {
             try {
                 const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-                const vParam = '?v=13.0.1';
+                const vParam = '?v=13.1.0';
                 let src2d = this.src2d;
                 if (!src2d) {
                     if (this.foundation === 'lxx') {
@@ -6435,7 +6435,7 @@ class BibleWordMap extends HTMLElement {
         this._versesLoadPromise = (async () => {
             try {
                 const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-                const vParam = '?v=13.0.1';
+                const vParam = '?v=13.1.0';
                 let srcVerses = this.srcVerses;
                 let srcVersemap = this.srcVersemap;
                 if (!srcVerses || !srcVersemap) {
@@ -6527,7 +6527,7 @@ class BibleWordMap extends HTMLElement {
         this._chaptersLoadPromise = (async () => {
             try {
                 const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-                const vParam = '?v=13.0.1';
+                const vParam = '?v=13.1.0';
                 let srcChapters = this.srcChapters;
                 if (!srcChapters) {
                     if (this.foundation === 'lxx') {
@@ -6576,7 +6576,7 @@ class BibleWordMap extends HTMLElement {
         this._booksLoadPromise = (async () => {
             try {
                 const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-                const vParam = '?v=13.0.1';
+                const vParam = '?v=13.1.0';
                 let srcBooks = this.srcBooks;
                 if (!srcBooks) {
                     if (this.foundation === 'lxx') {
@@ -6659,7 +6659,7 @@ class BibleWordMap extends HTMLElement {
         }
 
         const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-        const vParam = '?v=13.0.1';
+        const vParam = '?v=13.1.0';
         if (this.foundation === 'lxx') {
             this.src2d = getAttr('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = getAttr('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -8796,7 +8796,7 @@ class BibleWordMap extends HTMLElement {
 
         this._englishSemanticDataPromise = (async () => {
             const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-            const vParam = '?v=13.0.1';
+            const vParam = '?v=13.1.0';
             const wordmapSrc = getAttr('src-2d-bsb') || getAttr('src-2d') || ('data/output/wordmap_2d.json' + vParam);
             const versesSrc = getAttr('src-verses-bsb') || getAttr('src-verses') || ('data/output/verse_index.json' + vParam);
             const versemapSrc = getAttr('src-versemap-bsb') || getAttr('src-versemap') || ('data/output/versemap_2d.json' + vParam);
@@ -8870,7 +8870,7 @@ class BibleWordMap extends HTMLElement {
         if (this._cachedWordmaps[foundation]) {
             return this._cachedWordmaps[foundation];
         }
-        const vParam = '?v=13.0.1';
+        const vParam = '?v=13.1.0';
         let src = '';
         if (foundation === 'lxx') {
             src = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
@@ -13253,7 +13253,7 @@ class BibleWordMap extends HTMLElement {
         }
 
         const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-        const vParam = '?v=13.0.1';
+        const vParam = '?v=13.1.0';
         if (foundation === 'lxx') {
             this.src2d = getAttr('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = getAttr('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -15412,7 +15412,6 @@ class BibleWordMap extends HTMLElement {
                         <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;">
                             <span class="bwm-window-badge" style="background: ${genreColor};">${book.genre}</span>
                             <span class="bwm-window-subtitle-inline">${book.testament === 'OT' ? 'Old Testament' : 'New Testament'}</span>
-                            ${(book.sim_christ !== undefined && book.sim_christ !== null) ? `<span class="bwm-window-badge" style="background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3);" title="Semantic cosine alignment with Christ anchor vector">✝ Christ: ${(book.sim_christ * 100).toFixed(1)}%</span>` : ''}
                         </div>
                         <h3 class="bwm-window-title">${book.name}</h3>
                         <div class="bwm-window-subtitle">${book.verses.toLocaleString()} verses &bull; ${book.total_words.toLocaleString()} words</div>
@@ -16820,7 +16819,6 @@ class BibleWordMap extends HTMLElement {
                             <span class="bwm-window-badge" style="background: ${genreColor};">${genre}</span>
                             <span class="bwm-window-subtitle-inline">${testament === 'OT' ? 'Old Testament' : 'New Testament'}</span>
                             <span class="bwm-window-badge-muted">${cRecord.verses || chapterVerses.length} verses</span>
-                            ${(cRecord.sim_christ !== undefined && cRecord.sim_christ !== null) ? `<span class="bwm-window-badge" style="background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3);" title="Semantic cosine alignment with Christ anchor vector">✝ Christ: ${(cRecord.sim_christ * 100).toFixed(1)}%</span>` : ''}
                         </div>
                         <div class="bwm-verse-nav-header">
                             <button type="button" class="bwm-verse-nav-chevron" id="bwm-chap-prev-btn" title="${prevChap ? `Previous: ${formatChapterRef(prevChap)}` : 'First chapter'}" ${!prevChap ? 'disabled' : ''} aria-label="Previous chapter">
@@ -17697,7 +17695,6 @@ class BibleWordMap extends HTMLElement {
                             <h3 class="bwm-window-title" style="margin: 0;">${formattedRef}</h3>
                             <span class="bwm-book-badge" style="background:${genreColor};">${genre}</span>
                             <span class="bwm-window-badge-muted">${testament === 'OT' ? 'Old Testament' : 'New Testament'}</span>
-                            ${(verse.sc !== undefined && verse.sc !== null) ? `<span class="bwm-window-badge" style="background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3);" title="Semantic cosine alignment with Christ anchor vector">✝ Christ: ${(verse.sc * 100).toFixed(1)}%</span>` : ''}
                         </div>
                         <div class="bwm-verse-nav-controls" style="display: flex; align-items: center; gap: 4px; margin-top: 4px;">
                             <button type="button" class="bwm-verse-nav-chevron" id="bwm-verse-prev-btn" title="${prevVerse ? `Previous: ${formatVerseRef(prevVerse)}` : 'First verse'}" ${!prevVerse ? 'disabled' : ''} aria-label="Previous verse">
@@ -20660,9 +20657,6 @@ class BibleWordMap extends HTMLElement {
                             ${indirectBadgeHtml}
                             <span class="bwm-window-badge" id="bwm-word-occ-badge">${occBadgeText}</span>
                             ${booksBadgeText ? `<span class="bwm-window-badge-muted" id="bwm-word-books-badge">${booksBadgeText}</span>` : ''}
-                            ${(node.sim_christ !== undefined || (vocabNode && vocabNode.sim_christ !== undefined)) ? `
-                                <span class="bwm-window-badge" style="background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3);" title="Semantic cosine alignment with Christ anchor vector">✝ Christ: ${(((node.sim_christ !== undefined ? node.sim_christ : vocabNode.sim_christ)) * 100).toFixed(1)}%</span>
-                            ` : ''}
                         </div>
                         ${origHeaderLine}
                     </div>
