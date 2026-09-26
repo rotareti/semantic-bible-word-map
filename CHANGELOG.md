@@ -1,5 +1,34 @@
 # Changelog
 
+## [13.0.2] - 2026-09-26
+### Added
+- **Keyboard Navigation & Quick Shortcuts:**
+  - Added `/` shortcut to jump into a clean, focused search bar from anywhere on the page for mouse-free navigation.
+  - Added `O` / `Alt+O` shortcut to toggle the Options drawer and `S` / `Alt+S` to toggle the Study panel.
+  - Added desktop `Tab` key completion for highlighted autocomplete suggestions, preserving preceding and following query text.
+  - Added keyboard shortcuts documentation to the Map Guide & Legend window.
+- **Canvas Interactivity for Alternative Motifs:**
+  - Added hover highlights and trajectory labels for alternative matched motifs on the canvas.
+  - Enabled direct tap/click on matched motif trajectories and nodes on canvas (for both mobile and desktop) to activate matches.
+
+### Changed & Fixed
+- **Motif & Projection Step Label Styling:**
+  - Styled Motif and Projection step labels to match standard percentage similarity badges (pill shape with background fill, border, and muted text).
+  - Lightened vertical guideline masks ("Anchor", ": Projection") in light mode to eliminate harsh dark rectangular blocks.
+- **Advanced Settings Collapsible Section:**
+  - Placed "Motif Trajectory Weights" and "Contextual Disambiguation" inside a collapsible "Advanced Settings" section in the Options drawer (collapsed by default).
+  - Preserved "Contextual Disambiguation" in a greyed-out and disabled state.
+- **Book Landmark Mode Genre Label Visibility:**
+  - Fixed genre text (e.g. Law, Gospels) rendering in black on dark backgrounds and white on light backgrounds by applying theme text color fill styling.
+- **Arithmetic Pseudo-Node Icon Scaling & Contrast:**
+  - Scaled summation (`∑`) and colon (`:`) symbols with node radius so they fit neatly inside pseudo-nodes without clipping.
+  - Adapted yellow label text under pseudo-nodes to amber `#b45309` in light mode for crisp contrast while retaining gold in dark mode.
+- **Pseudo-Node Inspector Navigation & Cleanup:**
+  - Fixed reopen info button (e.g. `(faith + perseverance) Info`) to return directly to the Pseudo-Node inspector instead of the Word Study panel.
+  - Removed redundant share button from the computed pseudo-node study panel.
+- **Analogy Projection Candidate Synchronization:**
+  - Aligned candidate scoring in Analogy Projections with Motif composite scoring (directional congruence, Christ gravity, POS bonuses, and low-frequency noise filtering) so projections like `Moses > Law : Joseph` reliably surface `physician` as the top projection candidate.
+
 ## [13.0.1] - 2026-09-25
 ### Added
 - **Syntactic (POS) Weighting for Motif Matching & Analogy Projection:** Introduced soft syntactic bonus scoring across motif search and analogy projections:
