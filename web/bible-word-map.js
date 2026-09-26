@@ -12090,6 +12090,7 @@ class BibleWordMap extends HTMLElement {
             this.ctx.lineTo(p2X, p2Y);
             this.ctx.closePath();
             this.ctx.fill();
+            this.ctx.restore();
 
             // Step Label pill badge matching similarity % label styling
             const midX = (startX + endX) / 2;
@@ -12182,6 +12183,7 @@ class BibleWordMap extends HTMLElement {
             this.ctx.lineTo(p2X, p2Y);
             this.ctx.closePath();
             this.ctx.fill();
+            this.ctx.restore();
 
             // Midpoint pill badge matching similarity % label styling
             const midX = (startX + endX) / 2;

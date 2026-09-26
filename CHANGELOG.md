@@ -12,6 +12,8 @@
   - Enabled direct tap/click on matched motif trajectories and nodes on canvas (for both mobile and desktop) to activate matches.
 
 ### Changed & Fixed
+- **Analogy Projection Canvas Context Overflow Fix:**
+  - Fixed unbalanced `ctx.save()` calls in `drawAnalogyProjection()` by ensuring the arrowhead rendering block calls `ctx.restore()`. This resolves an issue where the canvas transform accumulated on every tick, cascading the projection into the bottom-right quadrant and freezing canvas hit testing.
 - **Motif & Projection Step Label Styling:**
   - Styled Motif and Projection step labels to match standard percentage similarity badges (pill shape with background fill, border, and muted text).
   - Lightened vertical guideline masks ("Anchor", ": Projection") in light mode to eliminate harsh dark rectangular blocks.
