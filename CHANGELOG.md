@@ -1,5 +1,27 @@
 # Changelog
 
+## [13.3.0] - 2026-09-26
+### Added
+- **Early Church Fathers Semantic Projection (Apostolic Fathers):**
+  - **3 Canonical Foundations Preserved:** Foundations strictly remain BSB, LXX, and VUL. The 15 Apostolic Fathers treatises (413 chapters, 1,975 sections) are projected into the existing BSB and LXX semantic spaces rather than creating a separate 4th canon.
+  - **Early Church Fathers Drawer Toggle:** Added a pill toggle (Off / Include) under Patristic Literature in the Options drawer, persisted in localStorage (`bwm-include-church-fathers`, default Off).
+  - **Canvas Book Mode Integration:** When Include is toggled on, the 15 treatises appear on the canvas in Book View with indigo accent rings and connecting similarity links to related biblical books. When Off, nothing patristic appears on the canvas.
+  - **Book Study Card Integration:** In Book View, inspecting an Apostolic Fathers treatise displays its canonical scripture siblings, distinctive themes, and an embedded parallel reader (Lightfoot English and Tauber Greek text). Canonical books display Early Church Fathers parallels with match percentages and direct inspection chips.
+  - **Chapter Study Card Integration:** Added a "Fathers" subtab to chapter study cards showing semantically related Early Church Fathers chapters with similarity match percentages and expandable bilingual text.
+  - **Verse Study Card Integration:** Added subtabs for Scripture and Church Fathers showing closest Apostolic Fathers sections with match percentages and expandable bilingual text.
+  - **Word Inspector Integration:** Added a "Church Fathers" tab displaying lexical occurrences across the 15 treatises with treatise breakdown chips and bilingual section cards.
+  - **Full Attributions:** Added attributions in README.md, ABOUT.md, and the in-app About modal for J.B. Lightfoot (1891 English translation, CCEL) and Dan Tauber (Apostolic Fathers Greek critical text).
+
+### Fixed
+- **Context-Aware Study Panel Keyboard Shortcut (`S` / `Alt+S`):**
+  - Replaced the hardcoded word inspector reopening behavior with context-aware study panel toggling. Pressing `S` now opens whatever study card is represented by the active info button (chapter, book, verse, or word) or matches the current view mode, and cleanly closes any open study card when pressed again.
+- **Mobile Swipe-Down Gesture in Study Panel:**
+  - Confined vertical drag-to-dismiss strictly to the top sheet handle (`.bwm-sheet-handle, .bwm-drawer-handle`). Users can now smoothly scroll through chapter text, verses, and parallel readers without unintentionally dismissing the study sheet.
+- **Badge Text Overflow & Clunky Wrapping on Small Screens:**
+  - Enforced single-line ellipsis truncation on badges (`.bwm-window-badge`, `.bwm-window-badge-muted`, `.bwm-book-badge`, `.bwm-crossref-title-wrap`, `.bwm-crossref-ref`, `.bwm-crossref-badge`) to prevent clunky multi-line wrapping in compact study panels.
+- **Connecting Similarity Lines in Landmark Book Mode:**
+  - Resolved missing book-to-book connection lines by drawing them with adaptive theme contrast and highlighting hovered links on a second canvas pass in bright blue.
+
 ## [13.2.0] - 2026-09-26
 ### Added
 - **Click+Drag Resizable Study Panel for Desktop:**

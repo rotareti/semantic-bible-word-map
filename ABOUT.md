@@ -111,6 +111,8 @@ This project was built using the following open datasets and scholarship:
 - **[William Whitaker's WORDS Latin-English Dictionary](https://github.com/Salihbasic/whitaker-words-jsonisator)**: Comprehensive Latin morphological and lexical dictionary compiled by William Whitaker (Public Domain).
 - **[PROIEL Latin Treebank of the Vulgate](https://github.com/UniversalDependencies/UD_Latin-PROIEL)**: Pragmatic Resources in Old Indo-European Languages treebank of Jerome's Vulgate text with gold-standard lemmatization and Universal Dependencies UPOS tagging (University of Oslo, CC BY-NC-SA 3.0 / CC BY 4.0).
 - **[CLTK Latin Lemmatizer](https://github.com/cltk/latin_lemmatizer)**: Classical Language Toolkit lemmatizer tables for Classical and Medieval Latin texts.
+- **[The Apostolic Fathers (English Translation)](https://www.ccel.org/ccel/lightfoot/fathers.html)**: J.B. Lightfoot, *The Apostolic Fathers* (London: Macmillan and Co., 1891), via Christian Classics Ethereal Library (CCEL, Public Domain).
+- **[The Apostolic Fathers (Greek Critical Text)](https://github.com/tauber/apostolic-fathers)**: Dan Tauber / Lake edition morphologically tagged Greek text (CC BY-SA).
 - **[D3.js (Data-Driven Documents)](https://d3js.org/)**: JavaScript library by Mike Bostock used for interactive physics simulations and high-performance canvas rendering (BSD 3-Clause).
 
 ---
