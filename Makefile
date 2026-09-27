@@ -27,9 +27,26 @@ centroids:
 
 christocentric-map: map centroids
 
+parse-af:
+	pipeline/venv/bin/python pipeline/fetch_af.py
+	pipeline/venv/bin/python pipeline/build_af.py
+
+train-af:
+	pipeline/venv/bin/python pipeline/train_embeddings_af.py
+
+map-af:
+	pipeline/venv/bin/python pipeline/generate_map_af.py
+
+centroids-af:
+	pipeline/venv/bin/python pipeline/generate_verse_centroids_af.py
+	pipeline/venv/bin/python pipeline/generate_chapter_centroids_af.py
+	pipeline/venv/bin/python pipeline/generate_book_centroids_af.py
+
+af: parse-af train-af map-af centroids-af
+
 serve:
 	ln -sfn ../data web/data
 	cd web && python3 -m http.server 8000
 
-all: setup parse train map centroids
+all: setup parse train map centroids af
 

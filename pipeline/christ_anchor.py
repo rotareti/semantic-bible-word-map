@@ -58,6 +58,20 @@ CANON_CHRIST_CONFIGS = {
             'COL 1:15', 'HEB 1:3', 'ISA 53:5'
         ],
         'display_label': 'Iesus Christus (The Messiah, Son of God)'
+    },
+    'af': {
+        'canon_name': 'Apostolic Fathers (AF)',
+        'tokens': {
+            'jesus_PROPN': 0.35,
+            'christ_PROPN': 0.35,
+            'savior_NOUN': 0.15,
+            'lord_NOUN': 0.15
+        },
+        'token_fallbacks': ['jesus', 'christ', 'savior', 'lord'],
+        'landmark_verses': [
+            '1CLE 32:4', 'IEPH 7:2', 'ISMY 1:1', '2CLE 1:1', 'POLY 2:1'
+        ],
+        'display_label': 'Jesus Christ (Our Lord & Savior)'
     }
 }
 
