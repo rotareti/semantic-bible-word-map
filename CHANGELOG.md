@@ -21,6 +21,9 @@
   - Enforced single-line ellipsis truncation on badges (`.bwm-window-badge`, `.bwm-window-badge-muted`, `.bwm-book-badge`, `.bwm-crossref-title-wrap`, `.bwm-crossref-ref`, `.bwm-crossref-badge`) to prevent clunky multi-line wrapping in compact study panels.
 - **Connecting Similarity Lines in Landmark Book Mode:**
   - Resolved missing book-to-book connection lines by drawing them with adaptive theme contrast and highlighting hovered links on a second canvas pass in bright blue.
+- **Mobile Study Panel Full-Height Sheet & Viewport Fit:**
+  - Resolved mobile study sheet horizontal overflow where desktop minimum width constraints (440px) caused the panel to bleed past the right viewport boundary on mobile devices. Restricted minimum width strictly to desktop viewports (> 768px).
+  - Maximized reading real estate on mobile devices by expanding the study sheet height to cover 100% of the screen (retaining an elegant 10px top margin with rounded corners and drag handle), giving users full vertical space for reading chapters, cross-references, and patristic texts.
 
 ## [13.2.0] - 2026-09-26
 ### Added

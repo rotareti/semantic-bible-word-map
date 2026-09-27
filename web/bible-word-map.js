@@ -2431,7 +2431,6 @@ class BibleWordMap extends HTMLElement {
                     bottom: 0;
                     right: 0;
                     width: var(--bwm-study-panel-width, 440px);
-                    min-width: 440px;
                     max-width: calc(100% - 40px);
                     height: auto;
                     max-height: none;
@@ -2519,6 +2518,9 @@ class BibleWordMap extends HTMLElement {
                     justify-content: center;
                 }
                 @media (min-width: 769px) {
+                    .bwm-window-card {
+                        min-width: 440px;
+                    }
                     .bwm-study-resize-handle {
                         display: flex;
                     }
@@ -3839,15 +3841,48 @@ class BibleWordMap extends HTMLElement {
                         background: var(--bwm-node-hover);
                     }
 
-                    .bwm-window-card,
+                    .bwm-window-card {
+                        top: auto !important;
+                        bottom: 0 !important;
+                        left: 0 !important;
+                        right: 0 !important;
+                        width: 100% !important;
+                        min-width: 0 !important;
+                        max-width: 100% !important;
+                        height: calc(100% - 10px) !important;
+                        height: calc(100dvh - 10px) !important;
+                        max-height: calc(100% - 10px) !important;
+                        max-height: calc(100dvh - 10px) !important;
+                        border-radius: 16px 16px 0 0 !important;
+                        border-top: 1px solid var(--bwm-border) !important;
+                        border-bottom: none !important;
+                        border-left: none !important;
+                        border-right: none !important;
+                        box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.25) !important;
+                        background-color: rgba(255, 255, 255, 0.95) !important;
+                        background-color: color-mix(in srgb, var(--bwm-bg) 95%, transparent) !important;
+                        backdrop-filter: blur(16px) !important;
+                        -webkit-backdrop-filter: blur(16px) !important;
+                        transform: translateY(105%) !important;
+                        opacity: 0 !important;
+                        pointer-events: none !important;
+                        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease !important;
+                        z-index: 10040 !important;
+                        overflow: hidden !important;
+                        box-sizing: border-box !important;
+                        margin: 0 !important;
+                    }
+
                     .bwm-drawer {
                         top: auto !important;
                         bottom: 0 !important;
                         left: 0 !important;
                         right: 0 !important;
                         width: 100% !important;
+                        min-width: 0 !important;
                         max-width: 100% !important;
-                        max-height: min(72vh, calc(100% - var(--bwm-top-bar-height, 52px) - 14px)) !important;
+                        max-height: min(85vh, calc(100% - var(--bwm-top-bar-height, 52px) - 14px)) !important;
+                        max-height: min(85dvh, calc(100dvh - var(--bwm-top-bar-height, 52px) - 14px)) !important;
                         height: auto !important;
                         border-radius: 16px 16px 0 0 !important;
                         border-top: 1px solid var(--bwm-border) !important;
@@ -3859,21 +3894,35 @@ class BibleWordMap extends HTMLElement {
                         background-color: color-mix(in srgb, var(--bwm-bg) 95%, transparent) !important;
                         backdrop-filter: blur(16px) !important;
                         -webkit-backdrop-filter: blur(16px) !important;
-                        transform: translateY(105%);
-                        opacity: 0;
-                        pointer-events: none;
+                        transform: translateY(105%) !important;
+                        opacity: 0 !important;
+                        pointer-events: none !important;
                         transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease !important;
-                        z-index: 10020 !important;
-                        overflow: hidden;
+                        z-index: 10040 !important;
+                        overflow: hidden !important;
+                        box-sizing: border-box !important;
+                        margin: 0 !important;
                     }
 
                     .bwm-window-card.visible,
                     .bwm-drawer.open {
                         left: 0 !important;
+                        right: 0 !important;
                         transform: translateY(0) !important;
                         opacity: 1 !important;
                         pointer-events: auto !important;
                         z-index: 10040 !important;
+                    }
+
+                    .bwm-window-card:not(.visible) {
+                        transform: translateY(105%) !important;
+                        opacity: 0 !important;
+                        pointer-events: none !important;
+                    }
+
+                    .bwm-window-body {
+                        padding: 12px 14px max(24px, calc(env(safe-area-inset-bottom, 0px) + 20px)) 14px;
+                        overflow-x: hidden;
                     }
 
                     .bwm-drawer-header {
