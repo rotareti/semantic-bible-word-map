@@ -3842,17 +3842,15 @@ class BibleWordMap extends HTMLElement {
                     }
 
                     .bwm-window-card {
-                        top: auto !important;
+                        top: 6px !important;
                         bottom: 0 !important;
                         left: 0 !important;
                         right: 0 !important;
                         width: 100% !important;
                         min-width: 0 !important;
                         max-width: 100% !important;
-                        height: calc(100% - 10px) !important;
-                        height: calc(100dvh - 10px) !important;
-                        max-height: calc(100% - 10px) !important;
-                        max-height: calc(100dvh - 10px) !important;
+                        height: calc(100% - 6px) !important;
+                        max-height: calc(100% - 6px) !important;
                         border-radius: 16px 16px 0 0 !important;
                         border-top: 1px solid var(--bwm-border) !important;
                         border-bottom: none !important;
@@ -3881,8 +3879,7 @@ class BibleWordMap extends HTMLElement {
                         width: 100% !important;
                         min-width: 0 !important;
                         max-width: 100% !important;
-                        max-height: min(85vh, calc(100% - var(--bwm-top-bar-height, 52px) - 14px)) !important;
-                        max-height: min(85dvh, calc(100dvh - var(--bwm-top-bar-height, 52px) - 14px)) !important;
+                        max-height: calc(100% - 6px) !important;
                         height: auto !important;
                         border-radius: 16px 16px 0 0 !important;
                         border-top: 1px solid var(--bwm-border) !important;
@@ -3918,6 +3915,23 @@ class BibleWordMap extends HTMLElement {
                         transform: translateY(105%) !important;
                         opacity: 0 !important;
                         pointer-events: none !important;
+                    }
+
+                    .bwm-window-header {
+                        padding: 8px 14px 10px 14px;
+                    }
+
+                    .bwm-window-close {
+                        font-size: 1.55em;
+                        padding: 4px 8px;
+                        min-width: 32px;
+                        min-height: 32px;
+                        opacity: 0.75;
+                    }
+
+                    .bwm-window-close:active {
+                        opacity: 1;
+                        background: var(--bwm-badge-bg);
                     }
 
                     .bwm-window-body {
