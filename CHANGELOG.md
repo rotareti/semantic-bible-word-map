@@ -1,5 +1,12 @@
 # Changelog
 
+## [13.3.1] - 2026-09-28
+### Fixed
+- **Mobile Study Panel Container Boundaries & Header Clearance:**
+  - Constrained mobile study panel and drawer height within the main container div to prevent bleeding into the site header. Kept site title, home link, theme toggle, and share buttons fully visible and unobstructed.
+  - Positioned the study panel close button and drag handle with comfortable clearance below the top of the container, enlarging the touch target for effortless closing on mobile touchscreens.
+  - Added defensive overflow clipping to the main container.
+
 ## [13.3.0] - 2026-09-26
 ### Added
 - **Early Church Fathers Semantic Projection (Apostolic Fathers):**
@@ -21,9 +28,8 @@
   - Enforced single-line ellipsis truncation on badges (`.bwm-window-badge`, `.bwm-window-badge-muted`, `.bwm-book-badge`, `.bwm-crossref-title-wrap`, `.bwm-crossref-ref`, `.bwm-crossref-badge`) to prevent clunky multi-line wrapping in compact study panels.
 - **Connecting Similarity Lines in Landmark Book Mode:**
   - Resolved missing book-to-book connection lines by drawing them with adaptive theme contrast and highlighting hovered links on a second canvas pass in bright blue.
-- **Mobile Study Panel Full-Height Sheet & Viewport Fit:**
+- **Mobile Study Panel Viewport Fit:**
   - Resolved mobile study sheet horizontal overflow where desktop minimum width constraints (440px) caused the panel to bleed past the right viewport boundary on mobile devices. Restricted minimum width strictly to desktop viewports (> 768px).
-  - Maximized reading real estate on mobile devices by expanding the study sheet height within the main container div while preserving top clearance, ensuring the site title, home link, theme toggle, share button, and study panel close button remain fully visible and accessible.
 
 ## [13.2.0] - 2026-09-26
 ### Added
