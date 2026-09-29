@@ -144,6 +144,10 @@ def main():
         'NEH 3:36': 'NEH 4:4', 'NEH 3:37': 'NEH 4:5', 'NEH 10:40': 'NEH 10:39',
     }
 
+    PRO_LXX_TO_BRENTON = {
+        '32': '25', '33': '26', '34': '27', '35': '28', '36': '29'
+    }
+
     index_files = ['verse_index_raw_lxx.json', 'verse_index_lxx.json']
     for ifname in index_files:
         ipath = os.path.join(OUTPUT_DIR, ifname)
@@ -171,11 +175,20 @@ def main():
             en = None
             if b_code in BRENTON_MAP and ref in brenton:
                 en = brenton[ref]
-            elif ref in bsb:
+            elif b_code == 'PRO' and ':' in ref:
+                parts_p = ref.split()
+                if len(parts_p) == 2 and ':' in parts_p[1]:
+                    c_str, v_str = parts_p[1].split(':')
+                    if c_str in PRO_LXX_TO_BRENTON:
+                        target_ref = f"PRO {PRO_LXX_TO_BRENTON[c_str]}:{v_str}"
+                        if target_ref in brenton:
+                            en = brenton[target_ref]
+
+            if not en and ref in bsb:
                 en = bsb[ref]
-            elif ref in OFFSETS and OFFSETS[ref] in bsb:
+            elif not en and ref in OFFSETS and OFFSETS[ref] in bsb:
                 en = bsb[OFFSETS[ref]]
-            elif b_code not in BRENTON_MAP and ref in bsb:
+            elif not en and b_code not in BRENTON_MAP and ref in bsb:
                 en = bsb[ref]
 
             if en:
