@@ -1,5 +1,19 @@
 # Changelog
 
+## [13.3.2] - 2026-09-28
+### Added
+- **Septuagint Proverbs Versification & Textual Variant Mapping:**
+  - **Proverbs 25-29 (Hezekiah Collection) Canonical Mapping:** Automatically resolves MT Proverbs chapters 25-29 to LXX chapters 32-36 in chapter and verse query parsing, autocomplete, chapter study cards, and verse cards.
+  - **Authentic Brenton English Translations:** Enriched pipeline data artifact `verse_index_lxx.json` so all 138 verses in LXX chapters 32-36 feature complete Brenton English translation text instead of bare glosses.
+  - **Textual Variant Autocomplete Badging & Navigation:** Autocomplete detects verses absent in Rahlfs LXX (e.g. Proverbs 16:4, 16:6) and presents actionable suggestions: an `(LXX Parallel)` option pointing to the Greek translated parallel (Proverbs 16:9, 15:27) and a `(BSB Only)` option that seamlessly switches the canon to BSB.
+  - **Informative Search Recovery Cards:** Eliminated dead-end "No verse found" empty states for missing LXX verses by providing contextual recovery cards with textual notes, parallel jump buttons, and BSB switch actions.
+  - **Chapter Reader Textual Note Banners:** Embedded informative banners in the Chapter Reader for Proverbs 16, 20, and 32-36 explaining textual omissions and MT chapter correspondences with a clean, professional SVG info icon.
+  - **MT Cross-Reference Badges on Verse Study Cards:** Added cross-canon alignment badges (e.g. `MT Proverbs 25:1`, `MT Parallel: Proverbs 16:4`) in the verse study panel header for immediate textual clarity.
+
+### Fixed
+- **Accidental Canon Switching on Search Recovery:** Fixed `bwm-recovery-btn-suggested-verse` click handling to strictly check `data-switch-bsb="true"`, preventing unintended switches to BSB when selecting an LXX parallel verse.
+- **Foundation Switching Race Conditions:** Stored `_pendingVerseSearch` when switching to BSB from autocomplete before triggering asynchronous data reload, ensuring searched verses load reliably after canon reinitialization.
+
 ## [13.3.1] - 2026-09-28
 ### Fixed
 - **Mobile Study Panel Container Boundaries & Header Clearance:**
