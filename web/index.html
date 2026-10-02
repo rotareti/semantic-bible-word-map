@@ -84,7 +84,10 @@
         if (homeLink) {
             const handleHomeReset = (e) => {
                 e.preventDefault();
-                if (window.history && window.history.replaceState) {
+                const hasParams = Boolean((window.location.search && window.location.search.length > 1) || window.location.hash);
+                if (hasParams && window.history && window.history.pushState) {
+                    window.history.pushState(null, '', window.location.pathname);
+                } else if (window.history && window.history.replaceState) {
                     window.history.replaceState(null, '', window.location.pathname);
                 }
                 if (mapEl) {
