@@ -1,5 +1,14 @@
 # Changelog
 
+## [13.4.0] - 2026-10-06
+### Added
+- **Browser History Back/Forward Navigation & State Traversal:**
+  - **Full History Integration:** Supported standard browser Back and Forward navigation (`popstate` events) across all user interactions, enabling users to seamlessly step back and forward through search queries, view mode changes (words, verses, chapters, books), canon foundation switches (BSB, LXX, VUL), and motif trajectory results without losing context.
+  - **Desktop Backspace Navigation Shortcut:** Pressing `Backspace` when focus is outside text inputs, textareas, and editable fields triggers `window.history.back()`, providing an intuitive desktop browser shortcut for backtracking through semantic map states.
+  - **Comprehensive State Restoration:** Restores active queries, searched tokens, view modes, chapter connection modes, verse rendering modes, testament filters, motif matching weights (`wd`, `wa`, `wg`, `wp`), active motif index, and canvas viewport zoom/pan transforms on history traversal.
+  - **Home Link Reset History Preservation:** Updated the site header home link to push a history state when query parameters are active, allowing users to effortlessly navigate back to their previous research state.
+  - **Popstate Cycle & Initial Load Protection:** Added internal guards (`_isInitialLoad`, `_isHandlingPopState`) to ensure initial component mounting and history state restoration do not introduce redundant history entries or trigger recursive state synchronization cycles.
+
 ## [13.3.2] - 2026-09-28
 ### Added
 - **Septuagint Proverbs Versification & Textual Variant Mapping:**
