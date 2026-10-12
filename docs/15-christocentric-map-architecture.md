@@ -113,11 +113,3 @@ pipeline/venv/bin/python pipeline/corpus_manager.py --action all --corpus bsb
 pipeline/venv/bin/python pipeline/corpus_manager.py --action all --corpus lxx
 pipeline/venv/bin/python pipeline/corpus_manager.py --action all --corpus vul
 ```
-
-To ingest historical corpora (e.g. Early Church Fathers):
-```bash
-pipeline/venv/bin/python pipeline/corpus_manager.py --action parse --corpus patristics
-pipeline/venv/bin/python pipeline/corpus_manager.py --action train --corpus patristics
-pipeline/venv/bin/python pipeline/corpus_manager.py --action project --corpus patristics
-pipeline/venv/bin/python pipeline/corpus_manager.py --action centroids --corpus patristics
-```

@@ -1,5 +1,14 @@
 # Changelog
 
+## [13.5.0] - 2026-10-12
+### Removed
+- **Early Church Fathers (Apostolic Fathers) Datasets & UI Integration:**
+  - **Options Drawer Setting:** Removed the Early Church Fathers toggle and patristics section from the Options panel.
+  - **Static Data Artifacts:** Removed all precomputed patristic data files (af_projected_bsb, af_projected_lxx, and af centroid/versemap/wordmap files) and raw text/model files.
+  - **Pipeline Scripts & Targets:** Purged patristic build, training, projection, and centroid generation scripts, removing af from corpus_manager.py, christ_anchor.py, and Makefile.
+  - **Study Panels & Canvas Integration:** Removed Early Church Fathers subtabs, panes, card readers, and canvas styling from book, chapter, verse, and word inspectors.
+  - **Attributions & Documentation:** Removed Lightfoot and Tauber attributions from README.md, ABOUT.md, and the in-app About modal, and pruned patristic commands from architecture documentation.
+
 ## [13.4.0] - 2026-10-06
 ### Added
 - **Browser History Back/Forward Navigation & State Traversal:**
