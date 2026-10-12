@@ -1,7 +1,6 @@
 """
 Modular Corpus Management & Extensibility Driver
-Provides a unified interface for managing biblical canons (BSB, LXX, VUL)
-and extending the pipeline to external corpora such as Early Church Fathers (Patristics).
+Provides a unified interface for managing biblical canons (BSB, LXX, VUL).
 """
 
 import os
@@ -67,33 +66,6 @@ CORPUS_REGISTRY = {
         chaptermap_file='data/output/chaptermap_2d_vul.json',
         versemap_file='data/output/versemap_2d_vul.json',
         anchor_key='vul'
-    ),
-    'af': CorpusDefinition(
-        key='af',
-        name='Apostolic Fathers (Early Church c. 50-150 AD)',
-        language='en/grc',
-        text_files=['data/processed/af_text.txt'],
-        word2vec_model='data/processed/word2vec_af.model',
-        wordmap_file='data/output/wordmap_2d_af.json',
-        verse_index_file='data/output/verse_index_af.json',
-        bookmap_file='data/output/bookmap_2d_af.json',
-        chaptermap_file='data/output/chaptermap_2d_af.json',
-        versemap_file='data/output/versemap_2d_af.json',
-        anchor_key='af'
-    ),
-    # Extensible template for Patristics / Ante-Nicene Fathers
-    'patristics': CorpusDefinition(
-        key='patristics',
-        name='Early Church Fathers (Apostolic & Ante-Nicene)',
-        language='grc/la/en',
-        text_files=['data/processed/patristics_text.txt'],
-        word2vec_model='data/processed/word2vec_patristics.model',
-        wordmap_file='data/output/wordmap_2d_patristics.json',
-        verse_index_file='data/output/verse_index_patristics.json',
-        bookmap_file='data/output/bookmap_2d_patristics.json',
-        chaptermap_file='data/output/chaptermap_2d_patristics.json',
-        versemap_file='data/output/versemap_2d_patristics.json',
-        anchor_key='bsb'
     )
 }
 
@@ -110,7 +82,7 @@ def run_script(script_name):
 
 def generate_christocentric_pipeline(corpus_key='all'):
     """Executes map generation and centroid pipeline to produce centered Christocentric maps."""
-    targets = [corpus_key] if corpus_key != 'all' else ['bsb', 'lxx', 'vul', 'af']
+    targets = [corpus_key] if corpus_key != 'all' else ['bsb', 'lxx', 'vul']
     
     for c in targets:
         if c not in CORPUS_REGISTRY:
@@ -135,17 +107,12 @@ def generate_christocentric_pipeline(corpus_key='all'):
             run_script('generate_verse_centroids_vul.py')
             run_script('generate_chapter_centroids_vul.py')
             run_script('generate_book_centroids_vul.py')
-        elif c == 'af':
-            run_script('generate_map_af.py')
-            run_script('generate_verse_centroids_af.py')
-            run_script('generate_chapter_centroids_af.py')
-            run_script('generate_book_centroids_af.py')
 
 
 def main():
     parser = argparse.ArgumentParser(description="SymBible Corpus Manager & Pipeline Runner")
     parser.add_argument('--action', choices=['map', 'centroids', 'all'], default='all', help="Pipeline stage to execute")
-    parser.add_argument('--corpus', choices=['bsb', 'lxx', 'vul', 'af', 'all', 'patristics'], default='all', help="Target corpus")
+    parser.add_argument('--corpus', choices=['bsb', 'lxx', 'vul', 'all'], default='all', help="Target corpus")
     args = parser.parse_args()
 
     generate_christocentric_pipeline(args.corpus)
