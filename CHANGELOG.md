@@ -1,5 +1,11 @@
 # Changelog
 
+## [13.6.0] - 2026-10-24
+### Removed
+- **Synthetic Christ Anchor Node Removed from Word Map:**
+  - Removed the artificial multi-word entity node (`anchor__christ_*`: `Jesus Christ (The Messiah, Son of God)`) from the 2D word map (`wordmap_2d*.json`), verse index (`verse_index*.json`), and regenerated verse, chapter, and book centroid cross-references across all canons (BSB, LXX, VUL).
+  - Preserved the Christocentric coordinate origin $(0.0, 0.0)$ and 100D Christ anchor reference vector (`christ_anchor_*.json`) so the entire map remains centered around Christ while keeping map nodes strictly limited to authentic lexical lemmas.
+
 ## [13.5.0] - 2026-10-12
 ### Removed
 - **Early Church Fathers (Apostolic Fathers) Datasets & UI Integration:**
