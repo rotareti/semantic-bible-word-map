@@ -212,30 +212,3 @@ def center_nodes_2d(nodes, center_xy, christ_vec=None):
                 node['sim_christ'] = round(float(np.dot(nv, c_vec) / (n_norm * c_norm)), 4)
 
     return nodes
-
-
-def synthesize_christ_anchor_node(anchor_info, canon_key):
-    """
-    Synthesizes the central pseudo-node representing Christ at (0, 0).
-    """
-    cfg = CANON_CHRIST_CONFIGS.get(canon_key, CANON_CHRIST_CONFIGS['bsb'])
-    return {
-        'id': f'anchor__christ_{canon_key}',
-        'w': cfg['display_label'],
-        'pos': 'PROPN',
-        'f': 10000,
-        't': 'Both',
-        'x': 0.0,
-        'y': 0.0,
-        'r': 0.0,
-        'sim_christ': 1.0,
-        'v': anchor_info['v'],
-        'is_anchor': True,
-        'original': [{
-            'lemma': 'Christ / Messiah',
-            'translit': 'Christos / Mashiach',
-            'strongs': 'G5547 / H4899',
-            'def': 'The Anointed One, Messiah, Son of God, God Incarnate',
-            'count': 10000
-        }]
-    }

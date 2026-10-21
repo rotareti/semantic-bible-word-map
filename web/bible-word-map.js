@@ -11250,20 +11250,6 @@ class BibleWordMap extends HTMLElement {
             return this.christAnchorVector;
         }
 
-        // Check if precomputed canonical Christ anchor exists in dataset
-        const precomputedAnchor = this.data2d.find(d => d.is_anchor || (d.id && d.id.startsWith('anchor__christ')));
-        if (precomputedAnchor && precomputedAnchor.v && precomputedAnchor.v.length === 100) {
-            const christVector = new Float32Array(precomputedAnchor.v);
-            let magSq = 0;
-            for (let j = 0; j < 100; j++) magSq += christVector[j] * christVector[j];
-            const mag = Math.sqrt(magSq);
-            if (mag > 1e-9) {
-                for (let j = 0; j < 100; j++) christVector[j] /= mag;
-                this.christAnchorVector = christVector;
-                return this.christAnchorVector;
-            }
-        }
-
         let targetIds = [];
         if (this.foundation === 'lxx') {
             targetIds = ['jesus_G2424_PROPN', 'christ_G5547_PROPN'];

@@ -19,13 +19,12 @@ This specification outlines what was done to transform SymBible into a unified *
 
 1. **Engineered Anchor Synthesis Engine:** Built [`pipeline/christ_anchor.py`](file:///home/josh/code/semantic-lxx-word-map/pipeline/christ_anchor.py) implementing a two-stage hybrid anchor (Option C) that combines canonical Messianic lexical synsets with landmark confession verses.
 2. **Unified Corpus Management Framework:** Created [`pipeline/corpus_manager.py`](file:///home/josh/code/semantic-lxx-word-map/pipeline/corpus_manager.py) to manage end-to-end processing (parsing, training, map projection, centroid generation) across existing canons and custom future corpora like the Early Church Fathers.
-3. **Centered 2D Word Maps at (0, 0):** Updated [`pipeline/generate_map.py`](file:///home/josh/code/semantic-lxx-word-map/pipeline/generate_map.py), `_lxx.py`, and `_vul.py` to calculate the 2D coordinate offset $\mathbf{p}_{\text{Christ}}$ and shift all words so that Christ is located at $(0.0, 0.0)$. Injected canonical anchor pseudo-nodes (`anchor__christ_{canon}`) at the origin.
+3. **Centered 2D Word Maps at (0, 0):** Updated [`pipeline/generate_map.py`](file:///home/josh/code/semantic-lxx-word-map/pipeline/generate_map.py), `_lxx.py`, and `_vul.py` to calculate the 2D coordinate offset $\mathbf{p}_{\text{Christ}}$ and shift all vocabulary words so that the Christ anchor is located at $(0.0, 0.0)$ without injecting an artificial multi-word entity node onto the map.
 4. **Centered Verse Centroids:** Updated [`pipeline/generate_verse_centroids.py`](file:///home/josh/code/semantic-lxx-word-map/pipeline/generate_verse_centroids.py), `_lxx.py`, and `_vul.py` to apply identical coordinate translation. Handled the edge case where verses lacking content words (such as genealogies) inherit their parent book coordinates rather than collapsing erroneously to $(0, 0)$.
 5. **Centered Chapter Centroids:** Updated [`pipeline/generate_chapter_centroids.py`](file:///home/josh/code/semantic-lxx-word-map/pipeline/generate_chapter_centroids.py), `_lxx.py`, and `_vul.py` with coordinate shifting and polar radius metrics ($r = \sqrt{x^2 + y^2}$).
 6. **Centered Book Centroids on the Gospels:** Updated [`pipeline/generate_book_centroids.py`](file:///home/josh/code/semantic-lxx-word-map/pipeline/generate_book_centroids.py), `_lxx.py`, and `_vul.py` so that the 2D MDS projection centers on the centroid of the four Gospels (`MAT`, `MRK`, `LUK`, `JHN`) at $(0, 0)$.
-7. **Connected Frontend Engine:** Updated [`web/bible-word-map.js`](file:///home/josh/code/semantic-lxx-word-map/web/bible-word-map.js) to detect precomputed canonical anchor nodes in `computeChristAnchorVector()`.
-8. **Preserved Clean UI Presentation:** Omitted intrusive alignment badges from study inspector cards, allowing the natural spatial geometry and concentric distribution of scripture to speak for itself.
-9. **Regenerated Static Artifacts:** Recomputed all 2D coordinate files (`wordmap_2d*.json`, `versemap_2d*.json`, `chaptermap_2d*.json`, `bookmap_2d*.json`) across BSB, LXX, and VUL.
+7. **Preserved Clean UI Presentation:** Omitted intrusive alignment badges from study inspector cards and kept the word map strictly limited to real lexical lemmas, allowing the natural spatial geometry and concentric distribution of scripture to speak for itself.
+8. **Regenerated Static Artifacts:** Recomputed all 2D coordinate files (`wordmap_2d*.json`, `versemap_2d*.json`, `chaptermap_2d*.json`, `bookmap_2d*.json`) across BSB, LXX, and VUL.
 
 ---
 
@@ -97,7 +96,7 @@ In the Book Landmark view, centering the MDS projection on the Gospel cluster es
 Every chapter and verse coordinate is shifted by $\mathbf{p}_{\text{Christ}}$. Narrative passages depicting Christ's ministry, passion, resurrection, and theological discourses gravitate toward $(0, 0)$. Genealogical, administrative, and ritual records radiate outward toward the periphery.
 
 ### C. Word View
-The synthetic anchor node (`Jesus Christ (The Messiah, Son of God)`) anchors the origin $(0, 0)$, surrounded by primary Christological titles, grace, salvation, and divine attributes.
+The origin $(0, 0)$ is centered at the computed Christological anchor coordinate $\mathbf{p}_{\text{Christ}}$, surrounded naturally by primary Christological titles (`Jesus`, `Christ`, `Messiah`, `Savior`, `Lord`), grace, salvation, and divine attributes without inserting a synthetic multi-word entity node onto the map.
 
 ---
 

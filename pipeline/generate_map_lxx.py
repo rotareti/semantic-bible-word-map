@@ -100,11 +100,9 @@ def main():
         v_idx = json.load(f)
 
     print("Centering map around Christ anchor (0, 0)...")
-    from christ_anchor import compute_christ_anchor, center_nodes_2d, synthesize_christ_anchor_node
+    from christ_anchor import compute_christ_anchor, center_nodes_2d
     anchor = compute_christ_anchor('lxx', out_2d, v_idx)
     out_2d = center_nodes_2d(out_2d, anchor['center_2d'], anchor['v'])
-    anchor_node = synthesize_christ_anchor_node(anchor, 'lxx')
-    out_2d.insert(0, anchor_node)
 
     with open(os.path.join(OUTPUT_DIR, 'christ_anchor_lxx.json'), 'w', encoding='utf-8') as f:
         json.dump(anchor, f, indent=2, ensure_ascii=False)
@@ -119,15 +117,6 @@ def main():
     for w in valid_words:
         if w in v_idx['words']:
             filtered_word_to_verse[w] = v_idx['words'][w]
-
-    # Map anchor node to landmark verses
-    landmark_indices = []
-    for r in anchor['verses_used']:
-        for vi, line in enumerate(v_idx['verses']):
-            if line.startswith(r + '|'):
-                landmark_indices.append(vi)
-                break
-    filtered_word_to_verse[anchor_node['id']] = landmark_indices
 
     filtered_index_path = os.path.join(OUTPUT_DIR, 'verse_index_lxx.json')
     with open(filtered_index_path, 'w', encoding='utf-8') as f:
