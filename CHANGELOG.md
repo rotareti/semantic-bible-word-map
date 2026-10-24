@@ -1,5 +1,19 @@
 # Changelog
 
+## [13.7.0] - 2026-10-24
+### Added
+- **Search-Focused Splash Landing Page:**
+  - **Initial Landing Zone (`bwm-splash-active`):** When navigating freshly to `symbible.com` with no search or view URL parameters, the component opens into a clean splash view with the search bar and Options button centered horizontally on desktop and anchored cleanly at the top on mobile.
+  - **Silent Background Data Preloading:** Bypasses the full-screen particle loading animation on initial splash arrival while silently preloading canonical datasets in the background (`loadData()` and `loadBackgroundDatasets()`). If a search is submitted before background datasets finish downloading, the inline search spinner indicates progress until the map transitions in.
+  - **Layman-Friendly Usage Blurb & Interactive Examples:** Added an explanatory card directly beneath the search bar highlighting Words & Themes, Verses, Chapters & Books, and Patterns & Analogies (`+`, `-`, `>`, `:`) with one-click example query chips and a direct link to the About modal.
+  - **Universal Splash Search Routing:** Typing an unambiguous verse, chapter, book, word, or operator query into the splash search bar automatically switches to the appropriate view mode, dismisses the splash screen, and reveals the map.
+  - **Single-Session Dismissal:** Once the first search is performed, the splash screen transitions into the standard top bar and does not reappear on search clear, view switches, or Home resets until navigating afresh to `symbible.com`.
+
+### Changed
+- **Search Input & About Modal Refinements:**
+  - Added `text-overflow: ellipsis` to `.bwm-search-controls input` so long queries and placeholders truncate cleanly with `...` instead of clipping mid-word.
+  - Updated the About modal's top-left back button label from `"Map View"` to `"Back"` so it remains accurate when opened from the splash landing page.
+
 ## [13.6.0] - 2026-10-24
 ### Removed
 - **Synthetic Christ Anchor Node Removed from Word Map:**

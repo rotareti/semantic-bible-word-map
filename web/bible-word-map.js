@@ -831,6 +831,7 @@ class BibleWordMap extends HTMLElement {
         this._isInitialLoad = true;
         this._isHandlingPopState = false;
         this._popstateHandler = null;
+        this._isSplashActive = !this.hasInitialSearchOrViewParams();
         
         this.innerHTML = `
             <style>
@@ -983,6 +984,9 @@ class BibleWordMap extends HTMLElement {
                     font-family: var(--bwm-font);
                     font-size: 16px;
                     box-shadow: 0 2px 4px rgba(0,0,0,0.02) inset;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    overflow: hidden;
                 }
                 .bwm-search-clear {
                     position: absolute;
@@ -4914,26 +4918,292 @@ class BibleWordMap extends HTMLElement {
                 bible-word-map[data-theme="dark"] .bwm-analogy-step-badge.anchor {
                     color: #34d399;
                 }
+                .bwm-search-stage {
+                    display: flex;
+                    flex: 1;
+                    min-width: 0;
+                }
+                .bwm-search-bar-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    width: 100%;
+                    flex: 1;
+                    min-width: 0;
+                }
+                .bwm-splash-blurb {
+                    display: none;
+                }
+                .bwm-container.bwm-splash-active {
+                    position: relative;
+                }
+                .bwm-container.bwm-splash-active .bwm-top-bar {
+                    position: absolute;
+                    inset: 0;
+                    z-index: 20;
+                    pointer-events: none;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: flex-start;
+                    padding-top: clamp(48px, 20vh, 210px);
+                    padding-left: 16px;
+                    padding-right: 16px;
+                    padding-bottom: 24px;
+                    overflow-y: auto;
+                }
+                .bwm-container.bwm-splash-active .bwm-search-stage {
+                    pointer-events: auto;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: stretch;
+                    flex: 0 0 auto;
+                    width: min(100%, 840px);
+                    max-width: 840px;
+                    gap: 18px;
+                }
+                .bwm-container.bwm-splash-active .bwm-search-bar-row {
+                    flex: 0 0 auto;
+                    gap: 10px;
+                    z-index: 30;
+                }
+                .bwm-container.bwm-splash-active .bwm-drawer-toggle {
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 10px;
+                    margin-right: 0;
+                    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+                }
+                @media (min-width: 769px) {
+                    .bwm-container.bwm-splash-active .bwm-drawer {
+                        top: 0 !important;
+                        border-top-right-radius: 10px;
+                    }
+                }
+                .bwm-container.bwm-splash-active .bwm-search-controls {
+                    width: 100%;
+                    flex: 1 1 auto;
+                    min-width: 0;
+                    z-index: 30;
+                }
+                .bwm-container.bwm-splash-active .bwm-search-controls input {
+                    height: 48px;
+                    font-size: 1.04rem;
+                    padding: 0 42px 0 16px;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+                }
+                .bwm-container.bwm-splash-active .bwm-btn#bwm-btn-search {
+                    height: 48px;
+                    width: 50px;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+                }
+                .bwm-container.bwm-splash-active .bwm-splash-blurb {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 14px;
+                    padding: 18px 22px;
+                    border-radius: 12px;
+                    background: var(--bwm-input-bg);
+                    border: 1px solid var(--bwm-border);
+                    color: var(--bwm-text);
+                    font-size: 0.92rem;
+                    line-height: 1.55;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+                }
+                .bwm-splash-lead {
+                    margin: 0;
+                    color: var(--bwm-text);
+                    font-size: 0.95rem;
+                    line-height: 1.6;
+                }
+                .bwm-splash-capabilities {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    padding-top: 4px;
+                    border-top: 1px solid var(--bwm-border);
+                }
+                .bwm-splash-cap-item {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                }
+                .bwm-splash-cap-header {
+                    font-size: 0.86rem;
+                    color: var(--bwm-text);
+                }
+                .bwm-splash-cap-header strong {
+                    font-weight: 650;
+                }
+                .bwm-splash-cap-desc {
+                    color: var(--bwm-text-muted);
+                }
+                .bwm-splash-examples {
+                    display: flex;
+                    flex-wrap: wrap;
+                    align-items: center;
+                    gap: 6px;
+                }
+                .bwm-splash-try-label {
+                    font-size: 0.78rem;
+                    font-weight: 600;
+                    color: var(--bwm-text-muted);
+                    margin-right: 2px;
+                }
+                .bwm-splash-example-chip {
+                    appearance: none;
+                    background: var(--bwm-card-bg);
+                    border: 1px solid var(--bwm-border);
+                    color: var(--bwm-text);
+                    font-family: var(--bwm-font);
+                    font-size: 0.8rem;
+                    font-weight: 500;
+                    padding: 3px 9px;
+                    border-radius: 999px;
+                    cursor: pointer;
+                    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+                }
+                .bwm-splash-example-chip:hover {
+                    background: var(--bwm-btn-hover);
+                    border-color: var(--bwm-node-hover);
+                    color: var(--bwm-tooltip-link);
+                }
+                .bwm-splash-example-chip:active {
+                    transform: scale(0.98);
+                }
+                .bwm-splash-footer {
+                    margin: 0;
+                    padding-top: 6px;
+                    border-top: 1px solid var(--bwm-border);
+                    font-size: 0.86rem;
+                    color: var(--bwm-text-muted);
+                }
+                .bwm-splash-about-link {
+                    color: var(--bwm-tooltip-link);
+                    font-weight: 600;
+                    text-decoration: none;
+                }
+                .bwm-splash-about-link:hover {
+                    text-decoration: underline;
+                }
+                .bwm-container.bwm-splash-active .bwm-canvas-container {
+                    visibility: hidden;
+                    opacity: 0;
+                    pointer-events: none;
+                    border-color: transparent;
+                }
+                @media (max-width: 768px) {
+                    .bwm-container.bwm-splash-active .bwm-top-bar {
+                        padding-top: 4px;
+                        padding-left: 2px;
+                        padding-right: 2px;
+                        padding-bottom: 12px;
+                    }
+                    .bwm-container.bwm-splash-active .bwm-search-stage {
+                        gap: 12px;
+                    }
+                    .bwm-container.bwm-splash-active .bwm-search-bar-row {
+                        gap: 8px;
+                    }
+                    .bwm-container.bwm-splash-active .bwm-drawer-toggle {
+                        width: 44px;
+                        height: 44px;
+                    }
+                    .bwm-container.bwm-splash-active .bwm-search-controls input {
+                        height: 44px;
+                        font-size: 0.96rem;
+                    }
+                    .bwm-container.bwm-splash-active .bwm-btn#bwm-btn-search {
+                        height: 44px;
+                        width: 46px;
+                    }
+                    .bwm-container.bwm-splash-active .bwm-splash-blurb {
+                        padding: 14px 16px;
+                        font-size: 0.87rem;
+                        gap: 12px;
+                    }
+                    .bwm-container.bwm-splash-active .bwm-search-recovery-popover,
+                    .bwm-container.bwm-splash-active .bwm-search-suggestions-popover {
+                        left: 0;
+                        right: 0;
+                        width: 100%;
+                        max-width: 100%;
+                    }
+                }
             </style>
-            <div class="bwm-container">
+            <div class="bwm-container${this._isSplashActive ? ' bwm-splash-active' : ''}">
                 <div class="bwm-top-bar">
-                    <div class="bwm-drawer-toggle" id="bwm-drawer-toggle">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-                    </div>
-                    <div class="bwm-search-controls">
-                        <div class="bwm-search-input-wrapper">
-                            <input type="text" id="bwm-search" placeholder="Search for words (e.g. Father Son Spirit)">
-                            <button class="bwm-search-clear" id="bwm-search-clear" title="Clear all keywords" type="button">&times;</button>
-                            <div class="bwm-search-spinner" id="bwm-search-spinner" style="display: none;"></div>
+                    <div class="bwm-search-stage" id="bwm-search-stage">
+                        <div class="bwm-search-bar-row">
+                            <div class="bwm-drawer-toggle" id="bwm-drawer-toggle">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                            </div>
+                            <div class="bwm-search-controls">
+                                <div class="bwm-search-input-wrapper">
+                                    <input type="text" id="bwm-search" placeholder="${this._isSplashActive ? 'Search for verses, books, words, or relationships (e.g. John 1:1, Romans, grace truth)...' : 'Search for words (e.g. Father Son Spirit)'}">
+                                    <button class="bwm-search-clear" id="bwm-search-clear" title="Clear all keywords" type="button">&times;</button>
+                                    <div class="bwm-search-spinner" id="bwm-search-spinner" style="display: none;"></div>
+                                </div>
+                                <button class="bwm-btn" id="bwm-btn-search" title="Search" aria-label="Search">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <circle cx="11" cy="11" r="7.5"></circle>
+                                        <line x1="21" y1="21" x2="16.5" y2="16.5"></line>
+                                    </svg>
+                                </button>
+                                <div class="bwm-search-recovery-popover" id="bwm-search-recovery-popover" style="display: none;"></div>
+                                <div class="bwm-search-suggestions-popover" id="bwm-search-suggestions-popover" style="display: none;"></div>
+                            </div>
                         </div>
-                        <button class="bwm-btn" id="bwm-btn-search" title="Search" aria-label="Search">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <circle cx="11" cy="11" r="7.5"></circle>
-                                <line x1="21" y1="21" x2="16.5" y2="16.5"></line>
-                            </svg>
-                        </button>
-                        <div class="bwm-search-recovery-popover" id="bwm-search-recovery-popover" style="display: none;"></div>
-                        <div class="bwm-search-suggestions-popover" id="bwm-search-suggestions-popover" style="display: none;"></div>
+                        <div class="bwm-splash-blurb" id="bwm-splash-blurb">
+                            <p class="bwm-splash-lead">
+                                <strong>Search for verses, books, a word, or multiple words and see the structural relationships as mapped from the biblical text.</strong>
+                                SymBible analyzes how words and passages appear together across Scripture, placing related concepts closer to one another so you can visually explore cross-references, themes, and biblical patterns.
+                            </p>
+                            <div class="bwm-splash-capabilities">
+                                <div class="bwm-splash-cap-item">
+                                    <div class="bwm-splash-cap-header">
+                                        <strong>Words &amp; Themes:</strong>
+                                        <span class="bwm-splash-cap-desc">See words used in similar biblical contexts or map how multiple concepts intersect.</span>
+                                    </div>
+                                    <div class="bwm-splash-examples">
+                                        <span class="bwm-splash-try-label">Examples:</span>
+                                        <button type="button" class="bwm-splash-example-chip" data-splash-query="covenant" data-splash-mode="words">covenant</button>
+                                        <button type="button" class="bwm-splash-example-chip" data-splash-query="Father Son Spirit" data-splash-mode="words">Father Son Spirit</button>
+                                        <button type="button" class="bwm-splash-example-chip" data-splash-query="lamb shepherd" data-splash-mode="words">lamb shepherd</button>
+                                    </div>
+                                </div>
+                                <div class="bwm-splash-cap-item">
+                                    <div class="bwm-splash-cap-header">
+                                        <strong>Verses, Chapters &amp; Books:</strong>
+                                        <span class="bwm-splash-cap-desc">Discover passages and books with the closest thematic and vocabulary connections.</span>
+                                    </div>
+                                    <div class="bwm-splash-examples">
+                                        <span class="bwm-splash-try-label">Examples:</span>
+                                        <button type="button" class="bwm-splash-example-chip" data-splash-query="John 1:1" data-splash-mode="verses">John 1:1</button>
+                                        <button type="button" class="bwm-splash-example-chip" data-splash-query="Psalm 23" data-splash-mode="chapters">Psalm 23</button>
+                                        <button type="button" class="bwm-splash-example-chip" data-splash-query="Romans" data-splash-mode="books">Romans</button>
+                                        <button type="button" class="bwm-splash-example-chip" data-splash-query="Genesis Exodus" data-splash-mode="books">Genesis Exodus</button>
+                                    </div>
+                                </div>
+                                <div class="bwm-splash-cap-item">
+                                    <div class="bwm-splash-cap-header">
+                                        <strong>Patterns &amp; Analogies:</strong>
+                                        <span class="bwm-splash-cap-desc">Combine concepts (<code>+</code>, <code>-</code>), trace narrative progressions (<code>&gt;</code>), or project parallels (<code>:</code>).</span>
+                                    </div>
+                                    <div class="bwm-splash-examples">
+                                        <span class="bwm-splash-try-label">Examples:</span>
+                                        <button type="button" class="bwm-splash-example-chip" data-splash-query="prophecy + fulfillment" data-splash-mode="symbible">prophecy + fulfillment</button>
+                                        <button type="button" class="bwm-splash-example-chip" data-splash-query="desert > testing" data-splash-mode="symbible">desert &gt; testing</button>
+                                        <button type="button" class="bwm-splash-example-chip" data-splash-query="Moses > Law : Jesus" data-splash-mode="symbible">Moses &gt; Law : Jesus</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="bwm-splash-footer">
+                                To understand more, see the <a href="#about" class="bwm-splash-about-link" id="bwm-splash-about-link">About</a> page.
+                            </p>
+                        </div>
                     </div>
                 </div>
                 <div class="bwm-drawer" id="bwm-drawer">
@@ -5127,7 +5397,7 @@ class BibleWordMap extends HTMLElement {
                     </svg>
                     <div class="bwm-tooltip"></div>
                     <div class="bwm-toast" id="bwm-toast"></div>
-                    <div class="bwm-loading">
+                    <div class="bwm-loading"${this._isSplashActive ? ' style="display: none;"' : ''}>
                         <div class="bwm-loading-visual">
                             <canvas class="bwm-loading-canvas"></canvas>
                             <div class="bwm-loading-tip-container">
@@ -5306,11 +5576,11 @@ class BibleWordMap extends HTMLElement {
                 </div>
                 <div class="bwm-about-overlay" id="bwm-about-overlay">
                     <div class="bwm-about-header">
-                        <button type="button" class="bwm-about-back-btn" id="bwm-about-back-btn" aria-label="Back to Map View" title="Back to Map View">
+                        <button type="button" class="bwm-about-back-btn" id="bwm-about-back-btn" aria-label="Back" title="Back">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
                                 <polyline points="15 18 9 12 15 6"></polyline>
                             </svg>
-                            <span>Map View</span>
+                            <span>Back</span>
                         </button>
                         <h3 class="bwm-about-title">About SymBible</h3>
                         <button type="button" class="bwm-about-close-btn" id="bwm-about-close-btn" aria-label="Close About" title="Close About">&times;</button>
@@ -5519,7 +5789,44 @@ class BibleWordMap extends HTMLElement {
         }
     }
 
+    hasInitialSearchOrViewParams(params) {
+        if (!params && typeof window !== 'undefined' && window.location) {
+            params = new URLSearchParams(window.location.search);
+        }
+        if (!params) return false;
+        const keys = [
+            'w', 'k', 'keywords', 'keyword', 'words', 'word',
+            'v', 'vs', 'verses', 'verse',
+            'ch', 'chapters', 'chapter', 'chap',
+            'b', 'books', 'book',
+            'q', 'query',
+            'm', 'view', 'mode'
+        ];
+        return keys.some(k => {
+            const val = params.get(k);
+            return val !== null && val.trim() !== '';
+        });
+    }
+
+    dismissSplash() {
+        if (!this._isSplashActive) return;
+        this._isSplashActive = false;
+        const container = this.querySelector('.bwm-container');
+        if (container) {
+            container.classList.remove('bwm-splash-active');
+        }
+        if (this.searchInput && this.viewMode === 'words') {
+            this.searchInput.placeholder = 'Search for words (e.g. Father Son Spirit)';
+        }
+        this.updateTopBarHeight();
+        this.resize();
+    }
+
     updateTopBarHeight() {
+        if (this._isSplashActive) {
+            this.style.setProperty('--bwm-top-bar-height', '52px');
+            return;
+        }
         if (!this.topBar) {
             this.topBar = this.querySelector('.bwm-top-bar');
         }
@@ -5668,7 +5975,7 @@ class BibleWordMap extends HTMLElement {
             this.foundation = 'bsb';
         }
 
-        const vParam = '?v=13.6.0';
+        const vParam = '?v=13.7.0';
         if (this.foundation === 'lxx') {
             this.src2d = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = this.getAttribute('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -5978,6 +6285,7 @@ class BibleWordMap extends HTMLElement {
     }
 
     toggleStudyPanel() {
+        if (this._isSplashActive) return;
         const isAnyStudyPanelVisible = Boolean(
             (this.wordCard && this.wordCard.classList.contains('visible')) ||
             (this.chapterCard && this.chapterCard.classList.contains('visible')) ||
@@ -6061,8 +6369,91 @@ class BibleWordMap extends HTMLElement {
             this.updateSearchAutocomplete();
         });
 
-        // Global dismiss for search recovery & suggestions popovers
+        const splashAboutLink = this.querySelector('#bwm-splash-about-link');
+        if (splashAboutLink) {
+            splashAboutLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.showAboutOverlay();
+            });
+        }
+
+        const splashExampleChips = this.querySelectorAll('.bwm-splash-example-chip');
+        splashExampleChips.forEach(chip => {
+            chip.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const query = chip.getAttribute('data-splash-query');
+                const mode = chip.getAttribute('data-splash-mode') || 'words';
+                if (!query) return;
+                this.closeSearchSuggestions();
+                this.closeSearchRecovery();
+                if (this.drawer && this.drawer.classList.contains('open') && !this.isOptionsPanelPinned) {
+                    this.closeDrawer();
+                }
+                if (this.searchInput) this.searchInput.value = query;
+                this.updateClearBtnVisibility();
+                this.setSearchSpinner(true);
+                try {
+                    if (mode === 'symbible') {
+                        await this.ensureWordsLoaded();
+                        if (this.viewMode !== 'words') {
+                            this.setViewMode('words', true);
+                        }
+                        if (this.searchInput) this.searchInput.value = query;
+                        this.updateClearBtnVisibility();
+                        this.dismissSplash();
+                        await this.executeSymbibleQuery(query);
+                    } else if (mode === 'verses') {
+                        await this.ensureVersesLoaded();
+                        if (this.viewMode !== 'verses') {
+                            this.setViewMode('verses', true);
+                        }
+                        if (this.searchInput) this.searchInput.value = query;
+                        this.updateClearBtnVisibility();
+                        this.dismissSplash();
+                        this.searchVerses();
+                    } else if (mode === 'chapters') {
+                        await this.ensureChaptersLoaded();
+                        if (this.viewMode !== 'chapters') {
+                            this.setViewMode('chapters', true);
+                        }
+                        if (this.searchInput) this.searchInput.value = query;
+                        this.updateClearBtnVisibility();
+                        this.dismissSplash();
+                        this.searchChapters();
+                    } else if (mode === 'books') {
+                        await this.ensureBooksLoaded();
+                        if (this.viewMode !== 'books') {
+                            this.setViewMode('books', true);
+                        }
+                        if (this.searchInput) this.searchInput.value = query;
+                        this.updateClearBtnVisibility();
+                        this.dismissSplash();
+                        await this.searchBooks();
+                    } else {
+                        await this.ensureWordsLoaded();
+                        if (this.viewMode !== 'words') {
+                            this.setViewMode('words', true);
+                        }
+                        if (this.searchInput) this.searchInput.value = query;
+                        this.updateClearBtnVisibility();
+                        this.dismissSplash();
+                        await this.searchWord();
+                    }
+                } finally {
+                    this.setSearchSpinner(false);
+                }
+            });
+        });
+
+        // Global dismiss for search recovery, suggestions popovers, and unpinned drawer on splash screen
         document.addEventListener('click', (e) => {
+            if (this._isSplashActive && this.drawer && this.drawer.classList.contains('open') && !this.isOptionsPanelPinned) {
+                if (!this.drawer.contains(e.target) && (!this.drawerToggle || !this.drawerToggle.contains(e.target))) {
+                    this.closeDrawer();
+                }
+            }
             if (this.searchRecoveryPopover && this.searchRecoveryPopover.style.display !== 'none') {
                 if (!this.searchRecoveryPopover.contains(e.target) && !this.searchInput.contains(e.target) && !this.searchBtn.contains(e.target)) {
                     this.closeSearchRecovery();
@@ -6743,7 +7134,7 @@ class BibleWordMap extends HTMLElement {
         this._wordsLoadPromise = (async () => {
             try {
                 const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-                const vParam = '?v=13.6.0';
+                const vParam = '?v=13.7.0';
                 let src2d = this.src2d;
                 if (!src2d) {
                     if (this.foundation === 'lxx') {
@@ -6816,7 +7207,7 @@ class BibleWordMap extends HTMLElement {
         this._versesLoadPromise = (async () => {
             try {
                 const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-                const vParam = '?v=13.6.0';
+                const vParam = '?v=13.7.0';
                 let srcVerses = this.srcVerses;
                 let srcVersemap = this.srcVersemap;
                 if (!srcVerses || !srcVersemap) {
@@ -6908,7 +7299,7 @@ class BibleWordMap extends HTMLElement {
         this._chaptersLoadPromise = (async () => {
             try {
                 const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-                const vParam = '?v=13.6.0';
+                const vParam = '?v=13.7.0';
                 let srcChapters = this.srcChapters;
                 if (!srcChapters) {
                     if (this.foundation === 'lxx') {
@@ -6957,7 +7348,7 @@ class BibleWordMap extends HTMLElement {
         this._booksLoadPromise = (async () => {
             try {
                 const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-                const vParam = '?v=13.6.0';
+                const vParam = '?v=13.7.0';
                 let srcBooks = this.srcBooks;
                 if (!srcBooks) {
                     if (this.foundation === 'lxx') {
@@ -7048,7 +7439,7 @@ class BibleWordMap extends HTMLElement {
         }
 
         const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-        const vParam = '?v=13.6.0';
+        const vParam = '?v=13.7.0';
         if (this.foundation === 'lxx') {
             this.src2d = getAttr('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = getAttr('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -9293,7 +9684,7 @@ class BibleWordMap extends HTMLElement {
 
         this._englishSemanticDataPromise = (async () => {
             const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-            const vParam = '?v=13.6.0';
+            const vParam = '?v=13.7.0';
             const wordmapSrc = getAttr('src-2d-bsb') || getAttr('src-2d') || ('data/output/wordmap_2d.json' + vParam);
             const versesSrc = getAttr('src-verses-bsb') || getAttr('src-verses') || ('data/output/verse_index.json' + vParam);
             const versemapSrc = getAttr('src-versemap-bsb') || getAttr('src-versemap') || ('data/output/versemap_2d.json' + vParam);
@@ -9367,7 +9758,7 @@ class BibleWordMap extends HTMLElement {
         if (this._cachedWordmaps[foundation]) {
             return this._cachedWordmaps[foundation];
         }
-        const vParam = '?v=13.6.0';
+        const vParam = '?v=13.7.0';
         let src = '';
         if (foundation === 'lxx') {
             src = this.getAttribute('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
@@ -10295,15 +10686,18 @@ class BibleWordMap extends HTMLElement {
             return;
         }
         
-        if (!this.data2d) return;
-        
-        const findMatchesForToken = (token) => this.findMatchesForWordToken(token);
-
         this.setSearchSpinner(true);
-        // Yield to allow browser paint cycle to display the loading spinner immediately
-        await new Promise(r => setTimeout(r, 20));
-
         try {
+            if (!this.data2d) {
+                await this.ensureWordsLoaded();
+                if (!this.data2d) return;
+            }
+            
+            const findMatchesForToken = (token) => this.findMatchesForWordToken(token);
+
+            // Yield to allow browser paint cycle to display the loading spinner immediately
+            await new Promise(r => setTimeout(r, 20));
+
             if (!useExplicitIds) {
             let query = originalQuery.toLowerCase();
             if (!query) {
@@ -10319,12 +10713,51 @@ class BibleWordMap extends HTMLElement {
             }
 
             // If the query is formatted as a Scripture verse citation (e.g. "John 3:16", "1 Cor 13"), chapter ("Gen 1"),
-            // or a book name without an exact word match (e.g. "1 John"), prioritize recovery
+            // or a book name without an exact word match (e.g. "1 John"), prioritize recovery (or direct routing on splash screen)
             if (!directKeywordSearch) {
                 let detectedVerse = detectVerseReference(originalQuery);
                 let detectedChapter = detectChapterMatch(originalQuery, this.booksData ? this.booksData.books : null, this.foundation);
                 let detectedBook = detectBookMatch(originalQuery, this.booksData ? this.booksData.books : null);
                 let hasExactWord = findMatchesForToken(query).length > 0;
+                if (this._isSplashActive) {
+                    const classified = (parsedTokens && Array.isArray(parsedTokens.items))
+                        ? parsedTokens.items.map(it => this.classifySearchItem(it)).filter(Boolean)
+                        : [];
+                    const isAllVerses = (detectedVerse && detectedVerse.vstart && !detectedVerse.isTypo) ||
+                        (classified.length > 0 && classified.every(c => c.isVerse));
+                    const isAllChapters = !isAllVerses && (
+                        (detectedChapter && !detectedChapter.isTypo) ||
+                        (classified.length > 0 && classified.every(c => c.isChapter))
+                    );
+                    const isAllBooks = !isAllVerses && !isAllChapters && !hasExactWord && (
+                        (detectedBook && !detectedBook.isTypo) ||
+                        (classified.length > 0 && classified.every(c => c.isBook && !c.isWord))
+                    );
+                    if (isAllVerses) {
+                        await this.ensureVersesLoaded();
+                        this.setViewMode('verses', true);
+                        if (this.searchInput) this.searchInput.value = originalQuery;
+                        this.dismissSplash();
+                        this.searchVerses();
+                        return;
+                    }
+                    if (isAllChapters) {
+                        await this.ensureChaptersLoaded();
+                        this.setViewMode('chapters', true);
+                        if (this.searchInput) this.searchInput.value = originalQuery;
+                        this.dismissSplash();
+                        this.searchChapters();
+                        return;
+                    }
+                    if (isAllBooks) {
+                        await this.ensureBooksLoaded();
+                        this.setViewMode('books', true);
+                        if (this.searchInput) this.searchInput.value = originalQuery;
+                        this.dismissSplash();
+                        await this.searchBooks();
+                        return;
+                    }
+                }
                 if (detectedVerse || detectedChapter || (detectedBook && !hasExactWord)) {
                     this.searchedWords = [];
                     this.drawerWords = [];
@@ -10416,6 +10849,7 @@ class BibleWordMap extends HTMLElement {
         }
 
         this.closeSearchRecovery();
+        this.dismissSplash();
 
         let topWordsSet = new Map();
 
@@ -10750,6 +11184,12 @@ class BibleWordMap extends HTMLElement {
 
     clearAllKeywords() {
         this.closeSearchRecovery();
+        this.closeSearchSuggestions();
+        if (this._isSplashActive) {
+            if (this.searchInput) this.searchInput.value = '';
+            this.updateClearBtnVisibility();
+            return;
+        }
         this.clearAnalogyProjectionState();
         if (this.viewMode === 'books') {
             this.resetBooksView();
@@ -10942,7 +11382,7 @@ class BibleWordMap extends HTMLElement {
             const wordPart = parts[0].toLowerCase();
             const posPart = parts[parts.length - 1].toUpperCase();
             let posMatch = this.data2d.find(d => d.w && d.w.toLowerCase() === wordPart && d.pos && d.pos.toUpperCase() === posPart);
-            if (posMatch) return posMatch;
+            if (posMatch) return idMatch || posMatch;
         }
 
         // 1. Existing word matches
@@ -11046,6 +11486,7 @@ class BibleWordMap extends HTMLElement {
         if (!this.data2d) {
             await this.ensureWordsLoaded();
         }
+        this.dismissSplash();
 
         // Clean up any previous analogy projection state
         this.clearAnalogyProjectionState();
@@ -13524,6 +13965,10 @@ class BibleWordMap extends HTMLElement {
             let el = this.querySelector('#bwm-loading-text') || this.querySelector('.bwm-loading-status span:last-child');
             if (el) el.textContent = text;
         }
+        if (this._isSplashActive) {
+            this.loading.style.display = 'none';
+            return;
+        }
         this.loading.style.display = 'flex';
         this.startLoadingAnimation(type);
     }
@@ -14093,7 +14538,7 @@ class BibleWordMap extends HTMLElement {
         if (vulPill) vulPill.classList.toggle('active', foundation === 'vul');
 
         const getAttr = (k) => (typeof this.getAttribute === 'function' ? this.getAttribute(k) : null);
-        const vParam = '?v=13.6.0';
+        const vParam = '?v=13.7.0';
         if (foundation === 'lxx') {
             this.src2d = getAttr('src-2d-lxx') || ('data/output/wordmap_2d_lxx.json' + vParam);
             this.srcVerses = getAttr('src-verses-lxx') || ('data/output/verse_index_lxx.json' + vParam);
@@ -14851,8 +15296,8 @@ class BibleWordMap extends HTMLElement {
         if (!this.zoomExtentsBtn) return;
         this.updateZoomExtentsPosition();
         
-        // Never show on the loading screen or while loading data
-        if (this._isLoadingActive || (this.loading && this.loading.style.display !== 'none')) {
+        // Never show on the splash screen, loading screen, or while loading data
+        if (this._isSplashActive || this._isLoadingActive || (this.loading && this.loading.style.display !== 'none')) {
             this.zoomExtentsBtn.classList.remove('visible');
             return;
         }
@@ -15357,7 +15802,10 @@ class BibleWordMap extends HTMLElement {
     }
 
     async searchBooks(useExplicitCodes = false) {
-        if (!this.booksData || !this.booksData.books) return;
+        if (!this.booksData || !this.booksData.books) {
+            await this.ensureBooksLoaded();
+            if (!this.booksData || !this.booksData.books) return;
+        }
         this.hoveredNode = null;
         this.pseudoNode = null;
         this.activeMotifMatch = null;
@@ -15423,6 +15871,7 @@ class BibleWordMap extends HTMLElement {
         }
 
         this.closeSearchRecovery();
+        this.dismissSplash();
         this.searchedBooks = foundBooks.map(b => b.code);
         this.drawerBooks = [...this.searchedBooks];
         this.selectedBook = foundBooks[0];
@@ -16936,6 +17385,7 @@ class BibleWordMap extends HTMLElement {
         }
 
         this.closeSearchRecovery();
+        this.dismissSplash();
         this.searchedChapters = records.map(r => r.id);
         this.drawerChapters = [...this.searchedChapters];
 
@@ -18271,6 +18721,7 @@ class BibleWordMap extends HTMLElement {
         }
 
         this.closeSearchRecovery();
+        this.dismissSplash();
         this.searchedVerses = records.map(r => r.id);
         this.drawerVerses = [...this.searchedVerses];
 
