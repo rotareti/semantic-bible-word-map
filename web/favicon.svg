@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Open Bible outer cover and page block -->
+  <g id="bible">
+    <path d="M 70 260 L 42 260 Q 26 260 26 276 L 26 444 Q 26 468 54 468 L 214 468 Q 226 496 256 496 Q 286 496 298 468 L 458 468 Q 486 468 486 444 L 486 276 Q 486 260 470 260 L 442 260 Z"
+          fill="#f0f5fa" stroke="#1e2c3a" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Left Open Page -->
+    <path d="M 70 214 Q 166 178 256 248 L 256 456 Q 166 408 70 434 Z"
+          fill="#fafcff" stroke="#1e2c3a" stroke-width="20" stroke-linejoin="round"/>
+    <!-- Right Open Page -->
+    <path d="M 442 214 Q 346 178 256 248 L 256 456 Q 346 408 442 434 Z"
+          fill="#fafcff" stroke="#1e2c3a" stroke-width="20" stroke-linejoin="round"/>
+    <!-- Center Spine -->
+    <line x1="256" y1="248" x2="256" y2="460" stroke="#1e2c3a" stroke-width="20" stroke-linecap="round"/>
+    <!-- Graduated Page Lines -->
+    <g stroke="#1e2c3a" stroke-width="7.5" stroke-linecap="round">
+      <line x1="116" y1="256" x2="116" y2="396"/>
+      <line x1="164" y1="304" x2="164" y2="396"/>
+      <line x1="210" y1="316" x2="210" y2="402"/>
+      <line x1="302" y1="316" x2="302" y2="402"/>
+      <line x1="348" y1="304" x2="348" y2="396"/>
+      <line x1="396" y1="256" x2="396" y2="396"/>
+    </g>
+  </g>
+
+  <!-- Semantic Node Constellation Edges -->
+  <g id="edges" stroke="#5c748c" stroke-width="8.5" stroke-linecap="round">
+    <line x1="224" y1="38"  x2="366" y2="58"/>
+    <line x1="224" y1="38"  x2="92"  y2="120"/>
+    <line x1="366" y1="58"  x2="420" y2="140"/>
+    <line x1="92"  y1="120" x2="166" y2="254"/>
+    <line x1="420" y1="140" x2="346" y2="250"/>
+    <line x1="224" y1="38"  x2="182" y2="134"/>
+    <line x1="224" y1="38"  x2="254" y2="158"/>
+    <line x1="224" y1="38"  x2="328" y2="124"/>
+    <line x1="366" y1="58"  x2="254" y2="158"/>
+    <line x1="366" y1="58"  x2="328" y2="124"/>
+    <line x1="92"  y1="120" x2="182" y2="134"/>
+    <line x1="182" y1="134" x2="254" y2="158"/>
+    <line x1="182" y1="134" x2="166" y2="254"/>
+    <line x1="254" y1="158" x2="328" y2="124"/>
+    <line x1="254" y1="158" x2="420" y2="140"/>
+    <line x1="254" y1="158" x2="166" y2="254"/>
+    <line x1="254" y1="158" x2="346" y2="250"/>
+    <line x1="328" y1="124" x2="420" y2="140"/>
+    <line x1="328" y1="124" x2="346" y2="250"/>
+  </g>
+
+  <!-- Semantic Nodes -->
+  <g id="nodes" stroke="#1e2c3a" stroke-width="6">
+    <circle cx="224" cy="38"  r="28" fill="#3090d4"/>
+    <circle cx="366" cy="58"  r="27" fill="#e87c24"/>
+    <circle cx="92"  cy="120" r="28" fill="#3090d4"/>
+    <circle cx="182" cy="134" r="27" fill="#26bc68"/>
+    <circle cx="254" cy="158" r="29" fill="#f2c618"/>
+    <circle cx="328" cy="124" r="27" fill="#e87c24"/>
+    <circle cx="420" cy="140" r="28" fill="#18a898"/>
+    <circle cx="166" cy="254" r="27" fill="#3090d4"/>
+    <circle cx="346" cy="250" r="27" fill="#18a898"/>
+  </g>
+</svg>
