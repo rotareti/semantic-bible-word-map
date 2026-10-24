@@ -1,5 +1,16 @@
 # Changelog
 
+## [13.8.0] - 2026-10-24
+### Added
+- **Social & Messaging Link Preview Metadata (`og-preview.png`):**
+  - Added Open Graph (`og:*`) and Twitter Card (`twitter:*`) metadata tags to `web/index.html` so shared links unfurl cleanly across messaging apps and social platforms.
+  - Generated a `1200x630` showcase preview banner (`web/og-preview.png`) highlighting the semantic constellation and cosine similarity links around `"faith"` (`grace`, `justify`, `love`, `Christ`, `comfort`, `obedient`, `promise`, `hope`, `righteousness`, `truth`) alongside SymBible branding.
+
+### Changed
+- **Transparent Vector & High-Contrast Browser Tab Icon:**
+  - Replaced the opaque white-background `web/favicon.jpg` with a transparent SVG icon (`web/favicon.svg`) and a 4x-supersampled `512x512` PNG fallback (`web/favicon.png`) in `web/index.html` and `manifest.json`.
+  - Refined the open Bible pages with a high-contrast light fill and enlarged the semantic node constellation and connecting edges above the pages for clear legibility at `16x16` and `32x32` on both dark and light browser tab bars.
+
 ## [13.7.0] - 2026-10-24
 ### Added
 - **Search-Focused Splash Landing Page:**
