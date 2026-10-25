@@ -1,5 +1,13 @@
 # Changelog
 
+## [13.8.1] - 2026-10-24
+### Fixed
+- **Canonical Scripture Reference Bounds & Cross-Canon Fallback:**
+  - Added per-canon chapter and verse boundary lookup tables (`BSB_MAX_VERSES`, `LXX_MAX_VERSES_OVERRIDES`, `VUL_MAX_VERSES_OVERRIDES`, and `CANON_OMITTED_VERSES`) covering all books across the Berean Standard Bible (BSB), Greek Septuagint (LXX), and Clementine Vulgate (VUL).
+  - Excluded non-existent scripture references (such as `Matthew 40`, `Psalms 360`, `Matthew 1:50`, or `Tobit 50`) from search autocomplete suggestions, substring verse matching, and search recovery action cards.
+  - Preserved and expanded cross-canon fallback suggestions across BSB, LXX, and VUL for books, chapters, and verses that exist in alternate canons (such as suggesting LXX `Proverbs 33` alongside MT parallel `Proverbs 26` when searching `Proverbs 33` on BSB or VUL, `Psalm 151` and `Joel 4` in LXX, `Malachi 4` in BSB/VUL, `Daniel 13-14` and `Acts 8:37` in VUL, and Deuterocanonical books across LXX and VUL).
+  - Updated search recovery headers for out-of-range references to report exact canonical chapter or verse counts for the queried book.
+
 ## [13.8.0] - 2026-10-24
 ### Added
 - **Social & Messaging Link Preview Metadata (`og-preview.png`):**
